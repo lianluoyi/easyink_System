@@ -20,6 +20,7 @@ import com.easywecom.wecom.domain.dto.app.ToOpenCorpIdResp;
 import com.easywecom.wecom.domain.dto.autoconfig.*;
 import com.easywecom.wecom.domain.vo.WeAdminQrcodeVO;
 import com.easywecom.wecom.domain.vo.WeCheckQrcodeVO;
+import com.easywecom.wecom.login.util.LoginTokenService;
 import com.easywecom.wecom.service.WeAuthCorpInfoExtendService;
 import com.easywecom.wecom.service.WeAutoConfigService;
 import com.easywecom.wecom.service.WeCorpAccountService;
@@ -54,6 +55,20 @@ public class WeAutoConfigServiceImpl implements WeAutoConfigService {
     private final RedisCache redisCache;
     private final WeAuthCorpInfoExtendService weAuthCorpInfoExtendService;
     private final We3rdUserClient we3rdUserClient;
+    /**
+     * 检验扫码状态
+     */
+    private static final String SUCC_STATUS = "QRCODE_SCAN_SUCC";
+    private static final String NEVER_STATUS = "QRCODE_SCAN_NEVER";
+    private static final String EPXIRE_STATUS = "QRCODE_EXPIRE";
+    private static final String LOIN_FAIL = "QRCODE_LOGIN_FAIL";
+    private static final String CORP_MISMATCH = "QRCODE_LOGIN_FAIL_CORP_MISMATCH";
+    private static final String NEED_MOBILE_CONFIRM = "NEED_MOBILE_CONFIRM";
+    private static final String WAIT_MOBILE_CONFIRM = "WAIT_MOBILE_CONFIRM";
+    /**
+     * 短信验证关键词
+     */
+    private final static String MOBILE_CONFIRM_KEYWORD = "mobileConfirm";
 
     @Autowired
     public WeAutoConfigServiceImpl(WeAdminClient weAdminClient, WeCorpAccountService weCorpAccountService, WeInitService weInitService, RuoYiConfig ruoYiConfig, RedisCache redisCache, WeAuthCorpInfoExtendService weAuthCorpInfoExtendService, We3rdUserClient we3rdUserClient) {
@@ -100,11 +115,6 @@ public class WeAutoConfigServiceImpl implements WeAutoConfigService {
     @Override
     public WeCheckQrcodeVO check(String qrcodeKey, String status, LoginUser loginUser) {
         Integer qrcodeExpire = -31024;
-        String succStatus = "QRCODE_SCAN_SUCC";
-        String neverStatus = "QRCODE_SCAN_NEVER";
-        String expireStatus = "QRCODE_EXPIRE";
-        String loginFailStatus = "QRCODE_LOGIN_FAIL";
-        String corpMismatch = "QRCODE_LOGIN_FAIL_CORP_MISMATCH";
         String resultStr = "result";
         String errCode = "errCode";
         String dataStr = "data";
@@ -112,47 +122,155 @@ public class WeAutoConfigServiceImpl implements WeAutoConfigService {
         String authCodeStr = "auth_code";
         String authSourceStr = "auth_source";
         JSONObject resp;
+        if (redisCache.getCacheObject(confirmRedisKey(qrcodeKey)) != null) {
+            // 如果该qrcodeKey的二维码还待验证,则返回待验证
+            return new WeCheckQrcodeVO(WAIT_MOBILE_CONFIRM);
+        }
         try {
             resp = weAdminClient.check(qrcodeKey, status);
         } catch (Exception e) {
             //check 失败不中断，等待下次执行成功
-            return new WeCheckQrcodeVO(neverStatus);
+            return new WeCheckQrcodeVO(NEVER_STATUS);
         }
         JSONObject result = resp.getJSONObject(resultStr);
         if (result != null && qrcodeExpire.equals(result.getInteger(errCode))) {
-            return new WeCheckQrcodeVO(expireStatus);
+            return new WeCheckQrcodeVO(EPXIRE_STATUS);
         }
         JSONObject data = resp.getJSONObject(dataStr);
         if (data == null) {
-            return new WeCheckQrcodeVO(neverStatus);
+            return new WeCheckQrcodeVO(NEVER_STATUS);
         }
         String qrcodeStatus = data.getString(statusStr);
         String code = data.getString(authCodeStr);
         String source = data.getString(authSourceStr);
-        if (succStatus.equals(qrcodeStatus)) {
+        if (SUCC_STATUS.equals(qrcodeStatus)) {
             try {
                 String weLoginRespStr = weAdminClient.login("", code, 1, qrcodeKey, source);
+                // 先判断是否需要短信验证
+                if (needMobileConfirm(weLoginRespStr)) {
+                    WeConfirmMobileRsp mobileRsp = filterConfirmMobile(weLoginRespStr);
+                    log.info("[checkQrCode]需要短信验证,截取到的tlKEy:{}", mobileRsp);
+                    // 根据该qrcodeKey锁720s,不再处理前端发起的其他check请求
+                    redisCache.addLock(confirmRedisKey(qrcodeKey), mobileRsp.getTlKey(), 720L);
+                    return new WeCheckQrcodeVO(NEED_MOBILE_CONFIRM, mobileRsp.getTlKey(), mobileRsp.getMobile());
+                }
                 WeLoginResp weLoginResp = loginFilter(weLoginRespStr);
                 if (weLoginResp == null) {
-                    return new WeCheckQrcodeVO(loginFailStatus);
+                    return new WeCheckQrcodeVO(qrcodeStatus);
                 }
-                //不是代开发自建应用且扫码登录成功时就初始化企业配置
-                if (!weAuthCorpInfoExtendService.isCustomizedApp(weLoginResp.getEncodeCorpId())) {
-                    weInitService.initCorpConfigSynchronization(weLoginResp.getEncodeCorpId(), weLoginResp.getCorpAlias());
-                }
-                //缓存qrcode对应的企业ID
-                String qrcodeRedisKey = "QRCODE_KEY:" + qrcodeKey;
-                redisCache.setCacheObject(qrcodeRedisKey, weLoginResp, 20, TimeUnit.MINUTES);
-                //三方应用登录的人和后台登录企业不一致则认为登录失败
-                thirdServerCheckCorpMatch(loginUser, weLoginResp);
+                // 处理登录后返回的页面
+                handleLoginResult(weLoginResp, loginUser, qrcodeKey);
             } catch (CustomException e) {
-                qrcodeStatus = corpMismatch;
+                qrcodeStatus = CORP_MISMATCH;
             } catch (Exception e) {
-                qrcodeStatus = loginFailStatus;
+                qrcodeStatus = LOIN_FAIL;
                 log.error("login error:{}", ExceptionUtils.getStackTrace(e));
             }
         }
         return new WeCheckQrcodeVO(qrcodeStatus);
+    }
+
+    /**
+     * 获取短信验证的rediskey ,如果需要短信验证则需要根据该key锁一定的时间,不再处理前端发起的check接口
+     *
+     * @param qrcodeKey qrcodeKey
+     * @return 短信验证锁的key
+     */
+    private String confirmRedisKey(String qrcodeKey) {
+        return "ADMIN_SCAN_MOBILE_CONFIRM:" + qrcodeKey;
+    }
+
+
+    /**
+     * 判断是否验证码错误
+     *
+     * @param weLoginRespStr 验证返回的信息
+     * @return true 验证码错误
+     */
+    private boolean isErrorCaptcha(String weLoginRespStr) {
+        if (StringUtils.isBlank(weLoginRespStr)) {
+            return false;
+        }
+        String errMsg = "短信验证码错误";
+        return weLoginRespStr.contains(errMsg);
+    }
+
+
+    /**
+     * 处理登录成功返回的页面
+     *
+     * @param weLoginResp 登录成功响应
+     * @param loginUser   后台登录用户
+     * @param qrcodeKey   qrCodeKey
+     */
+    public void handleLoginResult(WeLoginResp weLoginResp, LoginUser loginUser, String qrcodeKey) {
+        //不是代开发自建应用且扫码登录成功时就初始化企业配置
+        if (!weAuthCorpInfoExtendService.isCustomizedApp(weLoginResp.getEncodeCorpId())) {
+            weInitService.initCorpConfigSynchronization(weLoginResp.getEncodeCorpId(), weLoginResp.getCorpAlias());
+        }
+        //缓存qrcode对应的企业ID
+        String qrcodeRedisKey = "QRCODE_KEY:" + qrcodeKey;
+        redisCache.setCacheObject(qrcodeRedisKey, weLoginResp, 20, TimeUnit.MINUTES);
+        //三方应用登录的人和后台登录企业不一致则认为登录失败
+        thirdServerCheckCorpMatch(loginUser, weLoginResp);
+    }
+
+
+    /**
+     * 截取 tlKey(短信验证需要参数)
+     *
+     * @param weLoginRespStr 扫码登录返回的页面标签元素
+     * @return 短信验证需要的tlKey
+     */
+    private String getTlKey(String weLoginRespStr) {
+        String tlKey = "tl_key=";
+        if (StringUtils.isBlank(weLoginRespStr) || !weLoginRespStr.contains(tlKey)) {
+            return weLoginRespStr;
+        }
+        String content = "";
+        try {
+            content = weLoginRespStr.substring(weLoginRespStr.indexOf(tlKey), weLoginRespStr.length());
+            content = content.substring(tlKey.length(), content.indexOf("\""));
+        } catch (Exception e) {
+            log.error("[checkQrCode]需要短信验证,截取tkKey异常,str:{}.,e:{}", weLoginRespStr, ExceptionUtils.getStackTrace(e));
+        }
+        return content;
+    }
+
+
+    /**
+     * 截取手机号
+     *
+     * @param weLoginRespStr 登录接口返回信息
+     * @return 手机号
+     */
+    private static WeConfirmMobileRsp filterConfirmMobile(String weLoginRespStr) {
+        try {
+            String locationStr = "window.settings =";
+            //截取window.settings = 后的字符串
+            weLoginRespStr = weLoginRespStr.substring(weLoginRespStr.indexOf(locationStr) + locationStr.length());
+            //把换行符前及前面的分号一起去除 只保留目标的json字符串
+            weLoginRespStr = weLoginRespStr.substring(0, weLoginRespStr.indexOf("</script>"));
+            return JSON.parseObject(weLoginRespStr, WeConfirmMobileRsp.class);
+        } catch (Exception e) {
+            log.info("解析登录返回字符串失败:{}", ExceptionUtils.getStackTrace(e));
+            return null;
+        }
+    }
+
+
+    /**
+     * 判断是否需要短信验证
+     *
+     * @param weLoginRespStr 返回的页面
+     * @return true 是 false 否
+     */
+    private boolean needMobileConfirm(String weLoginRespStr) {
+        if (StringUtils.isBlank(weLoginRespStr)) {
+            return false;
+        }
+        // 如果需要短信验证 返回的页面信息里会带有  <script type="text/javascript" src="//wwcdn.weixin.qq.com/node/wwmng/wwmng/js/vue_dev_webpack/mobileConfirm/mobileConfirm$63a4faa7.js"></script>
+        return weLoginRespStr.contains(MOBILE_CONFIRM_KEYWORD);
     }
 
 
@@ -211,6 +329,54 @@ public class WeAutoConfigServiceImpl implements WeAutoConfigService {
         }
         return ruoYiConfig.getThirdDefaultDomain();
     }
+
+    @Override
+    public void confirmMobileCaptcha(String captcha, String tlKey, String qrKey) {
+        if (StringUtils.isAnyBlank(captcha, tlKey, qrKey)) {
+            throw new CustomException(ResultTip.TIP_PARAM_MISSING);
+        }
+        if (StringUtils.isAnyBlank(captcha, tlKey, qrKey)) {
+            throw new CustomException(ResultTip.TIP_NO_CAPTCHA_OR_TLKEY);
+        }
+        String referer = genReferrerUrl(tlKey);
+        String WeConfirmCaptchaStr = weAdminClient.confirmCaptcha(captcha, tlKey, qrKey, referer);
+        if (isErrorCaptcha(WeConfirmCaptchaStr)) {
+            throw new CustomException(ResultTip.TIP_ERROR_CAPTCHA);
+        }
+        String weLoginRespStr = weAdminClient.chooseCorp(tlKey, qrKey, referer);
+        WeLoginResp weLoginResp = loginFilter(weLoginRespStr);
+        if (weLoginResp == null) {
+            throw new CustomException(ResultTip.TIP_CONFIRM_CAPTCHA);
+        }
+        // 处理登录后返回的页面
+        LoginUser loginUser = LoginTokenService.getLoginUser();
+        handleLoginResult(weLoginResp, loginUser, qrKey);
+    }
+
+    @Override
+    public void sendCaptcha(String tlKey, String qrcodeKey) {
+        if (StringUtils.isBlank(tlKey)) {
+            throw new CustomException(ResultTip.TIP_PARAM_MISSING);
+        }
+        // 调用发送验证码接口
+        weAdminClient.sendCaptcha(tlKey, qrcodeKey, genReferrerUrl(tlKey));
+    }
+
+    /**
+     * 生成验证短信和发送短信验证的referrrerUrl
+     *
+     * @param tlKey tlkey 登录接口返回
+     * @return
+     */
+    private String genReferrerUrl(String tlKey) {
+        if (StringUtils.isBlank(tlKey)) {
+            return StringUtils.EMPTY;
+        }
+        String s = "https://work.weixin.qq.com/wework_admin/mobile_confirm/captcha_page?tl_key=TLKEY&redirect_url=https%3A%2F%2Fwork.weixin.qq.com%2Fwework_admin%2Flogin%2Fchoose_corp%3Ftl_key%3DTLKEY&from=spamcheck";
+        String referer = s.replaceAll("TLKEY", tlKey);
+        return referer;
+    }
+
 
     /**
      * 初始化内部应用业务处理
@@ -663,7 +829,7 @@ public class WeAutoConfigServiceImpl implements WeAutoConfigService {
      * @param pageText html网页str <xxx><xx/> window.settings = {};\n xxxx
      * @return {@link WeLoginResp}
      */
-    private WeLoginResp loginFilter(String pageText) {
+    private static WeLoginResp loginFilter(String pageText) {
         try {
             String locationStr = "window.settings =";
             //截取window.settings = 后的字符串

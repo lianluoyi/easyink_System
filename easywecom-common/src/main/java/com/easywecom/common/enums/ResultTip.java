@@ -59,6 +59,9 @@ public enum ResultTip {
     TIP_NOT_START_APP_CONFIG(1017, "当前企业已授权但未启用待开发应用，无法使用该功能"),
     TIP_NOT_AUTH_DK_CORP(1018, "所在企业未授权当前代开发应用，请联系企业管理员进行授权"),
     TIP_ILLEGAL_DOMAIN(1019, "填写的服务器信息域名主体与当前企业不一致"),
+    TIP_NO_CAPTCHA_OR_TLKEY(1020, "短信验证码或者tlKey为空"),
+    TIP_ERROR_CAPTCHA(1021, "短信验证码错误"),
+    TIP_CONFIRM_CAPTCHA(1022, "验证短信失败"),
 
 
     //运营模块返回码

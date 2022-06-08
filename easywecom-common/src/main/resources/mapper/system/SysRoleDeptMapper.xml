@@ -29,34 +29,29 @@
                     (
                         SELECT
                             @ids := GROUP_CONCAT(id)
-                        FROM
-                            we_department
-                        WHERE
-                            corp_id = #{corpId} AND
-                            FIND_IN_SET(parent_id, @ids)
-                    ) AS c_ids,
+                        FROM we_department
+                        WHERE corp_id = #{corpId}
+                          AND FIND_IN_SET(parent_id, @ids)
+                    )    AS c_ids,
                     @l := @l + 1 AS LEVEL
-                FROM
-                    we_department,
-                    (SELECT @ids := #{departmentId}, @l := 0) b
-                WHERE
-                    corp_id = #{corpId}
-                    AND @ids IS NOT NULL
+                FROM we_department,
+                     (SELECT @ids := #{departmentId}, @l := 0) b
+                WHERE corp_id = #{corpId}
+                  AND @ids IS NOT NULL
             ) t
     </select>
 
-    <!--    根据当前部门id获取其当前和所有子部门id-->
-    <select id="getAllDept" resultType="java.lang.String">
-        SELECT GROUP_CONCAT(id)
-        FROM
-            we_department
-        WHERE
-            corp_id = #{corpId}
-    </select>
 
-    <select id="getDeptByRoleId"  resultType="Long" >
+    <select id="getDeptByRoleId" resultType="Long">
         SELECT dept_id
-        FROM sys_role_dept WHERE corp_id = #{corpId} AND role_id = #{roleId}
+        FROM sys_role_dept
+        WHERE corp_id = #{corpId}
+          AND role_id = #{roleId}
+    </select>
+    <select id="getAllDeptList" resultType="java.lang.String">
+        SELECT id
+        FROM we_department
+        WHERE corp_id = #{corpId}
     </select>
 
     <delete id="deleteRoleDept" parameterType="Long">

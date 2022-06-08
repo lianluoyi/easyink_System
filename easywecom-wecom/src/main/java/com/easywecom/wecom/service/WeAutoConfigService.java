@@ -47,5 +47,20 @@ public interface WeAutoConfigService {
      */
     ThirdDefaultDomainConfig getThirdDefaultDomainConfig();
 
+    /**
+     * 短信验证
+     *
+     * @param captcha 验证码
+     * @param tlKey   如果需要短信验证,tlKeY会由check接口返回
+     * @param qrKey   qrkey由获取二维码接口返回
+     */
+    void confirmMobileCaptcha(String captcha, String tlKey, String qrKey);
 
+    /**
+     * 重新发送短信验证码
+     *
+     * @param tlKey     tlKey 由check接口返回
+     * @param qrcodeKey
+     */
+    void sendCaptcha(String tlKey, String qrcodeKey);
 }

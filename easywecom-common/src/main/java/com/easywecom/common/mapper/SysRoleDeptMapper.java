@@ -55,21 +55,21 @@ public interface SysRoleDeptMapper {
      */
     String getDeptAndChildDept(@Param("corpId") String corpId, @Param("departmentId") Long departmentId);
 
-    /**
-     * 获取所有部门
-     *
-     * @param corpId 公司ID
-     * @return
-     */
-    String getAllDept(@Param("corpId") String corpId);
 
     /**
      * 根据角色id获取部门数组
-     *
      *
      * @param corpId 公司Id
      * @param roleId 角色Id
      * @return
      */
     List<Long> getDeptByRoleId(@Param("corpId") String corpId, @Param("roleId") Long roleId);
+
+    /**
+     * 根据企业id获取所有的部门id集合
+     *
+     * @param corpId 企业id
+     * @return 部门id 集合
+     */
+    List<String> getAllDeptList(String corpId);
 }

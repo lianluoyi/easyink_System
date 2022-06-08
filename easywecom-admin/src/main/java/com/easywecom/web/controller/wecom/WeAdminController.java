@@ -69,5 +69,20 @@ public class WeAdminController extends BaseController {
         return AjaxResult.success(weAutoConfigService.getThirdDefaultDomainConfig());
     }
 
+    @ApiOperation("扫码登录企微后台验证手机短信验证码")
+    @GetMapping("/confirmMobileCaptcha")
+    public AjaxResult confirmMobileCaptcha(@ApiParam(value = "短信验证码") String captcha, @ApiParam(value = "短信验证需要的tlKey") String tlKey,
+                                           @ApiParam(value = "qrKey由获取二维码接口返回") String qrcodeKey) {
+        weAutoConfigService.confirmMobileCaptcha(captcha, tlKey, qrcodeKey);
+        return AjaxResult.success();
+    }
+
+    @ApiOperation("重新发送手机验证码")
+    @GetMapping("/sendCaptcha")
+    public AjaxResult sendCaptcha(@ApiParam(value = "短信验证需要的tlKey") String tlKey, @ApiParam(value = "qrcodeKey") String qrcodeKey) {
+        weAutoConfigService.sendCaptcha(tlKey, qrcodeKey);
+        return AjaxResult.success();
+    }
+
 
 }

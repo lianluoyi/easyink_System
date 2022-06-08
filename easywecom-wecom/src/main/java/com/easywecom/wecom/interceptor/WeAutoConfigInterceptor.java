@@ -33,6 +33,10 @@ import java.util.concurrent.TimeUnit;
 public class WeAutoConfigInterceptor implements Interceptor<Object> {
 
     private final RedisCache redisCache;
+    /**
+     * 短信验证
+     */
+    private final static String CONFIRM_CAPTCHA = "confirm_captcha";
 
     @Lazy
     @Autowired
@@ -51,6 +55,12 @@ public class WeAutoConfigInterceptor implements Interceptor<Object> {
         } else if (request.getUrl().contains("/loginpage_wx")) {
             //登陆
             request.addQuery("_r", randomRString());
+        } else if (isMobileConfirmUrl(request.getUrl())) {
+            //短信验证
+            setConfirmReq(request);
+        } else if (request.getUrl().contains("/choose_corp")) {
+            // 短信验证后选择企业
+            setCheckReq(request);
         } else {
             //登陆后
             setCommonReq(request);
@@ -58,6 +68,54 @@ public class WeAutoConfigInterceptor implements Interceptor<Object> {
         }
         return true;
     }
+
+    /**
+     * 设置check 请求的请求头
+     *
+     * @param request 请求头
+     */
+    private void setCheckReq(ForestRequest request) {
+        request.addHeader("sec-fetch-mode", "navigate");
+        request.addHeader("sec-fetch-site", "same-origin");
+        request.addHeader("sec-ch-ua-mobile", "?0");
+        request.addHeader("sec-fetch-user", "?1");
+        request.addHeader("sec-fetch-dest", "document");
+        request.addHeader("accept-language", "zh-CN,zh;q=0.9");
+        request.addHeader("upgrade-insecure-requests", "1");
+        request.addHeader("accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9");
+
+    }
+
+    /**
+     * 判断是否是短信验证的链接
+     *
+     * @param url 链接 url
+     * @return true 是短信验证的链接
+     */
+    private boolean isMobileConfirmUrl(String url) {
+        return StringUtils.isNotBlank(url) && url.contains("/mobile_confirm");
+    }
+
+    /**
+     * 为短信验证设置相关的请求参数
+     *
+     * @param request 请求体
+     */
+    private void setConfirmReq(ForestRequest request) {
+        request.addQuery("lang", "zh_CN");
+        request.addQuery("ajax", 1);
+        request.addQuery("f", "json");
+        // 6位随机数
+        request.addQuery("random", (int) ((Math.random() * 9 + 1) * 100000));
+        request.addHeader("sec-fetch-site", "same-origin");
+        request.addHeader("sec-fetch-mode", "cors");
+        request.addHeader("sec-fetch-dest", "empty");
+        request.addHeader("accept-encoding", "gzip,deflate,br");
+        request.addHeader("accept-language", "zh-CN,zh;q=0.9");
+        request.addHeader("content-type", "application/json");
+        request.addHeader("accept-encoding", "gzip, deflate, br");
+    }
+
 
     /**
      * 请求发送失败时被调用
@@ -99,6 +157,7 @@ public class WeAutoConfigInterceptor implements Interceptor<Object> {
         String redisKey = getQrcodeKey(request);
         List<ForestCookie> cookieList = cookies.allCookies();
         redisCache.setCacheObject(redisKey, JSON.toJSONString(cookieList), 30, TimeUnit.MINUTES);
+        // 如果是登录页则需要
     }
 
     /**

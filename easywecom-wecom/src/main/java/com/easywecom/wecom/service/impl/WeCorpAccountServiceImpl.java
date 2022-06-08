@@ -346,7 +346,7 @@ public class WeCorpAccountServiceImpl extends ServiceImpl<WeCorpAccountMapper, W
      */
     private void initIfNotExist(String corpId) {
         if (StringUtils.isBlank(corpId)) {
-            throw new CustomException(ResultTip.TIP_MISS_CORP_ID);
+           return;
         }
         //给内部应用手动配置的用户进行初始化
         weInitService.initDefaultSystemProperty(corpId, "");

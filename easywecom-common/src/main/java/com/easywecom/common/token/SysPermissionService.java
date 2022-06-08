@@ -19,6 +19,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -75,7 +76,7 @@ public class SysPermissionService {
         // 部门范围(,隔开)
         String departmentScope = null;
         if (user.isSuperAdmin()) {
-            user.setDepartmentDataScope(sysRoleDeptMapper.getAllDept(corpId));
+            user.setDepartmentDataScope(this.getAllDept(corpId));
             return;
         }
         if (ObjectUtil.isNull(user.getWeUser())) {
@@ -94,7 +95,7 @@ public class SysPermissionService {
         DataScopeEnum dataScopeEnum = DataScopeEnum.getDataScope(role.getDataScope());
         switch (dataScopeEnum) {
             case ALL:
-                departmentScope = sysRoleDeptMapper.getAllDept(corpId);
+                departmentScope = this.getAllDept(corpId);
                 break;
             case SELF_DEPT:
             case SELF:
@@ -110,11 +111,24 @@ public class SysPermissionService {
                 break;
         }
         // 如果为空字符串 设置为-1 缺省值,防止后续SQL报错
-        if(StringUtils.isBlank(departmentScope)){
-            departmentScope =  "-1";
+        if (StringUtils.isBlank(departmentScope)) {
+            departmentScope = "-1";
         }
         log.info("corpId:{},name:{},type:{},设置可见部门：{}", corpId, user.getUsername(), dataScopeEnum, departmentScope);
         user.setDepartmentDataScope(departmentScope);
+    }
+
+    /**
+     * 根据corpId获取全部的部门
+     *
+     * @return 全部部门id, 用逗号隔开
+     */
+    public String getAllDept(String corpId) {
+        if (StringUtils.isBlank(corpId)) {
+            return StringUtils.EMPTY;
+        }
+        List<String> list = sysRoleDeptMapper.getAllDeptList(corpId);
+        return org.apache.commons.lang3.StringUtils.join(list, ",");
     }
 
 

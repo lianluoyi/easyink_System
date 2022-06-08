@@ -193,7 +193,6 @@ public interface WeAdminClient {
     BaseAdminResult openMailListRWPermission(@Body("app_id") String appId, @Body("arch_rw_flag") Integer archRwFlag, @Body("b_open_sync_edit") Boolean bOpenSyncEdit, @Body("app_open") Boolean appOpen, @Header("qrcodeKey") String qrcodeKey);
 
 
-
     /**
      * 检测回调地址
      *
@@ -294,4 +293,32 @@ public interface WeAdminClient {
     @Post("/customer/group/setMomentsRange")
     BaseAdminResult setMomentsRange(@Body("partyids[]") String partyids, @Header("qrcodeKey") String qrcodeKey);
 
+    /**
+     * 验证手机短信二维码
+     *
+     * @param captcha   验证码
+     * @param tlKey     tlKey 由获取验证码的网页返回
+     * @param qrcodeKey
+     * @return {@link BaseAdminResult}
+     */
+    @Post("/mobile_confirm/confirm_captcha")
+    String confirmCaptcha(@Body("captcha") String captcha, @Body("tl_key") String tlKey, @Header("qrcodeKey") String qrcodeKey, @Header("referer") String referer);
+
+    /**
+     * 重新发送手机短信验证码
+     *
+     * @param tlKey tlKey 由获取验证码的网页返回
+     * @return {@link BaseAdminResult}
+     */
+    @Post("/mobile_confirm/send_captcha")
+    BaseAdminResult sendCaptcha(@Body("tl_key") String tlKey, @Header("qrcodeKey") String qrcodeKey, @Header("referer") String referer);
+
+    /**
+     * 选择企业（会302重定向到短信验证接口)
+     *
+     * @param tlKey tlKey 由登录接口如果需要短信验证则会返回
+     * @return 响应
+     */
+    @Get("/login/choose_corp")
+    String chooseCorp(@Query("tl_key") String tlKey, @Header("qrcodeKey") String qrcodeKey, @Header("referer") String referer);
 }
