@@ -1,0 +1,834 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.easywecom.wecom.mapper.WeCustomerMapper">
+
+
+    <resultMap type="com.easywecom.wecom.domain.WeCustomer" id="WeCustomerResultNoRel">
+        <id property="externalUserid" column="external_userid"/>
+        <result property="name" column="name"/>
+        <result property="avatar" column="avatar"/>
+        <result property="type" column="type"/>
+        <result property="gender" column="gender"/>
+        <result property="unionid" column="unionid"/>
+        <result property="birthday" column="birthday"/>
+        <result property="corpName" column="corp_name"/>
+        <result property="corpFullName" column="corp_full_name"/>
+        <result property="position" column="position"/>
+        <result property="userName" column="user_name"/>
+        <result property="userId" column="user_id"/>
+        <result property="departmentName" column="department"/>
+        <result property="isOpenChat" column="is_open_chat" jdbcType="INTEGER"/>
+    </resultMap>
+
+
+    <select id="selectWeCustomerListNoRel" parameterType="com.easywecom.wecom.domain.dto.WeCustomerPushMessageDTO"
+            resultMap="WeCustomerResultNoRel">
+        SELECT
+        DISTINCT wc.external_userid,
+        wc.`name`,
+        wc.avatar,
+        wc.type,
+        wc.gender,
+        wc.unionid,
+        wc.birthday,
+        wc.corp_name,
+        wc.corp_full_name,
+        wc.position,
+        wc.is_open_chat,
+        wfcr.id as wfcrId,
+        wfcr.user_id,
+        wfcr.remark,
+        wfcr.description,
+        wfcr.create_time,
+        wfcr.remark_corp_name,
+        wfcr.oper_userid,
+        wfcr.add_way,
+        wfcr.state,
+        wfcr.status,
+        wu.user_name,
+        (SELECT wd.`name` FROM we_department wd WHERE wd.id=wu.main_department and wd.corp_id = #{corpId}
+        ${@com.easywecom.common.constant.GenConstants@LIMIT_1}) as department
+        FROM
+        we_customer wc
+        LEFT JOIN we_flower_customer_rel wfcr ON wfcr.corp_id = wc.corp_id and wc.external_userid=wfcr.external_userid
+        AND wfcr.`status` = '${@com.easywecom.common.constant.Constants@NORMAL_CODE}'
+        LEFT JOIN we_user wu ON wu.corp_id = wc.corp_id and wu.user_id=wfcr.user_id
+        LEFT JOIN we_flower_customer_tag_rel wfcrf ON wfcrf.flower_customer_rel_id = wfcr.id
+        LEFT JOIN we_tag wt ON wt.tag_id = wfcrf.tag_id
+        <where>
+            wc.corp_id = #{corpId}
+            ${params.dataScope}
+            <if test="gender !=null and gender != -1">
+                AND wc.gender=#{gender}
+            </if>
+            <if test="userIds != null and userIds !=''">
+                <if test="userIds.indexOf(',') != -1">
+                    AND wfcr.user_id in
+                    <foreach item="item" index="index" collection="userIds.split(',')" open="(" separator="," close=")">
+                        #{item}
+                    </foreach>
+                </if>
+                <if test="userIds.indexOf(',') == -1">
+                    AND wfcr.user_id=#{userIds}
+                </if>
+            </if>
+            <if test="tagIds != null and tagIds !=''">
+                <if test="tagIds.indexOf(',') != -1">
+                    AND wt.tag_id in
+                    <foreach item="item" index="index" collection="tagIds.split(',')" open="(" separator="," close=")">
+                        #{item}
+                    </foreach>
+                </if>
+                <if test="tagIds.indexOf(',') == -1">
+                    AND wt.tag_id=#{tagIds}
+                </if>
+            </if>
+            <if test="filterTags != null and filterTags !=''">
+                <if test="filterTags.indexOf(',') != -1">
+                    AND wfcr.id NOT IN ( SELECT rel1.flower_customer_rel_id FROM we_flower_customer_tag_rel rel1 WHERE
+                    rel1.tag_id in
+                    <foreach item="item" index="index" collection="filterTags.split(',')" open="(" separator=","
+                             close=")">
+                        #{item}
+                    </foreach>
+                    )
+                </if>
+                <if test="filterTags.indexOf(',') == -1">
+                    AND wfcr.id NOT IN ( SELECT rel2.flower_customer_rel_id FROM we_flower_customer_tag_rel rel2 WHERE
+                    rel2.tag_id = #{filterTags} )
+                </if>
+            </if>
+            <if test="status !=null">
+                AND wfcr.status=#{status}
+            </if>
+            <if test="customerStartTime != null and customerEndTime != null">
+                AND wfcr.create_time between #{customerStartTime} and #{customerEndTime}
+            </if>
+        </where>
+        ORDER BY wfcr.create_time DESC
+    </select>
+
+
+    <resultMap type="com.easywecom.wecom.domain.WeCustomer" id="WeCustomerResult">
+        <result property="externalUserid" column="external_userid"/>
+        <result property="corpId" column="corp_id"/>
+        <result property="name" column="name"/>
+        <result property="avatar" column="avatar"/>
+        <result property="type" column="type"/>
+        <result property="gender" column="gender"/>
+        <result property="unionid" column="unionid"/>
+        <result property="birthday" column="birthday"/>
+        <result property="corpName" column="corp_name"/>
+        <result property="corpFullName" column="corp_full_name"/>
+        <result property="position" column="position"/>
+        <result property="userName" column="user_name"/>
+        <result property="userId" column="user_id"/>
+        <result property="isOpenChat" column="is_open_chat" jdbcType="INTEGER"/>
+        <result property="remark" column="remark"/>
+        <result property="phone" column="remark_mobiles"/>
+        <result property="desc" column="description"/>
+        <result property="departmentName" column="department"/>
+        <result property="dimissionTime" column="dimission_time"/>
+        <collection property="weFlowerCustomerRels" ofType="com.easywecom.wecom.domain.WeFlowerCustomerRel">
+            <result property="id" column="wfcrId"/>
+            <result property="userId" column="user_id"/>
+            <result property="remark" column="remark"/>
+            <result property="description" column="description"/>
+            <result property="createTime" column="create_time"/>
+            <result property="remarkCorpName" column="remark_corp_name"/>
+            <result property="operUserid" column="oper_userid"/>
+            <result property="addWay" column="add_way"/>
+            <result property="state" column="state"/>
+            <result property="email" column="email"/>
+            <result property="status" column="status"/>
+            <result property="userName" column="user_name"/>
+            <result property="department" column="department"/>
+            <result property="remarkMobiles" column="remark_mobiles"/>
+            <result property="address" column="address"/>
+            <collection property="weFlowerCustomerTagRels" javaType="ArrayList"
+                        column="{id = wfcrId}" select="selectWeCustomerTags">
+            </collection>
+        </collection>
+        <collection property="extendProperties" javaType="ArrayList"
+                    ofType="com.easywecom.common.core.domain.wecom.BaseExtendPropertyRel"
+                    column="{corpId = wceprCorpID,externalUserid = wceprExternalUserid}"
+                    select="getCustomerPropRelList">
+            <result property="propertyValue" column="property_value"/>
+            <result property="extendPropertyId" column="extend_property_id"/>
+        </collection>
+    </resultMap>
+
+    <resultMap type="com.easywecom.wecom.domain.vo.customer.WeCustomerVO" id="WeCustomerResultV2">
+        <result property="externalUserid" column="external_userid"/>
+        <result property="corpId" column="corp_id"/>
+        <result property="name" column="name"/>
+        <result property="avatar" column="avatar"/>
+        <result property="type" column="type"/>
+        <result property="gender" column="gender"/>
+        <result property="birthday" column="birthday"/>
+        <result property="corpName" column="corp_name"/>
+        <result property="corpFullName" column="corp_full_name"/>
+        <result property="position" column="position"/>
+        <result property="isOpenChat" column="is_open_chat" jdbcType="INTEGER"/>
+        <result property="relId" column="relId"/>
+        <result property="userId" column="user_id"/>
+        <result property="remark" column="remark"/>
+        <result property="createTime" column="create_time"/>
+        <result property="description" column="description"/>
+        <result property="remarkCorpName" column="remark_corp_name"/>
+        <result property="addWay" column="add_way"/>
+        <result property="email" column="email"/>
+        <result property="status" column="status"/>
+        <result property="userName" column="user_name"/>
+        <result property="department" column="department"/>
+        <result property="remarkMobiles" column="remark_mobiles"/>
+        <result property="address" column="address"/>
+        <result property="wechatChannel" column="wechat_channel"/>
+        <collection property="weFlowerCustomerTagRels" javaType="ArrayList"
+                    ofType="com.easywecom.wecom.domain.WeFlowerCustomerTagRel"
+                    column="{id = relId}" select="selectWeCustomerTags">
+            <result property="flowerCustomerRelId" column="flower_customer_rel_id"/>
+            <result property="tagId" column="tag_id"/>
+            <result property="tagName" column="tagName"/>
+            <result property="groupId" column="group_id"/>
+        </collection>
+        <collection property="extendProperties" javaType="ArrayList"
+                    ofType="com.easywecom.common.core.domain.wecom.BaseExtendPropertyRel"
+                    column="{corpId = wceprCorpId,externalUserid = wceprExternalUserid}"
+                    select="getCustomerPropRelList">
+            <result property="propertyValue" column="property_value"/>
+            <result property="extendPropertyId" column="extend_property_id"/>
+        </collection>
+    </resultMap>
+
+
+    <resultMap id="weFlowerCustomerRelsMapper" type="com.easywecom.wecom.domain.WeFlowerCustomerTagRel">
+        <result property="flowerCustomerRelId" column="flower_customer_rel_id"/>
+        <result property="tagId" column="tag_id"/>
+        <result property="createTime" column="create_time"/>
+        <result property="tagName" column="tagName"/>
+    </resultMap>
+
+    <select id="getCustomerPropRelList"
+            resultType="com.easywecom.common.core.domain.wecom.BaseExtendPropertyRel">
+        SELECT extend_property_id, property_value
+        FROM we_customer_extend_property_rel
+        WHERE corp_id = #{corpId}
+          AND external_userid = #{externalUserid}
+    </select>
+
+    <select id="selectWeCustomerRels" resultType="com.easywecom.wecom.domain.WeFlowerCustomerRel">
+        SELECT id,
+               user_id,
+               external_userid,
+               corp_id,
+               oper_userid,
+               remark,
+               description,
+               create_time,
+               remark_corp_name,
+               remark_mobiles,
+               qq,
+               address,
+               email,
+               add_way,
+               state,
+               status,
+               delete_time
+        FROM we_flower_customer_rel
+        WHERE id = #{id}
+    </select>
+
+
+    <sql id="selectWeCustomerVo">
+        select external_userid,
+               name,
+               avatar,
+               type,
+               gender,
+               unionid,
+               birthday,
+               corp_name,
+               corp_full_name,
+               position,
+               is_open_chat
+        from we_customer
+    </sql>
+    <sql id="selectWeCustomerByTagVo">
+        select wc.external_userid,
+               wc.name,
+               wc.avatar,
+               wc.type,
+               wc.gender,
+               wc.unionid,
+               wc.birthday,
+               wc.corp_name,
+               wc.corp_full_name,
+               wc.position,
+               wc.is_open_chat,
+               wt.tag_id
+        from we_customer wc
+                 left join we_flower_customer_rel wfcr on
+                wc.external_userid = wfcr.external_userid
+                and wfcr.status = 0
+                 left join we_flower_customer_tag_rel wfctr on
+            wfctr.flower_customer_rel_id = wfcr.id
+                 right join we_tag wt on
+                wt.tag_id = wfctr.tag_id
+                and wt.status = 0
+    </sql>
+
+    <select id="selectWeCustomerListV2" resultMap="WeCustomerResultV2">
+        SELECT wc.corp_id,wc.external_userid,
+        wc.`name`,
+        wc.avatar,
+        wc.type,
+        wc.gender,
+        wc.unionid,
+        wc.birthday,
+        wc.corp_name,
+        wc.corp_full_name,
+        wc.position,
+        wc.is_open_chat,
+        wfcr.id as relId,
+        wfcr.user_id,
+        wfcr.remark,
+        wfcr.description,
+        wfcr.remark_mobiles,
+        wfcr.create_time,
+        wfcr.remark_corp_name,
+        wfcr.oper_userid,
+        wfcr.add_way,
+        wfcr.state,
+        wfcr.status,
+        wfcr.address,
+        wfcr.email,
+        wfcr.wechat_channel,
+        wu.user_name,
+        wu.dimission_time,
+        wfcrf.tag_id,
+        wfcrf.flower_customer_rel_id,
+        wcepr.corp_id as wceprCorpId,
+        wcepr.external_userid as wceprExternalUserid,
+        wcepr.property_value,
+        wcepr.extend_property_id,
+        wd.name as department
+        FROM
+        we_customer wc
+        LEFT JOIN we_flower_customer_rel wfcr ON wc.external_userid=wfcr.external_userid AND wc.corp_id = wfcr.corp_id
+        LEFT JOIN we_user wu ON wu.user_id=wfcr.user_id AND wu.corp_id = wc.corp_id
+        LEFT JOIN we_flower_customer_tag_rel wfcrf ON wfcrf.flower_customer_rel_id = wfcr.id
+        LEFT JOIN we_customer_extend_property_rel wcepr ON wcepr.corp_id = wc.corp_id AND wcepr.external_userid =
+        wc.external_userid and wfcr.user_id = wcepr.user_id
+        LEFT JOIN we_department wd ON wc.corp_id = wd.corp_id AND wu.main_department = wd.id
+        <where>
+            wc.corp_id = #{corpId}
+            ${params.dataScope}
+            <if test="tagIds != null and tagIds !=''">
+                <if test="tagIds.indexOf(',') != -1">
+                    AND wfcrf.tag_id in
+                    <foreach item="item" index="index" collection="tagIds.split(',')" open="(" separator="," close=")">
+                        #{item}
+                    </foreach>
+                </if>
+                <if test="tagIds.indexOf(',') == -1">
+                    AND wfcrf.tag_id=#{tagIds}
+                </if>
+            </if>
+            <if test="userIds != null and userIds !=''">
+                <if test="userIds.indexOf(',') != -1">
+                    AND wu.user_id in
+                    <foreach item="item" index="index" collection="userIds.split(',')" open="(" separator="," close=")">
+                        #{item}
+                    </foreach>
+                </if>
+                <if test="userIds.indexOf(',') == -1">
+                    AND wu.user_id=#{userIds}
+                </if>
+            </if>
+            <if test="departmentIds != null and departmentIds !=''">
+                <if test="departmentIds.indexOf(',') != -1">
+                    OR wu.main_department in
+                    <foreach item="item" index="index" collection="departmentIds.split(',')" open="(" separator=","
+                             close=")">
+                        #{item}
+                    </foreach>
+                </if>
+                <if test="departmentIds.indexOf(',') == -1">
+                    OR wu.main_department=#{departmentIds}
+                </if>
+            </if>
+            <choose>
+                <when test="status != null">
+                    AND wfcr.status= #{status}
+                </when>
+                <otherwise>
+                    AND wfcr.status != '${@com.easywecom.common.enums.CustomerStatusEnum@DELETE.code}'
+                </otherwise>
+            </choose>
+            <if test="beginTime != null and beginTime != ''"><!-- 开始时间检索 -->
+                AND wfcr.create_time &gt;= #{beginTime}
+            </if>
+            <if test="endTime != null and endTime != ''"><!-- 结束时间检索 -->
+                AND wfcr.create_time &lt;= #{endTime}
+            </if>
+            <if test="name != null and name !=''">
+                AND wc.name like concat('%', #{name}, '%')
+            </if>
+        </where>
+        GROUP BY wfcr.external_userid,wfcr.user_id
+        ORDER BY wfcr.create_time DESC
+    </select>
+
+    <select id="listOfCustomerIdAndUserId" resultType="com.easywecom.wecom.domain.vo.sop.CustomerSopVO">
+        SELECT
+        wc.corp_id,
+        wc.external_userid,
+        wc.`name`,
+        wc.avatar as headImageUrl,
+        wu.user_name,
+        ( SELECT wd.`name` FROM we_department wd WHERE wd.id = wu.main_department AND wd.corp_id = #{corpId} LIMIT 1 )
+        AS mainDepartmentName
+        FROM
+        we_customer wc
+        LEFT JOIN we_flower_customer_rel wfcr ON wc.external_userid = wfcr.external_userid
+        AND wc.corp_id = wfcr.corp_id
+        LEFT JOIN we_user wu ON wu.user_id = wfcr.user_id
+        AND wu.corp_id = wc.corp_id
+        WHERE
+        wc.corp_id = #{corpId}
+        <if test="userIds != null and userIds !=''">
+            <if test="userIds.indexOf(',') != -1">
+                AND wu.user_id in
+                <foreach item="item" index="index" collection="userIds.split(',')" open="(" separator="," close=")">
+                    #{item}
+                </foreach>
+            </if>
+            <if test="userIds.indexOf(',') == -1">
+                AND wu.user_id=#{userIds}
+            </if>
+        </if>
+        AND wc.external_userid IN
+        <foreach collection="list" item="item" index="index" open="(" close=")" separator=",">
+            #{item}
+        </foreach>
+    </select>
+
+
+    <select id="selectWeCustomerTags" resultMap="weFlowerCustomerRelsMapper">
+        SELECT wfcrf.flower_customer_rel_id,
+               wt.tag_id,
+               wt.`name` as tagName,
+               wt.group_id
+        FROM we_flower_customer_tag_rel wfcrf
+                 LEFT JOIN we_tag wt ON wt.tag_id = wfcrf.tag_id
+        where wt.status = 0
+          and wfcrf.flower_customer_rel_id = #{id}
+    </select>
+
+
+    <select id="selectWeCustomerById" parameterType="String" resultType="com.easywecom.wecom.domain.WeCustomer">
+        <include refid="selectWeCustomerVo"/>
+        where
+        corp_id = #{corpId} AND external_userid = #{externalUserId}
+        LIMIT 1
+    </select>
+
+    <select id="selectWeCustomerByUserIdList" resultType="com.easywecom.wecom.domain.vo.WeCustomerNameAndUserIdVO">
+        SELECT
+        c.external_userid externalUserId,
+        c.name,
+        wfcr.remark,
+        wfcr.user_id
+        FROM we_customer c
+        LEFT JOIN we_flower_customer_rel wfcr ON wfcr.external_userid = c.external_userid AND c.corp_id = wfcr.corp_id
+        WHERE wfcr.corp_id = #{corpId}
+        and wfcr.`status` = 0
+        and wfcr.external_userid IN
+        <foreach item="item" index="index" collection="externalUserIdList" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+        and wfcr.user_id IN
+        <foreach item="userId" index="index" collection="userIdList" open="(" separator="," close=")">
+            #{userId}
+        </foreach>
+        GROUP BY wfcr.external_userid,wfcr.user_id
+    </select>
+
+    <insert id="insertWeCustomer" parameterType="WeCustomer">
+        insert into we_customer
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="externalUserid != null">external_userid,</if>
+            <if test="corpId != null">corp_id,</if>
+            <if test="name != null">name,</if>
+            <if test="avatar != null">avatar,</if>
+            <if test="type != null">type,</if>
+            <if test="gender != null">gender,</if>
+            <if test="unionid != null">unionid,</if>
+            <if test="birthday != null">birthday,</if>
+            <if test="corpName != null">corp_name,</if>
+            <if test="corpFullName != null">corp_full_name,</if>
+            <if test="position != null">position,</if>
+            <if test="isOpenChat != null">is_open_chat</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="externalUserid != null">#{externalUserid},</if>
+            <if test="corpId != null">#{corpId},</if>
+            <if test="name != null">#{name},</if>
+            <if test="avatar != null">#{avatar},</if>
+            <if test="type != null">#{type},</if>
+            <if test="gender != null">#{gender},</if>
+            <if test="unionid != null">#{unionid},</if>
+            <if test="birthday != null">#{birthday},</if>
+            <if test="corpName != null">#{corpName},</if>
+            <if test="corpFullName != null">#{corpFullName},</if>
+            <if test="position != null">#{position},</if>
+            <if test="isOpenChat != null">#{isOpenChat}</if>
+        </trim>
+    </insert>
+    <insert id="batchInsert" parameterType="com.easywecom.wecom.domain.WeCustomer">
+        INSERT INTO we_customer
+        (`external_userid`, `unionid`, `name`, `avatar`, `type`, `gender`, `corp_id`, `corp_name`, `corp_full_name`,
+        `position`)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+            #{item.externalUserid},#{item.unionid},#{item.name},#{item.avatar},
+            #{item.type},#{item.gender},#{item.corpId},#{item.corpName},
+            #{item.corpFullName},#{item.position}
+            )
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+        `name` = VALUES(`name`),avatar = VALUES(avatar),corp_name = VALUES(corp_name),
+        corp_full_name = VALUES(corp_full_name),position = VALUES(position),`type` = VALUES(`type`),gender =
+        VALUES(gender)
+    </insert>
+
+    <update id="updateWeCustomer" parameterType="com.easywecom.wecom.domain.WeCustomer">
+        update we_customer
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="externalUserid != null">external_userid = #{externalUserid},</if>
+            <if test="name != null">name = #{name},</if>
+            <if test="avatar != null">avatar = #{avatar},</if>
+            <if test="corpId != null">corp_id = #{corpId},</if>
+            <if test="type != null">type = #{type},</if>
+            <if test="gender != null">gender = #{gender},</if>
+            <if test="unionid != null">unionid = #{unionid},</if>
+            <if test="birthday != null">birthday = #{birthday},</if>
+            <if test="corpName != null">corp_name = #{corpName},</if>
+            <if test="corpFullName != null">corp_full_name = #{corpFullName},</if>
+            <if test="position != null">position = #{position},</if>
+            <if test="isOpenChat != null">is_open_chat = #{isOpenChat}</if>
+        </trim>
+        where external_userid = #{externalUserid} and corp_id = #{corpId}
+    </update>
+    <update id="updateBirthday">
+        UPDATE we_customer
+        SET birthday = ifnull(#{birthday}, '0000-00-00 00:00:00')
+        WHERE external_userid = #{externalUserid}
+          AND corp_id = #{corpId}
+    </update>
+
+
+    <select id="getCustomersByUserId" resultMap="WeCustomerResult">
+        SELECT
+        wc.external_userid,
+        wc.corp_id,
+        wc.`name`,
+        wc.avatar,
+        wc.type,
+        wc.gender,
+        wc.unionid,
+        wc.birthday,
+        wc.corp_name,
+        wc.corp_full_name,
+        wc.position,
+        wc.is_open_chat,
+        wc.type,
+        wfcr.id as wfcrId,
+        wfcr.user_id,
+        wfcr.remark,
+        wfcr.description,
+        wfcr.create_time,
+        wfcr.remark_corp_name,
+        wfcr.oper_userid,
+        wfcr.add_way,
+        wfcr.state,
+        wfcr.description,
+        wfcr.remark_mobiles,
+        wfcr.email,
+        wfcr.address,
+        wfcr.status,
+        wu.user_name,
+        wfcrf.flower_customer_rel_id,
+        wt.tag_id,
+        wt.create_time,
+        wt.`name` as tagName,
+        wcepr.corp_id as wceprCorpId,
+        wcepr.external_userid as wceprExternalUserid,
+        wcepr.extend_property_id,
+        wcepr.property_value,
+        (SELECT wd.`name` FROM we_department wd WHERE wd.id=wu.main_department and wd.corp_id = #{corpId} LIMIT 1) as
+        department
+        FROM
+        we_customer wc
+        LEFT JOIN we_flower_customer_rel wfcr ON wc.external_userid=wfcr.external_userid AND wc.corp_id = wfcr.corp_id
+        LEFT JOIN we_user wu ON wu.user_id=wfcr.user_id and wu.corp_id = wc.corp_id
+        LEFT JOIN we_flower_customer_tag_rel wfcrf ON wfcrf.flower_customer_rel_id = wfcr.id
+        LEFT JOIN we_tag wt ON wt.tag_id = wfcrf.tag_id
+        LEFT JOIN we_customer_extend_property_rel wcepr ON wc.external_userid = wcepr.external_userid AND wcepr.corp_id
+        = wc.corp_id AND wfcr.user_id = wcepr.user_id
+        WHERE wc.external_userid=#{externalUserid} and wc.corp_id = #{corpId}
+        <if test="userId != null and userId !=''">
+            AND wfcr.user_id=#{userId}
+        </if>
+        ORDER BY wfcr.create_time ASC limit 1
+    </select>
+
+    <!--    查询客户详情V2-->
+    <select id="getCustomersByUserIdV2" resultMap="WeCustomerResultV2">
+        SELECT
+        wc.external_userid,
+        wc.corp_id,
+        wc.`name`,
+        wc.avatar,
+        wc.type,
+        wc.gender,
+        wc.unionid,
+        wc.birthday,
+        wc.corp_name,
+        wc.corp_full_name,
+        wc.position,
+        wc.is_open_chat,
+        wc.type,
+        wfcr.id as relId,
+        wfcr.user_id,
+        wfcr.remark,
+        wfcr.description,
+        wfcr.create_time,
+        wfcr.remark_corp_name,
+        wfcr.oper_userid,
+        wfcr.add_way,
+        wfcr.state,
+        wfcr.description,
+        wfcr.remark_mobiles,
+        wfcr.email,
+        wfcr.address,
+        wfcr.status,
+        wfcr.wechat_channel,
+        wu.user_name,
+        wfcrf.flower_customer_rel_id,
+        wt.tag_id,
+        wt.create_time,
+        wt.`name` as tagName,
+        wcepr.corp_id as wceprCorpId,
+        wcepr.external_userid as wceprExternalUserid,
+        wcepr.extend_property_id,
+        wcepr.property_value,
+        (SELECT wd.`name` FROM we_department wd WHERE wd.id=wu.main_department and wd.corp_id = #{corpId} LIMIT 1) as
+        department
+        FROM
+        we_customer wc
+        LEFT JOIN we_flower_customer_rel wfcr ON wc.external_userid=wfcr.external_userid AND wc.corp_id = wfcr.corp_id
+        LEFT JOIN we_user wu ON wu.user_id=wfcr.user_id and wu.corp_id = wc.corp_id
+        LEFT JOIN we_flower_customer_tag_rel wfcrf ON wfcrf.flower_customer_rel_id = wfcr.id
+        LEFT JOIN we_tag wt ON wt.tag_id = wfcrf.tag_id
+        LEFT JOIN we_customer_extend_property_rel wcepr ON wc.external_userid = wcepr.external_userid AND wcepr.corp_id
+        = wc.corp_id AND wfcr.user_id = wcepr.user_id
+        WHERE wc.external_userid=#{externalUserid} and wc.corp_id = #{corpId}
+        <if test="userId != null and userId !=''">
+            AND wfcr.user_id=#{userId}
+        </if>
+        LIMIT 1
+    </select>
+
+
+    <select id="findCustomerByOperUseridAndCustomerId" resultType="com.easywecom.wecom.domain.WeCustomerPortrait">
+        SELECT wc.`name`,
+               wfcr.remark,
+               wfcr.remark_mobiles,
+               wc.birthday,
+               wfcr.email,
+               wfcr.address,
+               wfcr.qq,
+               wc.position,
+               wfcr.remark_corp_name,
+               wfcr.description,
+               wfcr.id as flowerCustomerRelId,
+               wfcr.user_id,
+               wc.avatar,
+               wfcr.external_userid,
+               wc.gender,
+               wc.type,
+               wc.corp_name,
+               wc.corp_full_name
+        FROM we_customer wc
+                 LEFT JOIN we_flower_customer_rel wfcr
+                           on wc.external_userid = wfcr.external_userid and wc.corp_id = wfcr.corp_id
+        WHERE wfcr.corp_id = #{corpId}
+          and wc.external_userid = #{externalUserid}
+          and wfcr.user_id = #{userid} limit 1
+    </select>
+
+
+    <select id="countSocialConn" resultType="com.easywecom.wecom.domain.WeCustomerSocialConn">
+        SELECT (
+                   SELECT count(*)
+                   FROM we_flower_customer_rel wfcr
+                   WHERE wfcr.external_userid = wc.external_userid
+                     AND wfcr.corp_id = #{corpId}
+               ) AS addEmployeNum,
+               (
+                   SELECT COUNT(*)
+                   FROM we_group_member wgm
+                            LEFT JOIN we_group wg on wg.chat_id = wgm.chat_id
+                   where wgm.union_id = wc.external_userid
+                     and wg.corp_id = #{corpId}
+               ) AS addGroupNum,
+               (
+                   SELECT COUNT(*)
+                   FROM we_group_member
+                   where user_id = #{userid}
+                     and chat_id in (
+                       SELECT wgm.chat_id
+                       FROM `we_group_member` wgm
+                                LEFT JOIN we_group wg on wg.chat_id = wgm.chat_id
+                       where wg.corp_id = #{corpId}
+                         and wgm.union_id = wc.external_userid
+                   )
+               ) AS commonGroupNum
+        FROM we_customer wc
+        WHERE corp_id = #{corpId}
+          and wc.external_userid = #{externalUserid}
+    </select>
+    <select id="countCustomerNum" resultType="java.lang.Integer">
+        SELECT COUNT(DISTINCT wecustomers.external_userid)
+        from (
+                 SELECT wfcr.external_userid
+                 FROM we_flower_customer_rel wfcr
+                          INNER JOIN we_customer wc ON wfcr.external_userid = wc.external_userid
+                 WHERE wfcr.corp_id = #{corpId}
+                   and wfcr.status IN (
+                                       ${@com.easywecom.common.enums.CustomerStatusEnum@NORMAL.code},
+                                       ${@com.easywecom.common.enums.CustomerStatusEnum@TO_BE_TRANSFERRED.code},
+                                       ${@com.easywecom.common.enums.CustomerStatusEnum@TRANSFERRING.code}
+                     )
+             ) AS wecustomers
+    </select>
+    <!--查询客户并对客户去重-->
+    <select id="selectWeCustomerListDistinct" resultMap="WeCustomerResultV2">
+        SELECT wc.corp_id,wc.external_userid,
+        wc.`name`,
+        wc.avatar,
+        wc.type,
+        wc.gender,
+        wc.unionid,
+        wc.birthday,
+        wc.corp_name,
+        wc.corp_full_name,
+        wc.position,
+        wc.is_open_chat,
+        wfcr.id as relId,
+        wfcr.user_id,
+        wfcr.remark,
+        wfcr.description,
+        wfcr.remark_mobiles,
+        wfcr.create_time,
+        wfcr.remark_corp_name,
+        wfcr.oper_userid,
+        wfcr.add_way,
+        wfcr.state,
+        wfcr.status,
+        wfcr.address,
+        wfcr.email,
+        wu.user_name,
+        wu.dimission_time,
+        wfcrf.tag_id,
+        wfcrf.flower_customer_rel_id,
+        wcepr.corp_id as wceprCorpId,
+        wcepr.external_userid as wceprExternalUserid,
+        wcepr.property_value,
+        wcepr.extend_property_id,
+        wd.name as department
+        FROM
+        we_customer wc
+        LEFT JOIN we_flower_customer_rel wfcr ON wc.external_userid=wfcr.external_userid AND wc.corp_id = wfcr.corp_id
+        LEFT JOIN we_user wu ON wu.user_id=wfcr.user_id AND wu.corp_id = wc.corp_id
+        LEFT JOIN we_flower_customer_tag_rel wfcrf ON wfcrf.flower_customer_rel_id = wfcr.id
+        LEFT JOIN we_customer_extend_property_rel wcepr ON wcepr.corp_id = wc.corp_id AND wcepr.external_userid =
+        wc.external_userid and wfcr.user_id = wcepr.user_id
+        LEFT JOIN we_department wd ON wc.corp_id = wd.corp_id AND wu.main_department = wd.id
+        <where>
+            wc.corp_id = #{corpId}
+            ${params.dataScope}
+            <if test="tagIds != null and tagIds !=''">
+                <if test="tagIds.indexOf(',') != -1">
+                    AND wfcrf.tag_id in
+                    <foreach item="item" index="index" collection="tagIds.split(',')" open="(" separator="," close=")">
+                        #{item}
+                    </foreach>
+                </if>
+                <if test="tagIds.indexOf(',') == -1">
+                    AND wfcrf.tag_id=#{tagIds}
+                </if>
+            </if>
+            <if test="userIds != null and userIds !=''">
+                <if test="userIds.indexOf(',') != -1">
+                    AND wu.user_id in
+                    <foreach item="item" index="index" collection="userIds.split(',')" open="(" separator="," close=")">
+                        #{item}
+                    </foreach>
+                </if>
+                <if test="userIds.indexOf(',') == -1">
+                    AND wu.user_id=#{userIds}
+                </if>
+            </if>
+            <if test="departmentIds != null and departmentIds !=''">
+                <if test="departmentIds.indexOf(',') != -1">
+                    OR wu.main_department in
+                    <foreach item="item" index="index" collection="departmentIds.split(',')" open="(" separator=","
+                             close=")">
+                        #{item}
+                    </foreach>
+                </if>
+                <if test="departmentIds.indexOf(',') == -1">
+                    OR wu.main_department=#{departmentIds}
+                </if>
+            </if>
+            <choose>
+                <when test="status != null">
+                    AND wfcr.status= #{status}
+                </when>
+                <otherwise>
+                    AND wfcr.status != '${@com.easywecom.common.enums.CustomerStatusEnum@DELETE.code}'
+                </otherwise>
+            </choose>
+            <if test="beginTime != null and beginTime != ''"><!-- 开始时间检索 -->
+                AND wfcr.create_time &gt;= #{beginTime}
+            </if>
+            <if test="endTime != null and endTime != ''"><!-- 结束时间检索 -->
+                AND wfcr.create_time &lt;= #{endTime}
+            </if>
+            <if test="name != null and name !=''">
+                AND wc.name like concat('%', #{name}, '%')
+            </if>
+        </where>
+        GROUP BY wfcr.external_userid
+        ORDER BY wfcr.create_time DESC
+    </select>
+    <select id="selectUserListByCustomerId"
+            resultType="com.easywecom.wecom.domain.vo.customer.WeCustomerUserListVO">
+        SELECT wu.user_id,
+               wu.user_name
+        FROM we_flower_customer_rel wfcr
+                 LEFT JOIN we_user wu ON wu.user_id = wfcr.user_id AND wu.corp_id = wfcr.corp_id
+        WHERE wfcr.corp_id = #{corpId}
+          AND external_userid = #{customerId}
+          AND wfcr.status = '${@com.easywecom.common.enums.CustomerStatusEnum@NORMAL.code}'
+        ORDER BY wfcr.create_time DESC
+    </select>
+
+
+</mapper>

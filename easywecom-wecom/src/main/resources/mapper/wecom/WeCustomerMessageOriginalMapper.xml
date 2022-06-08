@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.easywecom.wecom.mapper.WeCustomerMessageOriginalMapper">
+    <resultMap id="customerMessagePushVOMap" type="com.easywecom.wecom.domain.vo.CustomerMessagePushVO">
+        <id column="message_id" property="messageId"/>
+        <result column="message_type" property="messageType"/>
+        <result column="push_type" property="pushType"/>
+        <result column="push_range" property="pushRange"/>
+        <result column="sender" property="sender"/>
+        <result column="sendTime" property="sendTime"/>
+        <result column="content" property="content"/>
+        <result column="chat_type" property="chatType"/>
+        <result column="setting_time" property="settingTime"/>
+        <result column="expect_send" property="expectSend"/>
+        <result column="actual_send" property="actualSend"/>
+        <result column="timed_task" property="timedTask"/>
+        <result column="msgid" property="msgid"/>
+        <result column="check_status" property="checkStatus"/>
+        <collection property="seedMessageList" column="message_id"
+                    ofType="com.easywecom.wecom.domain.vo.WeCustomerSeedMessageVO"
+                    select="selectSeedMessageByMsgId">
+
+        </collection>
+    </resultMap>
+    <select id="selectSeedMessageByMsgId" parameterType="java.lang.Long"
+            resultType="com.easywecom.wecom.domain.WeCustomerSeedMessage">
+        SELECT
+            message_type,
+            seed_message_id,
+            message_id,
+            media_id,
+            miniprogram_media_id,
+            appid,
+            content,
+            video_name,
+            video_url,
+            pic_name,
+            pic_url,
+            file_name,
+            file_url,
+            link_title,
+            link_picurl,
+            lin_desc,
+            is_defined,
+            link_url,
+            miniprogram_title,
+            page,
+            create_by,
+            create_time,
+            update_by,
+            update_time
+        FROM
+            we_customer_seedmessage
+        WHERE
+            message_id = #{message_id}
+    </select>
+    <select id="selectCustomerMessagePushs" parameterType="com.easywecom.wecom.domain.dto.WeCustomerMessageDTO"
+            resultMap="customerMessagePushVOMap">
+        SELECT
+        wcmo.push_type,
+        wcmo.message_type,
+        wcmo.push_range,
+        wcmo.task_name,
+        IF(wcm.create_by != 'admin',wu.user_name,wcm.create_by) sender,
+        wd.name AS departmentName,
+        wcmo.create_time sendTime,
+        wcm.message_id,
+        wcm.content,
+        wcm.chat_type,
+        wcm.setting_time,
+        (SELECT count(*) FROM `we_customer_messgaeResult` wcmr where wcmr.message_id=wcm.message_id and `status` !=2) as
+        expect_send,
+        (SELECT count(*) FROM `we_customer_messgaeResult` wcmr where wcmr.message_id=wcm.message_id and `status`=1) as
+        actual_send,
+        wcm.timed_task,
+        wcm.msgid,
+        wcm.check_status
+        FROM
+        we_customer_messageOriginal wcmo
+        LEFT JOIN we_customer_message wcm ON wcmo.message_original_Id = wcm.original_id
+        LEFT JOIN we_user wu ON wcm.create_by = wu.user_id and wcmo.corp_id = wu.corp_id
+        LEFT JOIN we_department wd ON wu.main_department = wd.id and wd.corp_id = wcmo.corp_id
+        <where>
+            wcmo.corp_id = #{corpId}
+            AND wcm.del_flag = ${@com.easywecom.common.constant.WeConstans@WE_CUSTOMER_MSG_RESULT_NO_DEFALE}
+            <if test="content!=null and content!=''">
+                AND wcm.content LIKE CONCAT('%',#{content},'%')
+            </if>
+            <if test="pushType!=null and pushType!=''">
+                AND wcmo.push_type=#{pushType}
+            </if>
+            <if test="beginTime != null and beginTime != ''"><!-- 开始时间检索 -->
+                AND wcmo.create_time &gt;= #{beginTime}
+            </if>
+
+            <if test="endTime != null and endTime != ''"><!-- 结束时间检索 -->
+                AND wcmo.create_time &lt;= #{endTime}
+            </if>
+            <if test="sender!=null and sender!=''">
+                <choose>
+                    <when test="sender == 'admin' ">
+                        AND wcm.create_by LIKE CONCAT('%',#{sender},'%')
+                    </when>
+                    <otherwise>
+                        AND wu.user_name LIKE CONCAT('%',#{sender},'%')
+                    </otherwise>
+                </choose>
+            </if>
+            <if test="adminFlag == false">
+                ${params.dataScope}
+            </if>
+        </where>
+        ORDER BY wcmo.create_time DESC
+    </select>
+    <select id="findCustomerMessagePushDetail"
+            resultMap="customerMessagePushVOMap">
+        SELECT
+        wcmo.push_type,
+        wcmo.message_type,
+        wcmo.push_range,
+        wcmo.task_name,
+        IF(wcm.create_by != 'admin',wu.user_name,wcm.create_by) sender,
+        wcmo.create_time sendTime,
+        wcm.message_id,
+        wcm.content,
+        wcm.msgid,
+        wcm.chat_type,
+        wcm.setting_time,
+        wcm.expect_send,
+        wcm.actual_send,
+        wcm.timed_task
+        FROM
+        we_customer_messageOriginal wcmo
+        LEFT JOIN we_customer_message wcm ON wcmo.message_original_Id = wcm.original_id
+        LEFT JOIN we_user wu ON wcm.create_by = wu.user_id and wu.corp_id = wcmo.corp_id
+        <where>
+            wcm.message_id=#{messageId}
+            AND wcmo.corp_id = #{corpId}
+        </where>
+    </select>
+</mapper>

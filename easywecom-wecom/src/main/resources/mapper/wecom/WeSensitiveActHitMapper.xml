@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.easywecom.wecom.mapper.WeSensitiveActHitMapper">
+
+    <!-- 可根据自己的需求，是否要使用 -->
+    <resultMap type="com.easywecom.wecom.domain.WeSensitiveActHit" id="weSensitiveActHitMap">
+        <result property="id" column="id"/>
+        <result property="operatorId" column="operator_id"/>
+        <result property="operator" column="operator"/>
+        <result property="operateTargetId" column="operate_target_id"/>
+        <result property="operateTarget" column="operate_target"/>
+        <result property="sensitiveActId" column="sensitive_act_id"/>
+        <result property="sensitiveAct" column="sensitive_act"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="mainDepartment" column="main_department"/>
+    </resultMap>
+
+
+    <select id="listOfWeSensitiveActHit" resultMap="weSensitiveActHitMap">
+        SELECT
+        wsah.id
+        ,wsah.operator_id
+        ,wsah.operator
+        ,wsah.operate_target_id
+        ,wsah.operate_target
+        ,wsah.sensitive_act_id
+        ,wsah.sensitive_act
+        ,wsah.del_flag
+        ,wsah.create_by
+        ,wsah.create_time
+        ,wsah.update_by
+        ,wsah.update_time
+        ,wu.main_department
+        FROM we_sensitive_act_hit wsah
+        LEFT JOIN we_user wu ON wu.user_id = wsah.operator_id and wu.corp_id = wsah.corp_id
+        <where>
+            ${params.dataScope}
+            and wsah.corp_id = #{params.corpId}
+        </where>
+        ORDER BY wsah.create_time DESC
+    </select>
+</mapper>

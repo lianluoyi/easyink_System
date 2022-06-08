@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.easywecom.wecom.mapper.WeMsgTlpSpecialRuleMapper">
+
+
+    <resultMap id="withMaterialMap" type="com.easywecom.wecom.domain.WeMsgTlpSpecialRule">
+        <id property="id" column="id"/>
+        <result property="msgTlpId" column="msg_tlp_id"/>
+        <result property="specialWelcomeMsg" column="special_welcome_msg"/>
+        <result property="ruleType" column="rule_type"/>
+        <result property="weekends" column="weekends"/>
+        <result property="weekendBeginTime" column="weekend_begin_time"/>
+        <result property="weekendEndTime" column="weekend_end_time"/>
+        <collection property="specialMaterialList" ofType="com.easywecom.wecom.domain.WeMsgTlpMaterial"
+                    column="{specialMsgId=id}"
+                    select="com.easywecom.wecom.mapper.WeMsgTlpMaterialMapper.selectWeMsgTlpMaterialListBySpecialMsgId">
+        </collection>
+    </resultMap>
+    <sql id="default">
+        id,
+        msg_tlp_id,
+        special_welcome_msg,
+        rule_type,
+        weekends,
+        weekend_begin_time,
+        weekend_end_time
+    </sql>
+    <select id="getListByDefaultMsgId" resultMap="withMaterialMap">
+        SELECT
+        <include refid="default"/>
+        FROM we_msg_tlp_special_rule
+        WHERE msg_tlp_id = #{msgTlpId}
+    </select>
+
+
+</mapper>

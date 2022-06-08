@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.easywecom.wecom.mapper.ExtendPropertyMultipleOptionMapper">
+
+    <update id="insertOrUpdate">
+        <foreach collection="list" separator=";" item="item">
+            UPDATE extend_property_multiple_option
+            <set>
+                extend_property_id=#{item.extendPropertyId},
+                multiple_value=#{item.multipleValue},
+            </set>
+            WHERE id = #{item.id}
+        </foreach>
+    </update>
+</mapper>

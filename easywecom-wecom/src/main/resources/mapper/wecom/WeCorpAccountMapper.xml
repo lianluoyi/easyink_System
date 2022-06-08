@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.easywecom.wecom.mapper.WeCorpAccountMapper">
+
+
+    <update id="startVailWeCorpAccount">
+        UPDATE we_corp_account
+        SET `status` = 0
+        WHERE corp_id = #{corpId}
+    </update>
+    <delete id="delWeCorpAccount">
+        DELETE FROM we_corp_account
+        WHERE corp_id = #{corpId}
+    </delete>
+
+
+</mapper>

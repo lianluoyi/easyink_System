@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.easywecom.wecom.mapper.autotag.WeAutoTagGroupSceneGroupRelMapper">
+
+    <resultMap type="com.easywecom.wecom.domain.entity.autotag.WeAutoTagGroupSceneGroupRel"
+               id="WeAutoTagGroupSceneGroupRelMap">
+        <result property="groupSceneId" column="group_scene_id" jdbcType="INTEGER"/>
+        <result property="groupId" column="group_id" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <!-- 批量插入 -->
+    <insert id="insertBatch" keyProperty="groupSceneId" useGeneratedKeys="true">
+        insert into we_auto_tag_group_scene_group_rel(rule_id,group_scene_id,group_id)
+        values
+        <foreach collection="entities" item="entity" separator=",">
+            (#{entity.ruleId},#{entity.groupSceneId},#{entity.groupId})
+        </foreach>
+    </insert>
+    <!-- 批量插入或按主键更新 -->
+    <insert id="insertOrUpdateBatch" keyProperty="groupSceneId" useGeneratedKeys="true">
+        insert into we_auto_tag_group_scene_group_rel(rule_id,group_scene_id,group_id)
+        values
+        <foreach collection="entities" item="entity" separator=",">
+            (#{entity.ruleId},#{entity.groupSceneId},#{entity.groupId})
+        </foreach>
+        on duplicate key update
+        rule_id = values(rule_id),group_scene_id = values(group_scene_id),group_id = values(group_id)
+    </insert>
+    <select id="listGroupListByGroupSceneId" resultType="com.easywecom.wecom.domain.vo.autotag.GroupInfoVO">
+        SELECT wg.chat_id,
+               wg.group_name
+        FROM we_auto_tag_group_scene_group_rel gsgr
+                 LEFT JOIN we_group wg ON wg.chat_id = gsgr.group_id AND wg.corp_id = #{corpId}
+        WHERE gsgr.group_scene_id = #{groupSceneId}
+    </select>
+    <select id="selectRuleIdAndSceneIdMappingByChatId" resultType="com.easywecom.wecom.domain.vo.autotag.group.GroupSceneRuleVO">
+        SELECT gsgr.rule_id, gsgr.group_scene_id
+        FROM we_auto_tag_group_scene_group_rel gsgr
+                 LEFT JOIN we_auto_tag_rule r ON r.id = gsgr.rule_id
+        WHERE r.`status` = 1
+          AND gsgr.group_id = #{chatId}
+    </select>
+
+</mapper>
+

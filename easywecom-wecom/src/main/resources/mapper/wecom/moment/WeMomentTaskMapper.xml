@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.easywecom.wecom.mapper.moment.WeMomentTaskMapper">
+
+
+    <select id="listOfNotPublish" resultType="com.easywecom.wecom.domain.entity.moment.WeMomentTaskEntity">
+        SELECT
+          wmt.id
+         ,wmt.corp_id
+         ,wmt.moment_id
+         ,wmt.job_id
+         ,wmt.content
+         ,wmt.type
+         ,wmt.task_type
+         ,wmt.status
+         ,wmt.send_time
+         ,wmt.users
+         ,wmt.tags
+        FROM we_moment_task wmt
+        LEFT JOIN we_moment_task_result wmtr ON wmtr.moment_task_id = wmt.id
+        WHERE
+        wmt.status = 3
+        AND wmt.type = 0
+        AND(wmtr.publish_status = 0 OR wmtr.publish_status = 3)
+        <choose>
+            <when test="isExpire == true">
+                AND wmt.send_time &lt; #{subDay}
+            </when>
+            <otherwise>
+                AND wmt.send_time &gt;= #{subDay}
+            </otherwise>
+        </choose>
+        GROUP BY wmt.id
+    </select>
+
+    <select id="listOfSettingTask" resultType="com.easywecom.wecom.domain.entity.moment.WeMomentTaskEntity">
+        SELECT
+          wmt.id
+         ,wmt.corp_id
+         ,wmt.moment_id
+         ,wmt.job_id
+         ,wmt.content
+         ,wmt.type
+         ,wmt.task_type
+         ,wmt.status
+         ,wmt.send_time
+         ,wmt.users
+         ,wmt.tags
+        FROM we_moment_task wmt
+        WHERE
+        wmt.status = 0
+        AND wmt.task_type = 1
+        AND wmt.send_time &lt;= #{now}
+    </select>
+
+
+    <resultMap type="com.easywecom.wecom.domain.vo.moment.SearchMomentVO" id="weMomentTaskMap">
+        <result property="type" column="type"/>
+        <result property="taskType" column="task_type"/>
+        <result property="status" column="status"/>
+        <result property="sendTime" column="send_time"/>
+        <result property="content" column="content"/>
+        <result property="momentTaskId" column="momentTaskId"/>
+        <collection property="weWordsDetailList" column="{momentTaskId=momentTaskId,content=momentContent}" ofType="com.easywecom.wecom.domain.WeGroupTag" select="com.easywecom.wecom.mapper.moment.WeMomentDetailRelMapper.listOfAttachment"/>
+    </resultMap>
+
+    <select id="listOfMomentTask" resultMap="weMomentTaskMap">
+          SELECT
+          wmt.id as momentTaskId
+         ,wmt.corp_id
+         ,wmt.moment_id
+         ,wmt.job_id
+         ,wmt.content
+         ,wmt.type
+         ,wmt.task_type
+         ,wmt.status
+         ,wmt.send_time
+         ,wmt.users
+         ,wmt.tags
+         ,wmt.create_by
+         ,wmt.create_time
+         ,wmt.push_range
+         ,#{content} as momentContent
+        FROM we_moment_task wmt
+        LEFT JOIN we_moment_detail_rel wmdr ON wmdr.moment_task_id = wmt.id
+        LEFT JOIN we_words_detail wwd ON wmdr.detail_id = wwd.id
+        LEFT JOIN we_moment_task_result wmtr ON wmtr.moment_task_id = wmt.id
+        WHERE
+        wmt.corp_id = #{corpId}
+        AND wmt.create_by IN
+        <foreach collection="list" separator="," index="index" item="item" open="(" close=")">
+            #{item}
+        </foreach>
+        <if test="content != null and content != ''">
+            <bind name="likeContent" value="'%' + content + '%'"/>
+            AND (wwd.content  LIKE #{likeContent}
+            OR wwd.title LIKE #{likeContent}
+            OR wmt.content LIKE #{likeContent})
+        </if>
+        <if test="beginTime != null"><!-- 开始时间检索 -->
+            AND wmt.create_time &gt;= #{beginTime}
+        </if>
+        <if test="endTime != null"><!-- 结束时间检索 -->
+            AND wmt.create_time &lt;= #{endTime}
+        </if>
+        <if test="type == 1 or type == 0">
+            AND wmt.type = #{type}
+        </if>
+        GROUP BY wmt.id
+        ORDER BY wmt.create_time DESC
+    </select>
+
+    <select id="listOfMomentPublishDetail"
+            resultType="com.easywecom.wecom.domain.vo.moment.MomentUserCustomerVO">
+          SELECT
+            wu.user_name,
+            wu.head_image_url,
+            wmtr.publish_status,
+            wmtr.publish_time,
+            wmt.push_range,
+            wu.user_id,
+            wmtr.remark,
+            IF(wmtr.publish_status = '${@com.easywecom.common.enums.moment.MomentPublishStatusEnum@PUBLISH.type}',GROUP_CONCAT(wc.`name`),'')  customerName
+            FROM
+            we_moment_task wmt
+            LEFT JOIN we_moment_task_result wmtr on wmtr.moment_task_id = wmt.id
+            LEFT JOIN we_moment_user_customer_rel wmucr ON wmtr.moment_task_id = wmucr.moment_task_id AND wmucr.user_id = wmtr.user_id
+            LEFT JOIN we_user wu on wu.user_id = wmtr.user_id AND wmt.corp_id = wu.corp_id
+            LEFT JOIN we_customer wc ON wmucr.external_userid = wc.external_userid AND wc.corp_id = wmt.corp_id AND wc.type = '${@com.easywecom.common.enums.customer.CustomerTypeEnum@WX_CUSTOMER.type}'
+            WHERE
+            wmt.id = #{momentTaskId}
+            AND wmt.corp_id = #{corpId}
+            <if test="userName != null and userName != ''"><!-- 开始时间检索 -->
+                <bind name="likeUserName" value="'%' + userName + '%'"/>
+                AND wu.user_name LIKE #{likeUserName}
+            </if>
+            <if test="publishStatus != null">
+                AND wmtr.publish_status = #{publishStatus}
+            </if>
+            GROUP BY wu.user_id
+    </select>
+
+    <select id="getTotal" resultType="com.easywecom.wecom.domain.vo.moment.MomentTotalVO">
+        SELECT
+          SUM(IF(wmtr.publish_status = 0,1,0)) as notPublishNum
+         ,SUM(IF(wmtr.publish_status = 1,1,0)) as publishNum
+         ,SUM(IF(wmtr.publish_status = 2,1,0)) as expireNum
+         ,count(1) as userNum
+         ,wmt.update_time
+         FROM
+         we_moment_task wmt
+         LEFT JOIN we_moment_task_result wmtr ON wmt.id = wmtr.moment_task_id
+         WHERE
+         wmtr.moment_task_id = #{momentTaskId}
+    </select>
+    <!-- 创建时间、创建人、类型、发布时间、标签、发布内容 -->
+    <select id="getMomentTaskBasicInfo" resultMap="weMomentTaskMap">
+        SELECT
+        wmt.id as momentTaskId,
+        wmt.content,
+        wmt.type,
+        wmt.task_type,
+        wmt.`status`,
+        wmt.send_time,
+        wmt.tags,
+        wmt.push_range,
+        wmt.select_user,
+        wmt.users,
+        IF(wmt.`create_by` != 'admin',wu.user_name,wmt.`create_by`) as create_by,
+        '' as momentContent,
+        wmt.create_time
+    FROM
+        we_moment_task wmt
+        LEFT JOIN we_user wu ON wmt.create_by = wu.user_id AND wmt.corp_id = wu.corp_id
+        WHERE wmt.id = #{momentTaskId}
+        AND wmt.corp_id = #{corpId}
+        LIMIT 1
+    </select>
+    <select id="getMomentTaskByUserIdMomentId"
+            resultMap="weMomentTaskMap">
+        SELECT
+        wmt.id as momentTaskId,
+        wmt.content,
+        wmt.corp_id,
+        wmt.type,
+        wmt.`status`,
+        wmt.send_time,
+        wmt.tags,
+        wmt.push_range,
+        wmt.select_user,
+        '' as momentContent,
+        wmtr.publish_status,
+        wmt.create_time
+    FROM
+        we_moment_task wmt
+        LEFT JOIN we_moment_task_result wmtr on wmtr.moment_task_id = wmt.id
+        WHERE wmt.id = #{momentTaskId}
+        AND wmtr.user_id = #{userId}
+    </select>
+</mapper>

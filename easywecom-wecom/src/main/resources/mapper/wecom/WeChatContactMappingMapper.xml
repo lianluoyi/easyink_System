@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.easywecom.wecom.mapper.WeChatContactMappingMapper">
+
+    <resultMap type="WeChatContactMapping" id="WeChatContactMappingResult">
+        <result property="id" column="id"/>
+        <result property="fromId" column="from_id"/>
+        <result property="receiveId" column="receive_id"/>
+        <result property="roomId" column="room_id"/>
+        <result property="isCustom" column="is_custom"/>
+    </resultMap>
+
+    <sql id="selectWeChatContactMappingVo">
+        select id, from_id, receive_id, room_id, is_custom from we_chat_contact_mapping
+    </sql>
+
+    <select id="selectWeChatContactMappingList" parameterType="WeChatContactMapping"
+            resultMap="WeChatContactMappingResult">
+        select wccm.id, wccm.from_id, wccm.receive_id, wccm.room_id, wccm.is_custom,wccm.corp_id from we_chat_contact_mapping wccm
+        left join we_user wu on wu.user_id = wccm.receive_id
+        <if test="isRoom != null and isRoom == 1">
+            left join we_group wg on wccm.room_id = wg.chat_id
+            left join we_group_member wgm on wg.chat_id = wgm.chat_id
+        </if>
+        <where>
+            wccm.corp_id = #{corpId}
+            <if test="isRoom != null and isRoom == 1">and wgm.user_id = #{fromId}</if>
+            <if test="fromId != null and fromId != ''and ((isRoom != null and isRoom == 0) or isRoom == null)">and wccm.from_id = #{fromId}
+            </if>
+            <if test="receiveId != null  and receiveId != ''">and wccm.receive_id = #{receiveId}</if>
+            <if test="roomId != null  and roomId != ''">and wccm.room_id = #{roomId}</if>
+            <choose>
+                <when test="searchType != null and searchType == 0">
+                    and wccm.is_custom = 0 and wccm.receive_id != ''
+                    ${params.dataScope}
+                </when>
+                <when test="searchType != null and searchType == 1">
+                    and wccm.is_custom in (1,2)
+                </when>
+                <when test="searchType != null and searchType == 2">
+                    and wccm.room_id != ''
+                </when>
+                <when test="searchType != null and searchType == 3">
+                    and wccm.is_custom in (0,1,2)
+                </when>
+            </choose>
+        </where>
+        <if test="isRoom != null and isRoom == 1">
+            group by wccm.room_id
+        </if>
+        <if test="(isRoom != null and isRoom == 0) or isRoom == null">
+            group by wccm.from_id,wccm.receive_id,wccm.room_id
+        </if>
+    </select>
+
+    <select id="selectWeChatContactMappingById" parameterType="Long" resultMap="WeChatContactMappingResult">
+        <include refid="selectWeChatContactMappingVo"/>
+        where id = #{id}
+    </select>
+
+    <insert id="insertWeChatContactMapping" parameterType="WeChatContactMapping" useGeneratedKeys="true"
+            keyProperty="id">
+        insert into we_chat_contact_mapping
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="fromId != null and fromId != ''">from_id,</if>
+            <if test="receiveId != null and receiveId != ''">receive_id,</if>
+            <if test="roomId != null">room_id,</if>
+            <if test="isCustom != null">is_custom,</if>
+            <if test="corpId != null and corpId != ''">corp_id,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="fromId != null and fromId != ''">#{fromId},</if>
+            <if test="receiveId != null and receiveId != ''">#{receiveId},</if>
+            <if test="roomId != null">#{roomId},</if>
+            <if test="isCustom != null">#{isCustom},</if>
+            <if test="corpId != null and corpId != ''">#{corpId},</if>
+        </trim>
+    </insert>
+
+    <update id="updateWeChatContactMapping" parameterType="WeChatContactMapping">
+        update we_chat_contact_mapping
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="fromId != null and fromId != ''">from_id = #{fromId},</if>
+            <if test="receiveId != null and receiveId != ''">receive_id = #{receiveId},</if>
+            <if test="roomId != null">room_id = #{roomId},</if>
+            <if test="isCustom != null">is_custom = #{isCustom},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteWeChatContactMappingById" parameterType="Long">
+        delete from we_chat_contact_mapping where id = #{id}
+    </delete>
+
+    <delete id="deleteWeChatContactMappingByIds" parameterType="String">
+        delete from we_chat_contact_mapping where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+</mapper>

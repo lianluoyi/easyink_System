@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.easywecom.wecom.mapper.autotag.WeAutoTagRuleHitCustomerRecordTagRelMapper">
+
+    <resultMap type="com.easywecom.wecom.domain.entity.autotag.WeAutoTagRuleHitCustomerRecordTagRel"
+               id="WeAutoTagRuleHitCustomerRecordTagRelMap">
+        <result property="ruleId" column="rule_id" jdbcType="INTEGER"/>
+        <result property="tagId" column="tag_id" jdbcType="VARCHAR"/>
+        <result property="tagName" column="tag_name" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <!-- 批量插入 -->
+    <insert id="insertBatch" keyProperty="ruleId" useGeneratedKeys="true">
+        insert into we_auto_tag_rule_hit_customer_record_tag_rel(rule_id,tag_id, tag_name,customer_id,user_id)
+        values
+        <foreach collection="entities" item="entity" separator=",">
+            (#{entity.ruleId}, #{entity.tagId},#{entity.tagName}, #{entity.customerId},#{entity.userId})
+        </foreach>
+    </insert>
+    <!-- 批量插入或按主键更新 -->
+    <insert id="insertOrUpdateBatch" keyProperty="ruleId" useGeneratedKeys="true">
+        insert into we_auto_tag_rule_hit_customer_record_tag_rel(rule_id,tag_id, tag_name,customer_id,user_id)
+        values
+        <foreach collection="entities" item="entity" separator=",">
+            (#{entity.ruleId}, #{entity.tagId},#{entity.tagName}, #{entity.customerId},#{entity.userId})
+        </foreach>
+        on duplicate key update
+        rule_id = values(rule_id) , tag_id = values(tag_id),tag_name = values(tag_name),customer_id =
+        values(customer_id),
+        user_id = values(user_id)
+    </insert>
+    <select id="listDistinctTagNameList" resultType="java.lang.String">
+        SELECT hcrtr.tag_name
+        FROM we_auto_tag_rule_hit_customer_record_tag_rel hcrtr
+        WHERE hcrtr.rule_id = #{ruleId}
+          AND hcrtr.customer_id = #{customerId}
+          AND hcrtr.user_id = #{userId}
+        GROUP BY hcrtr.tag_id
+    </select>
+
+</mapper>
+

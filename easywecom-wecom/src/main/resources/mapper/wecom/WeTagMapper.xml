@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.easywecom.wecom.mapper.WeTagMapper">
+
+    <resultMap type="WeTag" id="WeTagResult">
+        <result property="id" column="id"/>
+        <result property="groupId" column="group_id"/>
+        <result property="name" column="name"/>
+        <result property="createTime" column="create_time"/>
+    </resultMap>
+
+    <sql id="selectWeTagVo">
+        select id, group_id, name, create_time from we_tag
+    </sql>
+
+    <select id="selectWeTagList" parameterType="WeTag" resultMap="WeTagResult">
+        <include refid="selectWeTagVo"/>
+        <where>
+            <if test="groupId != null ">and group_id = #{groupId}</if>
+            <if test="name != null  and name != ''">and name like concat('%', #{name}, '%')</if>
+        </where>
+    </select>
+
+    <select id="selectWeTagById" parameterType="Long" resultMap="WeTagResult">
+        <include refid="selectWeTagVo"/>
+        where id = #{id} and status=0
+    </select>
+
+    <update id="updateWeTag" parameterType="WeTag">
+        update we_tag
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="groupId != null">group_id = #{groupId},</if>
+            <if test="name != null">name = #{name},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteWeTagByGroupId" parameterType="String">
+        update we_tag set status=${@com.easywecom.common.constant.Constants@DELETE_CODE} where group_id in
+        <foreach item="groupId" collection="array" open="(" separator="," close=")">
+            #{groupId}
+        </foreach>
+    </delete>
+
+    <delete id="deleteWeTagById">
+        update we_tag set status=${@com.easywecom.common.constant.Constants@DELETE_CODE} where corp_id = #{corpId} and tag_id = #{id}
+    </delete>
+
+
+    <insert id="batchInsert">
+        INSERT INTO we_tag (tag_id,group_id,corp_id,`name`,create_time)
+        VALUES
+        <foreach collection="list" item="item" index="index" separator=",">
+            (
+                #{item.tagId},#{item.groupId},#{item.corpId},#{item.name}
+                ,#{item.createTime}
+            )
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+        `name` = values(`name`)
+    </insert>
+
+
+</mapper>

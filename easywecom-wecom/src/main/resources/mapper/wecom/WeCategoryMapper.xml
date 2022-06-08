@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.easywecom.wecom.mapper.WeCategoryMapper">
+
+
+    <select id="deleteWeCategoryById">
+        UPDATE we_category
+        set del_flag= ${@com.easywecom.common.constant.WeConstans@WE_CUSTOMER_MSG_RESULT_DEFALE}
+        <where>
+            corp_id = #{corpId}
+            and id in
+            <foreach collection="ids" open="(" close=")" item="item" separator=",">
+                #{item}
+            </foreach>
+        </where>
+    </select>
+
+
+    <insert id="batchInsert">
+        insert into we_category(
+                                id
+                                ,corp_id
+                                ,media_type
+                                ,`using`
+                                ,`name`
+                                ,create_by
+                                ,update_by
+                                ,del_flag
+                                ) values
+        <foreach item="item" index="index" collection="list" separator=",">
+            (#{item.id}
+            ,#{item.corpId}
+            ,#{item.mediaType}
+            ,#{item.using}
+            ,#{item.name}
+            ,#{item.createBy}
+            ,#{item.updateBy}
+            ,#{item.delFlag})
+        </foreach>
+    </insert>
+
+
+    <select id="selectByCorpIdAndMediaType" resultType="com.easywecom.wecom.domain.WeCategory">
+        SELECT
+        id
+        ,corp_id
+        ,media_type
+        ,`using`
+        ,`name`
+        ,create_by
+        ,update_by
+        ,del_flag
+        FROM
+        we_category
+        WHERE
+        del_flag = ${@com.easywecom.common.constant.WeConstans@WE_CUSTOMER_MSG_RESULT_NO_DEFALE}
+        AND corp_id = #{corpId}
+        <if test="mediaTypeList != null and mediaTypeList.size() > 0">
+            AND media_type IN
+            <foreach collection="mediaTypeList" open="(" close=")" item="item" separator=",">
+                #{item}
+            </foreach>
+        </if>
+    </select>
+
+
+    <select id="updateSidebarSwitch">
+        UPDATE we_category
+        set `using` = #{using}
+        where
+            corp_id = #{corpId}
+            and id = #{id}
+    </select>
+
+    <select id="selectByCorpIdAndUsing" resultType="com.easywecom.wecom.domain.vo.WeCategoryBaseInfoVO">
+        SELECT
+        id
+        ,media_type
+        ,`name`
+        ,`using`
+        FROM
+        we_category
+        WHERE
+        corp_id = #{corpId}
+        AND del_flag = ${@com.easywecom.common.constant.WeConstans@WE_CUSTOMER_MSG_RESULT_NO_DEFALE}
+        <if test="using!=null">
+          AND `using` = #{using}
+        </if>
+        ORDER BY FIELD(`media_type`,${@com.easywecom.common.constant.WeConstans@SIDE_SEQ})
+    </select>
+</mapper>

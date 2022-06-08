@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.easywecom.wecom.mapper.WeOperationsCenterCustomerSopFilterMapper">
+
+    <!-- 可根据自己的需求，是否要使用 -->
+    <resultMap type="com.easywecom.wecom.domain.WeOperationsCenterCustomerSopFilterEntity" id="weOperationsCenterCustomerSopFilterMap">
+         <result property="id" column="id"/>
+        <result property="corpId" column="corp_id"/>
+        <result property="sopId" column="sop_id"/>
+        <result property="users" column="users"/>
+        <result property="tagId" column="tag_id"/>
+        <result property="cloumnInfo" column="cloumn_info"/>
+        <result property="filterTagId" column="filter_tag_id"/>
+    </resultMap>
+
+    <sql id="allColumns">
+      id
+     ,corp_id
+     ,sop_id
+     ,users
+     ,tag_id
+     ,cloumn_info
+     ,filter_cloumn_info
+     ,filter_tag_id
+    </sql>
+
+    <select id="getById" resultMap="weOperationsCenterCustomerSopFilterMap">
+        SELECT
+        <include refid="allColumns"/>
+        FROM we_operations_center_customer_sop_filter
+        WHERE
+        id = #{id}
+        LIMIT 1
+    </select>
+
+    <select id="getByIdList" resultMap="weOperationsCenterCustomerSopFilterMap">
+        SELECT
+        <include refid="allColumns"/>
+        FROM we_operations_center_customer_sop_filter
+        WHERE
+        id in
+        <foreach collection="list" item="item" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+    </select>
+</mapper>

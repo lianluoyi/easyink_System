@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.easywecom.wecom.mapper.WeGroupTagCategoryMapper">
+
+    <resultMap id="WeGroupTagCategoryResult" type="com.easywecom.wecom.domain.vo.wegrouptag.WeGroupTagCategoryVO">
+        <id property="id" column="id"/>
+        <result property="corpId" column="corp_id"/>
+        <result property="name" column="name"/>
+        <collection property="tagList" column="{corpId=corp_id,groupId=id}" ofType="com.easywecom.wecom.domain.WeGroupTag" select="com.easywecom.wecom.mapper.WeGroupTagMapper.findByGroupId"/>
+    </resultMap>
+
+    <resultMap id="PageWeGroupTagCategoryResult" type="com.easywecom.wecom.domain.vo.wegrouptag.PageWeGroupTagCategoryVO">
+        <id property="groupId" column="id"/>
+        <result property="corpId" column="corp_id"/>
+        <result property="groupName" column="name"/>
+        <collection property="weTags" column="{corpId=corp_id,groupId=id}" ofType="com.easywecom.wecom.domain.vo.wegrouptag.PageWeGroupTagVO" select="com.easywecom.wecom.mapper.WeGroupTagMapper.findPageByGroupId"/>
+    </resultMap>
+
+    <select id="checkSameName" resultType="java.lang.Boolean">
+        SELECT
+            COUNT( 1 )
+        FROM
+            we_group_tag_category
+        WHERE
+            `corp_id` = #{corpId}
+            AND `name` = #{name}
+    </select>
+
+
+    <delete id="delByIdList">
+        DELETE FROM we_group_tag_category
+        WHERE `corp_id` = #{corpId}
+        AND `id` IN
+        <foreach collection="idList" index="index" item="item" separator="," open="(" close=")">
+            #{item}
+        </foreach>
+    </delete>
+
+    <select id="list" resultMap="WeGroupTagCategoryResult">
+        SELECT
+            wgtc.id,
+            wgtc.corp_id,
+            wgtc.name
+        FROM
+            we_group_tag_category wgtc
+            LEFT JOIN we_group_tag wgt ON wgtc.id = wgt.group_id AND wgtc.corp_id = wgt.corp_id
+        WHERE
+            wgtc.`corp_id` = #{corpId}
+            <if test="name != null and name != ''">
+                AND ( wgtc.`name` like concat('%', #{name}, '%') OR wgt.`name` like concat('%', #{name}, '%'))
+            </if>
+        GROUP BY wgtc.id
+        ORDER BY wgtc.id DESC
+    </select>
+
+    <select id="page" resultMap="PageWeGroupTagCategoryResult">
+        SELECT
+        wgtc.id,
+        wgtc.corp_id,
+        wgtc.name
+        FROM
+        we_group_tag_category wgtc
+        LEFT JOIN we_group_tag wgt ON wgtc.id = wgt.group_id AND wgtc.corp_id = wgt.corp_id
+        WHERE
+        wgtc.`corp_id` = #{corpId}
+        <if test="searchName != null and searchName != ''">
+            AND ( wgtc.`name` like concat('%', #{searchName}, '%') OR wgt.`name` like concat('%', #{searchName}, '%'))
+        </if>
+        GROUP BY wgtc.id
+        ORDER BY wgtc.id DESC
+    </select>
+
+    <select id="findById" resultMap="WeGroupTagCategoryResult">
+        SELECT
+            wgtc.id,
+            wgtc.corp_id,
+            wgtc.name
+        FROM
+            we_group_tag_category wgtc
+        WHERE
+            wgtc.`corp_id` = #{corpId}
+            AND wgtc.id = #{id}
+    </select>
+
+
+</mapper>

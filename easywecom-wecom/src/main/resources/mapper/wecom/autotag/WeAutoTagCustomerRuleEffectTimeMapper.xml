@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.easywecom.wecom.mapper.autotag.WeAutoTagCustomerRuleEffectTimeMapper">
+
+    <resultMap type="com.easywecom.wecom.domain.entity.autotag.WeAutoTagCustomerRuleEffectTime"
+               id="WeAutoTagCustomerRuleEffectTimeMap">
+        <result property="ruleId" column="rule_id" jdbcType="INTEGER"/>
+        <result property="effectBeginTime" column="effect_begin_time" jdbcType="TIMESTAMP"/>
+        <result property="effectEndTime" column="effect_end_time" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <!-- 批量插入 -->
+    <insert id="insertBatch" keyProperty="" useGeneratedKeys="true">
+        insert into we_auto_tag_customer_rule_effect_time(rule_id, effect_begin_time, effect_end_time)
+        values
+        <foreach collection="entities" item="entity" separator=",">
+            (#{entity.ruleId}, #{entity.effectBeginTime}, #{entity.effectEndTime})
+        </foreach>
+    </insert>
+    <!-- 批量插入或按主键更新 -->
+    <insert id="insertOrUpdateBatch" keyProperty="" useGeneratedKeys="true">
+        insert into we_auto_tag_customer_rule_effect_time(rule_id, effect_begin_time, effect_end_time)
+        values
+        <foreach collection="entities" item="entity" separator=",">
+            (#{entity.ruleId}, #{entity.effectBeginTime}, #{entity.effectEndTime})
+        </foreach>
+        on duplicate key update
+        rule_id = values(rule_id) , effect_begin_time = values(effect_begin_time) , effect_end_time =
+        values(effect_end_time)
+    </insert>
+
+</mapper>
+

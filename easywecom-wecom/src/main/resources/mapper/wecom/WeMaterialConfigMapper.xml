@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.easywecom.wecom.mapper.WeMaterialConfigMapper">
+
+    <resultMap id="materialConfigMap" type="com.easywecom.wecom.domain.WeMaterialConfig">
+        <result property="delDays" column="del_days"/>
+        <result property="isDel" column="is_del"/>
+    </resultMap>
+
+
+    <sql id="selectMaterialConfigVo">
+        select
+          del_days,
+          is_del
+        from we_material_config
+    </sql>
+
+
+    <insert id="insert">
+        INSERT INTO
+        we_material_config
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="corpId!=null">
+                corp_id,
+            </if>
+            <if test="delDays!=null">
+                del_days,
+            </if>
+            <if test="isDel!=null">
+                is_del
+            </if>
+        </trim>
+        VALUES
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="corpId!=null">
+                #{corpId},
+            </if>
+            <if test="delDays!=null">
+                #{delDays},
+            </if>
+            <if test="isDel!=null">
+                #{isDel}
+            </if>
+        </trim>
+    </insert>
+
+    <update id="update">
+        update we_material_config set
+        <if test="isDel!=null">
+            is_del=#{isDel},
+        </if>
+        <if test="delDays!=null">
+            del_days=#{delDays}
+        </if>
+        where
+        corp_id = #{corpId}
+
+    </update>
+
+
+    <select id="findByCorpId" resultMap="materialConfigMap">
+        <include refid="selectMaterialConfigVo"/>
+        where corp_id = #{corpId}
+    </select>
+</mapper>

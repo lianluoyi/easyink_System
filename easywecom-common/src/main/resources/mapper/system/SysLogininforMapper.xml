@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.easywecom.common.mapper.SysLogininforMapper">
+
+    <resultMap type="SysLogininfor" id="SysLogininforResult">
+        <id property="infoId" column="info_id"/>
+        <result property="userName" column="user_name"/>
+        <result property="status" column="status"/>
+        <result property="ipaddr" column="ipaddr"/>
+        <result property="loginLocation" column="login_location"/>
+        <result property="browser" column="browser"/>
+        <result property="os" column="os"/>
+        <result property="msg" column="msg"/>
+        <result property="loginTime" column="login_time"/>
+        <result property="loginType" column="login_type"/>
+    </resultMap>
+
+    <insert id="insertLogininfor" parameterType="SysLogininfor">
+
+        INSERT INTO sys_logininfor (
+            user_name,
+            STATUS,
+            ipaddr,
+            login_location,
+            browser,
+            os,
+            msg,
+            login_time
+            <if test="loginType != null" >
+                ,login_type
+            </if>
+            <if test="corpId != null">
+                ,corp_id
+            </if>
+        )
+        VALUES
+        (
+            #{userName},
+            #{status},
+            #{ipaddr},
+            #{loginLocation},
+            #{browser},
+            #{os},
+            #{msg},
+            sysdate()
+            <if test="loginType != null ">
+                ,#{loginType}
+            </if>
+            <if test="corpId != null">
+                ,#{corpId}
+            </if>
+        )
+    </insert>
+
+    <select id="selectLogininforList" parameterType="SysLogininfor" resultMap="SysLogininforResult">
+        select info_id, user_name, ipaddr, login_location, browser, os, status, msg, login_time,login_type from sys_logininfor
+        WHERE
+            corp_id = #{corpId}
+            <if test="ipaddr != null and ipaddr != ''">
+                AND ipaddr like concat('%', #{ipaddr}, '%')
+            </if>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+            <if test="userName != null and userName != ''">
+                AND user_name like concat('%', #{userName}, '%')
+            </if>
+            <if test="beginTime != null and beginTime != ''"><!-- 开始时间检索 -->
+                and login_time &gt;= #{beginTime}
+            </if>
+            <if test="endTime != null and endTime != ''"><!-- 结束时间检索 -->
+                and login_time &lt;= #{endTime}
+            </if>
+        order by info_id desc
+    </select>
+
+    <delete id="deleteLogininforByIds" >
+        delete from sys_logininfor where
+        corp_id = #{corpId}
+        <if test="array != null and array.length > 0 "  >
+            AND info_id in
+            <foreach collection="array" item="infoId" open="(" separator="," close=")">
+                #{infoId}
+            </foreach>
+        </if>
+
+    </delete>
+
+    <update id="cleanLogininfor">
+        truncate table sys_logininfor
+    </update>
+
+</mapper> 

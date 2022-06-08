@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.easywecom.wecom.mapper.autotag.WeAutoTagRuleHitGroupRecordMapper">
+
+    <resultMap type="com.easywecom.wecom.domain.entity.autotag.WeAutoTagRuleHitGroupRecord"
+               id="WeAutoTagRuleHitGroupRecordMap">
+        <result property="ruleId" column="rule_id" jdbcType="INTEGER"/>
+        <result property="corpId" column="corp_id" jdbcType="VARCHAR"/>
+        <result property="customerId" column="customer_id" jdbcType="VARCHAR"/>
+        <result property="groupId" column="group_id" jdbcType="VARCHAR"/>
+        <result property="groupName" column="group_name" jdbcType="VARCHAR"/>
+        <result property="joinTime" column="join_time" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <resultMap type="com.easywecom.wecom.domain.vo.autotag.record.group.GroupTagRuleRecordVO"
+               id="groupRecordListMap">
+        <result property="customerId" column="customer_id"/>
+        <result property="customerName" column="customer_name"/>
+        <result property="avatar" column="avatar"/>
+        <result property="userId" column="user_id"/>
+        <result property="userName" column="user_name"/>
+        <result property="type" column="type"/>
+        <result property="corpFullName" column="corp_full_name"/>
+        <result property="groupName" column="group_name"/>
+        <result property="joinTime" column="join_time"/>
+        <collection property="tagNameDistinctList" ofType="string"
+                    column="{ruleId=rule_id,customerId=customer_id,groupId=group_id}"
+                    select="com.easywecom.wecom.mapper.autotag.WeAutoTagRuleHitGroupRecordTagRelMapper.listDistinctTagNameList">
+        </collection>
+    </resultMap>
+
+    <!-- 批量插入 -->
+    <insert id="insertBatch" keyProperty="id" useGeneratedKeys="true">
+        insert into we_auto_tag_rule_hit_group_record(rule_id, corp_id, customer_id, group_id,
+        group_name)
+        values
+        <foreach collection="entities" item="entity" separator=",">
+            (#{entity.ruleId}, #{entity.corpId}, #{entity.customerId}, #{entity.groupId}, #{entity.groupName})
+        </foreach>
+    </insert>
+    <!-- 批量插入或按主键更新 -->
+    <insert id="insertOrUpdateBatch" keyProperty="id" useGeneratedKeys="true">
+        insert into we_auto_tag_rule_hit_group_record(rule_id, corp_id, customer_id, group_id,
+        group_name,join_time)
+        values
+        <foreach collection="entities" item="entity" separator=",">
+            (#{entity.ruleId}, #{entity.corpId}, #{entity.customerId}, #{entity.groupId},
+            #{entity.groupName},#{entity.joinTime})
+        </foreach>
+        on duplicate key update
+        rule_id = values(rule_id) , corp_id = values(corp_id) , customer_id = values(customer_id) , group_id =
+        values(group_id) , group_name = values(group_name), join_time = values(join_time)
+    </insert>
+    <select id="listGroupRecord"
+            resultMap="groupRecordListMap">
+        SELECT wc.external_userid AS customer_id,
+        wc.name AS customer_name,
+        wc.avatar,
+        wc.type,
+        wc.corp_name AS corp_full_name,
+        hgr.rule_id,
+        hgr.group_id,
+        hgr.group_name,
+        hgr.join_time
+        FROM we_auto_tag_rule_hit_group_record hgr
+        LEFT JOIN we_customer wc ON wc.external_userid = hgr.customer_id AND wc.corp_id = #{corpId}
+        WHERE hgr.rule_id = #{ruleId}
+        AND hgr.corp_id = #{corpId}
+        <if test="customerName != null and customerName != ''">
+            <bind name="likeCustomerName" value="'%' + customerName + '%'"/>
+            AND wc.name LIKE #{likeCustomerName}
+        </if>
+        <if test="groupName != null and groupName != ''">
+            <bind name="likeGroupName" value="'%' + groupName + '%'"/>
+            AND hgr.group_name LIKE #{likeGroupName}
+        </if>
+        ORDER BY hgr.join_time DESC
+    </select>
+    <select id="groupCustomerCount" resultType="java.lang.String">
+        SELECT customer_id
+        FROM we_auto_tag_rule_hit_group_record hgr
+        WHERE hgr.rule_id = #{ruleId}
+          AND hgr.corp_id = #{corpId}
+    </select>
+
+</mapper>
+

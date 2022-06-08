@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.easywecom.wecom.mapper.WeWordsGroupMapper">
+
+    <!-- 可根据自己的需求，是否要使用 -->
+    <resultMap type="com.easywecom.wecom.domain.vo.WeWordsVO" id="weWordsGroupMap">
+        <result property="id" column="id"/>
+        <result property="categoryId" column="category_id"/>
+        <result property="title" column="title"/>
+        <result property="sort" column="sort"/>
+        <result property="seq" column="seq" typeHandler="com.easywecom.framework.handler.StringArrayJoinTypeHandler"/>
+        <result property="isPush" column="is_push"/>
+        <collection property="weWordsDetailList" column="{groupId=id,corpId=corp_id,seq=seq}"
+                    javaType="java.util.List" ofType="com.easywecom.wecom.domain.WeWordsDetailEntity"
+                    select="com.easywecom.wecom.mapper.WeWordsDetailMapper.listOfGroupId">
+        </collection>
+    </resultMap>
+
+    <!-- 新增 -->
+    <insert id="insert" parameterType="com.easywecom.wecom.domain.WeWordsGroupEntity"
+            keyProperty="id" keyColumn="id" useGeneratedKeys="true">
+        INSERT INTO we_words_group
+        (
+        <trim prefixOverrides="" suffixOverrides=",">
+            <if test="corpId != null">corp_id,</if>
+            <if test="categoryId != null">category_id,</if>
+            <if test="title != null">title,</if>
+            <if test="seq != null">seq,</if>
+            <if test="isPush != null">is_push,</if>
+        </trim>
+        )
+        VALUES (
+        <trim prefixOverrides="" suffixOverrides=",">
+            <if test="corpId != null">#{corpId},</if>
+            <if test="categoryId != null">#{categoryId},</if>
+            <if test="title != null">#{title},</if>
+            <if test="seq != null">
+                #{seq,jdbcType=OTHER,typeHandler=com.easywecom.framework.handler.StringArrayJoinTypeHandler},
+            </if>
+            <if test="isPush != null">#{isPush},</if>
+        </trim>
+        )
+    </insert>
+
+    <update id="batchUpdateSeq">
+        UPDATE we_words_group
+        SET `seq` = CASE `id`
+        <foreach item="item" index="index" collection="list">
+            WHEN #{item.id} THEN #{item.seq,jdbcType=OTHER,typeHandler=com.easywecom.framework.handler.StringArrayJoinTypeHandler}
+        </foreach>
+        END
+        WHERE
+        `corp_id` = #{corpId}
+        AND `id` IN
+        <foreach item="item" collection="list" open="(" separator="," close=")">
+            #{item.id}
+        </foreach>
+    </update>
+
+    <insert id="batchInsert" useGeneratedKeys="true" keyColumn="id" keyProperty="id">
+        INSERT INTO we_words_group
+        (
+        corp_id
+        ,category_id
+        ,title
+        ,seq
+        ,is_push
+        ,sort
+        )
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+            #{item.corpId}
+            ,#{item.categoryId}
+            ,#{item.title}
+            ,#{item.seq,jdbcType=OTHER,typeHandler=com.easywecom.framework.handler.StringArrayJoinTypeHandler}
+            ,#{item.isPush}
+            ,#{item.sort}
+            )
+        </foreach>
+    </insert>
+    <update id="updateCategory">
+        update we_words_group
+        set category_id = #{categoryId}
+        where
+        corp_id = #{corpId}
+        AND id IN
+        <foreach collection="ids" index="index" item="item" separator="," open="(" close=")">
+            #{item}
+        </foreach>
+    </update>
+    <update id="update">
+        UPDATE we_words_group
+        <set>
+            <if test="categoryId != null">
+                category_id = #{categoryId},
+            </if>
+            <if test="title != null">
+                title = #{title},
+            </if>
+            <if test="seq != null">
+                seq = #{seq,jdbcType=OTHER,typeHandler=com.easywecom.framework.handler.StringArrayJoinTypeHandler},
+            </if>
+            <if test="isPush != null">
+                is_push = #{isPush},
+            </if>
+            <if test="sort != null">
+                sort = #{sort}
+            </if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <update id="changeSort">
+        UPDATE we_words_group
+        SET `sort` = CASE `id`
+        <foreach item="item" collection="wordsChangeSortDTOList">
+            WHEN #{item.id} THEN #{item.sort}
+        </foreach>
+        END
+        WHERE corp_id = #{corpId}
+        AND id IN
+        <foreach item="item" collection="wordsChangeSortDTOList" open="(" separator="," close=")">
+            #{item.id}
+        </foreach>
+    </update>
+
+    <delete id="deleteBatchIds">
+        delete
+        from we_words_group
+        <where>
+            corp_id = #{corpId}
+            AND
+            id in
+            <foreach collection="ids" item="item" index="index" separator="," open="(" close=")">
+                #{item}
+            </foreach>
+        </where>
+    </delete>
+
+    <select id="listOfCategoryId" resultType="java.lang.Long">
+        SELECT id
+        FROM we_words_group
+        <where>
+            corp_id = #{corpId}
+            AND
+            category_id IN
+            <foreach collection="categoryIds" index="index" item="item" separator="," open="(" close=")">
+                #{item}
+            </foreach>
+        </where>
+    </select>
+    <select id="listOfWords" resultMap="weWordsGroupMap">
+        select
+        wwg.id
+        ,wwg.corp_id
+        ,wwg.category_id
+        ,wwg.title
+        ,wwg.seq
+        ,wwg.is_push
+        ,wwg.sort
+        from we_words_group wwg
+        left join we_words_detail wwd on wwg.id = wwd.group_id
+        where
+        wwg.corp_id = #{corpId}
+        <if test="content!=null and content!=''">
+            and (wwg.title like concat('%',#{content},'%') or wwd.content LIKE concat('%', #{content}, '%') or wwd.title LIKE concat('%',#{content},'%') )
+        </if>
+        and wwg.category_id in
+        <foreach collection="categoryIds" index="index" item="item" separator="," open="(" close=")">
+            #{item}
+        </foreach>
+        <if test="sort != null">
+            and wwg.sort &lt; #{sort}
+        </if>
+        group by wwg.id
+        order by wwg.sort desc
+    </select>
+
+    <select id="listOfWordsById" resultMap="weWordsGroupMap">
+        select
+        wwg.id
+        ,wwg.corp_id
+        ,wwg.category_id
+        ,wwg.title
+        ,wwg.seq
+        ,wwg.is_push
+        from we_words_group wwg
+        where
+        wwg.corp_id = #{corpId}
+        and wwg.id in
+        <foreach collection="list" index="index" item="item" separator="," open="(" close=")">
+            #{item}
+        </foreach>
+        ORDER BY FIELD(wwg.id,
+        <foreach collection="list" index="index" item="item" separator=",">
+            #{item}
+        </foreach>
+        )
+    </select>
+
+</mapper>

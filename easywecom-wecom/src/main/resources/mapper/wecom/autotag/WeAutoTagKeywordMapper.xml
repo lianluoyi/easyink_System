@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.easywecom.wecom.mapper.autotag.WeAutoTagKeywordMapper">
+
+    <resultMap type="com.easywecom.wecom.domain.entity.autotag.WeAutoTagKeyword" id="WeAutoTagKeywordMap">
+        <result property="ruleId" column="rule_id" jdbcType="INTEGER"/>
+        <result property="matchType" column="match_type" jdbcType="INTEGER"/>
+        <result property="keyword" column="keyword" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <!-- 批量插入 -->
+    <insert id="insertBatch" keyProperty="" useGeneratedKeys="true">
+        insert into we_auto_tag_keyword(rule_id, match_type, keyword)
+        values
+        <foreach collection="entities" item="entity" separator=",">
+            (#{entity.ruleId}, #{entity.matchType}, #{entity.keyword})
+        </foreach>
+    </insert>
+    <!-- 批量插入或按主键更新 -->
+    <insert id="insertOrUpdateBatch" keyProperty="" useGeneratedKeys="true">
+        insert into we_auto_tag_keyword(rule_id, match_type, keyword)
+        values
+        <foreach collection="entities" item="entity" separator=",">
+            (#{entity.ruleId}, #{entity.matchType}, #{entity.keyword})
+        </foreach>
+        on duplicate key update
+        rule_id = values(rule_id) , match_type = values(match_type) , keyword = values(keyword)
+    </insert>
+    <select id="listFuzzyKeywordListByRuleId" resultType="java.lang.String">
+        SELECT k.keyword
+        FROM we_auto_tag_keyword k
+        WHERE k.match_type = ${@com.easywecom.common.enums.autotag.AutoTagMatchTypeEnum@FUZZY.type}
+          AND k.rule_id = #{ruleId}
+    </select>
+    <select id="listExactKeywordListByRuleId" resultType="java.lang.String">
+        SELECT k.keyword
+        FROM we_auto_tag_keyword k
+        WHERE k.match_type = ${@com.easywecom.common.enums.autotag.AutoTagMatchTypeEnum@EXACT.type}
+          AND k.rule_id = #{ruleId}
+    </select>
+
+</mapper>
+

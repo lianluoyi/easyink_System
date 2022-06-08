@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.easywecom.wecom.mapper.autotag.WeAutoTagUserRelMapper">
+
+    <resultMap type="com.easywecom.wecom.domain.entity.autotag.WeAutoTagUserRel" id="WeAutoTagUserRelMap">
+        <result property="ruleId" column="rule_id" jdbcType="INTEGER"/>
+        <result property="userId" column="user_id" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <!-- 批量插入 -->
+    <insert id="insertBatch" keyProperty="ruleId" useGeneratedKeys="true">
+        insert into we_auto_tag_user_rel(rule_id,user_id)
+        values
+        <foreach collection="entities" item="entity" separator=",">
+            (#{entity.ruleId}, #{entity.userId})
+        </foreach>
+    </insert>
+    <!-- 批量插入或按主键更新 -->
+    <insert id="insertOrUpdateBatch" keyProperty="ruleId" useGeneratedKeys="true">
+        insert into we_auto_tag_user_rel(rule_id,user_id)
+        values
+        <foreach collection="entities" item="entity" separator=",">
+            (#{entity.ruleId}, #{entity.userId})
+        </foreach>
+        on duplicate key update
+        rule_id = values(rule_id) , user_id = values(user_id)
+    </insert>
+    <select id="listUserListByRuleId" resultType="com.easywecom.wecom.domain.vo.autotag.TagRuleUserInfoVO">
+        SELECT wu.user_id,
+               wu.user_name,
+               wd.name AS main_department_name
+        FROM we_auto_tag_user_rel ur
+                 LEFT JOIN we_user wu ON wu.user_id = ur.user_id AND wu.corp_id = #{corpId}
+                 LEFT JOIN we_department wd ON wd.id = wu.main_department AND wd.corp_id = wu.corp_id
+        WHERE ur.rule_id = #{ruleId}
+    </select>
+
+</mapper>
+

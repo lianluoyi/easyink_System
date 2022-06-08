@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.easywecom.wecom.mapper.WeOperationsCenterSopRulesMapper">
+
+    <sql id="allColumns">
+      wocsr.id
+     ,wocsr.corp_id
+     ,wocsr.sop_id
+     ,wocsr.name
+     ,wocsr.alert_type
+     ,wocsr.alert_data1
+     ,wocsr.alert_data2
+    </sql>
+
+
+    <resultMap type="com.easywecom.wecom.domain.vo.sop.SopRuleVO" id="SopRuleVOMap">
+        <result property="id" column="id"/>
+        <result property="corpId" column="corp_id"/>
+        <result property="sopId" column="sop_id"/>
+        <result property="name" column="name"/>
+        <result property="alertType" column="alert_type"/>
+        <result property="alertData1" column="alert_data1"/>
+        <result property="alertData2" column="alert_data2"/>
+        <collection property="materialList" ofType="com.easywecom.wecom.domain.vo.sop.SopAttachmentVO" column="id" select="com.easywecom.wecom.mapper.WeWordsDetailMapper.listOfRuleId">
+
+        </collection>
+    </resultMap>
+    <select id="getSopRule" resultMap="SopRuleVOMap">
+      SELECT
+         <include refid="allColumns"/>
+      FROM
+       we_operations_center_sop_rules wocsr
+        WHERE
+        wocsr.corp_id = #{corpId}
+        AND wocsr.id = #{id}
+        AND wocsr.sop_id = #{sopId}
+        LIMIT 1
+    </select>
+
+
+    <update id="batchUpdate">
+        UPDATE we_operations_center_sop_rules
+        SET `name` = CASE `id`
+        <foreach item="item" index="index" collection="list">
+            WHEN #{item.id} THEN #{item.name}
+        </foreach>
+        END,
+        `alert_type` = CASE `id`
+        <foreach item="item" index="index" collection="list">
+            WHEN #{item.id} THEN #{item.alertType}
+        </foreach>
+        END,
+        `alert_data1` = CASE `id`
+        <foreach item="item" index="index" collection="list">
+            WHEN #{item.id} THEN #{item.alertData1}
+        </foreach>
+        END,
+        `alert_data2` = CASE `id`
+        <foreach item="item" index="index" collection="list">
+            WHEN #{item.id} THEN #{item.alertData2}
+        </foreach>
+        END
+        WHERE `corp_id` = #{corpId}
+        AND `id` IN
+        <foreach item="item" collection="list" open="(" separator="," close=")">
+            #{item.id}
+        </foreach>
+    </update>
+
+</mapper>
