@@ -15,8 +15,10 @@ import com.easywecom.wecom.domain.WeUserBehaviorData;
 import com.easywecom.wecom.domain.dto.UserBehaviorDataDTO;
 import com.easywecom.wecom.domain.query.UserBehaviorDataQuery;
 import com.easywecom.wecom.service.WeCorpAccountService;
+import com.easywecom.wecom.service.WeDepartmentService;
 import com.easywecom.wecom.service.WeUserBehaviorDataService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,13 +44,15 @@ public class UserBehaviorDataTak {
     private final WeUserClient weUserClient;
 
     private final WeCorpAccountService weCorpAccountService;
+    private final WeDepartmentService weDepartmentService;
 
     @Autowired
-    public UserBehaviorDataTak(WeCustomerClient weCustomerClient, WeUserBehaviorDataService weUserBehaviorDataService, WeUserClient weUserClient, WeCorpAccountService weCorpAccountService) {
+    public UserBehaviorDataTak(WeCustomerClient weCustomerClient, WeUserBehaviorDataService weUserBehaviorDataService, WeUserClient weUserClient, WeCorpAccountService weCorpAccountService, WeDepartmentService weDepartmentService) {
         this.weCustomerClient = weCustomerClient;
         this.weUserBehaviorDataService = weUserBehaviorDataService;
         this.weUserClient = weUserClient;
         this.weCorpAccountService = weCorpAccountService;
+        this.weDepartmentService = weDepartmentService;
     }
 
     public void getUserBehaviorData() {
@@ -68,7 +72,19 @@ public class UserBehaviorDataTak {
             log.error("corpId不允许为空。");
             return;
         }
-        List<WeUser> weUsers = weUserClient.simpleList(WeConstans.WE_ROOT_DEPARMENT_ID, WeConstans.DEPARTMENT_SUB_WEUSER, corpId).getWeUsers();
+        // 获取根部门
+        List<Long> visibleRoots = weDepartmentService.getVisibleRootDepartment(corpId);
+        if(CollectionUtils.isEmpty(visibleRoots)) {
+            log.error("同步成员,找不到根部门，停止同步,corpID:{}",corpId);
+            return;
+        }
+        List<WeUser > weUsers= new ArrayList<>();
+        for(Long department : visibleRoots) {
+            List<WeUser> tempList = weUserClient.simpleList(department, WeConstans.DEPARTMENT_SUB_WEUSER, corpId).getWeUsers();
+            if(CollectionUtils.isNotEmpty(tempList) ) {
+                weUsers.addAll(tempList);
+            }
+        }
         //删除存在的数据
         if (CollUtil.isNotEmpty(weUsers)) {
             Long startTime = MyDateUtil.strToDate(-1, 0);

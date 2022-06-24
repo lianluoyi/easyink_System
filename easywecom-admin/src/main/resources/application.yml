@@ -46,8 +46,8 @@ ruoyi:
       encodingAesKey: ${DK_SUITE_ENCODING_AES_KEY:}
       dkQrCode: ${DK_QRCODE:}
   selfBuild:
-    token: ${SELF_BUILD_TOKEN:}
-    encodingAesKey: ${SELF_BUILD_ENCODING_AES_KEY:}
+    token: ${SELF_BUILD_TOKEN:3lTqc9EEO}
+    encodingAesKey: ${SELF_BUILD_ENCODING_AES_KEY:1K3K7DD74kbNNu58De5R7xoi2CyYxBdyxv8UHibVLoZ}
     #匿名访问的URL
   anonUrl:
       - /login

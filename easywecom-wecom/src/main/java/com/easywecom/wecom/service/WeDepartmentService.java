@@ -87,4 +87,12 @@ public interface WeDepartmentService extends IService<WeDepartment> {
      * @param ids
      */
     void deleteWeDepartmentByIds(String corpId, String[] ids);
+
+    /**
+     * 获取可见的最低部门
+     *
+     * @param corpId 企业id
+     * @return 可见的根部门
+     */
+    List<Long> getVisibleRootDepartment(String corpId);
 }

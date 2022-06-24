@@ -5,6 +5,7 @@ import cn.hutool.core.collection.ListUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.easywecom.common.constant.GenConstants;
 import com.easywecom.common.constant.WeConstans;
 import com.easywecom.common.core.domain.wecom.WeDepartment;
 import com.easywecom.common.core.domain.wecom.WeUser;
@@ -52,7 +53,7 @@ public class WeDepartmentServiceImpl extends ServiceImpl<WeDepartmentMapper, WeD
     /**
      * 查询企业微信组织架构相关列表
      *
-     * @param corpId 公司ID
+     * @param corpId     公司ID
      * @param isActivate 成员的激活状态: 1=已激活，2=已禁用，4=未激活，5=退出企业,6=删除
      * @return 企业微信组织架构相关
      */
@@ -61,27 +62,11 @@ public class WeDepartmentServiceImpl extends ServiceImpl<WeDepartmentMapper, WeD
         if (StringUtils.isBlank(corpId)) {
             return Collections.emptyList();
         }
-        //校验数据中中是否存在根节点,如果不存在,从微信端获取,同时入库
-        WeDepartment weDepartment = this.baseMapper.selectWeDepartmentById(corpId, WeConstans.WE_ROOT_DEPARMENT_ID);
-        if (null == weDepartment) {
-            WeDepartMentDTO weDepartMentDto = weDepartMentClient.weDepartMents(WeConstans.WE_ROOT_DEPARMENT_ID, corpId);
-            if (WeConstans.WE_SUCCESS_CODE.equals(weDepartMentDto.getErrcode())
-                    && CollectionUtils.isNotEmpty(weDepartMentDto.getDepartment())) {
-                Optional<WeDepartMentDTO.DeartMentDto> first = weDepartMentDto.getDepartment().stream().filter(item -> WeConstans.WE_ROOT_DEPARMENT_ID.equals(item.getId())).findFirst();
-                if (first.isPresent()) {
-                    WeDepartment department = WeDepartMentDTO.transformWeDepartment(weDepartMentDto.getDepartment().stream().filter(item -> WeConstans.WE_ROOT_DEPARMENT_ID.equals(item.getId())).findFirst().get());
-                    department.setCorpId(corpId);
-                    this.baseMapper.insertWeDepartment(department);
-                }
-
-            }
-        }
         return this.selectWeDepartmentDetailList(corpId, isActivate);
     }
 
     /**
      * 根据用户ID获取部门名字 ,隔开
-     *
      *
      * @param corpId 企业id
      * @param userId 用户id
@@ -89,7 +74,7 @@ public class WeDepartmentServiceImpl extends ServiceImpl<WeDepartmentMapper, WeD
      */
     @Override
     public String selectNameByUserId(String corpId, String userId) {
-        return baseMapper.selectNameByUserId(corpId,userId);
+        return baseMapper.selectNameByUserId(corpId, userId);
     }
 
     @Override
@@ -114,7 +99,7 @@ public class WeDepartmentServiceImpl extends ServiceImpl<WeDepartmentMapper, WeD
     public Boolean insertWeDepartment(WeDepartment weDepartment) {
 
         WeResultDTO weDepartMent = weDepartMentClient.createWeDepartMent(
-                new WeDepartMentDTO().new DeartMentDto(weDepartment),weDepartment.getCorpId()
+                new WeDepartMentDTO().new DeartMentDto(weDepartment), weDepartment.getCorpId()
         );
 
 
@@ -145,13 +130,13 @@ public class WeDepartmentServiceImpl extends ServiceImpl<WeDepartmentMapper, WeD
     public void updateWeDepartment(WeDepartment weDepartment) {
 
         WeResultDTO weDepartMent = weDepartMentClient.updateWeDepartMent(
-                new WeDepartMentDTO().new DeartMentDto(weDepartment),weDepartment.getCorpId()
+                new WeDepartMentDTO().new DeartMentDto(weDepartment), weDepartment.getCorpId()
         );
 
         if (WeConstans.WE_SUCCESS_CODE.equals(weDepartMent.getErrcode())) {
-            this.baseMapper.update(weDepartment,new LambdaUpdateWrapper<WeDepartment>()
-                    .eq(WeDepartment::getCorpId,weDepartment.getCorpId())
-                    .eq(WeDepartment::getId,weDepartment.getId())
+            this.baseMapper.update(weDepartment, new LambdaUpdateWrapper<WeDepartment>()
+                    .eq(WeDepartment::getCorpId, weDepartment.getCorpId())
+                    .eq(WeDepartment::getId, weDepartment.getId())
             );
         }
 
@@ -181,7 +166,7 @@ public class WeDepartmentServiceImpl extends ServiceImpl<WeDepartmentMapper, WeD
      */
     @Override
     public List<WeDepartment> synchWeDepartment(String corpId) {
-        log.info("开始同步部门,corpId:{}",corpId);
+        log.info("开始同步部门,corpId:{}", corpId);
         if (StringUtils.isBlank(corpId)) {
             log.info("corpId为空,无法同步部门");
             return Collections.emptyList();
@@ -209,7 +194,7 @@ public class WeDepartmentServiceImpl extends ServiceImpl<WeDepartmentMapper, WeD
         //更新部门
         if (CollUtil.isNotEmpty(weDepartments)) {
             this.baseMapper.batchInsertWeDepartment(weDepartments);
-            log.info("同步部门完成,corpId:{},本次同步部门数:{}",corpId,weDepartments.size());
+            log.info("同步部门完成,corpId:{},本次同步部门数:{}", corpId, weDepartments.size());
         }
         return weDepartments;
     }
@@ -226,7 +211,7 @@ public class WeDepartmentServiceImpl extends ServiceImpl<WeDepartmentMapper, WeD
 
         //查询当前部门下所有的子部门,如果存在,则不可以删除
         List<WeDepartment> weDepartments = this.list(new LambdaQueryWrapper<WeDepartment>()
-                .eq(WeDepartment::getCorpId,corpId)
+                .eq(WeDepartment::getCorpId, corpId)
                 .in(WeDepartment::getParentId, ids));
         if (CollUtil.isNotEmpty(weDepartments)) {
             //抛出异常，请删除此部门下的成员或子部门后，再删除此部门
@@ -244,15 +229,23 @@ public class WeDepartmentServiceImpl extends ServiceImpl<WeDepartmentMapper, WeD
 
         //删除数据库中数据
         if (this.remove(new LambdaUpdateWrapper<WeDepartment>()
-                .eq(WeDepartment::getCorpId,corpId)
-                .in(WeDepartment::getId,ids)
+                .eq(WeDepartment::getCorpId, corpId)
+                .in(WeDepartment::getId, ids)
         )) {
             for (String id : ListUtil.toList(ids)) {
                 //移除微信端
-                weDepartMentClient.deleteWeDepartMent(id,corpId);
+                weDepartMentClient.deleteWeDepartMent(id, corpId);
             }
         }
 
+    }
+
+    @Override
+    public List<Long> getVisibleRootDepartment(String corpId) {
+        if(StringUtils.isBlank(corpId)) {
+            return Collections.emptyList();
+        }
+        return this.baseMapper.getRootDepartment(corpId);
     }
 
 

@@ -524,10 +524,10 @@ public class WeCorpAccountServiceImpl extends ServiceImpl<WeCorpAccountMapper, W
                 weCorpAccount.getAgentSecret(),
                 weCorpAccount.getCorpSecret())) {
             redisCache.setCacheObject(redisKey, weCorpAccount);
-        }
-        // 如果是三方应用需要从配置文件读取侧边栏的URL
-        if (ruoYiConfig.isThirdServer()) {
-            weCorpAccount.setH5DoMainName(ruoYiConfig.getThirdDefaultDomain().getSidebar());
+            // 如果是三方应用需要从配置文件读取侧边栏的URL
+            if (ruoYiConfig.isThirdServer() ) {
+                weCorpAccount.setH5DoMainName(ruoYiConfig.getThirdDefaultDomain().getSidebar());
+            }
         }
         return weCorpAccount;
     }

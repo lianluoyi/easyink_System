@@ -100,4 +100,11 @@ public interface WeDepartmentMapper extends BaseMapper<WeDepartment> {
      * @return 部门和其下级部门ID
      */
     String selectDepartmentAndChild(WeDepartment department);
+
+    /**
+     * 获取根部门
+     * @param corpId 企业id
+     * @return 可见的根部门
+     */
+    List<Long> getRootDepartment(@Param("corpId") String corpId);
 }

@@ -62,6 +62,23 @@
         WHERE
         corp_id = #{corpId}
     </select>
+<!--    获取可见的根部门-->
+    <select id="getRootDepartment" resultType="java.lang.Long">
+        SELECT DISTINCT
+            id
+        FROM
+            we_department
+        WHERE
+                parent_id = (
+                SELECT
+                    min( parent_id )
+                FROM
+                    we_department
+                WHERE
+                    corp_id = #{corpId}
+            LIMIT 1
+            ) and corp_id = #{corpId}
+    </select>
 
     <insert id="insertWeDepartment" parameterType="WeDepartment">
         insert into we_department

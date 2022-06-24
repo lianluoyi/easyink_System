@@ -80,7 +80,7 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
 
     @Lazy
     @Autowired
-    public WeUserServiceImpl(WeDepartmentService weDepartmentService, WeUserMapper weUserMapper, RedisCache redisCache, We3rdAppService we3rdAppService, WeUserClient weUserClient,WeCustomerService weCustomerService, WeUserRoleMapper weUserRoleMapper,  WeFlowerCustomerRelService weFlowerCustomerRelService, WeUserRoleService weUserRoleService, PageHomeService pageHomeService, WeGroupService weGroupService, WeMaterialService weMaterialService, WeExternalUserMappingUserService weExternalUserMappingUserService, RuoYiConfig ruoYiConfig, WeCorpAccountService weCorpAccountService) {
+    public WeUserServiceImpl(WeDepartmentService weDepartmentService, WeUserMapper weUserMapper, RedisCache redisCache, We3rdAppService we3rdAppService, WeUserClient weUserClient, WeCustomerService weCustomerService, WeUserRoleMapper weUserRoleMapper, WeFlowerCustomerRelService weFlowerCustomerRelService, WeUserRoleService weUserRoleService, PageHomeService pageHomeService, WeGroupService weGroupService, WeMaterialService weMaterialService, WeExternalUserMappingUserService weExternalUserMappingUserService, RuoYiConfig ruoYiConfig, WeCorpAccountService weCorpAccountService) {
         this.weDepartmentService = weDepartmentService;
         this.weUserMapper = weUserMapper;
         this.redisCache = redisCache;
@@ -116,6 +116,7 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
 
     /**
      * 查询员工信息
+     *
      * @param queryUserDTO 查询条件
      * @return vo
      */
@@ -131,7 +132,7 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
     /**
      * 查询员工信息
      *
-     * @param corpId         企业ID
+     * @param corpId          企业ID
      * @param queryUserIdList 查询指定员工信息
      * @return {@link List < WeUserVO >}
      */
@@ -249,7 +250,7 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
         }
         // 设置上级关系
         String isLeader = WeConstans.corpUserEnum.IS_DEPARTMENT_SUPERIOR_NO.getKey().toString();
-        if(role.getRoleType()!= null && RoleTypeEnum.SYS_ADMIN.getType().equals(role.getRoleType())) {
+        if (role.getRoleType() != null && RoleTypeEnum.SYS_ADMIN.getType().equals(role.getRoleType())) {
             isLeader = WeConstans.corpUserEnum.IS_DEPARTMENT_SUPERIOR_YES.getKey().toString();
         }
         String[] isLeaderArr = new String[]{isLeader};
@@ -366,14 +367,13 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void startOrStop(WeUser weUser) {
-        if (WeConstans.WE_USER_STOP.equals(weUser.getEnable())){
+        if (WeConstans.WE_USER_STOP.equals(weUser.getEnable())) {
             weUser.setIsActivate(WeConstans.WE_USER_IS_FORBIDDEN);
-        }else {
+        } else {
             weUser.setIsActivate(WeConstans.WE_USER_IS_ACTIVATE);
         }
         this.updateWeUser(weUser);
     }
-
 
 
     @Override
@@ -418,7 +418,19 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
             log.error("同步离职员工异常corpId:{},E:{}", corpId, ExceptionUtils.getStackTrace(e));
         }
         log.info("开始同步成员,corpId:{}", corpId);
-        List<WeUser> weUsers = weUserClient.list(WeConstans.WE_ROOT_DEPARMENT_ID, WeConstans.DEPARTMENT_SUB_WEUSER, corpId).getWeUsers();
+        // 获取可见根部门列表
+        List<Long> visibleRoots = weDepartmentService.getVisibleRootDepartment(corpId);
+        if(CollectionUtils.isEmpty(visibleRoots)) {
+            log.error("同步成员,找不到根部门，停止同步,corpID:{}",corpId);
+            return;
+        }
+        List<WeUser> weUsers = new ArrayList<>();
+        for(Long department : visibleRoots) {
+            List<WeUser> tempList = weUserClient.list(department, WeConstans.DEPARTMENT_SUB_WEUSER, corpId).getWeUsers();
+            if(CollectionUtils.isNotEmpty(tempList) ) {
+                weUsers.addAll(tempList);
+            }
+        }
         if (CollUtil.isEmpty(weUsers)) {
             return;
         }
@@ -527,7 +539,7 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteUserNoToWeCom(String userId, String corpId) {
-        if (StringUtils.isAnyBlank(userId, corpId)){
+        if (StringUtils.isAnyBlank(userId, corpId)) {
             log.error("客户id和企业id不能为空");
             return 0;
         }
@@ -538,12 +550,12 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
                 .dimissionTime(new Date())
                 .build();
         return weUserMapper.update(weUser, new LambdaQueryWrapper<WeUser>()
-                .eq(WeUser::getUserId,userId)
-                .eq(WeUser::getCorpId,corpId));
+                .eq(WeUser::getUserId, userId)
+                .eq(WeUser::getCorpId, corpId));
     }
 
     private Map<String, WeFlowerCustomerRel> getWeCustomerMap(String corpId, WeUser weUser) {
-        if (StringUtils.isBlank(corpId)||weUser==null){
+        if (StringUtils.isBlank(corpId) || weUser == null) {
             return new HashMap<>(1);
         }
         //获取所有数据不管是否流失
@@ -552,8 +564,8 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
                 .eq(WeFlowerCustomerRel::getUserId, weUser.getUserId()));
 
         Map<String, WeFlowerCustomerRel> map = new HashMap<>(weFlowerCustomers.size());
-        for (WeFlowerCustomerRel weFlowerCustomerRel : weFlowerCustomers){
-            if (map.containsKey(weFlowerCustomerRel.getExternalUserid())){
+        for (WeFlowerCustomerRel weFlowerCustomerRel : weFlowerCustomers) {
+            if (map.containsKey(weFlowerCustomerRel.getExternalUserid())) {
                 continue;
             }
             map.put(weFlowerCustomerRel.getExternalUserid(), weFlowerCustomerRel);
@@ -603,6 +615,7 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
     public List<WeCustomerAddUser> findWeUserByCutomerId(String corpId, String externalUserid) {
         return this.baseMapper.findWeUserByCutomerId(corpId, externalUserid);
     }
+
     @Override
     public void batchInitRoleByDepartmentAndLeader(List<WeUser> userList) {
         if (CollectionUtils.isEmpty(userList)) {
@@ -641,29 +654,7 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
             }
             //这边增加三方应用初始化管理员判断
             if (ruoYiConfig.isThirdServer()) {
-                if (StringUtils.isBlank(user.getExternalCorpId())) {
-                    WeCorpAccount weCorpAccount = weCorpAccountService.findValidWeCorpAccount(user.getCorpId());
-                    user.setExternalCorpId(weCorpAccount.getExternalCorpId());
-                }
-                Map<String, Integer> adminMap = new HashMap<>();
-                if (StringUtils.isNotBlank(user.getExternalCorpId())) {
-                    adminMap = we3rdAppService.getAdminList(user.getExternalCorpId());
-                }
-                WeExternalUserMappingUser weExternalUserMappingUser = weExternalUserMappingUserService.getMappingByInternal(user.getCorpId(), user.getUserId());
-                if (weExternalUserMappingUser != null
-                        && StringUtils.isNoneBlank(weExternalUserMappingUser.getExternalCorpId(),
-                        weExternalUserMappingUser.getCorpId(),
-                        weExternalUserMappingUser.getUserId(),
-                        weExternalUserMappingUser.getExternalUserId())) {
-                    user.setExternalCorpId(weExternalUserMappingUser.getExternalCorpId());
-                    user.setCorpId(weExternalUserMappingUser.getCorpId());
-                    user.setUserId(weExternalUserMappingUser.getUserId());
-                    user.setExternalUserId(weExternalUserMappingUser.getExternalUserId());
-                }
-
-                if (ObjectUtil.isNotEmpty(adminMap) && adminMap.containsKey(user.getExternalUserId())) {
-                    initRoleId = getInitRoleIdByKey(corpId, roleIdMap, UserConstants.INIT_ADMIN_ROLE_KEY);
-                }
+                initRoleId = initRole4ThirdServer(corpId, user, roleIdMap);
             }
             if (initRoleId != null) {
                 needToInitRoleList.add(new WeUserRole(user.getCorpId(), user.getUserId(), initRoleId));
@@ -672,8 +663,42 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
         //批量插入 用户-角色表
         if (CollUtil.isNotEmpty(needToInitRoleList)) {
             weUserRoleMapper.batchInsertUserRole(needToInitRoleList);
-            log.info("为员工初始化角色完成,成功个数:{},corpId:{}",needToInitRoleList.size(),corpId);
+            log.info("为员工初始化角色完成,成功个数:{},corpId:{}", needToInitRoleList.size(), corpId);
         }
+    }
+
+    /**
+     * 为三方用户初始化角色
+     *
+     * @param corpId    企业id
+     * @param user      企微用户
+     * @param roleIdMap 映射 (key: 角色KEY , VALUE: 角色ID )
+     * @return 初始化的角色id
+     */
+    public Long initRole4ThirdServer(String corpId, WeUser user, HashMap<String, Long> roleIdMap) {
+        if (StringUtils.isBlank(user.getExternalCorpId())) {
+            WeCorpAccount weCorpAccount = weCorpAccountService.findValidWeCorpAccount(user.getCorpId());
+            user.setExternalCorpId(weCorpAccount.getExternalCorpId());
+        }
+        Map<String, Integer> adminMap = new HashMap<>();
+        if (StringUtils.isNotBlank(user.getExternalCorpId())) {
+            adminMap = we3rdAppService.getAdminList(user.getExternalCorpId());
+        }
+        WeExternalUserMappingUser weExternalUserMappingUser = weExternalUserMappingUserService.getMappingByInternal(user.getCorpId(), user.getUserId());
+        if (weExternalUserMappingUser != null
+                && StringUtils.isNoneBlank(weExternalUserMappingUser.getExternalCorpId(),
+                weExternalUserMappingUser.getCorpId(),
+                weExternalUserMappingUser.getUserId(),
+                weExternalUserMappingUser.getExternalUserId())) {
+            user.setExternalCorpId(weExternalUserMappingUser.getExternalCorpId());
+            user.setCorpId(weExternalUserMappingUser.getCorpId());
+            user.setUserId(weExternalUserMappingUser.getUserId());
+            user.setExternalUserId(weExternalUserMappingUser.getExternalUserId());
+        }
+        if (ObjectUtil.isNotEmpty(adminMap) && adminMap.containsKey(user.getExternalUserId())) {
+            return getInitRoleIdByKey(corpId, roleIdMap, UserConstants.INIT_ADMIN_ROLE_KEY);
+        }
+        return getInitRoleIdByKey(corpId, roleIdMap, UserConstants.INIT_EMPLOYEE_ROLE_KEY);
     }
 
     /**
@@ -754,7 +779,7 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
         try {
             array = dataScope.split(",");
         } catch (Exception e) {
-            log.info("获取当前登录用户可操作的所有企业成员:可见部门格式错误,user:{},e:{}" , loginUser, ExceptionUtils.getStackTrace(e));
+            log.info("获取当前登录用户可操作的所有企业成员:可见部门格式错误,user:{},e:{}", loginUser, ExceptionUtils.getStackTrace(e));
         }
         // 根据用户有权限的所有部门 查询该企业下指定部门的所有成员
         return weUserMapper.getUserByDepartmentList(corpId, array);
@@ -905,13 +930,14 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
                 throw new CustomException(ResultTip.TIP_GENERAL_BAD_REQUEST);
             }
         } else if (BatchUpdateUserInfoTypeEnum.DEPARTMENT.getType().equals(type)) {
-            if (batchUpdateUserInfoDTO.getDepartment() == null){
+            if (batchUpdateUserInfoDTO.getDepartment() == null) {
                 throw new CustomException(ResultTip.TIP_GENERAL_BAD_REQUEST);
             }
         } else {
             throw new CustomException(ResultTip.TIP_GENERAL_BAD_REQUEST);
         }
     }
+
     @Override
     public void validateActiveUser(String corpId, String userId) {
         WeUser user = this.getOne(new LambdaQueryWrapper<WeUser>()
@@ -940,12 +966,13 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
 
     /**
      * 通过员工映射关系获得员工
+     *
      * @param externalUserId 外部员工id
      * @param externalCorpId 外部企业id
      * @return {@link WeUser}
      */
     @Override
-    public WeUser getWeUserByExternalMapping(String externalUserId, String externalCorpId){
+    public WeUser getWeUserByExternalMapping(String externalUserId, String externalCorpId) {
         WeExternalUserMappingUser weExternalUserMappingUser = weExternalUserMappingUserService.getMappingByExternal(externalCorpId, externalUserId);
         if (weExternalUserMappingUser != null && StringUtils.isNoneBlank(weExternalUserMappingUser.getUserId(), weExternalUserMappingUser.getCorpId())) {
             WeUserDTO weUserDTO = weUserClient.getUserByUserId(weExternalUserMappingUser.getUserId(), weExternalUserMappingUser.getCorpId());
@@ -959,7 +986,7 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
             this.insertWeUserNoToWeCom(weUser);
             weUser.setDepartmentName(weDepartmentService.selectNameByUserId(weExternalUserMappingUser.getCorpId(), weExternalUserMappingUser.getUserId()));
             return weUser;
-        }else {
+        } else {
             return null;
         }
     }
