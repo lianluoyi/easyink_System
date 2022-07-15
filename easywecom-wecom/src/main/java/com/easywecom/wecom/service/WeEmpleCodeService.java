@@ -49,7 +49,7 @@ public interface WeEmpleCodeService extends IService<WeEmpleCode> {
      * @param weEmpleCode 员工活码
      * @return 结果
      */
-    void updateWeEmpleCode(UpdateWeEmplyCodeDTO weEmpleCode);
+    void updateWeEmpleCode(AddWeEmpleCodeDTO weEmpleCode);
 
     /**
      * 批量逻辑删除员工活码
@@ -72,11 +72,12 @@ public interface WeEmpleCodeService extends IService<WeEmpleCode> {
     /**
      * 通过state定位员工活码
      *
-     * @param state  state
-     * @param corpId 企业Id
-     * @return {@link SelectWeEmplyCodeWelcomeMsgVO}
+     * @param state
+     * @param corpId
+     * @param externalUserId
+     * @return
      */
-    SelectWeEmplyCodeWelcomeMsgVO selectWelcomeMsgByState(String state, String corpId);
+    SelectWeEmplyCodeWelcomeMsgVO selectWelcomeMsgByState(String state, String corpId, String externalUserId);
 
     /**
      * 获取员工二维码

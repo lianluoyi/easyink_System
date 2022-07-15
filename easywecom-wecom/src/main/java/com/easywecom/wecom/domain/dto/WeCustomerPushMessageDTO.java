@@ -29,9 +29,10 @@ public class WeCustomerPushMessageDTO extends WeCustomer {
     @ApiModelProperty("结束时间")
     private Date customerEndTime;
 
-    public WeCustomerPushMessageDTO(String users, String tags,String corpId) {
+    public WeCustomerPushMessageDTO(String users, String tags, String corpId, String departmentIds) {
         this.setUserIds(users);
         this.setTagIds(tags);
         this.setCorpId(corpId);
+        this.setDepartmentIds(departmentIds);
     }
 }

@@ -2,8 +2,8 @@ package com.easywecom.wecom.domain.dto.group;
 
 import com.easywecom.common.utils.spring.SpringUtils;
 import com.easywecom.wecom.client.WeCustomerGroupClient;
-import com.easywecom.wecom.domain.dto.WePageBaseReq;
-import com.easywecom.wecom.domain.dto.WePageBaseResp;
+import com.easywecom.wecom.domain.req.WePageBaseReq;
+import com.easywecom.wecom.domain.resp.WePageBaseResp;
 import lombok.Builder;
 import lombok.Data;
 

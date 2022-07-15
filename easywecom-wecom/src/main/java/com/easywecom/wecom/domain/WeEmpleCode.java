@@ -3,21 +3,29 @@ package com.easywecom.wecom.domain;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.easywecom.common.constant.WeConstans;
 import com.easywecom.common.core.domain.BaseEntity;
 import com.easywecom.common.enums.WeEmployCodeRemarkTypeEnum;
 import com.easywecom.common.utils.SnowFlakeUtil;
+import com.easywecom.common.utils.StringUtils;
 import com.easywecom.wecom.domain.dto.AddWeMaterialDTO;
+import com.easywecom.wecom.domain.entity.redeemcode.WeRedeemCodeActivity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.collect.Lists;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang3.ObjectUtils;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import java.util.List;
+import java.util.Optional;
 
 
 /**
@@ -127,4 +135,70 @@ public class WeEmpleCode extends BaseEntity {
     @TableField(exist = false)
     @ApiModelProperty(value = "群活码主键ID", required = true)
     private Long groupCodeId;
+
+    @ApiModelProperty(value = "欢迎语类型，0：普通欢迎语，1：活动欢迎语", required = true)
+    @TableField("welcome_msg_type")
+    private Integer welcomeMsgType;
+
+    @TableField("code_activity_id")
+    @ApiModelProperty(value = "兑换码活动id")
+    @JsonIgnore
+    private String codeActivityId;
+
+    @TableField(exist = false)
+    @ApiModelProperty("兑换码活动实体")
+    private WeRedeemCodeActivity codeActivity;
+
+    @TableField("code_success_msg")
+    @ApiModelProperty(value = "有可使用兑换码，发送该欢迎语")
+    private String codeSuccessMsg;
+
+    @TableField("code_success_material_sort")
+    @ApiModelProperty(value = "有可使用兑换码,使用该附件排序")
+    private String[] codeSuccessMaterialSort;
+
+    @ApiModelProperty(value = "有可使用兑换码,使用该素材")
+    @TableField(exist = false)
+    private List<AddWeMaterialDTO> codeSuccessMaterialList;
+
+    @TableField("code_fail_msg")
+    @ApiModelProperty(value = "没有可用的兑换码，或者兑换活动已被删除，发送该欢迎语")
+    private String codeFailMsg;
+
+    @TableField("code_fail_material_sort")
+    @ApiModelProperty(value = "没有可用的兑换码，或者兑换活动已被删除，使用该附件排序")
+    private String[] codeFailMaterialSort;
+
+    @ApiModelProperty(value = "没有可用的兑换码,，或者兑换活动已被删除,使用该素材")
+    @TableField(exist = false)
+    private List<AddWeMaterialDTO> codeFailMaterialList;
+
+    @TableField("code_repeat_msg")
+    @ApiModelProperty(value = "客户再次触发，若活动开启参与限制，发送该欢迎语")
+    private String codeRepeatMsg;
+
+    @TableField("code_repeat_material_sort")
+    @ApiModelProperty(value = "客户再次触发，若活动开启参与限制，使用附件排序")
+    private String[] codeRepeatMaterialSort;
+
+    @ApiModelProperty(value = "客户再次触发,若活动开启参与限制,使用该素材")
+    @TableField(exist = false)
+    private List<AddWeMaterialDTO> codeRepeatMaterialList;
+
+
+    public void buildCodeMsg() {
+        this.codeSuccessMsg = Optional.ofNullable(this.codeSuccessMsg).orElseGet(() -> StringUtils.EMPTY);
+        this.codeSuccessMaterialSort = Optional.ofNullable(codeSuccessMaterialSort).orElseGet(() -> new String[]{});
+        this.codeSuccessMaterialList = Optional.ofNullable(this.codeSuccessMaterialList).orElseGet(Lists::newArrayList);
+
+        this.codeFailMsg = Optional.ofNullable(this.codeFailMsg).orElseGet(() -> StringUtils.EMPTY);
+        this.codeFailMaterialSort = Optional.ofNullable(this.codeFailMaterialSort).orElseGet(() -> new String[]{});
+        this.codeFailMaterialList = Optional.ofNullable(this.codeFailMaterialList).orElseGet(Lists::newArrayList);
+
+        this.codeRepeatMsg = Optional.ofNullable(this.codeRepeatMsg).orElseGet(() -> StringUtils.EMPTY);
+        this.codeRepeatMaterialSort = Optional.ofNullable(this.codeRepeatMaterialSort).orElseGet(() -> new String[]{});
+        this.codeRepeatMaterialList = Optional.ofNullable(this.codeRepeatMaterialList).orElseGet(Lists::newArrayList);
+        this.codeActivityId = String.valueOf(codeActivity.getId());
+    }
+
 }

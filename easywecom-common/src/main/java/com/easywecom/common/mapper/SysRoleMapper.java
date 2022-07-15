@@ -38,7 +38,7 @@ public interface SysRoleMapper {
      * @param userId 用户ID
      * @return
      */
-    SysRole selectRoleByWeUserId(@Param("corpId") String corpId,@Param("userId") String userId);
+    SysRole selectRoleByWeUserId(@Param("corpId") String corpId, @Param("userId") String userId);
 
     /**
      * 查询所有角色
@@ -50,7 +50,6 @@ public interface SysRoleMapper {
 
     /**
      * 通过公司ID和角色ID查询角色
-     *
      *
      * @param corpId 公司ID
      * @param roleId 角色ID
@@ -109,8 +108,10 @@ public interface SysRoleMapper {
     /**
      * 批量删除角色信息
      *
-     * @param roleIds 需要删除的角色ID
-     * @return 结果
+     * @param corpId  corpId
+     * @param roleIds 需要批量删除的角色Ids
+     * @return
      */
-    int deleteRoleByIds(Long[] roleIds);
+    int deleteRoleByIds(@Param("corpId") String corpId, @Param("roleIds") Long[] roleIds);
 }
+

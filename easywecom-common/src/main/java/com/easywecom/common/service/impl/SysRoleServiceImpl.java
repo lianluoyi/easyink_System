@@ -10,13 +10,11 @@ import com.easywecom.common.core.domain.system.SysRoleDept;
 import com.easywecom.common.core.domain.system.SysRoleMenu;
 import com.easywecom.common.enums.BaseStatusEnum;
 import com.easywecom.common.enums.DataScopeEnum;
+import com.easywecom.common.enums.ResultTip;
 import com.easywecom.common.enums.RoleTypeEnum;
 import com.easywecom.common.exception.CustomException;
 import com.easywecom.common.exception.wecom.WeComException;
-import com.easywecom.common.mapper.SysMenuMapper;
-import com.easywecom.common.mapper.SysRoleDeptMapper;
-import com.easywecom.common.mapper.SysRoleMapper;
-import com.easywecom.common.mapper.SysRoleMenuMapper;
+import com.easywecom.common.mapper.*;
 import com.easywecom.common.service.ISysRoleService;
 import com.easywecom.common.utils.StringUtils;
 import com.easywecom.common.utils.spring.SpringUtils;
@@ -47,6 +45,8 @@ public class SysRoleServiceImpl implements ISysRoleService {
     @Autowired
     private SysMenuMapper sysMenuMapper;
 
+    @Autowired
+    private SysUserRoleMapper userRoleMapper;
 
     /**
      * 根据条件分页查询角色数据
@@ -178,6 +178,16 @@ public class SysRoleServiceImpl implements ISysRoleService {
         if (!originName.equals(editRole.getRoleName())) {
             throw new WeComException("系统默认角色的名字不可修改");
         }
+    }
+    /**
+     * 通过角色ID查询角色使用数量
+     *
+     * @param roleId 角色ID
+     * @return 结果
+     */
+    @Override
+    public int countUserRoleByRoleId(Long roleId) {
+        return userRoleMapper.countUserRoleByRoleId(roleId);
     }
 
     /**
@@ -349,7 +359,11 @@ public class SysRoleServiceImpl implements ISysRoleService {
             if (isDefaultRole(corpId, roleId)) {
                 throw new CustomException("系统默认角色无法删除");
             }
+            SysRole role = selectRoleById(corpId, roleId);
+            if (countUserRoleByRoleId(roleId) > 0) {
+                throw new CustomException(ResultTip.TIP_ATTRIBUTED, String.format("%1$s已分配,不能删除", role.getRoleName()));
+            }
         }
-        return roleMapper.deleteRoleByIds(roleIds);
+        return roleMapper.deleteRoleByIds(corpId, roleIds);
     }
 }

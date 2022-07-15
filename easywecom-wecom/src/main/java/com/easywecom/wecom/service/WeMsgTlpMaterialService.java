@@ -110,12 +110,13 @@ public interface WeMsgTlpMaterialService extends IService<WeMsgTlpMaterial> {
      *
      * @param welcomeMsg     文本消息
      * @param remark         给客户的备注
+     * @param redeemCode     给客户的兑换码
      * @param externalUserId 外部联系人id
      * @param userId         员工id
      * @param corpId         企业id
      * @return 替换后的文本，为null返回null
      */
-    String replyTextIfNecessary(String welcomeMsg, String remark, String externalUserId, String userId, String corpId);
+    String replyTextIfNecessary(String welcomeMsg, String remark, String redeemCode, String externalUserId, String userId, String corpId);
 
 //    /**
 //     * 构建欢迎语数据

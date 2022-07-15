@@ -1,7 +1,9 @@
 package com.easywecom.wecom.domain.vo;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.easywecom.common.enums.EmployCodeSourceEnum;
 import com.easywecom.wecom.domain.dto.AddWeMaterialDTO;
+import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
 import java.util.List;
@@ -59,4 +61,41 @@ public class SelectWeEmplyCodeWelcomeMsgVO {
      * 备注名
      */
     private String remarkName;
+
+    /**
+     * 兑换码
+     */
+    private String redeemCode;
+
+    /**
+     * 兑换码锁
+     */
+    private String redeemCodeRedisKey;
+
+    @ApiModelProperty(value = "欢迎语类型，0：普通欢迎语，1：活动欢迎语")
+    private Integer welcomeMsgType;
+
+    @ApiModelProperty(value = "兑换码活动id")
+    private String codeActivityId;
+
+    @ApiModelProperty(value = "有可使用兑换码，发送该欢迎语", hidden = true)
+    private String codeSuccessMsg;
+
+    @ApiModelProperty(value = "有可使用兑换码,使用该附件排序", hidden = true)
+    private String[] codeSuccessMaterialSort;
+
+    @ApiModelProperty(value = "没有可用的兑换码，或者兑换活动已被删除，发送该欢迎语", hidden = true)
+    private String codeFailMsg;
+
+    @ApiModelProperty(value = "没有可用的兑换码，或者兑换活动已被删除，使用该附件排序", hidden = true)
+    private String[] codeFailMaterialSort;
+
+    @ApiModelProperty(value = "客户再次触发，若活动开启参与限制，发送该欢迎语", hidden = true)
+    private String codeRepeatMsg;
+
+    @ApiModelProperty(value = "客户再次触发，若活动开启参与限制，使用附件排序", hidden = true)
+    private String[] codeRepeatMaterialSort;
+
+    @ApiModelProperty(value = "活动欢迎语type，1：发送成功，2：发送失败，3：发送限制", hidden = true)
+    private Integer redeemCodeActivityType;
 }

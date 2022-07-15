@@ -86,4 +86,12 @@ public interface WeEmpleCodeUseScopService extends IService<WeEmpleCodeUseScop> 
      * @return
      */
     int batchRemoveWeEmpleCodeUseScopIds(List<Long> ids);
+
+    /**
+     * 查询员工活码使用部门的信息
+     *
+     * @param employCodeIdList
+     * @return
+     */
+    List<WeEmpleCodeUseScop> selectDepartmentWeEmpleCodeUseScopListByIds(List<Long> employCodeIdList);
 }

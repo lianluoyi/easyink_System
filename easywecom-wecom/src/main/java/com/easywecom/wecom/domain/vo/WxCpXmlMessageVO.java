@@ -65,7 +65,7 @@ public class WxCpXmlMessageVO extends WxCpXmlMessage {
 
     @XStreamAlias("MainDepartment")
     @XStreamConverter(value = XStreamCDataConverter.class)
-    private Long mainDepartment;
+    private String mainDepartment;
 
     /********************************************************
      * 以下字段为三方应用增加字段

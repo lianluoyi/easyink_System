@@ -124,17 +124,13 @@ public class WeAutoTagRuleHitGroupRecordServiceImpl extends ServiceImpl<WeAutoTa
         // 3.调用企业微信接口打标签
         if (CollectionUtils.isNotEmpty(allTagList)) {
             log.info("群打标签标签列表: {}", allTagList.stream().map(WeTag::getTagId).collect(Collectors.toList()));
-            List<WeMakeCustomerTagVO> weMakeCustomerTagVOS = new ArrayList<>();
             for (String customerId : newJoinCustomerIdList) {
                 // 查询客户所属的员工列表,loop:打标签
                 List<String> userIdList = weFlowerCustomerRelService.listUpUserIdListByCustomerId(customerId, corpId);
                 for (String userId : userIdList) {
-                    weMakeCustomerTagVOS.add(new WeMakeCustomerTagVO(customerId, userId, allTagList, corpId));
+                    log.info("入群打标签: 员工: {}, 客户: {}", userId, customerId);
+                    weCustomerService.makeLabelbatch(Collections.singletonList(new WeMakeCustomerTagVO(customerId, userId, allTagList, corpId)), userId);
                 }
-            }
-            if (CollectionUtils.isNotEmpty(weMakeCustomerTagVOS)) {
-                log.info(">>>>>>>>>>>>>>>>执行打标签");
-                weCustomerService.makeLabelbatch(weMakeCustomerTagVOS);
             }
         }
 

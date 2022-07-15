@@ -59,6 +59,12 @@
                     column="{ruleId=id,corpId=corp_id}"
                     select="com.easywecom.wecom.mapper.autotag.WeAutoTagUserRelMapper.listUserListByRuleId">
         </collection>
+
+        <collection property="departmentList" ofType="com.easywecom.wecom.domain.vo.autotag.TagRuleDepartmentInfoVO"
+                    column="{ruleId=id,corpId=corp_id}"
+                    select="com.easywecom.wecom.mapper.autotag.WeAutoTagUserRelMapper.listDepartmentListByRuleId">
+        </collection>
+
         <collection property="tagList" ofType="com.easywecom.wecom.domain.vo.autotag.TagInfoVO"
                     column="{ruleId=id,corpId=corp_id}"
                     select="com.easywecom.wecom.mapper.autotag.WeAutoTagKeywordTagRelMapper.listTagListByRuleId">
@@ -93,6 +99,12 @@
                     column="{ruleId=id,corpId=corp_id}"
                     select="com.easywecom.wecom.mapper.autotag.WeAutoTagUserRelMapper.listUserListByRuleId">
         </collection>
+
+        <collection property="departmentList" ofType="com.easywecom.wecom.domain.vo.autotag.TagRuleDepartmentInfoVO"
+                    column="{ruleId=id,corpId=corp_id}"
+                    select="com.easywecom.wecom.mapper.autotag.WeAutoTagUserRelMapper.listDepartmentListByRuleId">
+        </collection>
+
         <collection property="customerSceneList" ofType="com.easywecom.wecom.domain.vo.autotag.group.GroupSceneVO"
                     column="{ruleId=id,corpId=corp_id}"
                     select="com.easywecom.wecom.mapper.autotag.WeAutoTagCustomerSceneMapper.listCustomerSceneListByRuleId">

@@ -1,5 +1,7 @@
 # 项目相关配置
 ruoyi:
+  #备案号
+  icp: ${INTERNET_CONTENT_PROVIDER:}
   #当前代码线版本
   version: ${VERSION:TAG_VERSION}
   releaseNotes: ${RELEASE_NOTES:https://xsxda94vjq.feishu.cn/docs/doccnMJuJvbFpkRdLYq7a0Q7l5d}
@@ -68,7 +70,6 @@ ruoyi:
       - /api/**
       - /favicon.ico
       - /basic/**
-      - /druid/**
       - /wecom/callback/**
       - /wecom/chat/collection/list
       - /wecom/chat/collection/cancleCollection
@@ -159,7 +160,7 @@ spring:
             webStatFilter:
                 enabled: ${MYSQL_SERVICE_WEB_STAT_FILTER_ENABLED:true}
             statViewServlet:
-                enabled: ${MYSQL_SERVICE_STAT_VIEW_SERVLET_ENABLED:true}
+                enabled: ${MYSQL_SERVICE_STAT_VIEW_SERVLET_ENABLED:false}
                 # 设置白名单，不填则允许所有访问
                 allow:
                 url-pattern: ${MYSQL_SERVICE_STAT_VIEW_SERVLET_URL_PATTERN:/druid/*}

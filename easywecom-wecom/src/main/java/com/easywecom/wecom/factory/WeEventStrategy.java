@@ -47,7 +47,7 @@ public abstract class WeEventStrategy {
             weUser.setDepartment(departmentsArr);
         }
         if (message.getMainDepartment() != null) {
-            weUser.setMainDepartment(message.getMainDepartment());
+            weUser.setMainDepartment(Long.valueOf(message.getMainDepartment()));
         }
         return weUser;
     }

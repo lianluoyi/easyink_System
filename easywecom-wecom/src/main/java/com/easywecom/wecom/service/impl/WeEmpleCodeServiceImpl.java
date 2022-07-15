@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.easywecom.common.constant.WeConstans;
 import com.easywecom.common.core.redis.RedisCache;
 import com.easywecom.common.enums.*;
+import com.easywecom.common.enums.code.WelcomeMsgTypeEnum;
 import com.easywecom.common.exception.CustomException;
 import com.easywecom.common.utils.DateUtils;
 import com.easywecom.wecom.client.WeExternalContactClient;
@@ -16,25 +17,28 @@ import com.easywecom.wecom.domain.dto.WeEmpleCodeDTO;
 import com.easywecom.wecom.domain.dto.WeExternalContactDTO;
 import com.easywecom.wecom.domain.dto.emplecode.AddWeEmpleCodeDTO;
 import com.easywecom.wecom.domain.dto.emplecode.FindWeEmpleCodeDTO;
-import com.easywecom.wecom.domain.dto.emplecode.UpdateWeEmplyCodeDTO;
+import com.easywecom.wecom.domain.entity.redeemcode.WeRedeemCode;
 import com.easywecom.wecom.domain.vo.SelectWeEmplyCodeWelcomeMsgVO;
 import com.easywecom.wecom.domain.vo.WeEmpleCodeVO;
 import com.easywecom.wecom.domain.vo.WeEmplyCodeDownloadVO;
 import com.easywecom.wecom.domain.vo.WeEmplyCodeScopeUserVO;
+import com.easywecom.wecom.domain.vo.redeemcode.WeRedeemCodeActivityVO;
 import com.easywecom.wecom.login.util.LoginTokenService;
 import com.easywecom.wecom.mapper.WeEmpleCodeMapper;
+import com.easywecom.wecom.mapper.redeemcode.WeRedeemCodeActivityMapper;
+import com.easywecom.wecom.mapper.redeemcode.WeRedeemCodeMapper;
 import com.easywecom.wecom.service.*;
+import com.easywecom.wecom.service.redeemcode.WeRedeemCodeActivityService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.ObjectUtils;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -57,9 +61,13 @@ public class WeEmpleCodeServiceImpl extends ServiceImpl<WeEmpleCodeMapper, WeEmp
     private final WeGroupCodeService weGroupCodeService;
     private final WeEmpleCodeAnalyseService weEmpleCodeAnalyseService;
     private final WeGroupCodeActualService weGroupCodeActualService;
+    private final WeRedeemCodeActivityMapper weRedeemCodeActivityMapper;
+    private final WeRedeemCodeMapper weRedeemCodeMapper;
+    private final WeRedeemCodeActivityService weRedeemCodeActivityService;
+    private final WeUserService weUserService;
 
     @Autowired
-    public WeEmpleCodeServiceImpl(WeEmpleCodeTagService weEmpleCodeTagService, WeEmpleCodeUseScopService weEmpleCodeUseScopService, WeExternalContactClient weExternalContactClient, RedisCache redisCache, WeEmpleCodeMaterialService weEmpleCodeMaterialService, WeMaterialService weMaterialService, WeGroupCodeService weGroupCodeService, WeEmpleCodeAnalyseService weEmpleCodeAnalyseService, WeGroupCodeActualService weGroupCodeActualService) {
+    public WeEmpleCodeServiceImpl(WeEmpleCodeTagService weEmpleCodeTagService, WeEmpleCodeUseScopService weEmpleCodeUseScopService, WeExternalContactClient weExternalContactClient, RedisCache redisCache, WeEmpleCodeMaterialService weEmpleCodeMaterialService, WeMaterialService weMaterialService, WeGroupCodeService weGroupCodeService, WeEmpleCodeAnalyseService weEmpleCodeAnalyseService, WeGroupCodeActualService weGroupCodeActualService, WeRedeemCodeActivityMapper weRedeemCodeActivityMapper, WeRedeemCodeMapper weRedeemCodeMapper, WeRedeemCodeActivityService weRedeemCodeActivityService, WeUserService weUserService) {
         this.weEmpleCodeTagService = weEmpleCodeTagService;
         this.weEmpleCodeUseScopService = weEmpleCodeUseScopService;
         this.weExternalContactClient = weExternalContactClient;
@@ -69,6 +77,10 @@ public class WeEmpleCodeServiceImpl extends ServiceImpl<WeEmpleCodeMapper, WeEmp
         this.weGroupCodeService = weGroupCodeService;
         this.weEmpleCodeAnalyseService = weEmpleCodeAnalyseService;
         this.weGroupCodeActualService = weGroupCodeActualService;
+        this.weRedeemCodeActivityMapper = weRedeemCodeActivityMapper;
+        this.weRedeemCodeMapper = weRedeemCodeMapper;
+        this.weRedeemCodeActivityService = weRedeemCodeActivityService;
+        this.weUserService = weUserService;
     }
 
     @Override
@@ -104,11 +116,12 @@ public class WeEmpleCodeServiceImpl extends ServiceImpl<WeEmpleCodeMapper, WeEmp
         List<WeEmpleCodeTag> tagList = weEmpleCodeTagService.selectWeEmpleCodeTagListByIds(employCodeIdList);
         //查询使用人
         List<WeEmpleCodeUseScop> useScopeList = weEmpleCodeUseScopService.selectWeEmpleCodeUseScopListByIds(employCodeIdList, weEmployCode.getCorpId());
+        //查询使用部门(查询使用人时需要用businessId关联we_user表，活码使用部门时不传入businessId)
+        List<WeEmpleCodeUseScop> departmentScopeList = weEmpleCodeUseScopService.selectDepartmentWeEmpleCodeUseScopListByIds(employCodeIdList);
+
         weEmployCodeList.forEach(employCode -> {
-            //活码使用人对象
-            List<WeEmpleCodeUseScop> weEmployCodeUseScopeList = useScopeList.stream().filter(useScope -> useScope.getEmpleCodeId().equals(employCode.getId())).collect(Collectors.toList());
-            setUserData(employCode, weEmployCodeUseScopeList);
-            employCode.setWeEmpleCodeUseScops(weEmployCodeUseScopeList);
+            //设置活码使用人/部门对象
+            setUserData(employCode,useScopeList,departmentScopeList);
             //员工活码标签对象
             employCode.setWeEmpleCodeTags(tagList.stream().filter(tag -> tag.getEmpleCodeId().equals(employCode.getId())).collect(Collectors.toList()));
             //组装数据（员工活码=>素材数据，新客建群=>添加人数、群活码数据、群实际数据）
@@ -139,16 +152,43 @@ public class WeEmpleCodeServiceImpl extends ServiceImpl<WeEmpleCodeMapper, WeEmp
                 employCode.setWeGroupCode(new WeGroupCode());
                 employCode.setGroupList(new ArrayList<>());
             }
+            if (WelcomeMsgTypeEnum.REDEEM_CODE_WELCOME_MSG_TYPE.getType().equals(employCode.getWelcomeMsgType())) {
+                buildEmployCodeMaterial(employCode, employCode.getCorpId());
+            }
         } else {
             //查询素材
-            if (employCode.getMaterialSort() == null || employCode.getMaterialSort().length == 0) {
-                employCode.setMaterialList(new ArrayList<>());
-            } else {
-                employCode.setMaterialList(weMaterialService.getListByMaterialSort(employCode.getMaterialSort(), employCode.getCorpId()));
-            }
+            buildEmployCodeMaterial(employCode, employCode.getCorpId());
         }
     }
 
+    /**
+     * 根据附件排序查找添加素材
+     *
+     * @param employCode
+     * @param corpId
+     */
+    private void buildEmployCodeMaterial(WeEmpleCodeVO employCode, String corpId) {
+        if (WelcomeMsgTypeEnum.COMMON_WELCOME_MSG_TYPE.getType().equals(employCode.getWelcomeMsgType())) {
+            if (!ArrayUtils.isEmpty(employCode.getMaterialSort())) {
+                List<AddWeMaterialDTO> materialList = weMaterialService.getListByMaterialSort(employCode.getMaterialSort(), corpId);
+                employCode.setMaterialList(materialList);
+            } else {
+                employCode.setMaterialList(Collections.emptyList());
+            }
+        } else {
+            final WeRedeemCodeActivityVO redeemCodeActivity = weRedeemCodeActivityService.getRedeemCodeActivity(corpId, Long.valueOf(employCode.getCodeActivityId()));
+            employCode.setCodeActivity(Optional.ofNullable(redeemCodeActivity).orElseGet(WeRedeemCodeActivityVO::new));
+
+            List<AddWeMaterialDTO> successMaterialList = weMaterialService.getRedeemCodeListByMaterialSort(employCode.getCodeSuccessMaterialSort(), corpId);
+            employCode.setCodeSuccessMaterialList(successMaterialList);
+
+            List<AddWeMaterialDTO> failMaterialList = weMaterialService.getRedeemCodeListByMaterialSort(employCode.getCodeFailMaterialSort(), corpId);
+            employCode.setCodeFailMaterialList(failMaterialList);
+
+            List<AddWeMaterialDTO> repeatMaterialList = weMaterialService.getRedeemCodeListByMaterialSort(employCode.getCodeRepeatMaterialSort(), corpId);
+            employCode.setCodeRepeatMaterialList(repeatMaterialList);
+        }
+    }
 
     /**
      * 查询是否为员工活码创建
@@ -177,13 +217,15 @@ public class WeEmpleCodeServiceImpl extends ServiceImpl<WeEmpleCodeMapper, WeEmp
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void updateWeEmpleCode(UpdateWeEmplyCodeDTO weEmpleCode) {
+    public void updateWeEmpleCode(AddWeEmpleCodeDTO weEmpleCode) {
         //校验请求参数
         verifyParam(weEmpleCode, weEmpleCode.getIsAutoPass(), weEmpleCode.getIsAutoSetRemark());
+        if (WelcomeMsgTypeEnum.REDEEM_CODE_WELCOME_MSG_TYPE.getType().equals(weEmpleCode.getWelcomeMsgType())) {
+            weEmpleCode.buildCodeMsg();
+        }
         if (weEmpleCode.getId() == null) {
             throw new CustomException(ResultTip.TIP_GENERAL_BAD_REQUEST);
         }
-
         weEmpleCode.setUpdateTime(new Date());
         weEmpleCode.setUpdateBy(LoginTokenService.getUsername());
         Boolean isNotCreate = true;
@@ -208,22 +250,25 @@ public class WeEmpleCodeServiceImpl extends ServiceImpl<WeEmpleCodeMapper, WeEmp
             weEmpleCodeTagService.saveOrUpdateBatch(weEmpleCode.getWeEmpleCodeTags());
         }
         if (isEmplyCodeCreate(weEmpleCode.getSource())) {
-            List<AddWeMaterialDTO> materialList = weEmpleCode.getMaterialList();
-            weEmpleCode.setMaterialSort(new String[]{});
-            if (CollectionUtils.isNotEmpty(materialList)) {
-                saveTempMaterial(materialList);
-                //将素材附件顺序保存到weEmpleCode
-                weEmpleCode.setMaterialSort(getMaterialSort(weEmpleCode.getMaterialList()));
-                //更新素材附件表
-                weEmpleCodeMaterialService.remove(new LambdaUpdateWrapper<WeEmpleCodeMaterial>().eq(WeEmpleCodeMaterial::getEmpleCodeId, weEmpleCode.getId()));
-                saveEmpleCodeMaterialList(materialList, weEmpleCode.getId());
-            }
+            weEmpleCodeMaterialService.remove(new LambdaUpdateWrapper<WeEmpleCodeMaterial>().eq(WeEmpleCodeMaterial::getEmpleCodeId, weEmpleCode.getId()));
+            buildMaterialSort(weEmpleCode);
         } else {
+            weEmpleCodeMaterialService.remove(new LambdaUpdateWrapper<WeEmpleCodeMaterial>().eq(WeEmpleCodeMaterial::getEmpleCodeId, weEmpleCode.getId()));
+            if (WelcomeMsgTypeEnum.REDEEM_CODE_WELCOME_MSG_TYPE.getType().equals(weEmpleCode.getWelcomeMsgType())) {
+                buildMaterialSort(weEmpleCode);
+            }
             weEmpleCode.setMaterialSort(new String[]{weEmpleCode.getGroupCodeId().toString()});
-            //更新附件表
-            weEmpleCodeMaterialService.updateGroupCodeMediaIdByEmpleCodeId(weEmpleCode.getId(), weEmpleCode.getGroupCodeId());
+            //保存群活码到附件表
+            saveGroupCodeMaterial(weEmpleCode.getId(), weEmpleCode.getGroupCodeId());
         }
-        this.baseMapper.updateWeEmpleCode(weEmpleCode);
+
+        List<Long> activityIdList = new ArrayList<>();
+        activityIdList.add(weEmpleCode.getId());
+        //删除附件表
+        weEmpleCodeMaterialService.removeByEmpleCodeId(activityIdList);
+        //删除员工活码，物理删除
+        this.baseMapper.deleteWeEmpleCode(weEmpleCode.getCorpId(), weEmpleCode.getId());
+        this.baseMapper.insertWeEmpleCode(weEmpleCode);
         //未创建新的活码才更新
         if (isNotCreate) {
             WeExternalContactDTO.WeContactWay weContactWay = getWeContactWay(weEmpleCode);
@@ -252,8 +297,50 @@ public class WeEmpleCodeServiceImpl extends ServiceImpl<WeEmpleCodeMapper, WeEmp
     }
 
 
+    /**
+     * 组装活动欢迎语
+     *
+     * @param corpId
+     * @param externalUserId
+     * @param welcomeMsgVO
+     * @return
+     */
+    private void buildMaterial(String corpId, String externalUserId, SelectWeEmplyCodeWelcomeMsgVO welcomeMsgVO) {
+        WeRedeemCode weRedeemCodeDTO = WeRedeemCode.builder().activityId(welcomeMsgVO.getCodeActivityId()).effectiveTime(DateUtils.getDate()).build();
+        weRedeemCodeDTO.setCorpId(corpId);
+        //查找处在有效期且未使用的兑换码
+        WeRedeemCode getRedeemCode = weRedeemCodeMapper.selectOneWhenInEffective(weRedeemCodeDTO);
+        //库存大于0
+        if (!ObjectUtils.isEmpty(getRedeemCode)) {
+            //判断该客户是否有参与过活动, 且该活动是否限制再次参与
+            WeRedeemCode weRedeemCode = WeRedeemCode.builder().activityId(welcomeMsgVO.getCodeActivityId()).receiveUserId(externalUserId).build();
+            final WeRedeemCode selectWeRedeemCode = weRedeemCodeMapper.selectOne(weRedeemCode);
+            //如果客户没有参与过活动
+            if (ObjectUtils.isEmpty(selectWeRedeemCode)) {
+                welcomeMsgVO.setMaterialList(weMaterialService.getRedeemCodeListByMaterialSort(welcomeMsgVO.getCodeSuccessMaterialSort(), corpId));
+                welcomeMsgVO.setRedeemCode(getRedeemCode.getCode());
+                welcomeMsgVO.setWelcomeMsg(welcomeMsgVO.getCodeSuccessMsg());
+            } else {
+                //如果有限制重复参与
+                final WeRedeemCodeActivityVO redeemCodeActivity = weRedeemCodeActivityService.getRedeemCodeActivity(corpId, Long.valueOf(welcomeMsgVO.getCodeActivityId()));
+                if (WeConstans.REDEEM_CODE_ACTIVITY_LIMITED.equals(redeemCodeActivity.getEnableLimited())) {
+                    welcomeMsgVO.setMaterialList(weMaterialService.getRedeemCodeListByMaterialSort(welcomeMsgVO.getCodeRepeatMaterialSort(), corpId));
+                    welcomeMsgVO.setWelcomeMsg(welcomeMsgVO.getCodeRepeatMsg());
+                } else {
+                    welcomeMsgVO.setMaterialList(weMaterialService.getRedeemCodeListByMaterialSort(welcomeMsgVO.getCodeSuccessMaterialSort(), corpId));
+                    welcomeMsgVO.setWelcomeMsg(welcomeMsgVO.getCodeSuccessMsg());
+                    welcomeMsgVO.setRedeemCode(getRedeemCode.getCode());
+                }
+            }
+        } else {
+            //添加失败附件
+            welcomeMsgVO.setMaterialList(weMaterialService.getRedeemCodeListByMaterialSort(welcomeMsgVO.getCodeFailMaterialSort(), corpId));
+            welcomeMsgVO.setWelcomeMsg(welcomeMsgVO.getCodeFailMsg());
+        }
+    }
+
     @Override
-    public SelectWeEmplyCodeWelcomeMsgVO selectWelcomeMsgByState(String state, String corpId) {
+    public SelectWeEmplyCodeWelcomeMsgVO selectWelcomeMsgByState(String state, String corpId, String externalUserId) {
         if (StringUtils.isBlank(state) || StringUtils.isBlank(corpId)) {
             throw new CustomException(ResultTip.TIP_GENERAL_BAD_REQUEST);
         }
@@ -272,6 +359,10 @@ public class WeEmpleCodeServiceImpl extends ServiceImpl<WeEmpleCodeMapper, WeEmp
                 welcomeMsgVO.setGroupCodeUrl(codeUrl);
             }
         }
+        if (WelcomeMsgTypeEnum.REDEEM_CODE_WELCOME_MSG_TYPE.getType().equals(welcomeMsgVO.getWelcomeMsgType())) {
+            buildMaterial(corpId, externalUserId, welcomeMsgVO);
+        }
+
         return welcomeMsgVO;
     }
 
@@ -320,14 +411,16 @@ public class WeEmpleCodeServiceImpl extends ServiceImpl<WeEmpleCodeMapper, WeEmp
      * @param weEmpleCode weEmpleCode
      */
     private void addWeEmpleCode(AddWeEmpleCodeDTO weEmpleCode) {
-
+        if (WelcomeMsgTypeEnum.REDEEM_CODE_WELCOME_MSG_TYPE.getType().equals(weEmpleCode.getWelcomeMsgType())) {
+            weEmpleCode.buildCodeMsg();
+        }
         //调用企微接口
         WeExternalContactDTO.WeContactWay weContactWay = getWeContactWay(weEmpleCode);
         WeExternalContactDTO contactDTO = getQrCodeFromClient(weContactWay, weEmpleCode.getCorpId());
         weEmpleCode.setConfigId(contactDTO.getConfig_id());
         weEmpleCode.setQrCode(contactDTO.getQr_code());
 
-        //保存使用人
+        //保存使用人及部门
         weEmpleCode.getWeEmpleCodeUseScops().forEach(item -> item.setEmpleCodeId(weEmpleCode.getId()));
         weEmpleCodeUseScopService.saveBatch(weEmpleCode.getWeEmpleCodeUseScops());
         //保存标签信息
@@ -336,22 +429,60 @@ public class WeEmpleCodeServiceImpl extends ServiceImpl<WeEmpleCodeMapper, WeEmp
             weEmpleCodeTagService.saveBatch(weEmpleCode.getWeEmpleCodeTags());
         }
         if (isEmplyCodeCreate(weEmpleCode.getSource())) {
-            //插入素材附件
-            if (CollectionUtils.isNotEmpty(weEmpleCode.getMaterialList())) {
-                //判断为新增或者从素材库获取,若为新增则保存tempFlag=1
-                saveTempMaterial(weEmpleCode.getMaterialList());
-                //保存素材到附件表
-                saveEmpleCodeMaterialList(weEmpleCode.getMaterialList(), weEmpleCode.getId());
-                //将素材附件顺序保存到weEmpleCode
-                weEmpleCode.setMaterialSort(getMaterialSort(weEmpleCode.getMaterialList()));
-            }
+            buildMaterialSort(weEmpleCode);
         } else {
             weEmpleCode.setMaterialSort(new String[]{weEmpleCode.getGroupCodeId().toString()});
             //保存群活码到附件表
             saveGroupCodeMaterial(weEmpleCode.getId(), weEmpleCode.getGroupCodeId());
+            buildMaterialSort(weEmpleCode);
         }
         baseMapper.insertWeEmpleCode(weEmpleCode);
+    }
 
+    /**
+     * 保存素材
+     *
+     * @param codeMaterialList
+     * @param weEmpleCode
+     */
+    private void setMaterialSort(List<AddWeMaterialDTO> codeMaterialList, WeEmpleCode weEmpleCode) {
+        //判断为新增或者从素材库获取,若为新增则保存tempFlag=1
+        saveTempMaterial(codeMaterialList);
+        //保存素材到附件表
+        saveEmpleCodeMaterialList(codeMaterialList, weEmpleCode.getId());
+    }
+
+    /**
+     * 保存附件顺序
+     *
+     * @param weEmpleCode
+     */
+    private void buildMaterialSort(AddWeEmpleCodeDTO weEmpleCode) {
+        if (WelcomeMsgTypeEnum.COMMON_WELCOME_MSG_TYPE.getType().equals(weEmpleCode.getWelcomeMsgType())) {
+            //插入素材附件
+            if (CollectionUtils.isNotEmpty(weEmpleCode.getMaterialList())) {
+                final List<AddWeMaterialDTO> materialList = weEmpleCode.getMaterialList();
+                setMaterialSort(materialList, weEmpleCode);
+                //将素材附件顺序保存到weEmpleCode
+                weEmpleCode.setMaterialSort(getMaterialSort(materialList));
+            }
+        } else if (WelcomeMsgTypeEnum.REDEEM_CODE_WELCOME_MSG_TYPE.getType().equals(weEmpleCode.getWelcomeMsgType())) {
+            if (CollectionUtils.isNotEmpty(weEmpleCode.getCodeSuccessMaterialList())) {
+                final List<AddWeMaterialDTO> materialList = weEmpleCode.getCodeSuccessMaterialList();
+                setMaterialSort(materialList, weEmpleCode);
+                weEmpleCode.setCodeSuccessMaterialSort(getMaterialSort(materialList));
+            }
+            if (CollectionUtils.isNotEmpty(weEmpleCode.getCodeFailMaterialList())) {
+                final List<AddWeMaterialDTO> materialList = weEmpleCode.getCodeFailMaterialList();
+                setMaterialSort(materialList, weEmpleCode);
+                weEmpleCode.setCodeFailMaterialSort(getMaterialSort(materialList));
+            }
+            if (CollectionUtils.isNotEmpty(weEmpleCode.getCodeRepeatMaterialList())) {
+                final List<AddWeMaterialDTO> materialList = weEmpleCode.getCodeRepeatMaterialList();
+                setMaterialSort(materialList, weEmpleCode);
+                weEmpleCode.setCodeRepeatMaterialSort(getMaterialSort(materialList));
+            }
+        }
     }
 
     /**
@@ -360,10 +491,12 @@ public class WeEmpleCodeServiceImpl extends ServiceImpl<WeEmpleCodeMapper, WeEmp
      * @param materialDTOList materialDTOList
      */
     private void saveTempMaterial(List<AddWeMaterialDTO> materialDTOList) {
-        for (AddWeMaterialDTO materialDTO : materialDTOList) {
-            if (materialDTO.getId() == null) {
-                materialDTO.setTempFlag(WeTempMaterialEnum.TEMP.getTempFlag());
-                weMaterialService.insertWeMaterial(materialDTO);
+        if (CollectionUtils.isNotEmpty(materialDTOList)) {
+            for (AddWeMaterialDTO materialDTO : materialDTOList) {
+                if (materialDTO.getId() == null) {
+                    materialDTO.setTempFlag(WeTempMaterialEnum.TEMP.getTempFlag());
+                    weMaterialService.insertWeMaterial(materialDTO);
+                }
             }
         }
     }
@@ -376,13 +509,15 @@ public class WeEmpleCodeServiceImpl extends ServiceImpl<WeEmpleCodeMapper, WeEmp
      */
     private void saveEmpleCodeMaterialList(List<AddWeMaterialDTO> materialDTOList, Long weEmpleCodeId) {
         List<WeEmpleCodeMaterial> addList = new ArrayList<>();
-        for (AddWeMaterialDTO weEmpleCodeMaterialDTO : materialDTOList) {
-            if (weEmpleCodeMaterialDTO.getId() == null || weEmpleCodeMaterialDTO.getMediaType() == null) {
-                throw new CustomException(ResultTip.TIP_GENERAL_BAD_REQUEST);
+        if (CollectionUtils.isNotEmpty(materialDTOList)) {
+            for (AddWeMaterialDTO weEmpleCodeMaterialDTO : materialDTOList) {
+                if (weEmpleCodeMaterialDTO.getId() == null || weEmpleCodeMaterialDTO.getMediaType() == null) {
+                    throw new CustomException(ResultTip.TIP_GENERAL_BAD_REQUEST);
+                }
+                addList.add(new WeEmpleCodeMaterial(weEmpleCodeId, weEmpleCodeMaterialDTO.getId(), weEmpleCodeMaterialDTO.getMediaType()));
             }
-            addList.add(new WeEmpleCodeMaterial(weEmpleCodeId, weEmpleCodeMaterialDTO.getId(), weEmpleCodeMaterialDTO.getMediaType()));
+            weEmpleCodeMaterialService.batchInsert(addList);
         }
-        weEmpleCodeMaterialService.batchInsert(addList);
     }
 
     /**
@@ -412,22 +547,32 @@ public class WeEmpleCodeServiceImpl extends ServiceImpl<WeEmpleCodeMapper, WeEmp
         weContactWay.setScene(WeConstans.QR_CODE_EMPLE_CODE_SCENE);
         weContactWay.setSkip_verify(WeEmployCodeSkipVerifyEnum.isPassByNow(weEmpleCode.getSkipVerify(), weEmpleCode.getEffectTimeOpen(), weEmpleCode.getEffectTimeClose()));
         weContactWay.setState(weEmpleCode.getState());
-        if (CollUtil.isNotEmpty(weEmpleCodeUseScops)) {
-            //员工列表
-            String[] userIdArr = weEmpleCodeUseScops.stream().filter(itme ->
-                    WeConstans.USE_SCOP_BUSINESSID_TYPE_USER.equals(itme.getBusinessIdType())
-                            && StringUtils.isNotEmpty(itme.getBusinessId()))
-                    .map(WeEmpleCodeUseScop::getBusinessId).toArray(String[]::new);
-            weContactWay.setUser(userIdArr);
-            //部门列表
-            if (!WeConstans.SINGLE_EMPLE_CODE_TYPE.equals(weEmpleCode.getCodeType())) {
-                Long[] partyArr = weEmpleCodeUseScops.stream().filter(itme ->
-                        WeConstans.USE_SCOP_BUSINESSID_TYPE_ORG.equals(itme.getBusinessIdType())
-                                && StringUtils.isNotEmpty(itme.getBusinessId()))
-                        .map(item -> Long.valueOf(item.getBusinessId())).collect(Collectors.toList()).toArray(new Long[]{});
-                weContactWay.setParty(partyArr);
-            }
 
+        List<String> userIdList = new LinkedList<>();
+        List<Long> partyIdList = new LinkedList<>();
+
+        if (CollUtil.isNotEmpty(weEmpleCodeUseScops)) {
+            weEmpleCodeUseScops.forEach(item -> {
+                //员工列表
+                if (WeConstans.USE_SCOP_BUSINESSID_TYPE_USER.equals(item.getBusinessIdType())
+                        && StringUtils.isNotEmpty(item.getBusinessId())) {
+                    userIdList.add(item.getBusinessId());
+                }
+                //部门列表
+                if (!WeConstans.SINGLE_EMPLE_CODE_TYPE.equals(weEmpleCode.getCodeType())
+                        && WeConstans.USE_SCOP_BUSINESSID_TYPE_ORG.equals(item.getBusinessIdType())) {
+                    //partyIdList.add(Long.valueOf(item.getBusinessId()));
+                    //查找部门下员工
+                    List<String> userIdsByDepartment = weUserService.listOfUserId(weEmpleCode.getCorpId(), new String[]{item.getBusinessId()});
+                    if (CollectionUtils.isNotEmpty(userIdsByDepartment)) {
+                        userIdList.addAll(userIdsByDepartment);
+                    }
+                }
+            });
+            String[] userIdArr = userIdList.toArray(new String[]{});
+            weContactWay.setUser(userIdArr);
+            Long[] partyArr = partyIdList.toArray(new Long[]{});
+            weContactWay.setParty(partyArr);
         }
         return weContactWay;
     }
@@ -453,22 +598,60 @@ public class WeEmpleCodeServiceImpl extends ServiceImpl<WeEmpleCodeMapper, WeEmp
         if (StringUtils.isBlank(corpId) || id == null) {
             throw new CustomException(ResultTip.TIP_GENERAL_BAD_REQUEST);
         }
+        List<WeEmplyCodeScopeUserVO> users = baseMapper.getUserByEmplyCodeId(corpId, id);
+        List<WeEmplyCodeScopeUserVO> usersFromDepartment = baseMapper.getUserFromDepartmentByEmplyCodeId(corpId, id);
         return baseMapper.getUserByEmplyCodeId(corpId, id);
     }
 
     /**
      * 设置活码使用者名称和电话
      *
-     * @param empleCode              empleCode
-     * @param weEmpleCodeUseScopList weEmpleCodeUseScopList
+     * @param employCode            返回活码实体
+     * @param useScopeList          活码使用人
+     * @param departmentScopeList   活码使用部门
      */
-    private void setUserData(WeEmpleCodeVO empleCode, List<WeEmpleCodeUseScop> weEmpleCodeUseScopList) {
-        if (CollUtil.isNotEmpty(weEmpleCodeUseScopList)) {
-            String useUserName = weEmpleCodeUseScopList.stream().map(WeEmpleCodeUseScop::getBusinessName).filter(StringUtils::isNotEmpty).collect(Collectors.joining(","));
-            empleCode.setUseUserName(useUserName);
-            String mobile = weEmpleCodeUseScopList.stream().map(WeEmpleCodeUseScop::getMobile).filter(StringUtils::isNotEmpty).collect(Collectors.joining(","));
-            empleCode.setMobile(mobile);
+    private void setUserData(WeEmpleCodeVO employCode, List<WeEmpleCodeUseScop> useScopeList, List<WeEmpleCodeUseScop> departmentScopeList) {
+        List<WeEmpleCodeUseScop> setUseScopeList = new LinkedList<>();
+        if(CollUtil.isNotEmpty(useScopeList)){
+            StringBuilder userUserName = new StringBuilder();
+            StringBuilder mobile = new StringBuilder();
+            useScopeList.forEach(useScope->{
+                if(useScope.getEmpleCodeId().equals(employCode.getId())
+                        && WeConstans.USE_SCOP_BUSINESSID_TYPE_USER.equals(useScope.getBusinessIdType())
+                        && StringUtils.isNotEmpty(useScope.getBusinessName())){
+                    userUserName.append(useScope.getBusinessName()).append(WeConstans.COMMA);
+                    mobile.append(useScope.getMobile()).append(WeConstans.COMMA);
+                    setUseScopeList.add(useScope);
+                }
+            });
+            if(StringUtils.isNotEmpty(userUserName)){
+                //删除最后一个","
+                userUserName.deleteCharAt(userUserName.length()-1);
+            }
+            if(StringUtils.isNotEmpty(mobile)){
+                //删除最后一个","
+                mobile.deleteCharAt(mobile.length()-1);
+            }
+            employCode.setUseUserName(userUserName.toString());
+            employCode.setMobile(mobile.toString());
         }
+        if(CollUtil.isNotEmpty(departmentScopeList)){
+            StringBuilder departmentName = new StringBuilder();
+            departmentScopeList.forEach(departScope->{
+                if(departScope.getEmpleCodeId().equals(employCode.getId())
+                        && WeConstans.USE_SCOP_BUSINESSID_TYPE_ORG.equals(departScope.getBusinessIdType())
+                        && StringUtils.isNotEmpty(departScope.getBusinessName())){
+                    departmentName.append(departScope.getBusinessName()).append(WeConstans.COMMA);
+                    setUseScopeList.add(departScope);
+                }
+            });
+            if(StringUtils.isNotEmpty(departmentName)){
+                //删除最后一个","
+                departmentName.deleteCharAt(departmentName.length()-1);
+            }
+            employCode.setDepartmentName(departmentName.toString());
+        }
+        employCode.setWeEmpleCodeUseScops(setUseScopeList);
     }
 
 
@@ -493,7 +676,7 @@ public class WeEmpleCodeServiceImpl extends ServiceImpl<WeEmpleCodeMapper, WeEmp
      * @param isAutoPass      是否自动通过
      * @param isAutoSetRemark 是否自动备注
      */
-    private void verifyParam(WeEmpleCode weEmpleCode, Boolean isAutoPass, Boolean isAutoSetRemark) {
+    private void verifyParam(AddWeEmpleCodeDTO weEmpleCode, Boolean isAutoPass, Boolean isAutoSetRemark) {
         if (weEmpleCode == null
                 || StringUtils.isBlank(weEmpleCode.getCorpId())
                 || weEmpleCode.getCodeType() == null
@@ -506,6 +689,20 @@ public class WeEmpleCodeServiceImpl extends ServiceImpl<WeEmpleCodeMapper, WeEmp
                 || weEmpleCode.getSource() == null) {
             throw new CustomException(ResultTip.TIP_GENERAL_BAD_REQUEST);
         }
+        //判断兑换码活动中欢迎语是否为空
+        if (WelcomeMsgTypeEnum.REDEEM_CODE_WELCOME_MSG_TYPE.getType().equals(weEmpleCode.getWelcomeMsgType())) {
+            if (ObjectUtils.isEmpty(weEmpleCode.getCodeActivity())) {
+                throw new CustomException(ResultTip.TIP_REDEEM_CODE_ACTIVITY_IS_EMPTY);
+            } else {
+                if (Long.valueOf(0).equals(weEmpleCode.getCodeActivity().getId())) {
+                    throw new CustomException(ResultTip.TIP_REDEEM_CODE_ACTIVITY_IS_EMPTY);
+                }
+            }
+            if (StringUtils.isAllBlank(weEmpleCode.getCodeSuccessMsg(), weEmpleCode.getCodeFailMsg(), weEmpleCode.getCodeRepeatMsg())) {
+                throw new CustomException(ResultTip.TIP_REDEEM_CODE_WELCOME_MSG_IS_EMPTY);
+            }
+        }
+
         //当为时间段通过时，需填写开始结束时间
         if (WeEmployCodeSkipVerifyEnum.TIME_PASS.getSkipVerify().equals(weEmpleCode.getSkipVerify())) {
             if (StringUtils.isBlank(weEmpleCode.getEffectTimeOpen()) || StringUtils.isBlank(weEmpleCode.getEffectTimeClose())) {

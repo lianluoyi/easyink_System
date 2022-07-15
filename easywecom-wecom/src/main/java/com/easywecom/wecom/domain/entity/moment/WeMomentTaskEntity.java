@@ -92,6 +92,14 @@ public class WeMomentTaskEntity {
     @ApiModelProperty(value = "所属员工")
     @TableField("users")
     private String users;
+
+    /**
+     * 所属部门
+     */
+    @ApiModelProperty(value = "所属员工")
+    @TableField("departments")
+    private String departments;
+
     /**
      * 客户标签
      */
@@ -121,10 +129,11 @@ public class WeMomentTaskEntity {
      * @param createMomentTaskDTO 参数
      * @return {@link WeMomentTaskEntity}
      */
-    public WeMomentTaskEntity(CreateMomentTaskDTO createMomentTaskDTO, List<String> users,String createBy) {
+    public WeMomentTaskEntity(CreateMomentTaskDTO createMomentTaskDTO,List<String> users, List<String> departments,String createBy) {
         this.setId(SnowFlakeUtil.nextId());
         BeanUtils.copyProperties(createMomentTaskDTO, this);
         this.setUsers(String.join(StrUtil.COMMA, users));
+        this.setDepartments(String.join(StrUtil.COMMA,departments));
         this.setTags(String.join(StrUtil.COMMA, createMomentTaskDTO.getTags()));
         this.setStatus(MomentStatusEnum.START.getType());
         this.createBy = createBy;

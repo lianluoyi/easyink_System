@@ -48,6 +48,9 @@ public class CreateMomentTaskDTO {
     @ApiModelProperty(value = "客户所属员工")
     private List<String> users;
 
+    @ApiModelProperty(value = "客户所属员工所在的部门")
+    private List<String> departments;
+
     @ApiModelProperty("客户标签")
     private List<String> tags;
 

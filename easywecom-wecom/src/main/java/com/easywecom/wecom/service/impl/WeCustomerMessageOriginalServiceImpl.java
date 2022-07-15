@@ -1,9 +1,8 @@
 package com.easywecom.wecom.service.impl;
 
-import com.alibaba.fastjson.JSONObject;
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.dtflys.forest.exceptions.ForestRuntimeException;
 import com.easywecom.common.annotation.DataScope;
 import com.easywecom.common.constant.WeConstans;
 import com.easywecom.common.enums.MessageStatusEnum;
@@ -26,7 +25,6 @@ import com.easywecom.wecom.service.WeCustomerMessageOriginalService;
 import com.easywecom.wecom.service.WeCustomerMessageService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -88,13 +86,14 @@ public class WeCustomerMessageOriginalServiceImpl extends ServiceImpl<WeCustomer
     }
 
     @Override
-    public long saveWeCustomerMessageOriginal(CustomerMessagePushDTO customerMessagePushDTO) {
+    public long saveWeCustomerMessageOriginal(CustomerMessagePushDTO customerMessagePushDTO, String staffId) {
         //保存原始数据信息表 WeCustomerMessageOriginal 主键id
         long messageOriginalId = SnowFlakeUtil.nextId();
         WeCustomerMessageOriginal original = new WeCustomerMessageOriginal();
         original.setMessageOriginalId(messageOriginalId);
         original.setDelFlag(0);
         BeanUtils.copyProperties(customerMessagePushDTO, original);
+        original.setStaffId(StrUtil.emptyIfNull(staffId));
         this.save(original);
         return messageOriginalId;
     }

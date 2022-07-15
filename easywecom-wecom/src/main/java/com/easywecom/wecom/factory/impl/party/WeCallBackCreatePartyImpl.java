@@ -1,7 +1,11 @@
 package com.easywecom.wecom.factory.impl.party;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.easywecom.common.constant.GenConstants;
+import com.easywecom.common.core.domain.entity.WeCorpAccount;
 import com.easywecom.wecom.domain.vo.WxCpXmlMessageVO;
 import com.easywecom.wecom.factory.WeEventStrategy;
+import com.easywecom.wecom.service.WeCorpAccountService;
 import com.easywecom.wecom.service.WeDepartmentService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -19,6 +23,8 @@ import org.springframework.stereotype.Component;
 public class WeCallBackCreatePartyImpl extends WeEventStrategy {
     @Autowired
     private WeDepartmentService weDepartmentService;
+    @Autowired
+    private WeCorpAccountService weCorpAccountService;
 
     @Override
     public void eventHandle(WxCpXmlMessageVO message) {
@@ -32,8 +38,11 @@ public class WeCallBackCreatePartyImpl extends WeEventStrategy {
         }
         try {
             weDepartmentService.insertWeDepartmentNoToWeCom(setWeDepartMent(message));
+
         } catch (Exception e) {
             log.error("创建部门添加数据库失败：ex:{}", ExceptionUtils.getStackTrace(e));
         }
     }
+
+
 }

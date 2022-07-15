@@ -282,7 +282,10 @@ public class WeMsgTlpMaterialServiceImpl extends ServiceImpl<WeMsgTlpMaterialMap
         }
 
         // 处理欢迎语
-        String replyText = replyTextIfNecessary(defaultMsg, remark, externalUserId, userId, corpId);
+        // 兑换码
+        String redeemCode = StringUtils.EMPTY;
+
+        String replyText = replyTextIfNecessary(defaultMsg, remark, redeemCode, externalUserId, userId, corpId);
         Optional.ofNullable(replyText).ifPresent(text -> weWelcomeMsgBuilder.text(Text.builder().content(text).build()));
         // 处理素材
         List<Attachment> attachmentList = new ArrayList<>();
@@ -377,9 +380,10 @@ public class WeMsgTlpMaterialServiceImpl extends ServiceImpl<WeMsgTlpMaterialMap
      * @return 替换后的文本，为null返回null
      */
     @Override
-    public String replyTextIfNecessary(final String welcomeMsg, final String remark, String externalUserId, String userId, String corpId) {
+    public String replyTextIfNecessary(final String welcomeMsg, final String remark, final String redeemCode, String externalUserId, String userId, String corpId) {
         String customerNickName = WeConstans.CUSTOMER_NICKNAME;
         String employeeName = WeConstans.EMPLOYEE_NAME;
+
         if (StringUtils.isNotEmpty(welcomeMsg)) {
             String replyText = welcomeMsg;
             //替换#客户昵称#
@@ -399,6 +403,14 @@ public class WeMsgTlpMaterialServiceImpl extends ServiceImpl<WeMsgTlpMaterialMap
                     log.error("sendMessageToNewExternalUserId user is null!! corpId={},userId={}", corpId, userId);
                 } else {
                     replyText = replyText.replaceAll(employeeName, user.getUserName());
+                }
+            }
+            //替换#兑换码#
+            if (replyText.contains(WeConstans.REDEEM_CODE)) {
+                if (StringUtils.isNotEmpty(redeemCode)) {
+                    replyText = replyText.replaceAll(WeConstans.REDEEM_CODE, redeemCode);
+                } else {
+                    replyText = replyText.replaceAll(WeConstans.REDEEM_CODE, StringUtils.EMPTY);
                 }
             }
             return replyText;

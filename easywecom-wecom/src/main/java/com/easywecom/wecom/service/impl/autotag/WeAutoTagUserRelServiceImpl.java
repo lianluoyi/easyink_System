@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.easywecom.common.enums.ResultTip;
 import com.easywecom.common.exception.CustomException;
+import com.easywecom.common.utils.StringUtils;
 import com.easywecom.wecom.domain.entity.autotag.WeAutoTagUserRel;
 import com.easywecom.wecom.mapper.autotag.WeAutoTagUserRelMapper;
 import com.easywecom.wecom.service.autotag.WeAutoTagUserRelService;
@@ -13,8 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * 标签与员工使用范围表(WeAutoTagUserRel)表服务实现类
@@ -69,22 +68,9 @@ public class WeAutoTagUserRelServiceImpl extends ServiceImpl<WeAutoTagUserRelMap
         if (ruleId == null) {
             throw new CustomException(ResultTip.TIP_GENERAL_BAD_REQUEST);
         }
-        if (CollectionUtils.isEmpty(toWeAutoTagUserRel)) {
-            // 删除全部,表示全选
-            return this.baseMapper.delete(new LambdaQueryWrapper<WeAutoTagUserRel>().eq(WeAutoTagUserRel::getRuleId, ruleId));
-        }
-        // 查询数据库中不存在的
-        List<String> modifyUserIdList = toWeAutoTagUserRel.stream().map(WeAutoTagUserRel::getUserId).collect(Collectors.toList());
-
-        List<WeAutoTagUserRel> notExistWeAutoTagUserRelList = this.list(new LambdaQueryWrapper<WeAutoTagUserRel>()
-                .eq(WeAutoTagUserRel::getRuleId, ruleId)
-                .notIn(WeAutoTagUserRel::getUserId, modifyUserIdList));
-        List<String> notExistUserIdList = notExistWeAutoTagUserRelList.stream().map(WeAutoTagUserRel::getUserId).collect(Collectors.toList());
-
-        // 删除不存在的
-        this.removeByRuleIdAndUserIdList(ruleId, notExistUserIdList);
-
-        // 修改
+        // 删除全部
+        this.baseMapper.delete(new LambdaQueryWrapper<WeAutoTagUserRel>().eq(WeAutoTagUserRel::getRuleId, ruleId));
+        // 重新插入
         return this.batchSave(toWeAutoTagUserRel, false);
     }
 
@@ -105,7 +91,7 @@ public class WeAutoTagUserRelServiceImpl extends ServiceImpl<WeAutoTagUserRelMap
         if (CollectionUtils.isNotEmpty(notExistUserIdList)) {
             return this.baseMapper.delete(new LambdaQueryWrapper<WeAutoTagUserRel>()
                     .eq(WeAutoTagUserRel::getRuleId, ruleId)
-                    .in(WeAutoTagUserRel::getUserId, notExistUserIdList));
+                    .in(WeAutoTagUserRel::getTargetId, notExistUserIdList));
         }
         return 0;
     }
@@ -134,33 +120,30 @@ public class WeAutoTagUserRelServiceImpl extends ServiceImpl<WeAutoTagUserRelMap
      * @return
      */
     @Override
-    public List<Long> getCurrentUserIdAvailableCustomerRuleIdList(List<Long> ruleCandidates, String userId) {
+    public List<Long> getCurrentUserIdAvailableCustomerRuleIdList(String cropId, List<Long> ruleCandidates, String userId) {
         List<Long> availableRuleIdList = new ArrayList<>();
-        if (CollectionUtils.isEmpty(ruleCandidates)) {
+        if (CollectionUtils.isEmpty(ruleCandidates) || StringUtils.isBlank(userId) || StringUtils.isBlank(cropId)) {
             return availableRuleIdList;
         }
-        List<WeAutoTagUserRel> weAutoTagUserRelList = this.baseMapper.selectList(new LambdaQueryWrapper<WeAutoTagUserRel>()
-                .in(WeAutoTagUserRel::getRuleId, ruleCandidates));
-        //                hadCurrentUserRelRuleIdSet
-        Set<Long> availableHadUserScopeRuleIdList = weAutoTagUserRelList
-                .stream()
-                .map(WeAutoTagUserRel::getRuleId)
-                .collect(Collectors.toSet());
-
-
-        List<Long> notHaveUserRelRuleIdList = new ArrayList<>(ruleCandidates);
-        // 符合条件的没有员工关系的规则,直接添加
-        notHaveUserRelRuleIdList.removeAll(availableHadUserScopeRuleIdList);
-        availableRuleIdList.addAll(notHaveUserRelRuleIdList);
-
-        // 判断有员工关系的规则是否符合当前员工
-        for (WeAutoTagUserRel weAutoTagUserRel : weAutoTagUserRelList) {
-            if (userId.equals(weAutoTagUserRel.getUserId())) {
-                availableRuleIdList.add(weAutoTagUserRel.getRuleId());
-            }
-        }
-
+        availableRuleIdList = this.baseMapper.listWeAutoTagRelByUserIdAndRuleIdList(cropId, userId, ruleCandidates);
         return availableRuleIdList;
+    }
+
+    /**
+     * 查询该员工是否在标签规则的部门中
+     * @param cropId
+     * @param userId
+     * @param hadUserScopeRuleIdList
+     * @return
+     */
+    @Override
+    public List<WeAutoTagUserRel> getInfoByUserIdFromDepartment(String cropId, String userId, List<Long> hadUserScopeRuleIdList) {
+        List<WeAutoTagUserRel> weAutoTagUserRelList = new ArrayList<>();
+        if (CollectionUtils.isEmpty(hadUserScopeRuleIdList) || StringUtils.isBlank(userId) || StringUtils.isBlank(cropId)) {
+            return weAutoTagUserRelList;
+        }
+        weAutoTagUserRelList = this.baseMapper.listWeAutoTagUserRelByUserIdFromDepartment(cropId, userId,hadUserScopeRuleIdList);
+        return weAutoTagUserRelList;
     }
 }
 

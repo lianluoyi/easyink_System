@@ -1,6 +1,7 @@
 package com.easywecom.wecom.domain.entity.autotag;
 
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -21,12 +22,18 @@ public class WeAutoTagUserRel {
     /**
      * 规则id
      */
+    @TableField("rule_id")
     private Long ruleId;
     /**
-     * 员工id
+     * 员工id or 部门id
      */
-    private String userId;
+    @TableField("target_id")
+    private String targetId;
 
-
+    /**
+     * type：0 target表示员工id， type:1 target表示部门id
+     */
+    @TableField("type")
+    private Integer type;
 }
 

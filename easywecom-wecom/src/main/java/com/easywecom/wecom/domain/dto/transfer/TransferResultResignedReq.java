@@ -2,7 +2,7 @@ package com.easywecom.wecom.domain.dto.transfer;
 
 import com.easywecom.common.utils.spring.SpringUtils;
 import com.easywecom.wecom.client.WeExternalContactClient;
-import com.easywecom.wecom.domain.dto.WePageBaseResp;
+import com.easywecom.wecom.domain.resp.WePageBaseResp;
 
 /**
  * 类名: 离职接替状态获取请求实体

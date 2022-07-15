@@ -2,6 +2,7 @@ package com.easywecom.wecom.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.easywecom.common.core.domain.wecom.WeDepartment;
+import com.easywecom.wecom.domain.vo.sop.DepartmentVO;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 
@@ -27,8 +28,8 @@ public interface WeDepartmentMapper extends BaseMapper<WeDepartment> {
     /**
      * 查询企业微信组织架构相关列表
      *
-     * @return 企业微信组织架构相关集合
      * @param corpId 公司iD
+     * @return 企业微信组织架构相关集合
      */
     List<WeDepartment> selectWeDepartmentList(@Param("corpId") String corpId);
 
@@ -76,7 +77,6 @@ public interface WeDepartmentMapper extends BaseMapper<WeDepartment> {
     /**
      * 根据用户ID获取部门名字 ,隔开
      *
-     *
      * @param corpId 企业id
      * @param userId 用户id
      * @return
@@ -91,7 +91,7 @@ public interface WeDepartmentMapper extends BaseMapper<WeDepartment> {
      * @param isActivate 成员的激活状态: 1=已激活，2=已禁用，4=未激活，5=退出企业,6=删除
      * @return 部门和下级部门总人数
      */
-    Integer selectTotalUserCount(@Param("corpId") String corpId, @Param("ids") String ids, @Param("isActivate") Integer isActivate);
+    Integer selectTotalUserCount(@Param("corpId") String corpId, @Param("list") List<WeDepartment> ids, @Param("isActivate") Integer isActivate);
 
     /**
      * 查询部门和其所有下级部门
@@ -103,8 +103,26 @@ public interface WeDepartmentMapper extends BaseMapper<WeDepartment> {
 
     /**
      * 获取根部门
+     *
      * @param corpId 企业id
      * @return 可见的根部门
      */
     List<Long> getRootDepartment(@Param("corpId") String corpId);
+
+    /**
+     * 获取部门详情
+     *
+     * @param corpId
+     * @param departmentIdList
+     * @return
+     */
+    List<DepartmentVO> getDepartmentDetails(@Param("corpId") String corpId, @Param("list") List<String> departmentIdList);
+
+    /**
+     * 根据部门查询其下的所有子部门信息（包含自己）
+     *
+     * @param d 部门信息
+     * @return 部门和子部门信息列表
+     */
+    List<WeDepartment> selectDepartmentAndChildList(WeDepartment d);
 }

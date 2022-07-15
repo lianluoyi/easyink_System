@@ -9,7 +9,9 @@
         <result property="empleCodeId" column="emple_code_id"/>
         <result property="businessId" column="business_id"/>
         <result property="delFlag" column="del_flag"/>
+        <result property="businessIdType" column="business_id_type"/>
         <result property="businessName" column="business_name"/>
+        <result property="partyId" column="party_id"/>
         <result property="mobile" column="mobile"/>
     </resultMap>
 
@@ -32,7 +34,8 @@
 
     <select id="selectWeEmpleCodeUseScopListByIds" resultMap="WeEmpleCodeUseScopResult">
         SELECT
-        wecus.id, wecus.emple_code_id,wecus.business_id,wecus.business_name,wu.mobile
+        wecus.id, wecus.emple_code_id,ifnull(wecus.business_id, '') AS
+        business_id,party_id,wecus.business_id_type,wecus.business_name,wu.mobile
         FROM
         we_emple_code_use_scop wecus
         LEFT JOIN we_user wu ON wu.user_id = wecus.business_id
@@ -50,6 +53,24 @@
     <select id="selectWeEmpleCodeUseScopById" parameterType="Long" resultMap="WeEmpleCodeUseScopResult">
         <include refid="selectWeEmpleCodeUseScopVo"/>
         where id = #{id}
+    </select>
+
+    <!--查询员工活码使用部门信息-->
+    <select id="selectDepartmentWeEmpleCodeUseScopListByIds"
+            resultType="com.easywecom.wecom.domain.WeEmpleCodeUseScop">
+        SELECT
+        id, emple_code_id,ifnull(business_id, '') AS business_id ,party_id,business_id_type,business_name
+        FROM
+        we_emple_code_use_scop
+        WHERE
+        del_flag = ${@com.easywecom.common.constant.WeConstans@WE_CUSTOMER_MSG_RESULT_NO_DEFALE}
+        and business_id_type = ${@com.easywecom.common.constant.WeConstans@USE_SCOP_BUSINESSID_TYPE_ORG}
+        <if test="empleCodeIdList != null and empleCodeIdList.size > 0">
+            and emple_code_id in
+            <foreach collection="empleCodeIdList" item="empleCodeId" open="(" close=")" separator=",">
+                #{empleCodeId}
+            </foreach>
+        </if>
     </select>
 
     <insert id="insertWeEmpleCodeUseScop" parameterType="WeEmpleCodeUseScop">

@@ -10,12 +10,20 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>easywecom-common</artifactId>
-
+    <properties>
+        <redisson.version>3.17.3</redisson.version>
+    </properties>
     <description>
         common通用工具
     </description>
 
     <dependencies>
+        <!--        redisson 框架-->
+        <dependency>
+            <groupId>org.redisson</groupId>
+            <artifactId>redisson</artifactId>
+            <version>${redisson.version}</version>
+        </dependency>
 
         <!-- Spring框架基本的核心工具 -->
         <dependency>

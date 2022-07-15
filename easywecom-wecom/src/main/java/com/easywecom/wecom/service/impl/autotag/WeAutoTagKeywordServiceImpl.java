@@ -2,6 +2,7 @@ package com.easywecom.wecom.service.impl.autotag;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.easywecom.common.constant.WeConstans;
 import com.easywecom.common.enums.ResultTip;
 import com.easywecom.common.enums.autotag.AutoTagMatchTypeEnum;
 import com.easywecom.common.exception.CustomException;
@@ -167,18 +168,26 @@ public class WeAutoTagKeywordServiceImpl extends ServiceImpl<WeAutoTagKeywordMap
     /**
      * 从规则集合中查询关键词规则并根据规则id分组
      *
-     * @param userId                 员工id
+     * @param userId               员工id
      * @param hadUserScopeRuleIdList 规则集合
      * @return
      */
     @Override
-    public Map<Long, List<WeAutoTagKeyword>> listKeywordGroupByRuleIdByUserId(String userId, List<Long> hadUserScopeRuleIdList) {
+    public Map<Long, List<WeAutoTagKeyword>> listKeywordGroupByRuleIdByUserId(String corpId,String userId, List<Long> hadUserScopeRuleIdList) {
         if (StringUtils.isBlank(userId) || CollectionUtils.isEmpty(hadUserScopeRuleIdList)) {
             return Maps.newHashMap();
         }
+        //查询员工
         List<WeAutoTagUserRel> list = weAutoTagUserRelService.list(new LambdaQueryWrapper<WeAutoTagUserRel>()
                 .in(WeAutoTagUserRel::getRuleId, hadUserScopeRuleIdList)
-                .eq(WeAutoTagUserRel::getUserId, userId));
+                .eq(WeAutoTagUserRel::getTargetId, userId)
+                .eq(WeAutoTagUserRel::getType, WeConstans.AUTO_TAG_ADD_USER_TYPE)
+                );
+        //查询部门下的员工
+        List<WeAutoTagUserRel> listFromDepartment = weAutoTagUserRelService.getInfoByUserIdFromDepartment(corpId, userId,hadUserScopeRuleIdList);
+        if(CollectionUtils.isNotEmpty(listFromDepartment)){
+            list.addAll(listFromDepartment);
+        }
         Set<Long> ruleIdSet = list.stream().map(WeAutoTagUserRel::getRuleId).collect(Collectors.toSet());
 
         return this.list(new LambdaQueryWrapper<WeAutoTagKeyword>()

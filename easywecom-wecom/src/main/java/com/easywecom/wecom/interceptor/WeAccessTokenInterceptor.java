@@ -53,7 +53,7 @@ public class WeAccessTokenInterceptor implements Interceptor<Object> {
     @Override
     public boolean beforeExecute(ForestRequest request) {
         String uri = request.getUrl().replace(urlPrefix, "");
-        log.info(">>>>>>>>>>>>>>>>>>>>>>>>uri：{}", uri);
+        log.info(">>>>>>>>>>>>>>>>>>>>>>>>uri：{},query: {},body: {}", uri, request.getQueryString(), request.getBody());
 
         if (!Arrays.asList(weComeConfig.getFileUplodUrl()).contains(uri)) {
             request.setDataType(ForestDataType.JSON);

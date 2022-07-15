@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.easywecom.wecom.mapper.redeemcode.WeRedeemCodeActivityMapper">
+    <insert id="insertAlarmUser">
+        INSERT INTO we_redeem_code_alarm_employee_rel
+        (activity_id,target_id,type)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+            #{item.activityId},
+            #{item.targetId},
+            #{item.type}
+            )
+        </foreach>
+    </insert>
+
+    <delete id="deleteBatchByIds">
+        update we_redeem_code_activity
+        SET del_flag = ${@com.easywecom.common.constant.WeConstans@WE_CUSTOMER_MSG_RESULT_DEFALE}
+        where
+        corp_id = #{corpId} AND id IN
+        <if test="ids != null and ids.length > 0">
+            <foreach collection="ids" item="id" open="(" separator="," close=")">
+                #{id}
+            </foreach>
+        </if>
+    </delete>
+    <delete id="deleteAlarmUser">
+        DELETE FROM we_redeem_code_alarm_employee_rel
+        <where>
+            activity_id IN
+            <if test="ids != null and ids.length > 0">
+                <foreach collection="ids" item="id" open="(" separator="," close=")">
+                    #{id}
+                </foreach>
+            </if>
+        </where>
+    </delete>
+
+    <resultMap type="com.easywecom.wecom.domain.vo.redeemcode.WeRedeemCodeActivityVO"
+               id="weRedeemCodeActivityMap">
+        <result property="id" column="id"/>
+        <result property="activityName" column="name"/>
+        <result property="effectStartTime" column="start_time"/>
+        <result property="effectEndTime" column="end_time"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="corpId" column="corp_id"/>
+        <result property="createBy" column="create_by"/>
+<!--        <association property="createName" column="{userId=create_by}" javaType="String"-->
+<!--                     select="getSysUserName"></association>-->
+        <association property="remainInventory" column="{activityId=id}" javaType="String"
+                     select="getRemainInventory"></association>
+        <association property="sumInventory" column="{activityId=id}" javaType="String"
+                     select="getSumInventory"></association>
+    </resultMap>
+
+    <select id="getRemainInventory" resultType="Integer">
+        SELECT count(receive_user_id) remainInventory
+        FROM we_redeem_code
+        WHERE activity_id = #{activityId}
+          and status = ${@com.easywecom.common.enums.redeemcode.RedeemCodeStatusEnum@NOT_ASSIGN.getType()}
+    </select>
+
+    <select id="getRemainInventoryInEffectiveTime" resultType="Integer">
+        SELECT count(receive_user_id) remainInventory
+        FROM we_redeem_code
+        WHERE activity_id = #{activityId}
+          and status = ${@com.easywecom.common.enums.redeemcode.RedeemCodeStatusEnum@NOT_ASSIGN.getType()}
+          AND (effective_time <![CDATA[ >= ]]> #{nowDate} OR
+               effective_time = ${@com.easywecom.common.constant.WeConstans@REDEEM_CODE_EMPTY_TIME})
+    </select>
+
+    <select id="getSumInventory" resultType="Integer">
+        SELECT count(activity_id) sumInventory
+        FROM we_redeem_code
+        WHERE activity_id = #{activityId}
+    </select>
+
+    <select id="selectWeRedeemCodeActivityList"
+            resultMap="weRedeemCodeActivityMap">
+        SELECT DISTINCT wrca.id, wrca.name, wrca.start_time, wrca.end_time, IFNULL(wu.user_name,"admin") as create_by, wrca.create_time,
+        wrca.corp_id
+        FROM we_redeem_code_activity wrca
+        LEFT JOIN we_user wu ON wu.corp_id = wrca.corp_id and wrca.create_by = wu.user_id
+        WHERE
+        wrca.corp_id = #{activity.corpId} AND wrca.del_flag =
+        ${@com.easywecom.common.constant.WeConstans@WE_CUSTOMER_MSG_RESULT_NO_DEFALE}
+        <if test="activity.activityName != null and activity.activityName!= ''">
+            AND wrca.name LIKE concat('%', #{activity.activityName}, '%')
+        </if>
+        <if test="activity.createBy != null and activity.createBy != ''">
+            AND (
+            wu.user_name LIKE concat('%', #{activity.createBy}, '%') OR
+            wrca.create_by =  #{activity.createBy}
+            )
+        </if>
+        <if test="activity.effectStartTime != null and activity.effectStartTime != ''">
+            AND wrca.create_time &gt;= #{activity.effectStartTime}
+        </if>
+        <if test="activity.effectEndTime != null and activity.effectEndTime != ''">
+            AND wrca.create_time &lt;= #{activity.effectEndTime}
+        </if>
+        <if test="isSuperAdmin != null and isSuperAdmin == false">
+            ${activity.params.dataScope}
+        </if>
+        order by create_time desc
+    </select>
+    <select id="getSysUserName" resultType="java.lang.String">
+        SELECT user_name FROM sys_user WHERE user_id = #{userId}
+    </select>
+    <select id="getAlarmUserList" resultType="com.easywecom.wecom.domain.vo.redeemcode.RedeemCodeAlarmUserVO">
+        SELECT wrcaer.activity_id,
+               wrcaer.target_id,
+               wu.user_name businessName,
+               wrcaer.type
+        FROM we_redeem_code_alarm_employee_rel wrcaer
+                 LEFT JOIN we_user wu ON wrcaer.target_id = wu.user_id AND wu.corp_id = #{corpId}
+        WHERE wrcaer.activity_id = #{id}
+          AND wrcaer.type = ${@com.easywecom.common.constant.WeConstans@REDEEM_CODE_USE_USER}
+        UNION
+        SELECT wrcaer.activity_id,
+               wrcaer.target_id,
+               wd.name businessName,
+               wrcaer.type
+        FROM we_redeem_code_alarm_employee_rel wrcaer
+                 LEFT JOIN we_department wd ON wrcaer.target_id = wd.id AND wd.corp_id = #{corpId}
+        WHERE wrcaer.activity_id = #{id}
+          AND wrcaer.type = ${@com.easywecom.common.constant.WeConstans@REDEEM_CODE_USE_DEPARTMENT}
+    </select>
+
+</mapper>

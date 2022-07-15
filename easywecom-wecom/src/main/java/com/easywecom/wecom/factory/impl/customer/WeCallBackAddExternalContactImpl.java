@@ -1,6 +1,7 @@
 package com.easywecom.wecom.factory.impl.customer;
 
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.util.ObjectUtil;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -8,25 +9,35 @@ import com.easywecom.common.config.RuoYiConfig;
 import com.easywecom.common.constant.Constants;
 import com.easywecom.common.constant.GenConstants;
 import com.easywecom.common.constant.WeConstans;
+import com.easywecom.common.core.domain.entity.WeCorpAccount;
 import com.easywecom.common.core.redis.RedisCache;
 import com.easywecom.common.enums.*;
+import com.easywecom.common.enums.code.WelcomeMsgTypeEnum;
 import com.easywecom.common.exception.CustomException;
 import com.easywecom.common.utils.ExceptionUtil;
 import com.easywecom.common.utils.StringUtils;
+import com.easywecom.wecom.client.WeMessagePushClient;
 import com.easywecom.wecom.domain.*;
 import com.easywecom.wecom.domain.dto.AddWeMaterialDTO;
 import com.easywecom.wecom.domain.dto.WeMediaDTO;
+import com.easywecom.wecom.domain.dto.WeMessagePushDTO;
 import com.easywecom.wecom.domain.dto.WeWelcomeMsg;
 import com.easywecom.wecom.domain.dto.common.Attachment;
-import com.easywecom.wecom.domain.entity.autotag.WeAutoTagRuleHitCustomerRecord;
+import com.easywecom.wecom.domain.dto.message.TextMessageDTO;
+import com.easywecom.wecom.domain.dto.redeemcode.WeRedeemCodeDTO;
+import com.easywecom.wecom.domain.vo.redeemcode.WeRedeemCodeActivityVO;
 import com.easywecom.wecom.domain.vo.welcomemsg.WeEmployMaterialVO;
 import com.easywecom.wecom.domain.dto.common.*;
 import com.easywecom.wecom.domain.vo.SelectWeEmplyCodeWelcomeMsgVO;
 import com.easywecom.wecom.domain.vo.WeMakeCustomerTagVO;
 import com.easywecom.wecom.domain.vo.WxCpXmlMessageVO;
 import com.easywecom.wecom.factory.WeEventStrategy;
+import com.easywecom.wecom.mapper.WeMaterialMapper;
+import com.easywecom.wecom.mapper.redeemcode.WeRedeemCodeMapper;
 import com.easywecom.wecom.service.*;
 import com.easywecom.wecom.service.autotag.WeAutoTagRuleHitCustomerRecordService;
+import com.easywecom.wecom.service.redeemcode.WeRedeemCodeActivityService;
+import com.easywecom.wecom.service.redeemcode.WeRedeemCodeService;
 import com.easywecom.wecom.utils.AttachmentService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -78,6 +89,25 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
     private AttachmentService attachmentService;
     @Autowired
     private WeAutoTagRuleHitCustomerRecordService weAutoTagRuleHitCustomerRecordService;
+    @Autowired
+    private WeMaterialMapper weMaterialMapper;
+    @Autowired
+    private WeRedeemCodeService weRedeemCodeService;
+    @Autowired
+    private WeRedeemCodeActivityService weRedeemCodeActivityService;
+    private final WeCorpAccountService corpAccountService;
+    private final WeMessagePushClient messagePushClient;
+    private final WeRedeemCodeMapper weRedeemCodeMapper;
+    private final WeUserService weUserService;
+
+    @Autowired
+    public WeCallBackAddExternalContactImpl(WeCorpAccountService corpAccountService, WeMessagePushClient messagePushClient, WeRedeemCodeMapper weRedeemCodeMapper, WeUserService weUserService) {
+        this.corpAccountService = corpAccountService;
+        this.messagePushClient = messagePushClient;
+        this.weRedeemCodeMapper = weRedeemCodeMapper;
+        this.weUserService = weUserService;
+    }
+
 
     @Override
     public void eventHandle(WxCpXmlMessageVO message) {
@@ -168,6 +198,7 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
         weCustomerService.sendWelcomeMsg(weWelcomeMsg, corpId);
     }
 
+
     /**
      * 活码欢迎语发送
      *
@@ -180,7 +211,7 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
         log.info("执行发送活码欢迎语empleCodeHandle>>>>>>>>>>>>>>>");
         try {
             WeWelcomeMsg.WeWelcomeMsgBuilder weWelcomeMsgBuilder = WeWelcomeMsg.builder().welcome_code(welcomeCode);
-            SelectWeEmplyCodeWelcomeMsgVO messageMap = weEmpleCodeService.selectWelcomeMsgByState(state, corpId);
+            SelectWeEmplyCodeWelcomeMsgVO messageMap = weEmpleCodeService.selectWelcomeMsgByState(state, corpId, externalUserId);
 
             if (StringUtils.isNotNull(messageMap) && org.apache.commons.lang3.StringUtils.isNotBlank(messageMap.getEmpleCodeId())) {
                 String empleCodeId = messageMap.getEmpleCodeId();
@@ -318,11 +349,12 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
         log.debug(">>>>>>>>>欢迎语查询结果：{}", JSON.toJSONString(messageMap));
         // 1.构建欢迎语
         // 存在欢迎语则替换标签文本进行构建
-        String replyText = weMsgTlpMaterialService.replyTextIfNecessary(messageMap.getWelcomeMsg(), remark, externalUserId, userId, corpId);
+        String replyText = weMsgTlpMaterialService.replyTextIfNecessary(messageMap.getWelcomeMsg(), remark, messageMap.getRedeemCode(), externalUserId, userId, corpId);
         Optional.ofNullable(replyText).ifPresent(text -> weWelcomeMsgBuilder.text(Text.builder().content(text).build()));
 
         // 2.构建附件
         List<Attachment> attachmentList = new ArrayList<>();
+        // 2.1 新客先添加入群二维码
         if (EmployCodeSourceEnum.NEW_GROUP.getSource().equals(messageMap.getSource())) {
             // 新客拉群创建的员工活码欢迎语图片(群活码图片)
             String codeUrl = messageMap.getGroupCodeUrl();
@@ -330,21 +362,30 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
                 String cosImgUrlPrefix = ruoYiConfig.getFile().getCos().getCosImgUrlPrefix();
                 buildWelcomeMsgImg(corpId, codeUrl, codeUrl.replaceAll(cosImgUrlPrefix, ""), attachmentList);
             }
-        } else {
-            // 员工活码欢迎语发送素材
-            if (CollectionUtils.isNotEmpty(messageMap.getMaterialList())) {
-                //数量超出上限抛异常
-                if (messageMap.getMaterialList().size() > WeConstans.MAX_ATTACHMENT_NUM) {
-                    throw new CustomException(ResultTip.TIP_ATTACHMENT_OVER);
-                }
-                buildWeEmplyWelcomeMsg(state, corpId, weWelcomeMsgBuilder, messageMap.getMaterialList(), attachmentList);
+        }
+        // 欢迎语发送素材
+        if (CollectionUtils.isNotEmpty(messageMap.getMaterialList())) {
+            //数量超出上限抛异常
+            if (messageMap.getMaterialList().size() > WeConstans.MAX_ATTACHMENT_NUM) {
+                throw new CustomException(ResultTip.TIP_ATTACHMENT_OVER);
             }
+            buildWeEmplyWelcomeMsg(state, corpId, weWelcomeMsgBuilder, messageMap.getMaterialList(), attachmentList);
         }
 
         // 3.调用企业微信接口发送欢迎语
         weCustomerService.sendWelcomeMsg(weWelcomeMsgBuilder.attachments(attachmentList).build(), corpId);
-    }
 
+        if (WelcomeMsgTypeEnum.REDEEM_CODE_WELCOME_MSG_TYPE.getType().equals(messageMap.getWelcomeMsgType())) {
+            // 4.更新兑换码的发送状态
+            if (StringUtils.isNotBlank(messageMap.getRedeemCode())) {
+                weRedeemCodeService.updateRedeemCode(WeRedeemCodeDTO.builder()
+                        .activityId(Long.valueOf(messageMap.getCodeActivityId()))
+                        .code(messageMap.getRedeemCode())
+                        .corpId(corpId)
+                        .receiveUserId(externalUserId).build());
+            }
+        }
+    }
 
     private boolean isFission(String str) {
         return str.contains(WeConstans.FISSION_PREFIX);

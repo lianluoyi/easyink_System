@@ -72,6 +72,9 @@ public class SopDetailVO {
     @ApiModelProperty(value = "使用群聊类型 0：指定群聊 ,1：筛选群聊")
     private Integer filterType;
 
+    @ApiModelProperty("使用部门")
+    private List<DepartmentVO> departmentList;
+
     public SopDetailVO(WeOperationsCenterSopVo sopEntity) {
         BeanUtils.copyProperties(sopEntity, this);
     }

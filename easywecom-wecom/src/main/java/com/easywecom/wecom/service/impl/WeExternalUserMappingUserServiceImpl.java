@@ -142,7 +142,7 @@ public class WeExternalUserMappingUserServiceImpl extends ServiceImpl<WeExternal
      */
     @Override
     public void initMapping(String corpId) {
-        List<String> userList = weUserService.listOfUserId(corpId, null);
+        List<String> userList = weUserService.listOfUserId(corpId, (String) null);
         if (CollectionUtils.isEmpty(userList) || !needInit(corpId, userList)) {
             return;
         }

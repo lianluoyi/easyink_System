@@ -99,7 +99,7 @@ public class WeEmpleCodeController extends BaseController {
     @Log(title = "员工活码", businessType = BusinessType.UPDATE)
     @PutMapping("/update")
     @ApiOperation("修改员工活码")
-    public <T> AjaxResult<T> edit(@Validated @RequestBody UpdateWeEmplyCodeDTO weEmpleCode) {
+    public <T> AjaxResult<T> edit(@Validated @RequestBody AddWeEmpleCodeDTO weEmpleCode) {
         weEmpleCode.setCorpId(LoginTokenService.getLoginUser().getCorpId());
         weEmpleCodeService.updateWeEmpleCode(weEmpleCode);
         return AjaxResult.success();

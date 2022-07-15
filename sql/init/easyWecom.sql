@@ -371,9 +371,6 @@ INSERT INTO `sys_menu`
 VALUES ('110', '定时任务', '2284', '2', 'job', 'monitor/job/index', '1', 'C', '0', '0', 'monitor:job:list', '#', 'admin',
         '2018-03-16 11:33:00', 'admin', '2021-08-06 15:33:30', '定时任务菜单');
 INSERT INTO `sys_menu`
-VALUES ('111', '数据监控', '2284', '3', 'druid', 'monitor/druid/index', '1', 'C', '0', '0', 'monitor:druid:list', '#',
-        'admin', '2018-03-16 11:33:00', 'admin', '2021-08-06 15:33:32', '数据监控菜单');
-INSERT INTO `sys_menu`
 VALUES ('112', '服务监控', '2284', '4', 'server', 'monitor/server/index', '1', 'C', '0', '0', 'monitor:server:list', '#',
         'admin', '2018-03-16 11:33:00', 'admin', '2021-08-06 15:33:35', '服务监控菜单');
 INSERT INTO `sys_menu`
@@ -899,7 +896,8 @@ VALUES (2286, '新增规则', 2285, 10, '', NULL, 1, 'F', '0', '0', 'wecom:autot
 INSERT INTO `sys_menu`(`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`,
                        `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`,
                        `remark`)
-VALUES (2287, '启用/关闭规则', 2285, 20, '', NULL, 1, 'F', '0', '0', 'wecom:autotag:enable', '#', 'admin', '2022-03-04 13:56:42',
+VALUES (2287, '启用/关闭规则', 2285, 20, '', NULL, 1, 'F', '0', '0', 'wecom:autotag:enable', '#', 'admin',
+        '2022-03-04 13:56:42',
         '', NULL, '');
 INSERT INTO `sys_menu`(`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`,
                        `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`,
@@ -921,6 +919,41 @@ INSERT INTO `sys_menu`(`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`,
                        `remark`)
 VALUES (2291, '新增规则页面', 2280, 22, 'addRule', 'customerManage/autoLabel/addRule', 1, 'P', '1', '0', '', '#', 'admin',
         '2022-03-04 16:22:16', 'admin', '2022-03-04 18:08:09', '');
+INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`,
+                        `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`,
+                        `remark`)
+VALUES ('2292', '营销活动', '2188', '3', 'conversionCode', NULL, '1', 'M', '0', '0', '', 'conversion-code', 'admin',
+        '2022-07-08 09:15:22', 'admin', '2022-07-08 09:15:32', '');
+INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`,
+                        `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`,
+                        `remark`)
+VALUES ('2293', '兑换码', '2292', '10', 'list', 'marketingActivities/conversionCode/list', '1', 'C', '0', '0', '', '#',
+        'admin', '2022-07-08 09:17:54', 'admin', '2022-07-08 09:54:33', '');
+INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`,
+                        `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`,
+                        `remark`)
+VALUES ('2294', '新建兑换活动', '2292', '11', 'conversionCodeAdd', 'marketingActivities/conversionCode/add', '1', 'P', '1',
+        '0', '', '#', 'admin', '2022-07-08 09:19:54', 'admin', '2022-07-08 09:52:25', '');
+INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`,
+                        `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`,
+                        `remark`)
+VALUES ('2295', '兑换码详情', '2292', '1', 'conversionCodeDetail', 'marketingActivities/conversionCode/detail', '1', 'P',
+        '1', '0', '', '#', 'admin', '2022-07-08 09:21:59', 'admin', '2022-07-08 09:52:17', '');
+INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`,
+                        `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`,
+                        `remark`)
+VALUES ('2296', '新增兑换活动', '2293', '5', '', NULL, '1', 'F', '0', '0', 'redeeomCode:activity:add', '#', 'admin',
+        '2022-07-11 09:52:22', '', NULL, '');
+INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`,
+                        `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`,
+                        `remark`)
+VALUES ('2297', '删除兑换活动', '2293', '10', '', NULL, '1', 'F', '0', '0', 'redeeomCode:activity:del', '#', 'admin',
+        '2022-07-11 09:53:02', '', NULL, '');
+INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`,
+                        `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`,
+                        `remark`)
+VALUES ('2298', '编辑兑换活动', '2293', '15', '', NULL, '1', 'F', '0', '0', 'redeeomCode:activity:edit', '#', 'admin',
+        '2022-07-11 09:53:33', '', NULL, '');
 
 
 -- ----------------------------
@@ -1456,32 +1489,39 @@ CREATE TABLE `we_department`
 DROP TABLE IF EXISTS `we_emple_code`;
 CREATE TABLE `we_emple_code`
 (
-    `id`                bigint(20) NOT NULL,
-    `corp_id`           varchar(64)   NOT NULL DEFAULT '' COMMENT '授权企业ID',
-    `config_id`         varchar(50)   NOT NULL DEFAULT '' COMMENT '新增联系方式的配置id',
-    `code_type`         tinyint(4) NOT NULL DEFAULT '2' COMMENT '活码类型:1:单人;2:多人;3:批量',
-    `skip_verify`       tinyint(4) NOT NULL DEFAULT '1' COMMENT '自动成为好友:0：否，1：全天，2：时间段',
-    `scenario`          varchar(300)  NOT NULL DEFAULT '' COMMENT '活动场景',
-    `welcome_msg`       varchar(2000) NOT NULL DEFAULT '' COMMENT '欢迎语',
-    `create_by`         varchar(64)   NOT NULL DEFAULT '' COMMENT '创建人',
-    `create_time`       datetime      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    `del_flag`          tinyint(4) NOT NULL DEFAULT '0' COMMENT '0:正常;1:删除;',
-    `qr_code`           varchar(100)  NOT NULL DEFAULT '' COMMENT '二维码链接',
-    `update_by`         varchar(64)   NOT NULL DEFAULT '' COMMENT '更新者',
-    `update_time`       datetime      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    `state`             varchar(30)   NOT NULL DEFAULT '' COMMENT '用于区分客户具体是通过哪个「联系我」添加。不能超过30个字符',
-    `source`            tinyint(4) NOT NULL DEFAULT '0' COMMENT '来源类型：0：活码创建，1：新客建群创建',
-    `remark_type`       tinyint(2) NOT NULL DEFAULT '0' COMMENT '备注类型：0：不备注，1：在昵称前，2：在昵称后',
-    `remark_name`       varchar(32)   NOT NULL DEFAULT '' COMMENT '备注名',
-    `effect_time_open`  varchar(8)    NOT NULL DEFAULT '' COMMENT '开启时间 HH:mm',
-    `effect_time_close` varchar(8)    NOT NULL DEFAULT '' COMMENT '关闭时间 HH:mm',
-    `material_sort`     varchar(255)  NOT NULL DEFAULT '' COMMENT '附件排序',
-    `tag_flag`          tinyint(1) NOT NULL DEFAULT '1' COMMENT '是否可打标签：0不自动打标签，1：自动打标签',
+    `id`                         bigint(20) NOT NULL,
+    `corp_id`                    varchar(64)   NOT NULL DEFAULT '' COMMENT '授权企业ID',
+    `config_id`                  varchar(50)   NOT NULL DEFAULT '' COMMENT '新增联系方式的配置id',
+    `code_type`                  tinyint(4) NOT NULL DEFAULT '2' COMMENT '活码类型:1:单人;2:多人;3:批量',
+    `skip_verify`                tinyint(4) NOT NULL DEFAULT '1' COMMENT '自动成为好友:0：否，1：全天，2：时间段',
+    `scenario`                   varchar(300)  NOT NULL DEFAULT '' COMMENT '活动场景',
+    `welcome_msg`                varchar(2000) NOT NULL DEFAULT '' COMMENT '欢迎语',
+    `create_by`                  varchar(64)   NOT NULL DEFAULT '' COMMENT '创建人',
+    `create_time`                datetime      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `del_flag`                   tinyint(4) NOT NULL DEFAULT '0' COMMENT '0:正常;1:删除;',
+    `qr_code`                    varchar(100)  NOT NULL DEFAULT '' COMMENT '二维码链接',
+    `update_by`                  varchar(64)   NOT NULL DEFAULT '' COMMENT '更新者',
+    `update_time`                datetime      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `state`                      varchar(30)   NOT NULL DEFAULT '' COMMENT '用于区分客户具体是通过哪个「联系我」添加。不能超过30个字符',
+    `source`                     tinyint(4) NOT NULL DEFAULT '0' COMMENT '来源类型：0：活码创建，1：新客建群创建',
+    `remark_type`                tinyint(2) NOT NULL DEFAULT '0' COMMENT '备注类型：0：不备注，1：在昵称前，2：在昵称后',
+    `remark_name`                varchar(32)   NOT NULL DEFAULT '' COMMENT '备注名',
+    `effect_time_open`           varchar(8)    NOT NULL DEFAULT '' COMMENT '开启时间 HH:mm',
+    `effect_time_close`          varchar(8)    NOT NULL DEFAULT '' COMMENT '关闭时间 HH:mm',
+    `material_sort`              varchar(255)  NOT NULL DEFAULT '' COMMENT '附件排序',
+    `tag_flag`                   tinyint(1) NOT NULL DEFAULT '1' COMMENT '是否可打标签：0不自动打标签，1：自动打标签',
+    `welcome_msg_type`           tinyint(1) NOT NULL DEFAULT '0' COMMENT '欢迎语类型，0：普通欢迎语，1：活动欢迎语',
+    `code_activity_id`           bigint(20) NOT NULL DEFAULT '0' COMMENT '兑换码活动id',
+    `code_success_material_sort` varchar(255)  NOT NULL DEFAULT '' COMMENT '有可使用兑换码，发送该附件',
+    `code_success_msg`           varchar(2000) NOT NULL DEFAULT '' COMMENT '有可使用兑换码，发送该欢迎语',
+    `code_fail_material_sort`    varchar(255)  NOT NULL DEFAULT '' COMMENT '没有可用的兑换码，或者兑换码已被删除，发送该附件',
+    `code_fail_msg`              varchar(2000) NOT NULL DEFAULT '' COMMENT '没有可用的兑换码，或者兑换活动已被删除，发送该欢迎语',
+    `code_repeat_material_sort`  varchar(255)  NOT NULL DEFAULT '' COMMENT '客户再次触发，若活动开启参与限制，发送该附件',
+    `code_repeat_msg`            varchar(2000) NOT NULL DEFAULT '' COMMENT '客户再次触发，若活动开启参与限制，发送该欢迎语',
     PRIMARY KEY (`id`) USING BTREE,
-    KEY                 `normal_effecttime_open` (`effect_time_open`) USING BTREE COMMENT '普通索引effect_time_open',
-    KEY                 `normal_effecttime_close` (`effect_time_close`) USING BTREE COMMENT '普通索引effect_time_close'
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '员工活码表' ROW_FORMAT = Dynamic;
-
+    KEY                          `normal_effecttime_open` (`effect_time_open`) USING BTREE COMMENT '普通索引effect_time_open',
+    KEY                          `normal_effecttime_close` (`effect_time_close`) USING BTREE COMMENT '普通索引effect_time_close'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ROW_FORMAT=DYNAMIC COMMENT='员工活码表';
 -- ----------------------------
 -- Table structure for we_emple_code_tag
 -- ----------------------------
@@ -1518,14 +1558,14 @@ CREATE TABLE `we_emple_code_use_scop`
 DROP TABLE IF EXISTS `we_flower_customer_rel`;
 CREATE TABLE `we_flower_customer_rel`
 (
-    `id`               bigint(20)                                                    NOT NULL,
+    `id`               bigint(20) NOT NULL,
     `user_id`          varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '添加了此外部联系人的企业成员userid',
     `external_userid`  varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '客户id',
     `corp_id`          varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '企业ID',
     `oper_userid`      varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '发起添加的userid，如果成员主动添加，为成员的userid；如果是客户主动添加，则为客户的外部联系人userid；如果是内部成员共享/管理员分配，则为对应的成员/管理员userid',
     `remark`           varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '该成员对此外部联系人的备注',
     `description`      varchar(258) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '该成员对此外部联系人的描述',
-    `create_time`      datetime(0)                                                   NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '该成员添加此外部联系人的时间',
+    `create_time`      datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '该成员添加此外部联系人的时间',
     `remark_corp_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '该成员对此客户备注的企业名称\r\n',
     `remark_mobiles`   varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '该成员对此客户备注的手机号码',
     `qq`               varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '客户QQ',
@@ -2733,8 +2773,9 @@ CREATE TABLE `we_operations_center_sop_scope`
     `id`          bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
     `corp_id`     varchar(64) NOT NULL DEFAULT '' COMMENT '企业ID',
     `sop_id`      bigint(20) NOT NULL DEFAULT '0' COMMENT 'we_operations_center_sop 主键ID',
-    `target_id`   varchar(64) NOT NULL DEFAULT '' COMMENT '当为群sop时，为chatId;当为客户sop时，为userId',
+    `target_id`   varchar(64) NOT NULL DEFAULT '' COMMENT '当为群sop时，为chatId;当为客户sop时，为userId,传入部门时为partyId',
     `create_time` datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `type`        tinyint(1) NOT NULL DEFAULT '2' COMMENT '传入员工/部门 2-员工 1部门',
     PRIMARY KEY (`id`),
     UNIQUE KEY `unique_corpid_sopid_targetid` (`corp_id`,`sop_id`,`target_id`) USING BTREE COMMENT '唯一索引（unique_corpid_sopid_targetid）',
     KEY           `index_corpid_sopid` (`corp_id`,`sop_id`) USING BTREE COMMENT '普通索引（index_corpid_sopid）'
@@ -2768,6 +2809,7 @@ CREATE TABLE `we_operations_center_customer_sop_filter`
     `sop_id`        bigint(20) NOT NULL DEFAULT '0' COMMENT 'we_operations_center_sop主键ID',
     `gender`        tinyint(4) NOT NULL DEFAULT '0' COMMENT '外部联系人性别 0-未知 1-男性 2-女性',
     `users`         text        NOT NULL COMMENT '所属员工（多个逗号隔开 ）',
+    `departments`   text        NOT NULL COMMENT '所属部门（多个逗号隔开 ）',
     `tag_id`        text        NOT NULL COMMENT '标签ID（多个逗号隔开 ）',
     `cloumn_info`   text        NOT NULL COMMENT '客户属性名和值，json存储',
     `filter_tag_id` text        NOT NULL COMMENT '标签ID(多个逗号隔开) ',
@@ -3037,6 +3079,7 @@ CREATE TABLE `we_moment_task`
     `send_time`   datetime      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '发布时间',
     `select_user` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否选择员工（0：未选择 1：已选择）',
     `users`       text          NOT NULL COMMENT '所属员工',
+    `departments` text          NOT NULL COMMENT '所属部门（多个逗号隔开 ）',
     `tags`        text          NOT NULL COMMENT '客户标签',
     `create_time` datetime      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `update_time` datetime      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '更新时间',
@@ -3141,55 +3184,106 @@ CREATE TABLE `we_auto_tag_rule`
     PRIMARY KEY (`id`) USING BTREE,
     KEY           `idx_corp_id` (`corp_id`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ROW_FORMAT=DYNAMIC COMMENT='标签规则表';
-CREATE TABLE `we_auto_tag_user_rel` (
-                                        `rule_id` bigint(20) NOT NULL DEFAULT '0' COMMENT '规则id',
-                                        `user_id` varchar(64) NOT NULL DEFAULT '' COMMENT '员工id',
-                                        PRIMARY KEY (`rule_id`,`user_id`) USING BTREE
+CREATE TABLE `we_auto_tag_user_rel`
+(
+    `rule_id`   bigint(20) NOT NULL DEFAULT '0' COMMENT '规则id',
+    `target_id` varchar(64) NOT NULL DEFAULT '' COMMENT 'type:0 表示员工id， type:1 表示部门id',
+    `type`      tinyint(1) NOT NULL DEFAULT '2' COMMENT '传入员工/部门 2-员工 1部门',
+    PRIMARY KEY (`rule_id`, `target_id`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC COMMENT='标签与员工使用范围表';
-CREATE TABLE `we_auto_tag_rule_hit_customer_record` (
-                                                        `rule_id` bigint(20) NOT NULL DEFAULT '0' COMMENT '规则id',
-                                                        `corp_id` varchar(64) NOT NULL DEFAULT '' COMMENT '企业id',
-                                                        `customer_id` varchar(32) NOT NULL DEFAULT '' COMMENT '客户id',
-                                                        `user_id` varchar(64) NOT NULL DEFAULT '' COMMENT '员工id',
-                                                        `add_time` datetime NOT NULL DEFAULT '0000-00-00 00:00:00' ON UPDATE CURRENT_TIMESTAMP COMMENT '添加时间',
-                                                        PRIMARY KEY (`rule_id`,`corp_id`,`customer_id`,`user_id`)
+
+
+CREATE TABLE `we_auto_tag_rule_hit_customer_record`
+(
+    `rule_id`     bigint(20) NOT NULL DEFAULT '0' COMMENT '规则id',
+    `corp_id`     varchar(64) NOT NULL DEFAULT '' COMMENT '企业id',
+    `customer_id` varchar(32) NOT NULL DEFAULT '' COMMENT '客户id',
+    `user_id`     varchar(64) NOT NULL DEFAULT '' COMMENT '员工id',
+    `add_time`    datetime    NOT NULL DEFAULT '0000-00-00 00:00:00' ON UPDATE CURRENT_TIMESTAMP COMMENT '添加时间',
+    PRIMARY KEY (`rule_id`, `corp_id`, `customer_id`, `user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ROW_FORMAT=DYNAMIC COMMENT='客户打标签记录表';
-CREATE TABLE `we_auto_tag_rule_hit_customer_record_tag_rel` (
-                                                                `rule_id` bigint(20) NOT NULL DEFAULT '0' COMMENT '规则id',
-                                                                `tag_id` varchar(64) NOT NULL DEFAULT '' COMMENT '标签id,去重用',
-                                                                `tag_name` varchar(100) NOT NULL DEFAULT '' COMMENT '标签名',
-                                                                `customer_id` varchar(32) NOT NULL DEFAULT '' COMMENT '客户id',
-                                                                `user_id` varchar(64) NOT NULL DEFAULT '' COMMENT '员工id'
+CREATE TABLE `we_auto_tag_rule_hit_customer_record_tag_rel`
+(
+    `rule_id`     bigint(20) NOT NULL DEFAULT '0' COMMENT '规则id',
+    `tag_id`      varchar(64)  NOT NULL DEFAULT '' COMMENT '标签id,去重用',
+    `tag_name`    varchar(100) NOT NULL DEFAULT '' COMMENT '标签名',
+    `customer_id` varchar(32)  NOT NULL DEFAULT '' COMMENT '客户id',
+    `user_id`     varchar(64)  NOT NULL DEFAULT '' COMMENT '员工id'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ROW_FORMAT=DYNAMIC COMMENT='客户标签命中记录';
-CREATE TABLE `we_auto_tag_rule_hit_group_record` (
-                                                     `rule_id` bigint(20) NOT NULL DEFAULT '0' COMMENT '规则id',
-                                                     `corp_id` varchar(64) NOT NULL DEFAULT '' COMMENT '企业id',
-                                                     `customer_id` varchar(32) NOT NULL DEFAULT '' COMMENT '客户id',
-                                                     `group_id` varchar(32) NOT NULL DEFAULT '' COMMENT '群id',
-                                                     `group_name` varchar(128) NOT NULL DEFAULT '' COMMENT '群名',
-                                                     `join_time` datetime NOT NULL DEFAULT '0000-00-00 00:00:00' ON UPDATE CURRENT_TIMESTAMP COMMENT '进群时间',
-                                                     PRIMARY KEY (`rule_id`,`corp_id`,`customer_id`,`group_id`) USING BTREE
+CREATE TABLE `we_auto_tag_rule_hit_group_record`
+(
+    `rule_id`     bigint(20) NOT NULL DEFAULT '0' COMMENT '规则id',
+    `corp_id`     varchar(64)  NOT NULL DEFAULT '' COMMENT '企业id',
+    `customer_id` varchar(32)  NOT NULL DEFAULT '' COMMENT '客户id',
+    `group_id`    varchar(32)  NOT NULL DEFAULT '' COMMENT '群id',
+    `group_name`  varchar(128) NOT NULL DEFAULT '' COMMENT '群名',
+    `join_time`   datetime     NOT NULL DEFAULT '0000-00-00 00:00:00' ON UPDATE CURRENT_TIMESTAMP COMMENT '进群时间',
+    PRIMARY KEY (`rule_id`, `corp_id`, `customer_id`, `group_id`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ROW_FORMAT=DYNAMIC COMMENT='客户打标签记录表';
-CREATE TABLE `we_auto_tag_rule_hit_group_record_tag_rel` (
-                                                             `rule_id` bigint(20) NOT NULL DEFAULT '0' COMMENT '规则id',
-                                                             `tag_id` varchar(64) NOT NULL DEFAULT '' COMMENT '标签id,去重用',
-                                                             `tag_name` varchar(100) NOT NULL DEFAULT '' COMMENT '标签名',
-                                                             `customer_id` varchar(32) NOT NULL DEFAULT '' COMMENT '客户id',
-                                                             `group_id` varchar(32) NOT NULL DEFAULT '' COMMENT '群id'
+CREATE TABLE `we_auto_tag_rule_hit_group_record_tag_rel`
+(
+    `rule_id`     bigint(20) NOT NULL DEFAULT '0' COMMENT '规则id',
+    `tag_id`      varchar(64)  NOT NULL DEFAULT '' COMMENT '标签id,去重用',
+    `tag_name`    varchar(100) NOT NULL DEFAULT '' COMMENT '标签名',
+    `customer_id` varchar(32)  NOT NULL DEFAULT '' COMMENT '客户id',
+    `group_id`    varchar(32)  NOT NULL DEFAULT '' COMMENT '群id'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ROW_FORMAT=DYNAMIC COMMENT='客户标签命中记录';
-CREATE TABLE `we_auto_tag_rule_hit_keyword_record` (
-                                                       `corp_id` varchar(64) NOT NULL DEFAULT '' COMMENT '企业id',
-                                                       `rule_id` bigint(20) NOT NULL DEFAULT '0' COMMENT '规则id',
-                                                       `customer_id` varchar(32) NOT NULL DEFAULT '' COMMENT '客户id',
-                                                       `user_id` varchar(64) NOT NULL DEFAULT '' COMMENT '员工id',
-                                                       `keyword` varchar(255) NOT NULL DEFAULT '' COMMENT '触发的关键词',
-                                                       `from_text` varchar(255) NOT NULL DEFAULT '' COMMENT '触发文本',
-                                                       `hit_time` datetime NOT NULL DEFAULT '0000-00-00 00:00:00' COMMENT '命中时间'
+CREATE TABLE `we_auto_tag_rule_hit_keyword_record`
+(
+    `corp_id`     varchar(64)  NOT NULL DEFAULT '' COMMENT '企业id',
+    `rule_id`     bigint(20) NOT NULL DEFAULT '0' COMMENT '规则id',
+    `customer_id` varchar(32)  NOT NULL DEFAULT '' COMMENT '客户id',
+    `user_id`     varchar(64)  NOT NULL DEFAULT '' COMMENT '员工id',
+    `keyword`     varchar(255) NOT NULL DEFAULT '' COMMENT '触发的关键词',
+    `from_text`   varchar(255) NOT NULL DEFAULT '' COMMENT '触发文本',
+    `hit_time`    datetime     NOT NULL DEFAULT '0000-00-00 00:00:00' COMMENT '命中时间'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ROW_FORMAT=DYNAMIC COMMENT='客户打标签记录表';
-CREATE TABLE `we_auto_tag_rule_hit_keyword_record_tag_rel` (
-                                                               `rule_id` bigint(20) NOT NULL DEFAULT '0' COMMENT '规则id',
-                                                               `tag_id` varchar(64) NOT NULL COMMENT '标签id,去重用',
-                                                               `tag_name` varchar(100) NOT NULL COMMENT '标签名',
-                                                               `customer_id` varchar(32) NOT NULL DEFAULT '' COMMENT '客户id',
-                                                               `user_id` varchar(64) NOT NULL DEFAULT '' COMMENT '员工id'
+CREATE TABLE `we_auto_tag_rule_hit_keyword_record_tag_rel`
+(
+    `rule_id`     bigint(20) NOT NULL DEFAULT '0' COMMENT '规则id',
+    `tag_id`      varchar(64)  NOT NULL COMMENT '标签id,去重用',
+    `tag_name`    varchar(100) NOT NULL COMMENT '标签名',
+    `customer_id` varchar(32)  NOT NULL DEFAULT '' COMMENT '客户id',
+    `user_id`     varchar(64)  NOT NULL DEFAULT '' COMMENT '员工id'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ROW_FORMAT=DYNAMIC COMMENT='客户标签命中记录';
+
+CREATE TABLE `we_redeem_code_activity`
+(
+    `id`              bigint(20) NOT NULL AUTO_INCREMENT COMMENT '兑换码活动主键',
+    `corp_id`         varchar(64) NOT NULL DEFAULT '' COMMENT '授权企业ID',
+    `name`            varchar(32) NOT NULL DEFAULT '' COMMENT '活动名称',
+    `start_time`      date        NOT NULL DEFAULT '0000-00-00' COMMENT '活动开始时间',
+    `end_time`        date        NOT NULL DEFAULT '0000-00-00' COMMENT '活动结束时间',
+    `create_by`       varchar(64) NOT NULL DEFAULT '' COMMENT '创建人',
+    `create_time`     datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_by`       varchar(64) NOT NULL DEFAULT '' COMMENT '更新人',
+    `update_time`     datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `enable_limited`  tinyint(1) NOT NULL DEFAULT '1' COMMENT '客户参与限制，0：可以参与多次，1：只可参与一次',
+    `enable_alarm`    tinyint(1) NOT NULL DEFAULT '0' COMMENT '库存告警开关，0：不开启，1：开启',
+    `alarm_threshold` int(10) NOT NULL DEFAULT '0' COMMENT '库存告警阈值，告警开启时，库存低于阈值通知员工',
+    `del_flag`        tinyint(1) NOT NULL DEFAULT '0' COMMENT '删除标志，0：未删除，1：已删除',
+    PRIMARY KEY (`id`),
+    KEY               `index_corpid` (`corp_id`) USING BTREE,
+    KEY               `create_time` (`create_time`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COMMENT='兑换码活动表';
+
+CREATE TABLE `we_redeem_code`
+(
+    `code`            varchar(20) NOT NULL COMMENT '兑换码',
+    `activity_id`     bigint(20) NOT NULL COMMENT '兑换码活动id',
+    `status`          tinyint(1) NOT NULL DEFAULT '0' COMMENT '领取状态，0：未领取，1：已领取',
+    `effective_time`  date        NOT NULL DEFAULT '0000-00-00' COMMENT '有效期，在该天24点之前可以发送给客户',
+    `redeem_time`     datetime    NOT NULL DEFAULT '0000-00-00 00:00:00' COMMENT '兑换码发送给客户的时间',
+    `receive_user_id` varchar(64) NOT NULL DEFAULT '' COMMENT '领取人id',
+    PRIMARY KEY (`activity_id`, `code`),
+    KEY               `status` (`status`) USING BTREE,
+    KEY               `redeem_time` (`redeem_time`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='兑换码库存表';
+
+CREATE TABLE `we_redeem_code_alarm_employee_rel`
+(
+    `activity_id` bigint(20) NOT NULL COMMENT '活动id',
+    `target_id`   varchar(64) NOT NULL COMMENT '员工id,部门id',
+    `type`        tinyint(1) NOT NULL DEFAULT '2' COMMENT 'type, 1：存部门，2：存员工',
+    PRIMARY KEY (`activity_id`, `target_id`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='兑换码活动，告警员工表';

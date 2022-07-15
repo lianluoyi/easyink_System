@@ -20,6 +20,7 @@ import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 import java.util.Date;
+import java.util.Objects;
 
 
 /**
@@ -41,8 +42,8 @@ public class WeUser extends BaseEntity {
     @NotBlank(message = "账号不可为空")
     @TableId
     @TableField("user_id")
-    @Size(max = 64,message = "员工账号长度已超过限制")
-    @Pattern(regexp = "^[a-zA-Z0-9][a-zA-Z0-9_@.\\-]+$",message = "账号应该由数字,字母和_-@.组成,第一个字符必须是数字或字母")
+    @Size(max = 64, message = "员工账号长度已超过限制")
+    @Pattern(regexp = "^[a-zA-Z0-9][a-zA-Z0-9_@.\\-]+$", message = "账号应该由数字,字母和_-@.组成,第一个字符必须是数字或字母")
     private String userId;
 
     @ApiModelProperty(value = "头像地址")
@@ -196,19 +197,24 @@ public class WeUser extends BaseEntity {
         this.isLeaderInDept = isLeaderInDept;
     }
 
+
+    @Override
+    public int hashCode() {
+        return Objects.hash( userId);
+    }
+
     /**
      * 重写eq方法，若两个user corpId和userId相同,则相等
-     *
-     * @param obj weUser
-     * @return corpId和userId相等则返回true
+     * ( update: 由于从API获取到WeUser对象都没有corpId,且本系统处理的时候应该corpId都是一样的，所以这里改成只通过userId)
+     * @param  o weUser对象
+     * @return
      */
     @Override
-    public boolean equals(Object obj) {
-        if (obj instanceof WeUser) {
-            WeUser weUser = (WeUser) obj;
-            return this.corpId.equals(weUser.getCorpId()) && this.userId.equals(weUser.getUserId());
-        }
-        return false;
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        WeUser weUser = (WeUser) o;
+        return userId.equals(weUser.userId) ;
     }
 
     /**

@@ -50,8 +50,9 @@ public interface WeCustomerMessageOriginalService extends IService<WeCustomerMes
      * 保存原始数据信息表 WeCustomerMessageOriginal 主键id
      *
      * @param customerMessagePushDTO
+     * @param staffId                   前端传入的staffId
      * @return
      */
-    long saveWeCustomerMessageOriginal(CustomerMessagePushDTO customerMessagePushDTO);
+    long saveWeCustomerMessageOriginal(CustomerMessagePushDTO customerMessagePushDTO,String staffId);
 
 }

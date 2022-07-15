@@ -40,6 +40,14 @@ public interface WeEmpleCodeUseScopMapper extends BaseMapper<WeEmpleCodeUseScop>
     List<WeEmpleCodeUseScop> selectWeEmpleCodeUseScopListByIds(@Param("empleCodeIdList") List<Long> empleCodeIdList, @Param("corpId") String corpId);
 
     /**
+     * 查询员工活码使用部门列表(批量)
+     *
+     * @param empleCodeIdList
+     * @return
+     */
+    List<WeEmpleCodeUseScop> selectDepartmentWeEmpleCodeUseScopListByIds(@Param("empleCodeIdList") List<Long> empleCodeIdList);
+
+    /**
      * 新增员工活码使用人
      *
      * @param weEmpleCodeUseScop 员工活码使用人

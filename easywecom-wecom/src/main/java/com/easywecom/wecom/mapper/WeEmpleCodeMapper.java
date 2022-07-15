@@ -5,6 +5,7 @@ import com.easywecom.wecom.domain.WeEmpleCode;
 import com.easywecom.wecom.domain.dto.WeEmpleCodeDTO;
 import com.easywecom.wecom.domain.dto.emplecode.FindWeEmpleCodeDTO;
 import com.easywecom.wecom.domain.vo.*;
+import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 
@@ -17,6 +18,7 @@ import java.util.List;
  * @date 2020-10-04
  */
 @Repository
+@Mapper
 public interface WeEmpleCodeMapper extends BaseMapper<WeEmpleCode> {
     /**
      * 查询员工活码
@@ -104,4 +106,20 @@ public interface WeEmpleCodeMapper extends BaseMapper<WeEmpleCode> {
      */
     List<WeEmplyCodeScopeUserVO> getUserByEmplyCodeId(@Param("corpId") String corpId, @Param("id") Long id);
 
+    /**
+     * 物理删除活码
+     *
+     * @param corpId
+     * @param id     活码id
+     */
+    void deleteWeEmpleCode(@Param("corpId") String corpId, @Param("id") Long id);
+
+    /**
+     * 通过活码使用范围查找部门下的员工
+     *
+     * @param corpId
+     * @param id     活码id
+     * @return
+     */
+    List<WeEmplyCodeScopeUserVO> getUserFromDepartmentByEmplyCodeId(String corpId, Long id);
 }

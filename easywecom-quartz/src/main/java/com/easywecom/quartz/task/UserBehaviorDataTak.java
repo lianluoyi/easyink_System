@@ -17,6 +17,7 @@ import com.easywecom.wecom.domain.query.UserBehaviorDataQuery;
 import com.easywecom.wecom.service.WeCorpAccountService;
 import com.easywecom.wecom.service.WeDepartmentService;
 import com.easywecom.wecom.service.WeUserBehaviorDataService;
+import com.easywecom.wecom.service.WeUserService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -46,13 +47,16 @@ public class UserBehaviorDataTak {
     private final WeCorpAccountService weCorpAccountService;
     private final WeDepartmentService weDepartmentService;
 
+    private final WeUserService weUserService;
+
     @Autowired
-    public UserBehaviorDataTak(WeCustomerClient weCustomerClient, WeUserBehaviorDataService weUserBehaviorDataService, WeUserClient weUserClient, WeCorpAccountService weCorpAccountService, WeDepartmentService weDepartmentService) {
+    public UserBehaviorDataTak(WeCustomerClient weCustomerClient, WeUserBehaviorDataService weUserBehaviorDataService, WeUserClient weUserClient, WeCorpAccountService weCorpAccountService, WeDepartmentService weDepartmentService, WeUserService weUserService) {
         this.weCustomerClient = weCustomerClient;
         this.weUserBehaviorDataService = weUserBehaviorDataService;
         this.weUserClient = weUserClient;
         this.weCorpAccountService = weCorpAccountService;
         this.weDepartmentService = weDepartmentService;
+        this.weUserService = weUserService;
     }
 
     public void getUserBehaviorData() {
@@ -72,21 +76,14 @@ public class UserBehaviorDataTak {
             log.error("corpId不允许为空。");
             return;
         }
-        // 获取根部门
-        List<Long> visibleRoots = weDepartmentService.getVisibleRootDepartment(corpId);
-        if(CollectionUtils.isEmpty(visibleRoots)) {
-            log.error("同步成员,找不到根部门，停止同步,corpID:{}",corpId);
+        // 获取根员工
+        List<WeUser> visibleUser = weUserService.getVisibleUser(corpId);
+        if(CollectionUtils.isEmpty(visibleUser)) {
+            log.info("[UserBehaviorDataTak] 该企业不存在可见的部门和员工,停止执行,corpId:{}",corpId);
             return;
         }
-        List<WeUser > weUsers= new ArrayList<>();
-        for(Long department : visibleRoots) {
-            List<WeUser> tempList = weUserClient.simpleList(department, WeConstans.DEPARTMENT_SUB_WEUSER, corpId).getWeUsers();
-            if(CollectionUtils.isNotEmpty(tempList) ) {
-                weUsers.addAll(tempList);
-            }
-        }
         //删除存在的数据
-        if (CollUtil.isNotEmpty(weUsers)) {
+        if (CollUtil.isNotEmpty(visibleUser)) {
             Long startTime = MyDateUtil.strToDate(-1, 0);
             Long endTime = MyDateUtil.strToDate(-1, 1);
             LambdaQueryWrapper<WeUserBehaviorData> wrapper1 = new LambdaQueryWrapper<>();
@@ -97,13 +94,13 @@ public class UserBehaviorDataTak {
                 weUserBehaviorDataService.remove(wrapper1);
             }
 
-            if (CollUtil.isNotEmpty(weUsers)) {
+            if (CollUtil.isNotEmpty(visibleUser)) {
                 List<WeUserBehaviorData> dataList = new ArrayList<>();
                 UserBehaviorDataQuery query = new UserBehaviorDataQuery();
                 //前一天的数据
                 query.setStart_time(startTime);
                 query.setEnd_time(endTime);
-                weUsers.forEach(weUser -> {
+                visibleUser.forEach(weUser -> {
                     List<String> idList = new ArrayList<>();
                     idList.add(weUser.getUserId());
                     query.setUserid(idList);

@@ -829,6 +829,15 @@
           AND wfcr.status = '${@com.easywecom.common.enums.CustomerStatusEnum@NORMAL.code}'
         ORDER BY wfcr.create_time DESC
     </select>
+    <select id="listCustomers" resultType="com.easywecom.wecom.domain.vo.customer.WeCustomerVO">
+        SELECT DISTINCT
+        external_userid, unionid, name, type
+        FROM we_customer
+        WHERE corp_id = #{corpId}
+        <if test="customerName != null and customerName != ''">
+            AND name like concat('%', #{customerName}, '%')
+        </if>
+    </select>
 
 
 </mapper>

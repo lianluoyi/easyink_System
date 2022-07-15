@@ -1,17 +1,21 @@
 package com.easywecom.wecom.domain.vo;
 
 import com.baomidou.mybatisplus.annotation.TableField;
-import com.easywecom.wecom.domain.WeEmpleCodeTag;
-import com.easywecom.wecom.domain.WeEmpleCodeUseScop;
-import com.easywecom.wecom.domain.WeGroup;
+import com.easywecom.common.constant.WeConstans;
+import com.easywecom.common.enums.code.GroupCodeTypeEnum;
+import com.easywecom.common.enums.code.WelcomeMsgTypeEnum;
+import com.easywecom.common.utils.StringUtils;
+import com.easywecom.wecom.domain.*;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * 社区运营 新客自动拉群
@@ -96,5 +100,9 @@ public class WeCommunityNewGroupVO {
      */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date createTime = new Date();
+
+
+    @ApiModelProperty("兑换码活动欢迎语及附件")
+    private List<WeRedeemCodeWelcomeMsgAndMaterial> weRedeemCodeWelcomeMsgAndMaterialList;
 
 }

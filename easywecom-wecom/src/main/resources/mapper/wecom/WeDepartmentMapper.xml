@@ -8,18 +8,21 @@
         <result property="id" column="id"/>
         <result property="name" column="name"/>
         <result property="parentId" column="parent_id"/>
+        <result property="mainDepartmentName" column="mainDepartmentName"/>
     </resultMap>
 
     <sql id="selectWeDepartmentVo">
-        select id, name, parent_id,corp_id from we_department
+        select id, name, parent_id, corp_id
+        from we_department
     </sql>
 
     <select id="selectWeDepartmentList" resultMap="WeDepartmentResult">
-        <include refid="selectWeDepartmentVo"/>
-        WHERE corp_id = #{corpId}
+        select wd.id, wd.name, wd.parent_id,wd.corp_id, IFNULL ( (SELECT name FROM we_department WHERE we_department.corp_id = #{corpId} and we_department.id = wd.parent_id LIMIT 1) ,'')mainDepartmentName
+        from we_department wd
+        WHERE wd.corp_id = #{corpId}
     </select>
 
-    <select id="selectWeDepartmentById"  resultMap="WeDepartmentResult">
+    <select id="selectWeDepartmentById" resultMap="WeDepartmentResult">
         <include refid="selectWeDepartmentVo"/>
         WHERE corp_id= #{corpId} AND id = #{id}
     </select>
@@ -27,58 +30,87 @@
         SELECT IFNULL(group_concat(name), '')
         FROM we_department wd
                  LEFT JOIN we_user wu ON wu.main_department = wd.id
-        WHERE wd.corp_id =#{corpId} AND user_id = #{userId}
+        WHERE wd.corp_id = #{corpId}
+          AND user_id = #{userId}
     </select>
     <!--    查询部门和其下级部门的总人数-->
     <select id="selectTotalUserCount" resultType="java.lang.Integer">
         SELECT COUNT(0)
         FROM we_user
         <where>
-        corp_id = #{corpId}
-        AND  main_department IN  (${ids})
-        <if test="isActivate != null" >
-            AND is_activate = #{isActivate}
-        </if>
-        AND is_activate != ${@com.easywecom.common.enums.StaffActivateEnum@DELETE.code}
+            corp_id = #{corpId}
+            AND main_department
+            IN
+            <if test="list != null and list.size() >0">
+                <foreach collection="list" item="item" separator="," open="(" close=")">
+                    #{item.id}
+                </foreach>
+            </if>
+            <if test="isActivate != null">
+                AND is_activate = #{isActivate}
+            </if>
+            AND is_activate != ${@com.easywecom.common.enums.StaffActivateEnum@DELETE.code}
         </where>
     </select>
     <!--    查询部门和其所有下级部门-->
     <select id="selectDepartmentAndChild" resultType="java.lang.String">
         SELECT GROUP_CONCAT(t.p_ids)
-        FROM (
-                 SELECT @ids AS p_ids,
-                        (
-                            SELECT @ids := GROUP_CONCAT(id)
-                            FROM we_department
-                            WHERE corp_id = #{corpId} AND FIND_IN_SET(parent_id, @ids)
-                        )    AS c_ids
-                 FROM we_department,
+        FROM (SELECT @ids AS p_ids,
+                     (SELECT @ids := GROUP_CONCAT(id)
+              FROM we_department
+              WHERE corp_id = #{corpId} AND FIND_IN_SET(parent_id, @ids)) AS c_ids FROM we_department,
                       (SELECT @ids := #{id}) b
-                 WHERE  corp_id = #{corpId} AND @ids IS NOT NULL
-             ) t
+        WHERE corp_id = #{corpId}
+          AND @ids IS NOT NULL
+            ) t
     </select>
     <select id="selectDepartmentByCorpId" resultType="com.easywecom.common.core.domain.wecom.WeDepartment">
         <include refid="selectWeDepartmentVo"></include>
         WHERE
         corp_id = #{corpId}
     </select>
-<!--    获取可见的根部门-->
+    <!--    获取可见的根部门-->
     <select id="getRootDepartment" resultType="java.lang.Long">
-        SELECT DISTINCT
-            id
-        FROM
-            we_department
-        WHERE
-                parent_id = (
-                SELECT
-                    min( parent_id )
-                FROM
-                    we_department
-                WHERE
-                    corp_id = #{corpId}
+        SELECT DISTINCT id
+        FROM we_department
+        WHERE parent_id = (SELECT min(parent_id)
+                           FROM we_department
+                           WHERE corp_id = #{corpId}
             LIMIT 1
-            ) and corp_id = #{corpId}
+            )
+          and corp_id = #{corpId}
     </select>
+    <select id="getDepartmentDetails" resultType="com.easywecom.wecom.domain.vo.sop.DepartmentVO">
+        SELECT wd.id departmentId, wd.name departmentName, wd.parent_id parentId, IFNULL ( (SELECT name FROM
+        we_department WHERE we_department.corp_id = #{corpId} AND we_department.id = wd.parent_id LIMIT 1)
+        ,'')mainDepartmentName
+        FROM we_department wd
+        WHERE wd.corp_id = #{corpId}
+        <if test="list != null and list.size()>0">
+            AND wd.id IN
+            <foreach collection="list" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+    </select>
+    <select id="selectDepartmentAndChildList" resultType="com.easywecom.common.core.domain.wecom.WeDepartment">
+        SELECT T2.level_, T3.*
+        FROM (SELECT @ids as _ids,
+			( SELECT @ids := GROUP_CONCAT(id)
+				FROM we_department
+			   WHERE corp_id = #{corpId} and FIND_IN_SET(parent_id
+                   , @ids)
+                  ) as T1
+                   , @l := @l+1 as level_
+              FROM we_department,
+                  (SELECT @ids := #{id}, @l := 0 ) T4
+              WHERE corp_id = #{corpId} and @ids IS NOT NULL) T2,
+             we_department T3
+        WHERE corp_id = #{corpId}
+          and FIND_IN_SET(T3.id, T2._ids)
+        ORDER BY level_, id
+    </select>
+
 
     <insert id="insertWeDepartment" parameterType="WeDepartment">
         insert into we_department
@@ -107,7 +139,8 @@
 
 
     <delete id="deleteAllWeDepartment">
-        delete from we_department
+        delete
+        from we_department
     </delete>
 
 

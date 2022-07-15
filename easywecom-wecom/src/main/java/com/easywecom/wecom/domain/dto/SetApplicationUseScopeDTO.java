@@ -31,16 +31,16 @@ public class SetApplicationUseScopeDTO extends BaseApplicationDTO {
     @NoArgsConstructor
     public static class UseScope {
 
-        @ApiModelProperty("使用类型(1指定员工，2指定角色)")
+        @ApiModelProperty("使用类型(1指定员工，2指定角色，3使用部门)")
         @Min(1L)
-        @Max(2L)
+        @Max(3L)
         private Integer type;
 
         @NotBlank(message = "参数不能为空")
-        @ApiModelProperty("指定员工存userId,指定角色存角色ID")
+        @ApiModelProperty("指定员工存userId,指定角色存角色ID，指定部门存departmentId")
         private String val;
 
-        @ApiModelProperty("当类型为员工时前端要求返回员工名")
+        @ApiModelProperty("当类型为员工时前端要求返回员工名,为部门时显示部门名")
         private String name;
     }
 }

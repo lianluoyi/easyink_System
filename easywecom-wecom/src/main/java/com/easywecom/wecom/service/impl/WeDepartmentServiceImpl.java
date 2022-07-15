@@ -5,7 +5,6 @@ import cn.hutool.core.collection.ListUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.easywecom.common.constant.GenConstants;
 import com.easywecom.common.constant.WeConstans;
 import com.easywecom.common.core.domain.wecom.WeDepartment;
 import com.easywecom.common.core.domain.wecom.WeUser;
@@ -15,6 +14,7 @@ import com.easywecom.common.utils.StringUtils;
 import com.easywecom.wecom.client.WeDepartMentClient;
 import com.easywecom.wecom.domain.dto.WeDepartMentDTO;
 import com.easywecom.wecom.domain.dto.WeResultDTO;
+import com.easywecom.wecom.domain.vo.sop.DepartmentVO;
 import com.easywecom.wecom.login.util.LoginTokenService;
 import com.easywecom.wecom.mapper.WeDepartmentMapper;
 import com.easywecom.wecom.service.WeDepartmentService;
@@ -28,7 +28,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -82,9 +81,13 @@ public class WeDepartmentServiceImpl extends ServiceImpl<WeDepartmentMapper, WeD
         List<WeDepartment> list = this.baseMapper.selectWeDepartmentList(corpId);
         list.forEach(d -> {
             //查询出该部门和其所有下级部门ID
-            String deptAndChildDept = this.baseMapper.selectDepartmentAndChild(d);
+            List<WeDepartment> deptAndChildren = this.baseMapper.selectDepartmentAndChildList(d);
             //查询所有用户数
-            d.setTotalUserCount(this.baseMapper.selectTotalUserCount(corpId, deptAndChildDept, isActivate));
+            if (CollectionUtils.isEmpty(deptAndChildren)) {
+                d.setTotalUserCount(0);
+            } else {
+                d.setTotalUserCount(this.baseMapper.selectTotalUserCount(corpId, deptAndChildren, isActivate));
+            }
         });
         return list;
     }
@@ -240,12 +243,16 @@ public class WeDepartmentServiceImpl extends ServiceImpl<WeDepartmentMapper, WeD
 
     }
 
+
     @Override
-    public List<Long> getVisibleRootDepartment(String corpId) {
-        if(StringUtils.isBlank(corpId)) {
+    public List<DepartmentVO> getDeparmentDetailByIds(String corpId, List<String> departmentIdList) {
+        if (StringUtils.isBlank(corpId)) {
             return Collections.emptyList();
         }
-        return this.baseMapper.getRootDepartment(corpId);
+        if (CollectionUtils.isEmpty(departmentIdList)) {
+            return Collections.emptyList();
+        }
+        return this.baseMapper.getDepartmentDetails(corpId, departmentIdList);
     }
 
 
