@@ -164,4 +164,13 @@ public interface WeCustomerMapper extends BaseMapper<WeCustomer> {
      * @return
      */
     List<WeCustomerUserListVO> selectUserListByCustomerId(@Param("customerId") String customerId, @Param("corpId") String corpId);
+
+    /**
+     * 模糊搜索客户
+     *
+     * @param customerName
+     * @param corpId
+     * @return
+     */
+    List<WeCustomerVO> listCustomers(@Param("customerName") String customerName, @Param("corpId") String corpId);
 }

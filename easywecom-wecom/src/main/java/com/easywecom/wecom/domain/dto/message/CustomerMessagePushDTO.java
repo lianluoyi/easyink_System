@@ -38,7 +38,7 @@ public class CustomerMessagePushDTO implements Cloneable {
     @ApiModelProperty(value = "外部联系人性别 0-未知 1-男性 2-女性 -1-全部")
     private Integer gender;
 
-    @ApiModelProperty(value = "部门id", hidden = true)
+    @ApiModelProperty(value = "部门id ','分隔")
     private String department;
 
     @ApiModelProperty("任务名称")

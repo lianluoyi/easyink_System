@@ -2,6 +2,7 @@ package com.easywecom.wecom.mapper.autotag;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.easywecom.wecom.domain.entity.autotag.WeAutoTagUserRel;
+import com.easywecom.wecom.domain.vo.autotag.TagRuleDepartmentInfoVO;
 import com.easywecom.wecom.domain.vo.autotag.TagRuleUserInfoVO;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
@@ -44,5 +45,32 @@ public interface WeAutoTagUserRelMapper extends BaseMapper<WeAutoTagUserRel> {
      * @return
      */
     List<TagRuleUserInfoVO> listUserListByRuleId(@Param("ruleId") Long ruleId, @Param("corpId") String corpId);
+
+    /**
+     * 通过规则id查询部门信息
+     *
+     * @param ruleId
+     * @param corpId
+     * @return
+     */
+    List<TagRuleDepartmentInfoVO> listDepartmentListByRuleId(@Param("ruleId") Long ruleId, @Param("corpId") String corpId);
+    /**
+     * 查询员工是否在部门内，如果在则返回符合条件的数据
+     *
+     * @param userId
+     * @param hadUserScopeRuleIdList
+     * @return
+     */
+    List<WeAutoTagUserRel> listWeAutoTagUserRelByUserIdFromDepartment(@Param("cropId") String cropId, @Param("userId") String userId, @Param("list") List<Long> hadUserScopeRuleIdList);
+
+    /**
+     * 返回接收消息的员工含有自动标签规则的规则id
+     *
+     * @param cropId
+     * @param userId
+     * @param hadUserScopeRuleIdList
+     * @return
+     */
+    List<Long> listWeAutoTagRelByUserIdAndRuleIdList(@Param("cropId") String cropId, @Param("userId") String userId, @Param("list") List<Long> hadUserScopeRuleIdList);
 }
 

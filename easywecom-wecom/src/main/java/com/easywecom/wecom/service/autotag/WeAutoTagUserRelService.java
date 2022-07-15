@@ -59,10 +59,21 @@ public interface WeAutoTagUserRelService extends IService<WeAutoTagUserRel> {
     /**
      * 获取可用的规则id列表
      *
-     * @param ruleCandidates 候选规则id列表
-     * @param userId         员工id
+     * @param cropId
+     * @param ruleCandidates
+     * @param userId
      * @return
      */
-    List<Long> getCurrentUserIdAvailableCustomerRuleIdList(List<Long> ruleCandidates, String userId);
+    List<Long> getCurrentUserIdAvailableCustomerRuleIdList(String cropId, List<Long> ruleCandidates, String userId);
+
+    /**
+     * 查看部门中是否有该员工，如果有返回标签与员工使用范围信息
+     *
+     * @param cropId
+     * @param targetId
+     * @param hadUserScopeRuleIdList
+     * @return
+     */
+    List<WeAutoTagUserRel> getInfoByUserIdFromDepartment(String cropId, String targetId, List<Long> hadUserScopeRuleIdList);
 }
 

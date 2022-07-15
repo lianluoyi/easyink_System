@@ -25,12 +25,14 @@ import java.util.List;
 public interface WeUserService extends IService<WeUser> {
     /**
      * 更新员工角色关系，不存在则插入
+     *
      * @param weUserRole 员工角色
      */
     void updateUserRole(WeUserRole weUserRole);
 
     /**
      * 查询员工信息
+     *
      * @param queryUserDTO 查询条件
      * @return vo
      */
@@ -38,7 +40,8 @@ public interface WeUserService extends IService<WeUser> {
 
     /**
      * 查询员工信息
-     * @param corpId 企业ID
+     *
+     * @param corpId          企业ID
      * @param queryUserIdList 查询指定员工信息
      * @return {@link List<WeUserVO>}
      */
@@ -56,12 +59,29 @@ public interface WeUserService extends IService<WeUser> {
     /**
      * 查询权限下的员工id
      *
-     *
      * @param corpId
      * @param departments 部门id
      * @return 员工id
      */
     List<String> listOfUserId(String corpId, String[] departments);
+
+    /**
+     * 查询权限下的员工，重载上述方法
+     *
+     * @param corpId
+     * @param departments
+     * @return
+     */
+    public List<String> listOfUserId(String corpId, String departments);
+
+    /**
+     * 查询权限下的员工，重载上述方法
+     *
+     * @param corpId
+     * @param departments
+     * @return
+     */
+    public List<String> listOfUserId(String corpId, List<Long> departments);
 
     /**
      * 查询通讯录相关客户
@@ -139,6 +159,7 @@ public interface WeUserService extends IService<WeUser> {
 
     /**
      * 启用或禁用用户
+     *
      * @param weUser 员工
      */
     void startOrStop(WeUser weUser);
@@ -146,18 +167,25 @@ public interface WeUserService extends IService<WeUser> {
 
     /**
      * 同步成员
-     * @param corpId 公司ID
      *
+     * @param corpId 公司ID
      */
     void syncWeUser(String corpId, LoginUser loginUser);
 
     /**
      * 同步成员
-     * @param corpId 公司ID
      *
+     * @param corpId 公司ID
      */
     void syncWeUser(String corpId);
 
+    /**
+     * 获取可见的员工详情
+     *
+     * @param corpId 企业ID
+     * @return 可见员工列表
+     */
+    List<WeUser> getVisibleUser(String corpId);
 
     /**
      * 同步离职员工 第二版
@@ -176,11 +204,20 @@ public interface WeUserService extends IService<WeUser> {
 
     /**
      * 删除成员
+     *
      * @param userId 成员id
      * @param corpId 企业id
      * @return 修改成功数量，如果大于0则成功
      */
     int deleteUserNoToWeCom(String userId, String corpId);
+
+    /**
+     * 删除本地未删的离职员工
+     *
+     * @param corpId 公司ID
+     * @param ids    员工id列表
+     */
+    void deleteUsersNoToWeCom(String corpId, List<String> ids);
 
     /**
      * 获取访问用户身份(内部应用)
@@ -259,9 +296,11 @@ public interface WeUserService extends IService<WeUser> {
 
     /**
      * 通过员工映射关系获得员工
+     *
      * @param externalUserId 外部员工id
      * @param externalCorpId 外部企业id
      * @return {@link WeUser}
      */
     WeUser getWeUserByExternalMapping(String externalUserId, String externalCorpId);
+
 }

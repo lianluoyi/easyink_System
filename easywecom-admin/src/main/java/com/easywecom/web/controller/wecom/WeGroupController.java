@@ -5,7 +5,7 @@ import com.easywecom.common.constant.WeConstans;
 import com.easywecom.common.core.controller.BaseController;
 import com.easywecom.common.core.domain.AjaxResult;
 import com.easywecom.common.core.page.TableDataInfo;
-import com.easywecom.wecom.domain.AllocateWeGroupResp;
+import com.easywecom.wecom.domain.vo.AllocateWeGroupResp;
 import com.easywecom.wecom.domain.WeGroup;
 import com.easywecom.wecom.domain.WeGroupMember;
 import com.easywecom.wecom.domain.dto.FindWeGroupDTO;

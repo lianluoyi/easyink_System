@@ -681,6 +681,10 @@ public class WeConstans {
     public static final String EMPLOYEE_NAME = "#员工姓名#";
 
     /**
+     * 兑换码
+     */
+    public static final String REDEEM_CODE = "#兑换码#";
+    /**
      * 群欢迎语客户昵称占位符
      */
     public static final String GROUP_CUSTOMER_NICKNAME = "%NICKNAME%";
@@ -724,6 +728,22 @@ public class WeConstans {
      * 成员类型:2 外部联系人
      */
     public static final Integer WE_GROUP_MEMBER_TYPE_CUSTOMER = 2;
+
+    /**
+     * 告警员工信息模板
+     */
+    public static final String REDEEM_CODE_ALARM_MESSAGE_INFO = "【兑换码活动库存告警提醒】\n" +
+            "\n" +
+            "兑换码活动名称：【活动名称】\n" +
+            "\n" +
+            "兑换码库存数：【库存个数】\n" +
+            "\n" +
+            "请及时前往该活动中添加库存";
+
+    public static final String REDEEM_CODE_ACTIVITY_NAME = "【活动名称】";
+
+    public static final String REDEEM_CODE_REAMIN_INVENTORY = "【库存个数】";
+
 
     /**
      * 发送信息模板
@@ -788,6 +808,11 @@ public class WeConstans {
     public static final String GROUP_SOP_TYPE_VAL = "0,1";
     public static final String GROUP_CALENDAR_TYPE_VAL = "5";
 
+    /**
+     * 运营中心 新增SOP 使用员工/部门 对应字段type 1:使用部门,0:使用员工
+     */
+    public static final Integer SOP_USE_DEPARTMENT = 1;
+    public static final Integer SOP_USE_EMPLOYEE = 2;
 
     /**
      * 默认alterData1值
@@ -865,4 +890,51 @@ public class WeConstans {
      * 自动标签新客场景标签数量限制
      */
     public static final int AUTO_TAG_CUSTOMER_SCENE_TAG_NUM_LIMIT = 10;
+
+    /**
+     * 自动标签新建传入员工
+     */
+    public static final int AUTO_TAG_ADD_USER_TYPE = 2;
+    /**
+     * 自动标签传入部门
+     */
+    public static final int AUTO_TAG_ADD_DEPARTMENT_TYPE = 1;
+
+    /**
+     * 兑换码告警员工选择员工
+     */
+    public static final int REDEEM_CODE_USE_USER = 2;
+
+    /**
+     * 兑换码告警员工选择部门
+     */
+    public static final int REDEEM_CODE_USE_DEPARTMENT = 1;
+
+    /**
+     * 兑换码员工告警
+     */
+    public static final Integer REDEEM_CODE_USER_ALARM = 1;
+
+    /**
+     * 兑换码活动限制参与
+     */
+    public static final Integer REDEEM_CODE_ACTIVITY_LIMITED = 1;
+
+    /**
+     * 兑换码已领取
+     */
+    public static final int REDEEM_CODE_RECEIVED = 1;
+
+    /**
+     * 兑换码未领取
+     */
+
+    public static final int REDEEM_CODE_NOT_RECEIVED = 0;
+
+    /**
+     * 兑换码默认空时间
+     */
+    public static final String REDEEM_CODE_EMPTY_TIME = "0000-00-00";
+
+
 }

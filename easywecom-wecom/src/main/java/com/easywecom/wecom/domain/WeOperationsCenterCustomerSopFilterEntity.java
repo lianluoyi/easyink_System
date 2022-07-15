@@ -77,4 +77,11 @@ public class WeOperationsCenterCustomerSopFilterEntity {
     @ApiModelProperty("客户添加截止时间")
     @TableField("end_time")
     private Date endTime;
+
+    /**
+     * 所属部门（多个逗号隔开 ）
+     */
+    @ApiModelProperty(value = "所属部门（多个逗号隔开 ）")
+    @TableField("departments")
+    private String departments;
 }

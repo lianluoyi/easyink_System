@@ -2,6 +2,7 @@ package com.easywecom.wecom.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.ArrayUtil;
+import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSONArray;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
@@ -9,6 +10,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.dtflys.forest.exceptions.ForestRuntimeException;
 import com.easywecom.common.annotation.DataScope;
 import com.easywecom.common.constant.GenConstants;
+import com.easywecom.common.constant.WeConstans;
 import com.easywecom.common.core.domain.AjaxResult;
 import com.easywecom.common.enums.ResultTip;
 import com.easywecom.common.exception.CustomException;
@@ -37,6 +39,7 @@ import com.easywecom.wecom.domain.vo.customer.WeCustomerSumVO;
 import com.easywecom.wecom.domain.vo.customer.WeCustomerUserListVO;
 import com.easywecom.wecom.domain.vo.customer.WeCustomerVO;
 import com.easywecom.wecom.domain.vo.sop.CustomerSopVO;
+import com.easywecom.wecom.login.util.LoginTokenService;
 import com.easywecom.wecom.mapper.WeCustomerMapper;
 import com.easywecom.wecom.service.*;
 import lombok.extern.slf4j.Slf4j;
@@ -71,6 +74,9 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
 
     @Autowired
     private WeTagGroupService weTagGroupService;
+
+    @Autowired
+    private WeUserService weUserService;
 
     @Autowired
     @Lazy
@@ -227,6 +233,7 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
         weCustomerPushMessageDTO.setCustomerStartTime(sopFilter.getStartTime());
         weCustomerPushMessageDTO.setCustomerEndTime(sopFilter.getEndTime());
         weCustomerPushMessageDTO.setUserIds(sopFilter.getUsers());
+        weCustomerPushMessageDTO.setDepartmentIds(sopFilter.getDepartments());
         weCustomerPushMessageDTO.setFilterTags(sopFilter.getFilterTagId());
         //普通属性查询客户
         List<WeCustomer> weCustomers = selectWeCustomerListNoRel(weCustomerPushMessageDTO);
@@ -757,7 +764,18 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
             log.error("获取客户列表失败，corpId不能为空");
             throw new CustomException("获取客户列表失败");
         }
-        return weCustomerMapper.selectWeCustomerListNoRel(weCustomer);
+        WeCustomerPushMessageDTO buildWeCustomer = weCustomer;
+        //查找部门下员工
+        if(StringUtils.isNotEmpty(weCustomer.getDepartmentIds())){
+            List<String> userIdsByDepartment = weUserService.listOfUserId(weCustomer.getCorpId(),weCustomer.getDepartmentIds().split(StrUtil.COMMA));
+            String userIdsFromDepartment = CollectionUtils.isNotEmpty(userIdsByDepartment) ? StringUtils.join(userIdsByDepartment, WeConstans.COMMA) : StringUtils.EMPTY;
+            if(StringUtils.isNotEmpty(buildWeCustomer.getUserIds())){
+                buildWeCustomer.setUserIds(buildWeCustomer.getUserIds() + StrUtil.COMMA + userIdsFromDepartment);
+            }else{
+                buildWeCustomer.setUserIds(userIdsFromDepartment);
+            }
+        }
+        return weCustomerMapper.selectWeCustomerListNoRel(buildWeCustomer);
     }
 
     @Override
@@ -853,6 +871,21 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
         weCustomerExtendPropertyService.setKeyValueMapper(weCustomer.getCorpId(), exportList, dto.getSelectedProperties());
         ExcelUtil<WeCustomerExportVO> util = new ExcelUtil<>(WeCustomerExportVO.class);
         return util.exportExcelV2(exportList, "customer", dto.getSelectedProperties());
+    }
+
+    /**
+     * 模糊查询客户 (无需登录可用)
+     *
+     * @param corpId
+     * @param customerName
+     * @return
+     */
+    @Override
+    public List<WeCustomerVO> getCustomer(String corpId, String customerName) {
+        if (StringUtils.isBlank(corpId)) {
+            throw new CustomException(ResultTip.TIP_MISS_CORP_ID);
+        }
+        return this.baseMapper.listCustomers(customerName, corpId);
     }
 
 }

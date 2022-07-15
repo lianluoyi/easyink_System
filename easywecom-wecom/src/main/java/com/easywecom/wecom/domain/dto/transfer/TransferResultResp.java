@@ -5,7 +5,7 @@ import com.easywecom.common.enums.CustomerTransferStatusEnum;
 import com.easywecom.common.utils.DateUtils;
 import com.easywecom.common.utils.SnowFlakeUtil;
 import com.easywecom.wecom.domain.WeFlowerCustomerRel;
-import com.easywecom.wecom.domain.dto.WePageBaseResp;
+import com.easywecom.wecom.domain.resp.WePageBaseResp;
 import com.easywecom.wecom.domain.entity.transfer.WeCustomerTransferRecord;
 import lombok.Data;
 import org.apache.commons.collections4.CollectionUtils;

@@ -1,8 +1,12 @@
 package com.easywecom.wecom.factory.impl.user;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.easywecom.common.constant.GenConstants;
+import com.easywecom.common.core.domain.entity.WeCorpAccount;
 import com.easywecom.common.core.domain.wecom.WeUser;
 import com.easywecom.wecom.domain.vo.WxCpXmlMessageVO;
 import com.easywecom.wecom.factory.WeEventStrategy;
+import com.easywecom.wecom.service.WeCorpAccountService;
 import com.easywecom.wecom.service.WeExternalUserMappingUserService;
 import com.easywecom.wecom.service.WeUserService;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +27,10 @@ public class WeCallBackUpdateUserImpl extends WeEventStrategy {
     private WeUserService weUserService;
     @Autowired
     private WeExternalUserMappingUserService weExternalUserMappingUserService;
+
+    @Autowired
+    private WeCorpAccountService weCorpAccountService;
+
     @Override
     public void eventHandle(WxCpXmlMessageVO message) {
         if (message == null) {
@@ -31,9 +39,11 @@ public class WeCallBackUpdateUserImpl extends WeEventStrategy {
         }
         try {
             if (StringUtils.isNotBlank(message.getSuiteId())) {
+                // 代开发应用处理
                 weUserService.updateWeUserDataFromWeCom(message.getUserId(), message.getAuthCorpId());
+                updateForSuiteApp(message);
             } else {
-                if (StringUtils.isBlank(message.getToUserName())){
+                if (StringUtils.isBlank(message.getToUserName())) {
                     log.error("corpId不能为空");
                     return;
                 }
@@ -44,6 +54,24 @@ public class WeCallBackUpdateUserImpl extends WeEventStrategy {
 
         } catch (Exception e) {
             log.error("成员更变到数据库失败：ex{}", ExceptionUtils.getStackTrace(e));
+        }
+    }
+
+    /**
+     * 为代开发应用 更新有用户  (临时方案 后续删除)
+     *
+     * @param message
+     */
+    private void updateForSuiteApp(WxCpXmlMessageVO message) {
+        //todo 由于代开发应用改造影响,会返回密文的corpId导致部分异常，这里先明文密文的都调用一次，后续代 代开发应用安全性改造后再去除
+        // 先根据 external_corp_id 查出其明文的企业id
+        WeCorpAccount corp = weCorpAccountService.getOne(new LambdaQueryWrapper<WeCorpAccount>()
+                .eq(WeCorpAccount::getExternalCorpId, message.getAuthCorpId())
+                .last(GenConstants.LIMIT_1)
+        );
+        if (corp != null && StringUtils.isNotBlank(corp.getCorpId())) {
+            weUserService.updateWeUserDataFromWeCom(message.getUserId(), corp.getCorpId());
+
         }
     }
 }

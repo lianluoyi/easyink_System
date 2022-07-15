@@ -20,6 +20,10 @@ public class EditUserDTO {
     private Long id;
     @ApiModelProperty("指定员工id")
     private List<String> userIdList;
+
+    @ApiModelProperty("指定部门id")
+    private List<String> departmentIdList;
+
     @ApiModelProperty(value = "企业ID", hidden = true)
     @JsonIgnore
     private String corpId;

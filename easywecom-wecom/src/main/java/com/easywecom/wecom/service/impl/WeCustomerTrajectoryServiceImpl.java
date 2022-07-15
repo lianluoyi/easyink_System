@@ -330,6 +330,7 @@ public class WeCustomerTrajectoryServiceImpl extends ServiceImpl<WeCustomerTraje
         String content = model.replace(GenConstants.CUSTOMER, customer.getName())
                 .replace(GenConstants.USER_NAME, user.getName());
         WeCustomerTrajectory trajectory = WeCustomerTrajectory.builder()
+                .userId(userId)
                 .externalUserid(externalUserId)
                 .trajectoryType(CustomerTrajectoryEnums.Type.ACTIVITY.getType())
                 .content(content)

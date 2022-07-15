@@ -33,27 +33,22 @@ import javax.validation.constraints.NotBlank;
 public class WeCustomerPortraitController extends BaseController {
 
 
-    @Autowired
-    private WeCustomerService weCustomerService;
-
-
-    @Autowired
-    private WeTagGroupService weTagGroupService;
-
-
-    @Autowired
-    private WeUserService weUserService;
-
+    private final WeCustomerService weCustomerService;
+    private final WeTagGroupService weTagGroupService;
+    private final WeUserService weUserService;
+    private final WeGroupService weGroupService;
+    private final WeCustomerTrajectoryService weCustomerTrajectoryService;
+    private final WeOperationsCenterSopDetailService sopDetailService;
 
     @Autowired
-    private WeGroupService weGroupService;
-
-
-    @Autowired
-    private WeCustomerTrajectoryService weCustomerTrajectoryService;
-    @Autowired
-    private WeOperationsCenterSopDetailService sopDetailService;
-
+    public WeCustomerPortraitController(WeCustomerService weCustomerService, WeTagGroupService weTagGroupService, WeUserService weUserService, WeGroupService weGroupService, WeCustomerTrajectoryService weCustomerTrajectoryService, WeOperationsCenterSopDetailService sopDetailService) {
+        this.weCustomerService = weCustomerService;
+        this.weTagGroupService = weTagGroupService;
+        this.weUserService = weUserService;
+        this.weGroupService = weGroupService;
+        this.weCustomerTrajectoryService = weCustomerTrajectoryService;
+        this.sopDetailService = sopDetailService;
+    }
 
     /**
      * 根据客户id和当前企业员工id获取客户详细信息

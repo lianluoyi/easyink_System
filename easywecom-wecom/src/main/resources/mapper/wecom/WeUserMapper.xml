@@ -171,6 +171,7 @@
         <if test="address != null  and address != ''">and wu.address = #{address}</if>
         <if test="birthday != null ">and wu.birthday = #{birthday}</if>
         <if test="mainDepartment != null" > and wu.main_department = #{mainDepartment}</if>
+        <if test="lastId != null">and wu.user_id > #{lastId}</if>
     </select>
 
     <select id="selectWeUserById" resultMap="WeUserResult">

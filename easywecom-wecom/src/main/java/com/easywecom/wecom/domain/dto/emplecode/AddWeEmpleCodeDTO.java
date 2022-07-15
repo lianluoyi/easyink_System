@@ -1,9 +1,12 @@
 package com.easywecom.wecom.domain.dto.emplecode;
 
 import com.easywecom.wecom.domain.WeEmpleCode;
+import com.easywecom.wecom.domain.WeRedeemCodeWelcomeMsgAndMaterial;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
+
+import java.util.List;
 
 /**
  * 类名：AddWeEmpleCodeDTO
@@ -20,4 +23,7 @@ public class AddWeEmpleCodeDTO extends WeEmpleCode {
 
     @ApiModelProperty("是否自动设置备注")
     private Boolean isAutoSetRemark;
+
+    @ApiModelProperty("兑换码活动欢迎语及附件")
+    private List<WeRedeemCodeWelcomeMsgAndMaterial> weRedeemCodeWelcomeMsgAndMaterialList;
 }

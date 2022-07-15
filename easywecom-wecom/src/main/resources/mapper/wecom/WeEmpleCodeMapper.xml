@@ -26,10 +26,23 @@
         <result property="isAutoSetRemark" column="isAutoSetRemark"/>
         <result property="tagFlag" column="tag_flag"/>
         <result property="mainDepartmentName" column="mainDepartmentName"/>
-        <result property="materialSort" column="material_sort" typeHandler="com.easywecom.framework.handler.StringArrayJoinTypeHandler"/>
+        <result property="materialSort" column="material_sort"
+                typeHandler="com.easywecom.framework.handler.StringArrayJoinTypeHandler"/>
+        <result property="welcomeMsgType" column="welcome_msg_type"/>
+        <result property="codeActivityId" column="code_activity_id"/>
+        <result property="codeSuccessMsg" column="code_success_msg"/>
+        <result property="codeFailMsg" column="code_fail_msg"/>
+        <result property="codeRepeatMsg" column="code_repeat_msg"/>
+        <result property="codeSuccessMaterialSort" column="code_success_material_sort"
+                typeHandler="com.easywecom.framework.handler.StringArrayJoinTypeHandler"/>
+        <result property="codeFailMaterialSort" column="code_fail_material_sort"
+                typeHandler="com.easywecom.framework.handler.StringArrayJoinTypeHandler"/>
+        <result property="codeRepeatMaterialSort" column="code_repeat_material_sort"
+                typeHandler="com.easywecom.framework.handler.StringArrayJoinTypeHandler"/>
         <collection property="weEmpleCodeUseScops" ofType="com.easywecom.wecom.domain.WeEmpleCodeUseScop">
             <result property="id" column="scopeId"/>
             <result property="businessId" column="business_id"/>
+            <result property="businessIdType" column="business_id_type"/>
             <result property="businessName" column="business_name"/>
             <result property="mobile" column="mobile"/>
         </collection>
@@ -49,6 +62,17 @@
         <result property="tagFlag" column="tag_flag"/>
         <result property="remarkType" column="remark_type"/>
         <result property="remarkName" column="remark_name"/>
+        <result property="codeRepeatMaterialSort" column="code_repeat_material_sort"
+                typeHandler="com.easywecom.framework.handler.StringArrayJoinTypeHandler"/>
+        <result property="codeFailMaterialSort" column="code_fail_material_sort"
+                typeHandler="com.easywecom.framework.handler.StringArrayJoinTypeHandler"/>
+        <result property="codeSuccessMaterialSort" column="code_success_material_sort"
+                typeHandler="com.easywecom.framework.handler.StringArrayJoinTypeHandler"/>
+        <result property="codeFailMsg" column="code_fail_msg"/>
+        <result property="codeSuccessMsg" column="code_success_msg"/>
+        <result property="codeRepeatMsg" column="code_repeat_msg"/>
+        <result property="codeActivityId" column="code_activity_id"/>
+        <result property="welcomeMsgType" column="welcome_msg_type"/>
         <result property="materialSort" column="material_sort"
                 typeHandler="com.easywecom.framework.handler.StringArrayJoinTypeHandler"/>
     </resultMap>
@@ -80,60 +104,74 @@
 
     <sql id="selectWeEmpleCodeLsit">
         select
-        wecode.id,
-        wecode.code_type,
-        wecode.corp_id,
-        wecode.skip_verify,
-        IF(skip_verify=0,0,1) isAutoPass,
-        wecode.scenario,
-        wecode.welcome_msg,
-        wecode.create_by,
-        wecode.create_time,
-        wecode.del_flag,
-        wecode.config_id,
-        wecode.qr_code,
-        wecode.state,
-        wecode.source,
-        wecode.remark_type,
-        wecode.tag_flag,
-        IF(wecode.remark_type=0,0,1) isAutoSetRemark,
-        wecode.remark_name,
-        wecode.effect_time_open,
-        wecode.effect_time_close,
-        wecode.material_sort,
-        wecusn.business_id,
-        wecusn.business_name,
-        wecusn.mobile,
-        wect.tag_id,
-        wect.tag_name
-        from
-        we_emple_code wecode
-        left join (
-        SELECT
-        wecus.emple_code_id, wecus.business_id, wecus.business_name,wu.mobile
+            wecode.id,
+            wecode.code_type,
+            wecode.corp_id,
+            wecode.skip_verify,
+            IF(skip_verify=0,0,1) isAutoPass,
+            wecode.scenario,
+            wecode.welcome_msg,
+            wecode.create_by,
+            wecode.create_time,
+            wecode.del_flag,
+            wecode.config_id,
+            wecode.qr_code,
+            wecode.state,
+            wecode.source,
+            wecode.remark_type,
+            wecode.tag_flag,
+            IF(wecode.remark_type = 0, 0, 1) isAutoSetRemark,
+            wecode.remark_name,
+            wecode.effect_time_open,
+            wecode.effect_time_close,
+            wecode.material_sort,
+            wecode.welcome_msg_type,
+            wecode.code_activity_id,
+            wecode.code_success_msg,
+            wecode.code_success_material_sort,
+            wecode.code_fail_msg,
+            wecode.code_fail_material_sort,
+            wecode.code_repeat_msg,
+            wecode.code_repeat_material_sort,
+            wecusn.business_id,
+            wecusn.business_name,
+            wecusn.business_id_type,
+            wecusn.mobile,
+            wect.tag_id,
+            wect.tag_name
+        from we_emple_code wecode
+                 left join (
+            SELECT
+        wecus.emple_code_id, wecus.business_id, wecus.business_id_type,wecus.business_name,wu.mobile
         FROM
         we_emple_code_use_scop wecus
         LEFT JOIN we_user wu ON
-        wu.user_id = wecus.business_id
-        AND wu.corp_id = #{corpId}
-        WHERE
-        wecus.del_flag = 0
+                wu.user_id = wecus.business_id
+                AND wu.corp_id = #{corpId}
+            WHERE wecus.del_flag = 0
         ) as wecusn on
-        wecode.id = wecusn.emple_code_id
-        left join we_emple_code_tag wect on
-        wecode.id = wect.emple_code_id and wect.del_flag = 0
+            wecode.id = wecusn.emple_code_id
+                 left join we_emple_code_tag wect on
+            wecode.id = wect.emple_code_id and wect.del_flag = 0
         where wecode.del_flag = 0
     </sql>
+    <delete id="deleteWeEmpleCode">
+        delete
+        from we_emple_code
+        where corp_id = #{corpId}
+          and id = #{id}
+    </delete>
 
-    <select id="selectWeEmpleCodeList" parameterType="com.easywecom.wecom.domain.dto.emplecode.FindWeEmpleCodeDTO" resultMap="WeEmpleCodeResult">
+    <select id="selectWeEmpleCodeList" parameterType="com.easywecom.wecom.domain.dto.emplecode.FindWeEmpleCodeDTO"
+            resultMap="WeEmpleCodeResult">
         select a.*,IFNULL(wd.name,'') mainDepartmentName
         from (
-            <include refid="selectWeEmpleCodeLsit"/>
-            and wecode.code_type != ${@com.easywecom.common.constant.WeConstans@BATCH_SINGLE_EMPLE_CODE_TYPE}
-            and wecode.corp_id = #{corpId}
-            <if test="scenario != null  and scenario != ''">
-                and wecode.scenario like concat('%', #{scenario}, '%')
-            </if>
+        <include refid="selectWeEmpleCodeLsit"/>
+        and wecode.code_type != ${@com.easywecom.common.constant.WeConstans@BATCH_SINGLE_EMPLE_CODE_TYPE}
+        and wecode.corp_id = #{corpId}
+        <if test="scenario != null  and scenario != ''">
+            and wecode.scenario like concat('%', #{scenario}, '%')
+        </if>
             <if test="createBy != null and createBy !=''">
                 AND wecode.create_by like concat('%', #{createBy}, '%')
             </if>
@@ -183,6 +221,14 @@
             <if test="effectTimeClose != null">effect_time_close,</if>
             <if test="materialSort != null">material_sort,</if>
             <if test="tagFlag != null">tag_flag,</if>
+            <if test="welcomeMsgType != null">welcome_msg_type,</if>
+            <if test="codeActivityId != null">code_activity_id,</if>
+            <if test="codeSuccessMaterialSort != null">code_success_material_sort,</if>
+            <if test="codeSuccessMsg != null">code_success_msg,</if>
+            <if test="codeFailMaterialSort != null">code_fail_material_sort,</if>
+            <if test="codeFailMsg != null">code_fail_msg,</if>
+            <if test="codeRepeatMaterialSort != null">code_repeat_material_sort,</if>
+            <if test="codeRepeatMsg != null">code_repeat_msg</if>
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="id != null">#{id},</if>
@@ -202,8 +248,24 @@
             <if test="remarkName != null">#{remarkName},</if>
             <if test="effectTimeOpen != null">#{effectTimeOpen},</if>
             <if test="effectTimeClose != null">#{effectTimeClose},</if>
-            <if test="materialSort != null">#{materialSort,jdbcType=OTHER,typeHandler=com.easywecom.framework.handler.StringArrayJoinTypeHandler},</if>
-            <if test="tagFlag != null">#{tagFlag}</if>
+            <if test="materialSort != null">
+                #{materialSort,jdbcType=OTHER,typeHandler=com.easywecom.framework.handler.StringArrayJoinTypeHandler},
+            </if>
+            <if test="tagFlag != null">#{tagFlag},</if>
+            <if test="welcomeMsgType != null">#{welcomeMsgType},</if>
+            <if test="codeActivityId != null">#{codeActivityId},</if>
+            <if test="codeSuccessMaterialSort != null">
+                #{codeSuccessMaterialSort,jdbcType=OTHER,typeHandler=com.easywecom.framework.handler.StringArrayJoinTypeHandler},
+            </if>
+            <if test="codeSuccessMsg != null">#{codeSuccessMsg},</if>
+            <if test="codeFailMaterialSort != null">
+                #{codeFailMaterialSort,jdbcType=OTHER,typeHandler=com.easywecom.framework.handler.StringArrayJoinTypeHandler},
+            </if>
+            <if test="codeFailMsg != null">#{codeFailMsg},</if>
+            <if test="codeRepeatMaterialSort != null">
+                #{codeRepeatMaterialSort,jdbcType=OTHER,typeHandler=com.easywecom.framework.handler.StringArrayJoinTypeHandler},
+            </if>
+            <if test="codeRepeatMsg != null">#{codeRepeatMsg}</if>
         </trim>
     </insert>
 
@@ -223,8 +285,25 @@
             <if test="remarkName != null">remark_name = #{remarkName},</if>
             <if test="effectTimeOpen != null">effect_time_open = #{effectTimeOpen},</if>
             <if test="effectTimeClose != null">effect_time_close = #{effectTimeClose},</if>
-            <if test="materialSort != null">material_sort = #{materialSort,jdbcType=OTHER,typeHandler=com.easywecom.framework.handler.StringArrayJoinTypeHandler},</if>
-            <if test="tagFlag!=null"> tag_flag = #{tagFlag}</if>
+            <if test="materialSort != null">material_sort =
+                #{materialSort,jdbcType=OTHER,typeHandler=com.easywecom.framework.handler.StringArrayJoinTypeHandler},
+            </if>
+            <if test="tagFlag!=null">tag_flag = #{tagFlag},</if>
+            <if test="welcomeMsgType != null">welcome_msg_type = #{welcomeMsgType},</if>
+            <if test="codeActivityId != null">code_activity_id = {codeActivityId},</if>
+            <if test="codeSuccessMaterialSort != null and codeSuccessMaterialSort.length > 0">code_success_material_sort
+                =
+                #{codeSuccessMaterialSort,jdbcType=OTHER,typeHandler=com.easywecom.framework.handler.StringArrayJoinTypeHandler},
+            </if>
+            <if test="codeSuccessMsg != null">code_success_msg = #{codeSuccessMsg},</if>
+            <if test="codeFailMaterialSort != null and codeSuccessMaterialSort.length > 0">code_fail_material_sort =
+                #{codeFailMaterialSort,jdbcType=OTHER,typeHandler=com.easywecom.framework.handler.StringArrayJoinTypeHandler},
+            </if>
+            <if test="codeFailMsg != null">code_fail_msg = #{codeFailMsg},</if>
+            <if test="codeRepeatMaterialSort != null and codeSuccessMaterialSort.length > 0">code_repeat_material_sort =
+                #{codeRepeatMaterialSort,jdbcType=OTHER,typeHandler=com.easywecom.framework.handler.StringArrayJoinTypeHandler},
+            </if>
+            <if test="codeRepeatMsg != null">code_repeat_msg = #{codeRepeatMsg}</if>
         </trim>
         where id = #{id} and corp_id = #{corpId}
     </update>
@@ -239,6 +318,7 @@
             #{id}
         </foreach>
     </update>
+
 
 
     <select id="selectWelcomeMsgByScenario" resultType="com.easywecom.wecom.domain.dto.WeEmpleCodeDTO">
@@ -268,21 +348,25 @@
 
 
     <select id="selectWelcomeMsgByState" resultMap="SelectWelcomeMsgByStateResult">
-        SELECT
-            wecode.id,
-            wecode.welcome_msg,
-	        wecode.material_sort,
-	        wecode.source,
-	        wecode.tag_flag,
-	        wecode.remark_type,
-	        wecode.remark_name
-        FROM
-            we_emple_code wecode
-        WHERE
-            wecode.del_flag = '${@com.easywecom.common.constant.Constants@NORMAL_CODE}'
-            AND wecode.corp_id = #{corpId}
-            AND wecode.state = #{state}
-            LIMIT 1
+        SELECT wecode.id,
+               wecode.welcome_msg,
+               wecode.material_sort,
+               wecode.source,
+               wecode.tag_flag,
+               wecode.remark_type,
+               wecode.remark_name,
+               code_repeat_material_sort,
+               code_fail_material_sort,
+               code_success_material_sort,
+               code_fail_msg,
+               code_repeat_msg,
+               code_success_msg,
+               code_activity_id,
+               welcome_msg_type
+        FROM we_emple_code wecode
+        WHERE wecode.del_flag = '${@com.easywecom.common.constant.Constants@NORMAL_CODE}'
+          AND wecode.corp_id = #{corpId}
+          AND wecode.state = #{state} LIMIT 1
     </select>
 
     <select id="getWeEmpleCodeByTime" resultType="com.easywecom.wecom.domain.WeEmpleCode">
@@ -335,30 +419,29 @@
 
 
     <select id="getUserByEmplyCodeId" resultType="com.easywecom.wecom.domain.vo.WeEmplyCodeScopeUserVO">
-        SELECT wu.user_id,wu.user_name FROM (
-            SELECT
-                wec.corp_id,
-                wecus.business_id user_id
-            FROM
-                we_emple_code wec
-                LEFT JOIN we_emple_code_use_scop wecus ON wecus.emple_code_id = wec.id AND wecus.del_flag = '${@com.easywecom.common.constant.Constants@NORMAL_CODE}'
-            WHERE
-                wec.id = #{id}
-                AND wec.corp_id = #{corpId}
-                GROUP BY wecus.business_id
-            UNION
-            SELECT
-                wec.corp_id,
-                weca.user_id user_id
-            FROM
-                we_emple_code_analyse weca
-                LEFT JOIN we_emple_code wec ON wec.id = weca.emple_code_id AND wec.corp_id = weca.corp_id
-            WHERE
-                wec.id = #{id}
-                AND wec.corp_id = #{corpId}
-                GROUP BY weca.user_id
-        ) temp
-        LEFT JOIN we_user wu ON temp.corp_id = wu.corp_id AND temp.user_id = wu.user_id
+        SELECT wu.user_id, wu.user_name
+        FROM (
+                 SELECT wec.corp_id,
+                        wecus.business_id user_id
+                 FROM we_emple_code wec
+                          LEFT JOIN we_emple_code_use_scop wecus ON wecus.emple_code_id = wec.id AND wecus.del_flag =
+                                                                                                     '${@com.easywecom.common.constant.Constants@NORMAL_CODE}' AND
+                                                                    wecus.business_id_type =
+                                                                    '${@com.easywecom.common.constant.Constants@USE_SCOP_BUSINESSID_TYPE_USER}'
+                 WHERE wec.id = #{id}
+                   AND wec.corp_id = #{corpId}
+                 GROUP BY wecus.business_id
+                 UNION
+                 SELECT wec.corp_id,
+                        weca.user_id user_id
+                 FROM we_emple_code_analyse weca
+                          LEFT JOIN we_emple_code wec ON wec.id = weca.emple_code_id AND wec.corp_id = weca.corp_id
+                 WHERE wec.id = #{id}
+                   AND wec.corp_id = #{corpId}
+                 GROUP BY weca.user_id
+             ) temp
+                 LEFT JOIN we_user wu ON temp.corp_id = wu.corp_id AND temp.user_id = wu.user_id
+        WHERE wu.user_id IS NOT NULL
         GROUP BY temp.user_id
     </select>
 

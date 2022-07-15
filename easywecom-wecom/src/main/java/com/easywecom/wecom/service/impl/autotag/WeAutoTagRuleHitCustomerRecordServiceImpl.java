@@ -15,6 +15,7 @@ import com.easywecom.wecom.domain.vo.autotag.record.customer.CustomerTagRuleReco
 import com.easywecom.wecom.mapper.autotag.WeAutoTagRuleHitCustomerRecordMapper;
 import com.easywecom.wecom.mapper.autotag.WeAutoTagRuleHitCustomerRecordTagRelMapper;
 import com.easywecom.wecom.service.WeCustomerService;
+import com.easywecom.wecom.service.WeCustomerTrajectoryService;
 import com.easywecom.wecom.service.autotag.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -93,7 +94,7 @@ public class WeAutoTagRuleHitCustomerRecordServiceImpl extends ServiceImpl<WeAut
 
         // 2.判断员工是否符合规则设置的使用人员范围,符合条件的添加到正式规则列表rules
         List<Long> availableRuleIdList = weAutoTagUserRelService.
-                getCurrentUserIdAvailableCustomerRuleIdList(candidatesRuleIdList, userId);
+                getCurrentUserIdAvailableCustomerRuleIdList(corpId, candidatesRuleIdList, userId);
         if (CollectionUtils.isEmpty(availableRuleIdList)) {
             log.info("新客打标签, 当前员工没有可使用范围内的标签规则, userId: {}", userId);
             return;
@@ -130,8 +131,9 @@ public class WeAutoTagRuleHitCustomerRecordServiceImpl extends ServiceImpl<WeAut
         if (CollectionUtils.isNotEmpty(allTagList)) {
             log.info(">>>>>>>>>>>>>>>准备进行打标签,标签列表: {}", allTagList.stream().map(WeTag::getTagId).collect(Collectors.toList()));
             WeMakeCustomerTagVO weMakeCustomerTagVO = new WeMakeCustomerTagVO(customerId, userId, allTagList, corpId);
-            weCustomerService.makeLabelbatch(Collections.singletonList(weMakeCustomerTagVO));
+            weCustomerService.makeLabelbatch(Collections.singletonList(weMakeCustomerTagVO), userId);
         }
+
 
     }
 

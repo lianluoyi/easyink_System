@@ -32,6 +32,9 @@ public class AddWeGroupSopDTO extends WeOperationsCenterSopEntity {
     @ApiModelProperty("指定员工id")
     private List<String> userIdList;
 
+    @ApiModelProperty("指定部门id")
+    private List<String> departmentIdList;
+
     @ApiModelProperty("筛选客户的条件")
     private AddWeCustomerSopDTO sopCustomerFilter;
 }

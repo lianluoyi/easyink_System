@@ -385,7 +385,8 @@ public class WeOperationsCenterSopTask {
             //查询这分钟内符合条件的保存到scope
             List<String> chatIdList = groupList.stream().map(WeGroup::getChatId).collect(Collectors.toList());
             if (CollectionUtils.isNotEmpty(chatIdList)) {
-                sopScopeService.updateSopScope(corpId, sopId, chatIdList);
+                //此处用不到部门
+                sopScopeService.updateSopScope(corpId, sopId, chatIdList, null);
             } else {
                 //当查无符合条件的数据时，清空scope数据
                 List<Long> sopIdList = new ArrayList<>();

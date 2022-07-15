@@ -6,6 +6,8 @@ import com.alibaba.fastjson.JSONArray;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.easywecom.common.constant.WeConstans;
+import com.easywecom.common.core.domain.wecom.WeDepartment;
 import com.easywecom.common.enums.ResultTip;
 import com.easywecom.common.enums.WeOperationsCenterSop;
 import com.easywecom.common.exception.CustomException;
@@ -17,6 +19,7 @@ import com.easywecom.wecom.domain.vo.WeUserVO;
 import com.easywecom.wecom.domain.vo.sop.*;
 import com.easywecom.wecom.mapper.WeOperationsCenterSopMapper;
 import com.easywecom.wecom.service.*;
+import com.google.common.collect.Lists;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
@@ -47,9 +50,10 @@ public class WeOperationsCenterSopServiceImpl extends ServiceImpl<WeOperationsCe
     private final WeCustomerService weCustomerService;
     private final WeGroupService weGroupService;
     private final WeTagService weTagService;
+    private final WeDepartmentService weDepartmentService;
 
     @Autowired
-    public WeOperationsCenterSopServiceImpl(WeOperationsCenterGroupSopFilterService sopFilterService, WeOperationsCenterSopScopeService sopScopeService, WeOperationsCenterSopRulesService sopRulesService, WeOperationsCenterCustomerSopFilterService customerSopFilterService, WeUserService weUserService, WeCustomerService weCustomerService, WeGroupService weGroupService, WeTagService weTagService) {
+    public WeOperationsCenterSopServiceImpl(WeOperationsCenterGroupSopFilterService sopFilterService, WeOperationsCenterSopScopeService sopScopeService, WeOperationsCenterSopRulesService sopRulesService, WeOperationsCenterCustomerSopFilterService customerSopFilterService, WeUserService weUserService, WeCustomerService weCustomerService, WeGroupService weGroupService, WeTagService weTagService, WeDepartmentService weDepartmentService) {
         this.sopFilterService = sopFilterService;
         this.sopScopeService = sopScopeService;
         this.sopRulesService = sopRulesService;
@@ -58,6 +62,7 @@ public class WeOperationsCenterSopServiceImpl extends ServiceImpl<WeOperationsCe
         this.weCustomerService = weCustomerService;
         this.weGroupService = weGroupService;
         this.weTagService = weTagService;
+        this.weDepartmentService = weDepartmentService;
     }
 
     @Override
@@ -120,6 +125,15 @@ public class WeOperationsCenterSopServiceImpl extends ServiceImpl<WeOperationsCe
         //组合返回值
         SopDetailVO sopDetailVO = new SopDetailVO(sopVo);
         List<String> targetList = scopeList.stream().map(WeOperationsCenterSopScopeEntity::getTargetId).collect(Collectors.toList());
+        //加入部门
+        List<String> departmentIdList = scopeList.stream().filter(a->a.getType().equals(WeConstans.SOP_USE_DEPARTMENT)).map(WeOperationsCenterSopScopeEntity::getTargetId).collect(Collectors.toList());
+        if(CollectionUtils.isNotEmpty(departmentIdList)){
+            List<WeDepartment> weDepartments = weDepartmentService.listByIds(departmentIdList);
+            List<DepartmentVO> weDepartmentVO = weDepartmentService.getDeparmentDetailByIds(corpId, departmentIdList);
+            if(CollectionUtils.isNotEmpty(weDepartments)){
+                sopDetailVO.setDepartmentList(weDepartmentVO);
+            }
+        }
         //客户sop 作用范围
         if (WeOperationsCenterSop.SopTypeEnum.isCustomerSop(sopVo.getSopType())) {
             buildCustomerScope(corpId, sopId, sopVo.getSopType(), sopDetailVO, targetList);
@@ -214,6 +228,13 @@ public class WeOperationsCenterSopServiceImpl extends ServiceImpl<WeOperationsCe
             List<WeUserVO> weUsers = weUserService.listOfUser(corpId, Arrays.asList(customerSopFilterVO.getUsers().split(StrUtil.COMMA)));
             setSopUserVO(weUsers, userInfoList);
             customerSopFilterVO.setUserInfoList(userInfoList);
+            final List<String> departmentIdList = Arrays.asList(StrUtil.split(customerSopFilter.getDepartments(), StrUtil.COMMA));
+            if (CollectionUtils.isNotEmpty(departmentIdList)) {
+                List<DepartmentVO> weDepartmentVO = weDepartmentService.getDeparmentDetailByIds(corpId, departmentIdList);
+                if (CollectionUtils.isNotEmpty(weDepartmentVO)) {
+                    customerSopFilterVO.setDepartmentInfoList(weDepartmentVO);
+                }
+            }
         }
         //获取已打标签的标签详情
         customerSopFilterVO.setTagList(buildCustomerTagList(corpId, customerSopFilter.getTagId()));
@@ -271,18 +292,20 @@ public class WeOperationsCenterSopServiceImpl extends ServiceImpl<WeOperationsCe
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void editUser(EditUserDTO updateWeSopDTO) {
-        if (CollectionUtils.isNotEmpty(updateWeSopDTO.getUserIdList()) && updateWeSopDTO.getId() != null) {
+        boolean exitEditUserOrDepartment = CollectionUtils.isNotEmpty(updateWeSopDTO.getUserIdList()) || CollectionUtils.isNotEmpty(updateWeSopDTO.getDepartmentIdList());
+        if (exitEditUserOrDepartment && updateWeSopDTO.getId() != null) {
             if (StringUtils.isBlank(updateWeSopDTO.getCorpId())) {
                 throw new CustomException(ResultTip.TIP_MISS_CORP_ID);
             }
             List<Long> sopIds = new ArrayList<>();
             sopIds.add(updateWeSopDTO.getId());
             sopScopeService.delSopByCorpIdAndSopIdList(updateWeSopDTO.getCorpId(), sopIds);
-            sopScopeService.saveBatch(buildScope(updateWeSopDTO.getUserIdList(), updateWeSopDTO.getId(), updateWeSopDTO.getCorpId()));
+            sopScopeService.saveBatch(buildScope(updateWeSopDTO.getUserIdList(), updateWeSopDTO.getDepartmentIdList(), updateWeSopDTO.getId(), updateWeSopDTO.getCorpId()));
             customerSopFilterService.update(new LambdaUpdateWrapper<WeOperationsCenterCustomerSopFilterEntity>()
                     .eq(WeOperationsCenterCustomerSopFilterEntity::getSopId, updateWeSopDTO.getId())
                     .eq(WeOperationsCenterCustomerSopFilterEntity::getCorpId, updateWeSopDTO.getCorpId())
-                    .set(WeOperationsCenterCustomerSopFilterEntity::getUsers, String.join(StrUtil.COMMA, updateWeSopDTO.getUserIdList())));
+                    .set(WeOperationsCenterCustomerSopFilterEntity::getUsers, CollectionUtils.isNotEmpty(updateWeSopDTO.getUserIdList()) ? String.join(StrUtil.COMMA, updateWeSopDTO.getUserIdList()) : StringUtils.EMPTY)
+                    .set(WeOperationsCenterCustomerSopFilterEntity::getDepartments, CollectionUtils.isNotEmpty(updateWeSopDTO.getDepartmentIdList()) ? String.join(StrUtil.COMMA, updateWeSopDTO.getDepartmentIdList()) : StringUtils.EMPTY));
         }
     }
 
@@ -294,11 +317,22 @@ public class WeOperationsCenterSopServiceImpl extends ServiceImpl<WeOperationsCe
      * @param corpId     企业id
      * @return {@link List<WeOperationsCenterSopScopeEntity>}
      */
-    private List<WeOperationsCenterSopScopeEntity> buildScope(List<String> userIdList, Long sopId, String corpId) {
+    private List<WeOperationsCenterSopScopeEntity> buildScope(List<String> userIdList, List<String> departmentIdList, Long sopId, String corpId) {
         List<WeOperationsCenterSopScopeEntity> scopeEntityList = new ArrayList<>();
+        Optional.ofNullable(userIdList).orElseGet(Lists::newArrayList);
         for (String userId : userIdList) {
             WeOperationsCenterSopScopeEntity scopeEntity = new WeOperationsCenterSopScopeEntity();
             scopeEntity.setTargetId(userId);
+            scopeEntity.setType(WeConstans.SOP_USE_EMPLOYEE);
+            scopeEntity.setCorpId(corpId);
+            scopeEntity.setSopId(sopId);
+            scopeEntityList.add(scopeEntity);
+        }
+        Optional.ofNullable(departmentIdList).orElseGet(Lists::newArrayList);
+        for (String departmentId : departmentIdList) {
+            WeOperationsCenterSopScopeEntity scopeEntity = new WeOperationsCenterSopScopeEntity();
+            scopeEntity.setTargetId(departmentId);
+            scopeEntity.setType(WeConstans.SOP_USE_DEPARTMENT);
             scopeEntity.setCorpId(corpId);
             scopeEntity.setSopId(sopId);
             scopeEntityList.add(scopeEntity);

@@ -1,5 +1,6 @@
 package com.easywecom.wecom.service.impl.moment;
 
+import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
@@ -8,6 +9,7 @@ import com.easywecom.common.constant.WeConstans;
 import com.easywecom.common.core.domain.model.LoginUser;
 import com.easywecom.common.core.domain.wecom.WeUser;
 import com.easywecom.common.enums.GroupMessageType;
+import com.easywecom.common.enums.MediaType;
 import com.easywecom.common.enums.ResultTip;
 import com.easywecom.common.enums.moment.*;
 import com.easywecom.common.exception.CustomException;
@@ -22,7 +24,9 @@ import com.easywecom.wecom.domain.dto.message.ImageMessageDTO;
 import com.easywecom.wecom.domain.dto.message.LinkMessageDTO;
 import com.easywecom.wecom.domain.dto.moment.*;
 import com.easywecom.wecom.domain.entity.moment.*;
+import com.easywecom.wecom.domain.vo.WeUserVO;
 import com.easywecom.wecom.domain.vo.moment.*;
+import com.easywecom.wecom.domain.vo.sop.DepartmentVO;
 import com.easywecom.wecom.login.util.LoginTokenService;
 import com.easywecom.wecom.mapper.moment.WeMomentTaskMapper;
 import com.easywecom.wecom.mapper.moment.WeMomentUserCustomerRelMapper;
@@ -33,6 +37,7 @@ import com.easywecom.wecom.service.moment.WeMomentTaskService;
 import com.easywecom.wecom.service.moment.WeMomentUserCustomerRelService;
 import com.easywecom.wecom.utils.ApplicationMessageUtil;
 import com.github.pagehelper.PageHelper;
+import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -64,9 +69,10 @@ public class WeMomentTaskServiceImpl extends ServiceImpl<WeMomentTaskMapper, WeM
     private final WeCustomerService weCustomerService;
     private final WeTagService weTagService;
     private final WeMomentUserCustomerRelMapper weMomentUserCustomerRelMapper;
+    private final WeDepartmentService weDepartmentService;
 
     @Autowired
-    public WeMomentTaskServiceImpl(WeMomentClient momentClient, WeWordsDetailService weWordsDetailService, WeMomentTaskResultService weMomentTaskResultService, WeCustomerMessageService weCustomerMessageService, WeMomentDetailRelService weMomentDetailRelService, WeUserService weUserService, ApplicationMessageUtil applicationMessageUtil, WeMomentUserCustomerRelService weMomentUserCustomerRelService, WeCustomerService weCustomerService, WeTagService weTagService, WeMomentUserCustomerRelMapper weMomentUserCustomerRelMapper) {
+    public WeMomentTaskServiceImpl(WeMomentClient momentClient, WeWordsDetailService weWordsDetailService, WeMomentTaskResultService weMomentTaskResultService, WeCustomerMessageService weCustomerMessageService, WeMomentDetailRelService weMomentDetailRelService, WeUserService weUserService, ApplicationMessageUtil applicationMessageUtil, WeMomentUserCustomerRelService weMomentUserCustomerRelService, WeCustomerService weCustomerService, WeTagService weTagService, WeMomentUserCustomerRelMapper weMomentUserCustomerRelMapper, WeDepartmentService weDepartmentService) {
         this.momentClient = momentClient;
         this.weWordsDetailService = weWordsDetailService;
         this.weMomentTaskResultService = weMomentTaskResultService;
@@ -78,6 +84,7 @@ public class WeMomentTaskServiceImpl extends ServiceImpl<WeMomentTaskMapper, WeM
         this.weCustomerService = weCustomerService;
         this.weTagService = weTagService;
         this.weMomentUserCustomerRelMapper = weMomentUserCustomerRelMapper;
+        this.weDepartmentService = weDepartmentService;
     }
 
     /**
@@ -91,9 +98,12 @@ public class WeMomentTaskServiceImpl extends ServiceImpl<WeMomentTaskMapper, WeM
     public void createMomentTask(CreateMomentTaskDTO createMomentTaskDTO, LoginUser loginUser) {
         //校验参数
         checkCreateMomentTaskParam(createMomentTaskDTO);
+        //权限下的部门
+        List<String> departmentScope = getDepartmentScope(loginUser, createMomentTaskDTO.getDepartments());
         //权限下的员工
-        List<String> userScope = getUserScope(loginUser, createMomentTaskDTO.getUsers());
-        WeMomentTaskEntity weMomentTaskEntity = new WeMomentTaskEntity(createMomentTaskDTO,userScope,loginUser.getUserId());
+        Set<String> userScope = getUserScope(loginUser, createMomentTaskDTO.getUsers(), departmentScope);
+
+        WeMomentTaskEntity weMomentTaskEntity = new WeMomentTaskEntity(createMomentTaskDTO,new ArrayList<>(userScope), departmentScope, loginUser.getUserId());
         //先上传一遍素材判断是否合法
         if (CollectionUtils.isNotEmpty(createMomentTaskDTO.getAttachments())) {
             buildMomentAttachment(createMomentTaskDTO.getAttachments(), weMomentTaskEntity.getCorpId());
@@ -105,14 +115,22 @@ public class WeMomentTaskServiceImpl extends ServiceImpl<WeMomentTaskMapper, WeM
         }
         //保存we_moment_detail_rel附件关联表
         saveMomentDetailRel(createMomentTaskDTO.getAttachments(), weMomentTaskEntity.getId());
-        List<WeCustomer> weCustomers = weCustomerService.selectWeCustomerListNoRel(new WeCustomerPushMessageDTO(String.join(StrUtil.COMMA,createMomentTaskDTO.getUsers()), weMomentTaskEntity.getTags(),weMomentTaskEntity.getCorpId()));
+        String users = CollectionUtils.isNotEmpty(createMomentTaskDTO.getUsers()) ? String.join(StrUtil.COMMA,createMomentTaskDTO.getUsers()) : StringUtils.EMPTY;
+        String departments = CollectionUtils.isNotEmpty(createMomentTaskDTO.getDepartments()) ? String.join(StrUtil.COMMA,createMomentTaskDTO.getDepartments()) : StringUtils.EMPTY;
+        List<WeCustomer> weCustomers = weCustomerService.selectWeCustomerListNoRel(new WeCustomerPushMessageDTO(users, weMomentTaskEntity.getTags(), weMomentTaskEntity.getCorpId(), departments));
         //个人朋友无客户圈抛出异常
         if(MomentTypeEnum.PERSONAL_MOMENT.getType().equals(createMomentTaskDTO.getType())&& CollectionUtils.isEmpty(weCustomers)){
             throw new CustomException(ResultTip.TIP_MOMENT_CREATE_ERROR);
         }
+
         Set<String> userIdSet = weCustomers.stream().map(WeCustomer::getUserId).collect(Collectors.toSet());
+        List<String> userScopeByDepartment = weUserService.listOfUserId(weMomentTaskEntity.getCorpId(),departmentScope.toArray(new String[]{}));
+        if(CollectionUtils.isNotEmpty(userScopeByDepartment)){
+            userScope.addAll(userScopeByDepartment);
+        }
+        List<String> userScopeList = new ArrayList<>(userScope);
         //保存执行结果
-        saveTaskNotPublishResult(weMomentTaskEntity.getId(), userScope,userIdSet,createMomentTaskDTO.getType(),createMomentTaskDTO.getPushRange());
+        saveTaskNotPublishResult(weMomentTaskEntity.getId(), userScopeList,userIdSet,createMomentTaskDTO.getType(),createMomentTaskDTO.getPushRange());
         //是否为定时任务
         if (MomentTaskTypeEnum.RIGHT_NOW.getType().equals(createMomentTaskDTO.getTaskType())){
             startCreatMoment(weMomentTaskEntity,createMomentTaskDTO.getAttachments());
@@ -120,6 +138,25 @@ public class WeMomentTaskServiceImpl extends ServiceImpl<WeMomentTaskMapper, WeM
             weMomentTaskEntity.setStatus(MomentStatusEnum.NOT_START.getType());
             this.save(weMomentTaskEntity);
         }
+    }
+
+    /**
+     * 查看登录用户是否有传入部门的使用权限，返回有使用权限的部门
+     *
+     * @param loginUser
+     * @param departments
+     * @return
+     */
+    private List<String> getDepartmentScope(LoginUser loginUser, List<String> departments) {
+        if (ObjectUtil.isNull(loginUser)
+                || org.apache.commons.lang3.StringUtils.isBlank(loginUser.getCorpId())
+                || org.apache.commons.lang3.StringUtils.isBlank(loginUser.getDepartmentDataScope())) {
+            return Collections.emptyList();
+        }
+        // 获取登录用户缓存中该用户的所有部门权限(格式：1,2,3)
+        String dataScope = loginUser.getDepartmentDataScope();
+        List<String> departmentScope = Arrays.asList(dataScope.split(StrUtil.COMMA));
+        return CollectionUtils.isEmpty(departments)? Collections.emptyList() :departments.stream().filter(departmentScope::contains).collect(Collectors.toList());
     }
 
     @Override
@@ -134,8 +171,13 @@ public class WeMomentTaskServiceImpl extends ServiceImpl<WeMomentTaskMapper, WeM
             updateTaskStatus(weMomentTaskEntity);
         } else {
             //个人朋友圈、发送应用消息、设置创建状态
-            List<WeCustomer> weCustomers = weCustomerService.selectWeCustomerListNoRel(new WeCustomerPushMessageDTO(weMomentTaskEntity.getUsers(), weMomentTaskEntity.getTags(),weMomentTaskEntity.getCorpId()));
+            List<WeCustomer> weCustomers = weCustomerService.selectWeCustomerListNoRel(new WeCustomerPushMessageDTO(weMomentTaskEntity.getUsers(), weMomentTaskEntity.getTags(),weMomentTaskEntity.getCorpId(),weMomentTaskEntity.getDepartments()));
+            //通过部门查询员工
+            List<String> userIdsByDepartment = weUserService.listOfUserId(weMomentTaskEntity.getCorpId(),weMomentTaskEntity.getDepartments().split(StrUtil.COMMA));
             List<String> userIds = new ArrayList<>(Arrays.asList(weMomentTaskEntity.getUsers().split(StrUtil.COMMA)));
+            if(CollectionUtils.isNotEmpty(userIdsByDepartment)){
+                userIds.addAll(userIdsByDepartment);
+            }
             if (CollectionUtils.isNotEmpty(weCustomers)){
                 Set<String> userIdSet = weCustomers.stream().map(WeCustomer::getUserId).collect(Collectors.toSet());
                 userIds = userIds.stream().filter(userIdSet::contains).collect(Collectors.toList());
@@ -216,7 +258,22 @@ public class WeMomentTaskServiceImpl extends ServiceImpl<WeMomentTaskMapper, WeM
 
     @Override
     public SearchMomentVO getMomentTaskBasicInfo(Long momentTaskId) {
+        String corpId = LoginTokenService.getLoginUser().getCorpId();
         SearchMomentVO momentTaskBasicInfo = baseMapper.getMomentTaskBasicInfo(momentTaskId,LoginTokenService.getLoginUser().getCorpId());
+        //设置使用员工、部门
+        if(StringUtils.isNotBlank(momentTaskBasicInfo.getUsers())){
+            List<WeUserVO> weUsers = weUserService.listOfUser(corpId, Arrays.asList(momentTaskBasicInfo.getUsers().split(StrUtil.COMMA)));
+            if(CollectionUtils.isNotEmpty(weUsers)){
+                momentTaskBasicInfo.setUseUserList(weUsers);
+            }
+        }
+        if(StringUtils.isNotBlank(momentTaskBasicInfo.getDepartments())){
+            List<DepartmentVO> weDepartmentVO = weDepartmentService.getDeparmentDetailByIds(corpId, Arrays.asList(momentTaskBasicInfo.getDepartments().split(StrUtil.COMMA)));
+            if (CollectionUtils.isNotEmpty(weDepartmentVO)) {
+                momentTaskBasicInfo.setUseDepartmentList(weDepartmentVO);
+            }
+        }
+
         if (StringUtils.isNotBlank(momentTaskBasicInfo.getTags())){
             List<WeTag> weTags = weTagService.listByIds(Arrays.asList(momentTaskBasicInfo.getTags().split(StrUtil.COMMA)));
             momentTaskBasicInfo.setTagList(weTags);
@@ -224,6 +281,8 @@ public class WeMomentTaskServiceImpl extends ServiceImpl<WeMomentTaskMapper, WeM
         //设置mediaType
         if (CollectionUtils.isNotEmpty(momentTaskBasicInfo.getWeWordsDetailList())){
             momentTaskBasicInfo.setMediaType(momentTaskBasicInfo.getWeWordsDetailList().get(0).getMediaType());
+        }else{
+            momentTaskBasicInfo.setMediaType(Integer.valueOf(MediaType.TEXT.getType()));
         }
         return momentTaskBasicInfo;
     }
@@ -454,10 +513,22 @@ public class WeMomentTaskServiceImpl extends ServiceImpl<WeMomentTaskMapper, WeM
         } while (StringUtils.isNotBlank(momentCustomerVO.getNext_cursor()));
     }
 
-    private List<String> getUserScope(LoginUser loginUser, List<String> users){
+    private Set<String> getUserScope(LoginUser loginUser, List<String> users, List<String> departmentScope){
         List<WeUser> userInDataScope = weUserService.getUserInDataScope(loginUser);
-        List<String> userIds = userInDataScope.stream().map(WeUser::getUserId).collect(Collectors.toList());
-        return CollectionUtils.isEmpty(users)? userIds :users.stream().filter(userIds::contains).collect(Collectors.toList());
+        Set<String> userIds = userInDataScope.stream().map(WeUser::getUserId).collect(Collectors.toSet());
+        if(CollectionUtils.isEmpty(users)){
+            if(CollectionUtils.isEmpty(departmentScope)){
+                return userIds;
+            }
+            List<String> userIdsFromDepartment = weUserService.listOfUserId(loginUser.getCorpId(), departmentScope.toArray(new String[]{}));
+            if(CollectionUtils.isEmpty(userIdsFromDepartment)){
+                return userIds;
+            }else{
+                return new HashSet<>();
+            }
+        }else{
+            return users.stream().filter(userIds::contains).collect(Collectors.toSet());
+        }
     }
 
     /**
@@ -501,9 +572,17 @@ public class WeMomentTaskServiceImpl extends ServiceImpl<WeMomentTaskMapper, WeM
      */
     private void addMomentTask(List<WeWordsDetailEntity> attachmentDetails, WeMomentTaskEntity weMomentTaskEntity) {
         //构造创建企业朋友圈参数
-        List<String> users = StringUtils.isNotBlank(weMomentTaskEntity.getUsers())?Arrays.asList(weMomentTaskEntity.getUsers().split(StrUtil.COMMA)):new ArrayList<>();
+        Set<String> users = StringUtils.isNotBlank(weMomentTaskEntity.getUsers())?new HashSet<>(Arrays.asList(weMomentTaskEntity.getUsers().split(StrUtil.COMMA))) : new HashSet<>();
+        List<Integer> departments = StringUtils.isNotBlank(weMomentTaskEntity.getDepartments())?
+                Arrays.asList(weMomentTaskEntity.getDepartments().split(StrUtil.COMMA)).stream().map(Integer::valueOf).collect(Collectors.toList()) :
+                Lists.newArrayList();
         List<String> tags = StringUtils.isNotBlank(weMomentTaskEntity.getTags())?Arrays.asList(weMomentTaskEntity.getTags().split(StrUtil.COMMA)):new ArrayList<>();
-        AddMomentTaskDTO addMomentTaskDTO = new AddMomentTaskDTO(users,tags,weMomentTaskEntity.getContent());
+        final List<String> userIds = weUserService.listOfUserId(weMomentTaskEntity.getCorpId(), StringUtils.join(departments,StrUtil.COMMA));
+        if(CollectionUtils.isNotEmpty(userIds)){
+            users.addAll(userIds);
+        }
+        List<String> userIdList = new ArrayList<>(users);
+        AddMomentTaskDTO addMomentTaskDTO = new AddMomentTaskDTO(userIdList, departments, tags, weMomentTaskEntity.getContent());
         //临时素材id
         if (CollectionUtils.isNotEmpty(attachmentDetails)){
             List<MomentAttachment> attachments = buildMomentAttachment(attachmentDetails, weMomentTaskEntity.getCorpId());

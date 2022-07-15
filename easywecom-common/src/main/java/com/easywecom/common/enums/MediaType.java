@@ -15,6 +15,7 @@ public enum MediaType {
     VOICE("1", "voice"),
     VIDEO("2", "video"),
     FILE("3", "file"),
+    TEXT("4","text"),
     /**
      * 海报
      */

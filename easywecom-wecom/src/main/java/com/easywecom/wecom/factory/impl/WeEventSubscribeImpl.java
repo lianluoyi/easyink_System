@@ -2,6 +2,7 @@ package com.easywecom.wecom.factory.impl;
 
 import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.easywecom.common.config.RuoYiConfig;
 import com.easywecom.common.constant.Constants;
 import com.easywecom.common.constant.GenConstants;
 import com.easywecom.common.constant.WeConstans;
@@ -10,6 +11,8 @@ import com.easywecom.common.core.domain.model.LoginUser;
 import com.easywecom.common.core.domain.wecom.WeUser;
 import com.easywecom.common.core.redis.RedisCache;
 import com.easywecom.common.utils.spring.SpringUtils;
+import com.easywecom.wecom.client.WeUserClient;
+import com.easywecom.wecom.domain.dto.WeUserDTO;
 import com.easywecom.wecom.domain.vo.WxCpXmlMessageVO;
 import com.easywecom.wecom.factory.WeCallBackEventFactory;
 import com.easywecom.wecom.service.*;
@@ -37,9 +40,11 @@ public class WeEventSubscribeImpl implements WeCallBackEventFactory {
     private final WeTagGroupService weTagGroupService;
     private final WeGroupService weGroupService;
     private final WeDepartmentService weDepartmentService;
+    private final WeUserClient weUserClient;
+    private final RuoYiConfig ruoYiConfig;
 
     @Autowired
-    public WeEventSubscribeImpl(WeAuthCorpInfoExtendService weAuthCorpInfoExtendService, RedisCache redisCache, WeCorpAccountService weCorpAccountService, WeUserService weUserService, WeCustomerService weCustomerService, WeTagGroupService weTagGroupService, WeGroupService weGroupService, WeDepartmentService weDepartmentService) {
+    public WeEventSubscribeImpl(WeAuthCorpInfoExtendService weAuthCorpInfoExtendService, RedisCache redisCache, WeCorpAccountService weCorpAccountService, WeUserService weUserService, WeCustomerService weCustomerService, WeTagGroupService weTagGroupService, WeGroupService weGroupService, WeDepartmentService weDepartmentService, WeUserClient weUserClient, RuoYiConfig ruoYiConfig) {
         this.weAuthCorpInfoExtendService = weAuthCorpInfoExtendService;
         this.redisCache = redisCache;
         this.weCorpAccountService = weCorpAccountService;
@@ -48,11 +53,13 @@ public class WeEventSubscribeImpl implements WeCallBackEventFactory {
         this.weTagGroupService = weTagGroupService;
         this.weGroupService = weGroupService;
         this.weDepartmentService = weDepartmentService;
+        this.weUserClient = weUserClient;
+        this.ruoYiConfig = ruoYiConfig;
     }
 
     @Override
     public void eventHandle(WxCpXmlMessageVO message) {
-        if (redisCache.addLock(getSubscribeKey(message.getAgentId(),message.getToUserName()),message.getToUserName(),WeConstans.SUBSCRIBE_EXPIRE_TIME)){
+        if (redisCache.addLock(getSubscribeKey(message.getAgentId(), message.getToUserName()), message.getToUserName(), WeConstans.SUBSCRIBE_EXPIRE_TIME)) {
             log.info("订阅消息:{}", JSON.toJSONString(message));
             WeCorpAccount weCorpAccount = weCorpAccountService.getOne(new LambdaQueryWrapper<WeCorpAccount>()
                     .eq(WeCorpAccount::getCorpId, message.getToUserName())
@@ -66,9 +73,16 @@ public class WeEventSubscribeImpl implements WeCallBackEventFactory {
 
             }
         }
+        if(ruoYiConfig.isInternalServer()) {
+            // 自建应用更新新增的订阅员工信息
+            WeUserDTO resp = weUserClient.getUserByUserId(message.getFromUserName(), message.getToUserName());
+            WeUser weUser = resp.transferToWeUser();
+            weUser.setCorpId(message.getToUserName());
+            weUserService.insertWeUserNoToWeCom(weUser);
+        }
     }
 
-    private String getSubscribeKey(Integer agentId,String corpId){
+    private String getSubscribeKey(Integer agentId, String corpId) {
         return WeConstans.SUBSCRIBE_KEY + agentId + corpId;
     }
 

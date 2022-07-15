@@ -15,4 +15,7 @@ import java.util.List;
 public class TagRuleUserListVO extends TagRuleInfoVO{
     @ApiModelProperty("员工详情列表")
     private List<TagRuleUserInfoVO> userList;
+
+    @ApiModelProperty("部门详情列表")
+    private List<TagRuleDepartmentInfoVO> departmentList;
 }

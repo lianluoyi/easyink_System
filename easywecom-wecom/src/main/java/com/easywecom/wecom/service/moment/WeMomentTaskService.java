@@ -43,13 +43,19 @@ public interface WeMomentTaskService extends IService<WeMomentTaskEntity> {
     List<WeMomentTaskEntity> listOfNotPublish(Date subDay,Boolean isExpire);
 
     /**
+     *
+     * @param weMomentTaskEntity
+     * @param attachments
+     */
+    /**
      * 开始创建朋友圈任务（定时任务调用）
-     * @param weMomentTaskEntity 任务实体
-     * @param attachments 附件（包含文本）
+     *
+     * @param weMomentTaskEntity    任务实体
+     * @param attachments           附件（包含文本）
      */
     void startCreatMoment(WeMomentTaskEntity weMomentTaskEntity,List<WeWordsDetailEntity> attachments);
 
-    /**
+    /**s
      * 查询定时任务
      * @param now 当前时间
      * @return {@link List<WeMomentTaskEntity>}

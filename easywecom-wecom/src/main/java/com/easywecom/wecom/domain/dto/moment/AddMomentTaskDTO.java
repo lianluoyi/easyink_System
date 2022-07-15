@@ -26,8 +26,8 @@ public class AddMomentTaskDTO {
     @ApiModelProperty("指定的发表范围")
     private VisibleRange visible_range;
 
-    public AddMomentTaskDTO(List<String> users,List<String> tags,String content) {
+    public AddMomentTaskDTO(List<String> users,List<Integer> departments, List<String> tags,String content) {
         this.text = new TextMessageDTO(content);
-        this.visible_range = new VisibleRange(users, tags);
+        this.visible_range = new VisibleRange(users, departments, tags);
     }
 }

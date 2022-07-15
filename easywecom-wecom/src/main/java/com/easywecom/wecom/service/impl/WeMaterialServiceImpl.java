@@ -318,4 +318,12 @@ public class WeMaterialServiceImpl implements WeMaterialService {
         }
         return weMaterialMapper.getListByMaterialSort(materialSort, corpId);
     }
+
+    @Override
+    public List<AddWeMaterialDTO> getRedeemCodeListByMaterialSort(String[] codeSuccessMaterialSort, String corpId) {
+        if (codeSuccessMaterialSort == null || codeSuccessMaterialSort.length == 0 || StringUtils.isBlank(corpId)) {
+            return Collections.emptyList();
+        }
+        return weMaterialMapper.getListByMaterialSort(codeSuccessMaterialSort, corpId);
+    }
 }

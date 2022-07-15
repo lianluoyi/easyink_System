@@ -1,6 +1,6 @@
 package com.easywecom.wecom.domain.dto.group;
 
-import com.easywecom.wecom.domain.dto.WePageBaseResp;
+import com.easywecom.wecom.domain.resp.WePageBaseResp;
 import lombok.Data;
 import org.apache.commons.collections4.CollectionUtils;
 

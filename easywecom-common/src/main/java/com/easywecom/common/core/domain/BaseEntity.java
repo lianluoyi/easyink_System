@@ -83,7 +83,17 @@ public class BaseEntity extends RootEntity implements Serializable {
     @TableField(exist = false)
     private String endTime;
 
+    @TableField(exist = false)
+    @ApiModelProperty(value = "做游标分页时使用,查找userId > lastId的数据")
+    private String lastId;
 
+    public String getLastId() {
+        return lastId;
+    }
+
+    public void setLastId(String lastId) {
+        this.lastId = lastId;
+    }
     public String getSearchValue() {
         return searchValue;
     }

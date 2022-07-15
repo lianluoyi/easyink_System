@@ -167,6 +167,7 @@
         wmt.push_range,
         wmt.select_user,
         wmt.users,
+        wmt.departments,
         IF(wmt.`create_by` != 'admin',wu.user_name,wmt.`create_by`) as create_by,
         '' as momentContent,
         wmt.create_time

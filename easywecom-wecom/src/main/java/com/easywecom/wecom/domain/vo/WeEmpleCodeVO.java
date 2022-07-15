@@ -1,5 +1,7 @@
 package com.easywecom.wecom.domain.vo;
 
+import com.easywecom.common.constant.WeConstans;
+import com.easywecom.common.utils.StringUtils;
 import com.easywecom.wecom.domain.WeEmpleCode;
 import com.easywecom.wecom.domain.WeGroupCode;
 import com.easywecom.wecom.domain.WeGroupCodeActual;
@@ -7,7 +9,9 @@ import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * 类名：WeEmpleCodeVO
@@ -21,6 +25,9 @@ public class WeEmpleCodeVO extends WeEmpleCode {
 
     @ApiModelProperty("使用者")
     private String useUserName;
+
+    @ApiModelProperty("使用部门")
+    private String departmentName;
 
     @ApiModelProperty("使用者手机号")
     private String mobile;
@@ -42,4 +49,6 @@ public class WeEmpleCodeVO extends WeEmpleCode {
 
     @ApiModelProperty("创建人主部门")
     private String mainDepartmentName;
+
+
 }

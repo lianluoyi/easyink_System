@@ -21,4 +21,7 @@ public class WeServerTypeVO {
     @ApiModelProperty("服务器类型,internal内部应用，third三方应用")
     private String serverType;
 
+    @ApiModelProperty(value = "icp备案")
+    private String icp ;
+
 }

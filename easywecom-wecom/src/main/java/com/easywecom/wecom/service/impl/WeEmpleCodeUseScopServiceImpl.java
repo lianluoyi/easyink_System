@@ -7,9 +7,11 @@ import com.easywecom.common.utils.StringUtils;
 import com.easywecom.wecom.domain.WeEmpleCodeUseScop;
 import com.easywecom.wecom.mapper.WeEmpleCodeUseScopMapper;
 import com.easywecom.wecom.service.WeEmpleCodeUseScopService;
+import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -129,5 +131,19 @@ public class WeEmpleCodeUseScopServiceImpl extends ServiceImpl<WeEmpleCodeUseSco
     @Override
     public int batchRemoveWeEmpleCodeUseScopIds(List<Long> ids) {
         return weEmpleCodeUseScopMapper.batchRemoveWeEmpleCodeUseScopIds(ids);
+    }
+
+    /**
+     * 查询员工活码使用部门的信息
+     *
+     * @param employCodeIdList
+     * @return
+     */
+    @Override
+    public List<WeEmpleCodeUseScop> selectDepartmentWeEmpleCodeUseScopListByIds(List<Long> employCodeIdList) {
+        if (CollectionUtils.isNotEmpty(employCodeIdList)) {
+            return weEmpleCodeUseScopMapper.selectDepartmentWeEmpleCodeUseScopListByIds(employCodeIdList);
+        }
+        return new ArrayList<>();
     }
 }

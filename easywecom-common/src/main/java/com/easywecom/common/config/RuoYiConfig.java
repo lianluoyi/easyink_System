@@ -20,7 +20,10 @@ public class RuoYiConfig {
      * 当前代码版本
      */
     private String version;
-
+    /**
+     * icp 备案
+     */
+    private String icp;
     /**
      * 版本说明
      */

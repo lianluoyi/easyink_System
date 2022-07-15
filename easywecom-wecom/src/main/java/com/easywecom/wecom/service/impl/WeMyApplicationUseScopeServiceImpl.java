@@ -1,7 +1,9 @@
 package com.easywecom.wecom.service.impl;
 
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.easywecom.common.core.domain.wecom.WeDepartment;
 import com.easywecom.common.enums.ResultTip;
 import com.easywecom.common.exception.CustomException;
 import com.easywecom.wecom.domain.WeMyApplicationUseScopeEntity;
@@ -9,6 +11,7 @@ import com.easywecom.wecom.domain.WeUserRole;
 import com.easywecom.wecom.domain.dto.SetApplicationUseScopeDTO;
 import com.easywecom.wecom.domain.vo.WeUserVO;
 import com.easywecom.wecom.mapper.WeMyApplicationUseScopeMapper;
+import com.easywecom.wecom.service.WeDepartmentService;
 import com.easywecom.wecom.service.WeMyApplicationUseScopeService;
 import com.easywecom.wecom.service.WeUserRoleService;
 import com.easywecom.wecom.service.WeUserService;
@@ -28,7 +31,8 @@ public class WeMyApplicationUseScopeServiceImpl extends ServiceImpl<WeMyApplicat
     private WeUserRoleService weUserRoleService;
     @Autowired
     private WeUserService weUserService;
-
+    @Autowired
+    private WeDepartmentService weDepartmentService;
     /**
      * 设置我的应用使用范围
      *
@@ -52,7 +56,7 @@ public class WeMyApplicationUseScopeServiceImpl extends ServiceImpl<WeMyApplicat
         List<WeMyApplicationUseScopeEntity> list = new ArrayList<>();
         for (int i = 0; i < useScopeList.size(); i++) {
             SetApplicationUseScopeDTO.UseScope useScope = useScopeList.get(i);
-            final int max = 2;
+            final int max = 3;
             final int min = 1;
             if (useScope.getType() < min || useScope.getType() > max) {
                 continue;
@@ -93,8 +97,10 @@ public class WeMyApplicationUseScopeServiceImpl extends ServiceImpl<WeMyApplicat
 
         List<String> userList = new ArrayList<>();
         List<String> roleList = new ArrayList<>();
+        List<String> departmentIdList = new ArrayList<>();
 
         final Integer useScopeUser = 1;
+        final Integer useScopeRole = 2;
         for (int i = 0; i < list.size(); i++) {
             WeMyApplicationUseScopeEntity entity = list.get(i);
             if (entity == null || StringUtils.isBlank(entity.getVal())) {
@@ -102,11 +108,20 @@ public class WeMyApplicationUseScopeServiceImpl extends ServiceImpl<WeMyApplicat
             }
             if (useScopeUser.equals(entity.getType())) {
                 userList.add(entity.getVal());
-            } else {
+            }else if(useScopeRole.equals(entity.getType())){
                 roleList.add(entity.getVal());
             }
+            else {
+                departmentIdList.add(entity.getVal());
+            }
         }
-
+        if(CollectionUtils.isNotEmpty(departmentIdList)){
+            //部门下员工
+            final List<String> userIds = weUserService.listOfUserId(corpId, StringUtils.join(departmentIdList,StrUtil.COMMA));
+            if(CollectionUtils.isNotEmpty(userIds)){
+                userList.addAll(userIds);
+            }
+        }
         if (CollectionUtils.isNotEmpty(roleList)) {
             List<WeUserRole> userRoleList = weUserRoleService.list(
                     new LambdaQueryWrapper<WeUserRole>()
@@ -149,6 +164,8 @@ public class WeMyApplicationUseScopeServiceImpl extends ServiceImpl<WeMyApplicat
         }
 
         List<SetApplicationUseScopeDTO.UseScope> scopeList = new ArrayList<>(list.size());
+        final Integer useScopeUser = 1;
+        final Integer useScopeDepartment = 3;
         for (int i = 0; i < list.size(); i++) {
             WeMyApplicationUseScopeEntity entity = list.get(i);
             if (entity == null) {
@@ -157,12 +174,18 @@ public class WeMyApplicationUseScopeServiceImpl extends ServiceImpl<WeMyApplicat
             SetApplicationUseScopeDTO.UseScope useScope = new SetApplicationUseScopeDTO.UseScope();
             useScope.setType(entity.getType());
             useScope.setVal(entity.getVal());
-            final Integer useScopeUser = 1;
             if (useScopeUser.equals(entity.getType())) {
                 WeUserVO weUser = weUserService.getUser(corpId, entity.getVal());
                 if (weUser != null && StringUtils.isNotBlank(weUser.getUserName())) {
                     useScope.setName(weUser.getUserName());
                 }
+            }
+            if (useScopeDepartment.equals(entity.getType())) {
+                LambdaQueryWrapper<WeDepartment> departmentQueryWrapper = new LambdaQueryWrapper<>();
+                departmentQueryWrapper.eq(WeDepartment::getCorpId, corpId);
+                departmentQueryWrapper.eq(WeDepartment::getId, entity.getVal());
+                final WeDepartment weDepartment = weDepartmentService.getOne(departmentQueryWrapper);
+                useScope.setName(weDepartment.getName());
             }
             scopeList.add(useScope);
         }

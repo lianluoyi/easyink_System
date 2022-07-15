@@ -83,6 +83,6 @@ public interface WeAutoTagKeywordService extends IService<WeAutoTagKeyword> {
      * @param hadUserScopeRuleIdList 规则集合
      * @return
      */
-    Map<Long, List<WeAutoTagKeyword>> listKeywordGroupByRuleIdByUserId(String userId, List<Long> hadUserScopeRuleIdList);
+    Map<Long, List<WeAutoTagKeyword>> listKeywordGroupByRuleIdByUserId(String corpId, String userId, List<Long> hadUserScopeRuleIdList);
 }
 

@@ -18,6 +18,7 @@ import com.easywecom.wecom.domain.vo.customer.WeCustomerSumVO;
 import com.easywecom.wecom.domain.vo.customer.WeCustomerUserListVO;
 import com.easywecom.wecom.domain.vo.customer.WeCustomerVO;
 import com.easywecom.wecom.domain.vo.sop.CustomerSopVO;
+import com.easywecom.wecom.login.util.LoginTokenService;
 import org.springframework.validation.annotation.Validated;
 
 import javax.validation.constraints.NotBlank;
@@ -284,4 +285,14 @@ public interface WeCustomerService extends IService<WeCustomer> {
      * @return
      */
     List<WeCustomerUserListVO> listUserListByCustomerId(String customerId, String corpId);
+
+
+    /**
+     * 模糊查询客户 (无需登录可用)
+     *
+     * @param corpId
+     * @param customerName
+     * @return
+     */
+    List<WeCustomerVO> getCustomer(String corpId, String customerName);
 }

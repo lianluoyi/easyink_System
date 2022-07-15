@@ -126,7 +126,19 @@ public enum ResultTip {
     TIP_URL_ERROR(2058, "请填写http或https开头的合法链接地址"),
     TIP_URL_UNKNOWN_HOST(2059, "链接地址域名无法访问"),
     TIP_URL_MATCH_ERROR(2060, "获取链接默认信息失败"),
-
+    TIP_REDEEM_CODE_INPUT_TIME_ERROR(2061, "未填写时间"),
+    TIP_REDEEM_CODE_EMPTY_THRESHOLD(2062, "阈值不能为负值"),
+    TIP_REDEEM_CODE_EMPTY_USERS(2063, "未选择员工"),
+    TIP_REDEEM_CODE_END_TIME_GE_START_TIME(2064, "结束时间应大于开始时间"),
+    TIP_REDEEM_CODE_REPEAT(2065, "兑换码重复"),
+    TIP_REDEEM_CODE_EMPTY_FILE(2066, "请上传兑换码文件"),
+    TIP_REDEEM_CODE_FILE_IS_EMPTY(2067, "兑换码文件数据为空"),
+    TIP_REDEEM_CODE_ACTIVITY_ID_IS_EMPTY(2068, "未选择兑换码活动"),
+    TIP_REDEEM_CODE_INPUT_EXCEL(2069, "请上传Excel文件"),
+    TIP_REDEEM_CODE_ACTIVITY_IS_EMPTY(2079, "未选择兑换码活动"),
+    TIP_REDEEM_CODE_WELCOME_MSG_IS_EMPTY(2080, "活动欢迎语，三个内容框必须有一个有内容"),
+    TIP_REDEEM_CODE_FILE_DATA_IS_EMPTY(2081, "文件中数据为空"),
+    TIP_REDEEM_CODE_ACTIVITY_LIMIT_ADD_USER(2082, "活动已开启参与限制，同一客户不能多次领取"),
 
     //员工模块错误码
     TIP_PARAM_MISSING(3001, "请填写完整的员工信息"),

@@ -2,6 +2,7 @@ package com.easywecom.wecom.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.easywecom.common.core.domain.wecom.WeDepartment;
+import com.easywecom.wecom.domain.vo.sop.DepartmentVO;
 
 import java.util.List;
 
@@ -89,10 +90,11 @@ public interface WeDepartmentService extends IService<WeDepartment> {
     void deleteWeDepartmentByIds(String corpId, String[] ids);
 
     /**
-     * 获取可见的最低部门
+     * 获取部门详情
      *
-     * @param corpId 企业id
-     * @return 可见的根部门
+     * @param corp_id
+     * @param departmentIdList
+     * @return
      */
-    List<Long> getVisibleRootDepartment(String corpId);
+    List<DepartmentVO> getDeparmentDetailByIds(String corp_id, List<String> departmentIdList);
 }

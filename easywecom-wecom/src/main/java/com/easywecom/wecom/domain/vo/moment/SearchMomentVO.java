@@ -3,6 +3,8 @@ package com.easywecom.wecom.domain.vo.moment;
 import com.easywecom.common.core.domain.wecom.WeUser;
 import com.easywecom.wecom.domain.WeTag;
 import com.easywecom.wecom.domain.WeWordsDetailEntity;
+import com.easywecom.wecom.domain.vo.WeUserVO;
+import com.easywecom.wecom.domain.vo.sop.DepartmentVO;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.annotations.ApiModel;
@@ -71,6 +73,16 @@ public class SearchMomentVO {
 
     @ApiModelProperty("所属员工id")
     private String users;
+
+    @ApiModelProperty("所属部门id")
+    private String departments;
+
+    @ApiModelProperty("所属部门详情")
+    private List<DepartmentVO> useDepartmentList;
+
+    @ApiModelProperty("所属员工信息")
+    private List<WeUserVO> useUserList;
+
     @ApiModelProperty("员工发布状态成员发表状态。0:待发布 1：已发布 2：已过期 3：不可发布")
     private Integer publishStatus;
     @ApiModelProperty("标签信息")

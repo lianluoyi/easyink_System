@@ -28,11 +28,12 @@ public interface WeOperationsCenterSopScopeService extends IService<WeOperations
     /**
      * 更新数据
      *
-     * @param corpId    企业ID
-     * @param sopId     sopId
-     * @param scopeList 作用者id
+     * @param corpId            cropId
+     * @param sopId             sopId
+     * @param userIdList        员工Id列表
+     * @param departmentIdList  部门Id列表
      */
-    void updateSopScope(String corpId, Long sopId, List<String> scopeList);
+    void updateSopScope(String corpId, Long sopId, List<String> userIdList, List<String> departmentIdList);
 
     /**
      * 查询SOP任务下的作用数据

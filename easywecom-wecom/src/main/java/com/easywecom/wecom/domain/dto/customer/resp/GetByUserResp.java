@@ -4,7 +4,7 @@ import com.easywecom.common.enums.CustomerStatusEnum;
 import com.easywecom.wecom.domain.WeCustomer;
 import com.easywecom.wecom.domain.WeFlowerCustomerRel;
 import com.easywecom.wecom.domain.WeFlowerCustomerTagRel;
-import com.easywecom.wecom.domain.dto.WePageBaseResp;
+import com.easywecom.wecom.domain.resp.WePageBaseResp;
 import com.easywecom.wecom.domain.dto.customer.ExternalContact;
 import com.easywecom.wecom.domain.dto.customer.FollowInfo;
 import lombok.Data;

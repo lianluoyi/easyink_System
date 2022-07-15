@@ -4,35 +4,86 @@
 
     <resultMap type="com.easywecom.wecom.domain.entity.autotag.WeAutoTagUserRel" id="WeAutoTagUserRelMap">
         <result property="ruleId" column="rule_id" jdbcType="INTEGER"/>
-        <result property="userId" column="user_id" jdbcType="VARCHAR"/>
+        <result property="targetId" column="target_id" jdbcType="VARCHAR"/>
+        <result property="type" column="type" jdbcType="INTEGER"/>
     </resultMap>
 
     <!-- 批量插入 -->
     <insert id="insertBatch" keyProperty="ruleId" useGeneratedKeys="true">
-        insert into we_auto_tag_user_rel(rule_id,user_id)
+        insert into we_auto_tag_user_rel(rule_id,target_id,type)
         values
         <foreach collection="entities" item="entity" separator=",">
-            (#{entity.ruleId}, #{entity.userId})
+            (#{entity.ruleId}, #{entity.targetId}, #{entity.type})
         </foreach>
     </insert>
     <!-- 批量插入或按主键更新 -->
     <insert id="insertOrUpdateBatch" keyProperty="ruleId" useGeneratedKeys="true">
-        insert into we_auto_tag_user_rel(rule_id,user_id)
+        insert into we_auto_tag_user_rel(rule_id,target_id,type)
         values
         <foreach collection="entities" item="entity" separator=",">
-            (#{entity.ruleId}, #{entity.userId})
+            (#{entity.ruleId}, #{entity.targetId}, #{entity.type})
         </foreach>
         on duplicate key update
-        rule_id = values(rule_id) , user_id = values(user_id)
+        rule_id = values(rule_id) , target_id = values(target_id), type = values(type)
     </insert>
+    <!--通过规则id查询部门信息-->
+    <select id="listDepartmentListByRuleId"
+            resultType="com.easywecom.wecom.domain.vo.autotag.TagRuleDepartmentInfoVO">
+        SELECT wd.id departmentId, wd.name departmentName, wd.parent_id parentId, IFNULL ( (SELECT name FROM we_department WHERE we_department.corp_id = #{corpId} AND we_department.id = wd.parent_id LIMIT 1) ,'')mainDepartmentName
+        FROM we_auto_tag_user_rel watur
+        LEFT JOIN we_department wd ON wd.id = watur.target_id
+        WHERE wd.corp_id = #{corpId} AND watur.rule_id = #{ruleId}
+        AND watur.type = ${@com.easywecom.common.constant.WeConstans@AUTO_TAG_ADD_DEPARTMENT_TYPE}
+    </select>
+
     <select id="listUserListByRuleId" resultType="com.easywecom.wecom.domain.vo.autotag.TagRuleUserInfoVO">
         SELECT wu.user_id,
                wu.user_name,
                wd.name AS main_department_name
         FROM we_auto_tag_user_rel ur
-                 LEFT JOIN we_user wu ON wu.user_id = ur.user_id AND wu.corp_id = #{corpId}
+                 LEFT JOIN we_user wu ON wu.user_id = ur.target_id AND wu.corp_id = #{corpId}
                  LEFT JOIN we_department wd ON wd.id = wu.main_department AND wd.corp_id = wu.corp_id
         WHERE ur.rule_id = #{ruleId}
+        AND ur.type = ${@com.easywecom.common.constant.WeConstans@AUTO_TAG_ADD_USER_TYPE}
+    </select>
+    <!--获取部门下满足条件的的员工-->
+    <select id="listWeAutoTagUserRelByUserIdFromDepartment"
+            resultType="com.easywecom.wecom.domain.entity.autotag.WeAutoTagUserRel">
+        SELECT watur.rule_id ruleId, wu.user_id targetId, watur.type
+        FROM we_auto_tag_user_rel watur
+                 LEFT JOIN we_department wd ON wd.id = watur.target_id
+                 LEFT JOIN we_user wu ON wu.department = wd.id
+        WHERE wu.corp_id = #{cropId}
+          AND wu.user_id = #{userId}
+          AND watur.type = ${@com.easywecom.common.constant.WeConstans@AUTO_TAG_ADD_DEPARTMENT_TYPE}
+          AND watur.rule_id in
+              <foreach collection="list" item="id" separator="," close=")" open="(">
+                    #{id}
+              </foreach>
+    </select>
+    <!--查询接收消息的员工含有自动标签规则的规则id-->
+    <select id="listWeAutoTagRelByUserIdAndRuleIdList" resultType="java.lang.Long">
+        SELECT watur.rule_id ruleId
+        FROM we_auto_tag_user_rel watur
+            LEFT JOIN we_department wd ON wd.id = watur.target_id
+            LEFT JOIN we_user wu ON wu.department = wd.id
+        WHERE wu.corp_id = #{cropId}
+            AND wu.user_id = #{userId}
+            AND watur.type = ${@com.easywecom.common.constant.WeConstans@AUTO_TAG_ADD_DEPARTMENT_TYPE}
+            AND watur.rule_id IN
+                <foreach collection="list" item="id" separator="," close=")" open="(">
+                    #{id}
+                </foreach>
+        UNION
+        SELECT watur.rule_id ruleId
+        FROM we_auto_tag_user_rel watur
+            LEFT JOIN we_auto_tag_rule watr ON watr.id = watur.rule_id AND watr.corp_id = #{cropId}
+        WHERE watur.target_id = #{userId}
+            AND watur.type = ${@com.easywecom.common.constant.WeConstans@AUTO_TAG_ADD_USER_TYPE}
+            AND watur.rule_id IN
+                <foreach collection="list" item="id" separator="," close=")" open="(">
+                    #{id}
+                </foreach>
     </select>
 
 </mapper>

@@ -85,6 +85,14 @@ public interface ISysRoleService {
     void checkDefaultRoleEditName(SysRole editRole);
 
     /**
+     * 通过角色ID查询角色使用数量
+     *
+     * @param roleId 角色ID
+     * @return 结果
+     */
+    int countUserRoleByRoleId(Long roleId);
+
+    /**
      * 新增保存角色信息
      *
      * @param role 角色信息

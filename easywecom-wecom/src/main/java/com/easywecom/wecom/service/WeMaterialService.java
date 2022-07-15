@@ -153,4 +153,13 @@ public interface WeMaterialService {
      * @return List<AddWeMaterialDTO>
      */
     List<AddWeMaterialDTO> getListByMaterialSort(String[] materialSort, String corpId);
+
+    /**
+     * 根据materialSort查询数据并排序
+     *
+     * @param codeSuccessMaterialSort 已排序的素材ID
+     * @param corpId                  企业ID
+     * @return List<AddWeMaterialDTO>
+     */
+    List<AddWeMaterialDTO> getRedeemCodeListByMaterialSort(String[] codeSuccessMaterialSort, String corpId);
 }

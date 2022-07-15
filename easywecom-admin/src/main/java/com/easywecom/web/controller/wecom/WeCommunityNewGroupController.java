@@ -73,7 +73,7 @@ public class WeCommunityNewGroupController extends BaseController {
     @PreAuthorize("@ss.hasPermi('wecom:communityNewGroup:edit')")
     @Log(title = "新客自动拉群", businessType = BusinessType.UPDATE)
     @PutMapping("/{id}")
-    public <T> AjaxResult<T> edit(@PathVariable("id") String id, @RequestBody @Validated UpdateWeEmplyCodeDTO weEmpleCode) {
+    public <T> AjaxResult<T> edit(@PathVariable("id") String id, @RequestBody @Validated AddWeEmpleCodeDTO weEmpleCode) {
         weEmpleCode.setCorpId(LoginTokenService.getLoginUser().getCorpId());
         weEmpleCodeService.updateWeEmpleCode(weEmpleCode);
         return AjaxResult.success();

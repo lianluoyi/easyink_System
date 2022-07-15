@@ -37,13 +37,13 @@ public class WeMyApplicationUseScopeEntity {
     /**
      * 使用类型(1指定员工，2指定角色)
      */
-    @ApiModelProperty(value = "使用类型(1指定员工，2指定角色)")
+    @ApiModelProperty(value = "使用类型(1指定员工，2指定角色，3指定部门)")
     @TableField("type")
     private Integer type;
     /**
      * 指定员工存userId,指定角色存角色ID
      */
-    @ApiModelProperty(value = "指定员工存userId,指定角色存角色ID")
+    @ApiModelProperty(value = "指定员工存userId,指定角色存角色ID,指定部门时存部门id")
     @TableField("val")
     private String val;
 

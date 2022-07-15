@@ -167,7 +167,7 @@
         icon, create_by, create_time, update_by, update_time, remark
         FROM sys_menu
         WHERE
-        parent_id IN (2179,2052,2083,2100,2062,108,2230,2232,2234,2250,2272,2280,2281,2282,2283,2284)
+        parent_id IN (2179,2052,2083,2100,2062,108,2230,2232,2234,2250,2272,2280,2281,2282,2283,2284,2293,2292)
         <if test="array != null and array.length>0">
             AND menu_id IN
             <foreach collection="array" item="id" separator="," close=")" open="(">

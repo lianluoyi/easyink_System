@@ -32,8 +32,8 @@ public class VisibleRange {
     private ExternalContactList external_contact_list;
 
 
-    public VisibleRange(List<String> users, List<String> tags) {
-        this.sender_list = new SenderList(users);
+    public VisibleRange(List<String> users, List<Integer> departments, List<String> tags) {
+        this.sender_list = new SenderList(users,departments);
         this.external_contact_list = new ExternalContactList(tags);
     }
 
@@ -46,9 +46,12 @@ public class VisibleRange {
         @ApiModelProperty("发表任务的执行者部门列表")
         private List<Integer> department_list;
 
-        SenderList(List<String> users) {
+        SenderList(List<String> users, List<Integer> departments) {
             if (CollectionUtils.isNotEmpty(users)){
                 this.user_list = users;
+            }
+            if(CollectionUtils.isNotEmpty(departments)){
+                this.department_list = departments;
             }
         }
     }

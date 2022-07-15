@@ -33,11 +33,11 @@ public class WeEmpleCodeUseScop {
     @TableField("business_id_type")
     private Integer businessIdType;
 
-    @ApiModelProperty(value = "活码下使用人姓名")
+    @ApiModelProperty(value = "活码下使用人/部门姓名")
     @TableField("business_name")
     private String businessName;
 
-    @ApiModelProperty(value = "活码类型下业务使用人的id")
+    @ApiModelProperty(value = "活码类型下业务使用人的id,传入部门时为部门id")
     @TableField("business_id")
     private String businessId;
 
@@ -45,7 +45,7 @@ public class WeEmpleCodeUseScop {
     @TableField("del_flag")
     private Integer delFlag = 0;
 
-    @ApiModelProperty(value = "部门id列表，只在多人时有效")
+    @ApiModelProperty(value = "部门id，现在不启用")
     @TableField("party_id")
     private Long partyId;
 

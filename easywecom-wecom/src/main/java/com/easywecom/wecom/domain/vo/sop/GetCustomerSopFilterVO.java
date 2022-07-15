@@ -24,6 +24,9 @@ public class GetCustomerSopFilterVO extends WeOperationsCenterCustomerSopFilterE
     @ApiModelProperty(value = "所属员工信息")
     private List<SopUserVO> userInfoList;
 
+    @ApiModelProperty(value = "所属部门信息")
+    private List<DepartmentVO> departmentInfoList;
+
     @ApiModelProperty(value = "已打标签列表")
     private List<BaseCustomerSopTagVO> tagList;
 

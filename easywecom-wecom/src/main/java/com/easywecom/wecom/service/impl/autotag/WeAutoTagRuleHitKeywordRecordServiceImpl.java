@@ -134,7 +134,7 @@ public class WeAutoTagRuleHitKeywordRecordServiceImpl extends ServiceImpl<WeAuto
                 // 做一个用户的缓存,避免一直查询数据库
                 if (ObjectUtils.isEmpty(userCacheMap.get(userId))) {
                     // 判断当前用户可用得规则id,并根据ruleId分组
-                    currentUserSuitableGroupByRuleIdMap = weAutoTagKeywordService.listKeywordGroupByRuleIdByUserId(userId, hadUserScopeRuleIdList);
+                    currentUserSuitableGroupByRuleIdMap = weAutoTagKeywordService.listKeywordGroupByRuleIdByUserId(corpId, userId, hadUserScopeRuleIdList);
                     userCacheMap.put(userId, currentUserSuitableGroupByRuleIdMap);
                 }
                 currentUserSuitableGroupByRuleIdMap = userCacheMap.get(userId);
@@ -177,7 +177,6 @@ public class WeAutoTagRuleHitKeywordRecordServiceImpl extends ServiceImpl<WeAuto
         // 调用企业微信接口打标签
         if (!ObjectUtils.isEmpty(userCustomerTagMap)) {
             log.info("关键词调用接口打标签");
-            List<WeMakeCustomerTagVO> batchList = new ArrayList<>();
             for (Map.Entry<String, Set<WeTag>> userCustomerTagEntry : userCustomerTagMap.entrySet()) {
                 String[] split = userCustomerTagEntry.getKey().split(StrUtil.COLON);
                 String userId = split[0];
@@ -185,9 +184,8 @@ public class WeAutoTagRuleHitKeywordRecordServiceImpl extends ServiceImpl<WeAuto
                 List<WeTag> weTagList = new ArrayList<>(userCustomerTagEntry.getValue());
                 log.info("关键词打标签: 员工: {}, 客户: {}, 标签列表: {}", userId, customerId, weTagList.stream()
                         .map(WeTag::getName).collect(Collectors.toList()));
-                batchList.add(new WeMakeCustomerTagVO(customerId, userId, weTagList, corpId));
+                weCustomerService.makeLabelbatch(Collections.singletonList(new WeMakeCustomerTagVO(customerId, userId, weTagList, corpId)), userId);
             }
-            weCustomerService.makeLabelbatch(batchList);
         }
     }
 

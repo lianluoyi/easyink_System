@@ -52,6 +52,10 @@ public class WeDepartment {
     @NotNull(message = "父节点的id不可为空")
     private Long parentId;
 
+    @ApiModelProperty(value = "父节点名称")
+    @TableField(exist = false)
+    private String mainDepartmentName;
+
     @ApiModelProperty(value = "子部门集合")
     @TableField(exist = false)
     private List<WeDepartment> children = new ArrayList<>();

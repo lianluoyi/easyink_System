@@ -209,10 +209,11 @@ public class We3rdAppServiceImpl implements We3rdAppService {
     public WeServerTypeVO getServerType() {
         String serverType = ruoYiConfig.getServerType();
         String internalServerType = ServerTypeEnum.INTERNAL.getType();
+        String icp  =StringUtils.isBlank(ruoYiConfig.getIcp()) ? StringUtils.EMPTY : ruoYiConfig.getIcp() ;
         if (StringUtils.isBlank(serverType)) {
-            return new WeServerTypeVO(internalServerType);
+            return new WeServerTypeVO(internalServerType,icp);
         }
-        return new WeServerTypeVO(serverType);
+        return new WeServerTypeVO(serverType,icp);
     }
 
     @Override

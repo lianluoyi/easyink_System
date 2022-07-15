@@ -36,9 +36,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -59,11 +57,11 @@ public class WeCustomerMessagePushServiceImpl implements WeCustomerMessagePushSe
     private final WeCustomerMessageTimeTaskMapper customerMessageTimeTaskMapper;
     private final WeCorpAccountService corpAccountService;
     private final WeMessagePushClient messagePushClient;
-
+    private final WeUserService weUserService;
 
 
     @Autowired
-    public WeCustomerMessagePushServiceImpl(WeCustomerMessageOriginalService weCustomerMessageOriginalService, WeCustomerMessageService weCustomerMessageService, WeCustomerSeedMessageService weCustomerSeedMessageService, WeCustomerService weCustomerService, WeGroupService weGroupService, WeCustomerMessgaeResultService weCustomerMessgaeResultService, WeCustomerMessageTimeTaskMapper customerMessageTimeTaskMapper, WeCorpAccountService corpAccountService, WeMessagePushClient messagePushClient) {
+    public WeCustomerMessagePushServiceImpl(WeCustomerMessageOriginalService weCustomerMessageOriginalService, WeCustomerMessageService weCustomerMessageService, WeCustomerSeedMessageService weCustomerSeedMessageService, WeCustomerService weCustomerService, WeGroupService weGroupService, WeCustomerMessgaeResultService weCustomerMessgaeResultService, WeCustomerMessageTimeTaskMapper customerMessageTimeTaskMapper, WeCorpAccountService corpAccountService, WeMessagePushClient messagePushClient, WeUserService weUserService) {
         this.weCustomerMessageOriginalService = weCustomerMessageOriginalService;
         this.weCustomerMessageService = weCustomerMessageService;
         this.weCustomerSeedMessageService = weCustomerSeedMessageService;
@@ -73,6 +71,7 @@ public class WeCustomerMessagePushServiceImpl implements WeCustomerMessagePushSe
         this.customerMessageTimeTaskMapper = customerMessageTimeTaskMapper;
         this.corpAccountService = corpAccountService;
         this.messagePushClient = messagePushClient;
+        this.weUserService = weUserService;
     }
 
 
@@ -101,10 +100,12 @@ public class WeCustomerMessagePushServiceImpl implements WeCustomerMessagePushSe
         }
         List<WeCustomer> customers = Lists.newArrayList();
         List<WeGroup> groups = new ArrayList<>();
+        //临时保存staffId
+        final String tmpStaffId = customerMessagePushDTO.getStaffId();
         //构造客户/客户群
         buildCustomerGroups(customerMessagePushDTO, loginUser, customers, groups);
         //保存原始数据信息表
-        long messageOriginalId = weCustomerMessageOriginalService.saveWeCustomerMessageOriginal(customerMessagePushDTO);
+        long messageOriginalId = weCustomerMessageOriginalService.saveWeCustomerMessageOriginal(customerMessagePushDTO, tmpStaffId);
 
         long messageId = SnowFlakeUtil.nextId();
         customerMessagePushDTO.setMessageId(messageId);
@@ -148,7 +149,7 @@ public class WeCustomerMessagePushServiceImpl implements WeCustomerMessagePushSe
         // 发给客户
         if (WeConstans.SEND_MESSAGE_CUSTOMER.equals(customerMessagePushDTO.getPushType())) {
             //查询客户信息列表
-            customers.addAll(externalUserIds(corpId, customerMessagePushDTO.getPushRange(), customerMessagePushDTO.getStaffId(), customerMessagePushDTO.getTag(), customerMessagePushDTO.getFilterTags(), customerMessagePushDTO.getGender(), customerMessagePushDTO.getCustomerStartTime(), customerMessagePushDTO.getCustomerEndTime()));
+            customers.addAll(externalUserIds(corpId, customerMessagePushDTO.getPushRange(), customerMessagePushDTO.getStaffId(), customerMessagePushDTO.getDepartment(), customerMessagePushDTO.getTag(), customerMessagePushDTO.getFilterTags(), customerMessagePushDTO.getGender(), customerMessagePushDTO.getCustomerStartTime(), customerMessagePushDTO.getCustomerEndTime()));
             if (CollectionUtils.isEmpty(customers)) {
                 throw new CustomException(ResultTip.TIP_NO_CUSTOMER);
             }
@@ -163,9 +164,21 @@ public class WeCustomerMessagePushServiceImpl implements WeCustomerMessagePushSe
                 String staffIds = CollectionUtils.isNotEmpty(ownerId) ? String.join(WeConstans.COMMA, ownerId) : loginUser.getWeUser().getUserId();
                 customerMessagePushDTO.setStaffId(staffIds);
             } else {
-                if (StringUtils.isEmpty(customerMessagePushDTO.getStaffId())) {
+                Set<String> staffIds = new HashSet<>();
+                if(StringUtils.isNotBlank(customerMessagePushDTO.getStaffId())){
+                    staffIds.addAll(Arrays.asList(customerMessagePushDTO.getStaffId().split(StrUtil.COMMA)));
+                }
+                if(StringUtils.isNotBlank(customerMessagePushDTO.getDepartment())){
+                    //查找部门下员工
+                    List<String> userIdsByDepartment = weUserService.listOfUserId(loginUser.getCorpId(),customerMessagePushDTO.getDepartment().split(StrUtil.COMMA));
+                    if(CollectionUtils.isNotEmpty(userIdsByDepartment)){
+                        staffIds.addAll(userIdsByDepartment);
+                    }
+                }
+                if (CollectionUtils.isEmpty(staffIds)) {
                     throw new CustomException(ResultTip.TIP_CHECK_STAFF);
                 }
+                customerMessagePushDTO.setStaffId(StringUtils.join(staffIds, WeConstans.COMMA));
                 //通过员工id查询群列表
                 weGroup.setUserIds(customerMessagePushDTO.getStaffId());
                 //查出权限下的群
@@ -216,6 +229,8 @@ public class WeCustomerMessagePushServiceImpl implements WeCustomerMessagePushSe
         //设置修改后的值
         List<WeCustomer> customers = new ArrayList<>();
         List<WeGroup> groups = new ArrayList<>();
+        //临时保存staffId 保存原始数据信息表时写入前端传进来的staffId
+        final String tmpStaffId = customerMessagePushDTO.getStaffId();
         buildCustomerGroups(customerMessagePushDTO, loginUser, customers, groups);
         timeTask.setMessageInfo(customerMessagePushDTO);
         timeTask.setCustomersInfo(customers);
@@ -227,6 +242,7 @@ public class WeCustomerMessagePushServiceImpl implements WeCustomerMessagePushSe
         WeCustomerMessage customerMessage = weCustomerMessageService.getById(messageId);
         WeCustomerMessageOriginal original = weCustomerMessageOriginalService.getById(customerMessage.getOriginalId());
         BeanUtils.copyProperties(customerMessagePushDTO, original);
+        original.setStaffId(tmpStaffId);
         weCustomerMessageOriginalService.updateById(original);
         long messageOriginalId = original.getMessageOriginalId();
 
@@ -373,7 +389,7 @@ public class WeCustomerMessagePushServiceImpl implements WeCustomerMessagePushSe
      * @param gender     性别
      * @return {@link List<WeCustomer>} 客户的外部联系人id列表
      */
-    private List<WeCustomer> externalUserIds(String corpId, String pushRange, String staffId, String tag, String filterTags, Integer gender, Date startTime, Date endTime) {
+    private List<WeCustomer> externalUserIds(String corpId, String pushRange, String staffId, String departmentIds, String tag, String filterTags, Integer gender, Date startTime, Date endTime) {
         //校验CorpId
         StringUtils.checkCorpId(corpId);
         if (pushRange.equals(WeConstans.SEND_MESSAGE_CUSTOMER_ALL)) {
@@ -385,6 +401,7 @@ public class WeCustomerMessagePushServiceImpl implements WeCustomerMessagePushSe
             //按条件查询客户
             WeCustomerPushMessageDTO weCustomer = new WeCustomerPushMessageDTO();
             weCustomer.setUserIds(staffId);
+            weCustomer.setDepartmentIds(departmentIds);
             weCustomer.setCorpId(corpId);
             weCustomer.setTagIds(tag);
             weCustomer.setFilterTags(filterTags);

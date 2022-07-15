@@ -11,7 +11,7 @@ import com.easywecom.common.enums.BusinessType;
 import com.easywecom.common.token.TokenService;
 import com.easywecom.common.utils.ServletUtils;
 import com.easywecom.common.utils.spring.SpringUtils;
-import com.easywecom.wecom.domain.AllocateLeaveUserResp;
+import com.easywecom.wecom.domain.vo.AllocateLeaveUserResp;
 import com.easywecom.wecom.domain.WeUserRole;
 import com.easywecom.wecom.domain.dto.BatchUpdateUserInfoDTO;
 import com.easywecom.wecom.domain.dto.QueryUserDTO;

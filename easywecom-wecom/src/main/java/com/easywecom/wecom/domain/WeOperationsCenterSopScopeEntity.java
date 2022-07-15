@@ -44,7 +44,7 @@ public class WeOperationsCenterSopScopeEntity {
     /**
      * 当为群sop时，为chatId;当为客户sop时，为userId
      */
-    @ApiModelProperty(value = "当为群sop时，为chatId;当为客户sop时，为userId,活动sop为客户id")
+    @ApiModelProperty(value = "当为群sop时，为chatId;当为客户sop时，为userId,活动sop为客户id;当传入部门时,为部门id")
     @TableField("target_id")
     private String targetId;
     /**
@@ -54,5 +54,11 @@ public class WeOperationsCenterSopScopeEntity {
     @TableField("create_time")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date createTime;
+    /**
+     * 传入部门
+     */
+    @ApiModelProperty(value = "type=1时target_id为部门id, type=2时target_id为员工id")
+    @TableField("type")
+    private Integer type;
 
 }

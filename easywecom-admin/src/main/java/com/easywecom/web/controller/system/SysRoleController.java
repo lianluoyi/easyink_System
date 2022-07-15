@@ -131,9 +131,9 @@ public class SysRoleController extends BaseController {
     @PreAuthorize("@ss.hasPermi('system:role:remove')")
     @Log(title = "角色管理", businessType = BusinessType.DELETE)
     @DeleteMapping("/{roleIds}")
-    @Deprecated
     public AjaxResult remove(@PathVariable Long[] roleIds) {
-        return AjaxResult.success();
+        String corpId = LoginTokenService.getLoginUser().getCorpId();
+        return AjaxResult.success(roleService.deleteRoleByIds(corpId, roleIds));
     }
 
     /**

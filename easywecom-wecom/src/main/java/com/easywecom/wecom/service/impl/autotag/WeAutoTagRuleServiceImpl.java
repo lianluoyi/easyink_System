@@ -155,7 +155,7 @@ public class WeAutoTagRuleServiceImpl extends ServiceImpl<WeAutoTagRuleMapper, W
 
         int result = weAutoTagRuleMapper.insert(weAutoTagRule);
         final Long ruleId = weAutoTagRule.getId();
-        // 添加 员工关系
+        // 添加 员工/部门关系
         weAutoTagUserRelService.batchSave(addKeywordTagRuleDTO.toWeAutoTagUserRel(ruleId));
         // 添加关键词
         weAutoTagKeywordService.batchSave(addKeywordTagRuleDTO.toWeAutoTagKeywordList(ruleId));
@@ -437,7 +437,7 @@ public class WeAutoTagRuleServiceImpl extends ServiceImpl<WeAutoTagRuleMapper, W
 
         // 从hasEffectTimeRuleIdList中获取有效的规则id,并添加到候选id列表
         if (CollectionUtils.isNotEmpty(hasEffectTimeRuleIdList)) {
-            String nowStr = DateUtils.parseDateToStr(DateUtils.YYYY_MM_DD, new Date());
+            String nowStr = DateUtils.parseDateToStr(DateUtils.YYYY_MM_DD_HH_MM_SS, new Date());
             List<WeAutoTagCustomerRuleEffectTime> list = weAutoTagCustomerRuleEffectTimeService.list(new LambdaQueryWrapper<WeAutoTagCustomerRuleEffectTime>()
                     .le(WeAutoTagCustomerRuleEffectTime::getEffectBeginTime, nowStr)
                     .ge(WeAutoTagCustomerRuleEffectTime::getEffectEndTime, nowStr)

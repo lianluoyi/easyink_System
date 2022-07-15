@@ -127,6 +127,7 @@ public class WeCallBackController {
             WxCryptUtil wxCryptUtil = new WxCryptUtil(weCrypt.getToken(), weCrypt.getEncodingAesKey());
 
             String decrypt = wxCryptUtil.decrypt(signature, timestamp, nonce, msg);
+            log.info("企微三方应用回调通知接口,转换前的xml :{}", decrypt);
             WxCpXmlMessageVO wxCpXmlMessage = strXmlToBean(decrypt);
             log.info("企微三方应用回调通知接口 wxCpXmlMessage:{}", JSON.toJSONString(wxCpXmlMessage));
             String event = StringUtils.isNotBlank(wxCpXmlMessage.getInfoType()) ? wxCpXmlMessage.getInfoType() : wxCpXmlMessage.getEvent();
