@@ -424,7 +424,7 @@ public class DateUtils extends org.apache.commons.lang3.time.DateUtils {
         //使用给定的 Date 设置此 Calendar 的时间。
         rightNow.setTime(date);
         // 日期减
-        rightNow.add(Calendar.MONTH, -subDay);
+        rightNow.add(Calendar.DAY_OF_YEAR, -subDay);
         //返回一个表示此 Calendar 时间值的 Date 对象。
         return rightNow.getTime();
     }

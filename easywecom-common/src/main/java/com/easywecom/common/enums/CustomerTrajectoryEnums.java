@@ -209,6 +209,7 @@ public class CustomerTrajectoryEnums {
          * 退出群聊
          */
         QUIT_GROUP("quit_group", "${customer}退出了群聊【${groupName}】"),
+        CLICK_RADAR("click_radar", "${customer}打开了雷达链接“${radarTitle}”"),
         UNKNOWN("un_known", ""),
         ;
         /**

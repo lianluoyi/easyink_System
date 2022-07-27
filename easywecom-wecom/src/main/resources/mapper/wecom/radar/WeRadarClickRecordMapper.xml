@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.easywecom.wecom.mapper.radar.WeRadarClickRecordMapper">
+
+    <resultMap id="getTotalMap" type="com.easywecom.wecom.domain.vo.radar.RadarRecordTotalVO">
+        <result property="nowadaysClickPersonNum" column="nowadaysClickPersonNum"/>
+        <result property="nowadaysClickNum" column="nowadaysClickNum"/>
+        <result property="sumClickPersonNum" column="sumClickPersonNum"/>
+        <result property="sumClickNum" column="sumClickNum"/>
+    </resultMap>
+
+    <select id="getSumClickData" resultMap="getTotalMap">
+        SELECT COUNT(DISTINCT external_user_id) as sumClickPersonNum,
+               COUNT(id)                        as sumClickNum
+        FROM we_radar_click_record
+        WHERE radar_id = #{radarId}
+    </select>
+
+
+    <!--    获取雷达数据总览-->
+    <select id="getTotal" resultMap="getTotalMap">
+        select sumClick.sumClickPersonNum,
+               sumClick.sumClickNum,
+               nowadaysClick.nowadaysClickPersonNum,
+               nowadaysClick.nowadaysClickNum
+        from (
+                 SELECT COUNT(DISTINCT external_user_id) as sumClickPersonNum,
+                        COUNT(id)                        as sumClickNum,
+                        radar_id
+                 FROM we_radar_click_record
+                 WHERE radar_id = #{radarId}
+             ) as sumClick
+                 left join
+             (
+                 SELECT COUNT(DISTINCT external_user_id) as nowadaysClickPersonNum,
+                        COUNT(id)                        as nowadaysClickNum,
+                        radar_id
+                 FROM we_radar_click_record
+                 WHERE radar_id = #{radarId}
+                   and create_date = #{nowDate}
+             ) as nowadaysClick on sumClick.radar_id = nowadaysClick.radar_id
+    </select>
+    <select id="selectCountList" resultType="com.easywecom.wecom.domain.vo.radar.RadarAnalyseCountVO">
+        SELECT
+        COUNT(DISTINCT external_user_id) as `clickPersonNum`,
+        COUNT(id) as `sumClickNum`,
+        create_date as createDate
+        FROM we_radar_click_record
+        WHERE radar_id = #{radarAnalyse.radarId}
+        <if test="radarAnalyse.channelName != null and radarAnalyse.channelName != ''">
+            AND channel_name = #{radarAnalyse.channelName}
+        </if>
+        GROUP BY create_date
+    </select>
+    <select id="selectChannelSort" resultType="com.easywecom.wecom.domain.vo.radar.RadarChannelSortVO">
+        SELECT COUNT(DISTINCT external_user_id) clickNum,
+               `channel_name`                   channelName
+        FROM we_radar_click_record
+        WHERE radar_id = #{radarId}
+        group by channelName
+        order by clickNum desc
+    </select>
+    <select id="getCustomerClickRecord" resultType="com.easywecom.wecom.domain.vo.radar.RadarCustomerRecordVO">
+        SELECT external_user_id externalId,
+        external_user_name `customerName`,
+        COUNT(id) clickNum,
+        (select channel_name from we_radar_click_record where radar_id = #{customerRecord.radarId} and external_user_id
+        = externalId order by create_time
+        desc limit 1) as channelName,
+        MAX(create_time) clickTime,
+        external_user_head_image headImageUrl
+        FROM we_radar_click_record
+        WHERE radar_id = #{customerRecord.radarId}
+        <if test="customerRecord.customerName != null and customerRecord.customerName !=''">
+            AND external_user_name like concat('%', #{customerRecord.customerName}, '%')
+        </if>
+        <if test="customerRecord.beginTime != null and customerRecord.beginTime !=''">
+            AND create_date <![CDATA[ >= ]]> #{customerRecord.beginTime}
+        </if>
+        <if test="customerRecord.endTime != null and customerRecord.endTime !=''">
+            AND create_date <![CDATA[ <= ]]> #{customerRecord.endTime}
+        </if>
+        group by external_user_id
+        <if test="customerRecord.enableSort != null and customerRecord.enableSort == true">
+            ORDER BY clickNum asc, clickTime desc
+        </if>
+        <if test="customerRecord.enableSort != null and customerRecord.enableSort == false">
+            ORDER BY clickNum desc, clickTime desc
+        </if>
+        <if test="customerRecord.enableSort == null">
+            ORDER BY clickTime desc
+        </if>
+    </select>
+    <select id="getChannelClickRecord" resultType="com.easywecom.wecom.domain.vo.radar.RadarChannelRecordVO">
+        SELECT channel_name `channelName`,
+        COUNT(id) clickNum,
+        COUNT(DISTINCT channel_name) clickPersonNum
+        FROM we_radar_click_record
+        WHERE radar_id = #{channelRecord.radarId}
+        <if test="channelRecord.channelName != null and channelRecord.channelName != ''">
+            AND channel_name like concat('%', #{channelRecord.channelName}, '%')
+        </if>
+        group by `channelName`
+    </select>
+    <select id="getChannelClickRecordDetail"
+            resultType="com.easywecom.wecom.domain.vo.radar.RadarCustomerRecordVO">
+        SELECT external_user_id externalId,
+        external_user_name `customerName`,
+        COUNT(external_user_id) clickNum,
+        MAX(create_time) clickTime,
+        channel_name channelName,
+        external_user_head_image headImageUrl
+        FROM we_radar_click_record
+        WHERE radar_id = #{channelRecordDetail.radarId}
+        AND channel_name = #{channelRecordDetail.channelName}
+        <if test="channelRecordDetail.customerName != null and channelRecordDetail.customerName != ''">
+            AND external_user_name like concat('%', #{channelRecordDetail.customerName}, '%')
+        </if>
+        GROUP BY external_user_id
+        order by clickTime desc
+    </select>
+    <select id="getCustomerClickRecordDetail"
+            resultType="com.easywecom.wecom.domain.vo.radar.RadarCustomerClickRecordDetailVO">
+        SELECT external_user_id   externalId,
+               external_user_name `customerName`,
+               user_name          userName,
+               channel_name       channelName,
+               detail             detail,
+               create_time        clickTime,
+               channel_type       channelType
+        FROM we_radar_click_record
+        WHERE radar_id = #{customerRecord.radarId}
+          AND external_user_id = #{customerRecord.externalId}
+        order by clickTime desc
+    </select>
+</mapper>

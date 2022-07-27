@@ -113,11 +113,22 @@ public interface ISysDeptService {
     int deleteDeptById(Long deptId);
 
     /**
-     * 过滤部门数据权限范围
+     * 过滤部门数据权限，留下有权限的部门
      *
      * @param list      部门集合
      * @param loginUser 登录用户实体
      * @return 过滤后的部门集合
      */
+    List<WeDepartment> filterDepartmentDataScope(List<WeDepartment> list, LoginUser loginUser);
+
+
+    /**
+     * 为部门设置权限标识
+     *
+     * @param list      部门集合
+     * @param loginUser 登录用户实体
+     * @return 返回所有部门，在每个部门中设置权限
+     */
     List<WeDepartment> filterDataScope(List<WeDepartment> list, LoginUser loginUser);
+
 }

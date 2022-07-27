@@ -132,11 +132,13 @@
                  left join we_redeem_code wrc
                            ON wrc.activity_id = wrca.id AND wrca.corp_id = #{corpId} AND
                               (wrca.end_time >= #{effectiveTime} OR
-                               wrca.end_time = ${@com.easywecom.common.constant.WeConstans@REDEEM_CODE_EMPTY_TIME})
+                               wrca.end_time =
+                               ${@com.easywecom.common.constant.redeemcode.RedeemCodeConstants@REDEEM_CODE_EMPTY_TIME})
         WHERE wrc.activity_id = #{activityId}
           and status = ${@com.easywecom.common.enums.redeemcode.RedeemCodeStatusEnum@NOT_ASSIGN.getType()}
           AND (wrc.effective_time <![CDATA[ >= ]]> #{effectiveTime} OR
-               wrc.effective_time = ${@com.easywecom.common.constant.WeConstans@REDEEM_CODE_EMPTY_TIME})
+               wrc.effective_time =
+               ${@com.easywecom.common.constant.redeemcode.RedeemCodeConstants@REDEEM_CODE_EMPTY_TIME})
         order by wrc.effective_time LIMIT 1
     </select>
     <select id="listWeRedeemCode" resultType="com.easywecom.wecom.domain.entity.redeemcode.WeRedeemCode">

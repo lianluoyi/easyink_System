@@ -9,11 +9,12 @@ import com.easywecom.common.config.RuoYiConfig;
 import com.easywecom.common.constant.Constants;
 import com.easywecom.common.constant.GenConstants;
 import com.easywecom.common.constant.WeConstans;
-import com.easywecom.common.core.domain.entity.WeCorpAccount;
+import com.easywecom.common.constant.redeemcode.RedeemCodeConstants;
 import com.easywecom.common.core.redis.RedisCache;
 import com.easywecom.common.enums.*;
 import com.easywecom.common.enums.code.WelcomeMsgTypeEnum;
 import com.easywecom.common.exception.CustomException;
+import com.easywecom.common.lock.LockUtil;
 import com.easywecom.common.utils.ExceptionUtil;
 import com.easywecom.common.utils.StringUtils;
 import com.easywecom.wecom.client.WeMessagePushClient;
@@ -49,6 +50,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -90,23 +92,8 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
     @Autowired
     private WeAutoTagRuleHitCustomerRecordService weAutoTagRuleHitCustomerRecordService;
     @Autowired
-    private WeMaterialMapper weMaterialMapper;
-    @Autowired
     private WeRedeemCodeService weRedeemCodeService;
-    @Autowired
-    private WeRedeemCodeActivityService weRedeemCodeActivityService;
-    private final WeCorpAccountService corpAccountService;
-    private final WeMessagePushClient messagePushClient;
-    private final WeRedeemCodeMapper weRedeemCodeMapper;
-    private final WeUserService weUserService;
 
-    @Autowired
-    public WeCallBackAddExternalContactImpl(WeCorpAccountService corpAccountService, WeMessagePushClient messagePushClient, WeRedeemCodeMapper weRedeemCodeMapper, WeUserService weUserService) {
-        this.corpAccountService = corpAccountService;
-        this.messagePushClient = messagePushClient;
-        this.weRedeemCodeMapper = weRedeemCodeMapper;
-        this.weUserService = weUserService;
-    }
 
 
     @Override
@@ -228,16 +215,35 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
                 //更新活码添加方式
                 weFlowerCustomerRel.setState(state);
                 weFlowerCustomerRelService.updateById(weFlowerCustomerRel);
-
-                //给好友发送消息
-                CompletableFuture.runAsync(() -> {
+                if (WelcomeMsgTypeEnum.COMMON_WELCOME_MSG_TYPE.getType().equals(messageMap.getWelcomeMsgType())) {
+                    weEmpleCodeService.buildCommonWelcomeMsg(messageMap, corpId, externalUserId);
+                    //给好友发送消息
+                    CompletableFuture.runAsync(() -> {
+                        try {
+                            sendMessageToNewExternalUserId(weWelcomeMsgBuilder, messageMap, weFlowerCustomerRel.getRemark(), corpId, userId, externalUserId, state);
+                        } catch (Exception e) {
+                            log.error("异步发送欢迎语消息异常：ex:{}", ExceptionUtil.getExceptionMessage(e));
+                        }
+                    });
+                } else if (WelcomeMsgTypeEnum.REDEEM_CODE_WELCOME_MSG_TYPE.getType().equals(messageMap.getWelcomeMsgType())) {
                     try {
-                        sendMessageToNewExternalUserId(weWelcomeMsgBuilder, messageMap, weFlowerCustomerRel.getRemark(), corpId, userId, externalUserId, state);
+                        final String redeemCodeKey = RedeemCodeConstants.getRedeemCodeKey(corpId, messageMap.getCodeActivityId());
+                        if (LockUtil.tryLock(redeemCodeKey, RedeemCodeConstants.CODE_WAIT_TIME, RedeemCodeConstants.CODE_LEASE_TIME, TimeUnit.SECONDS)) {
+                            weEmpleCodeService.buildRedeemCodeActivityWelcomeMsg(messageMap, corpId, externalUserId);
+                            //同步发送消息
+                            sendMessageToNewExternalUserId(weWelcomeMsgBuilder, messageMap, weFlowerCustomerRel.getRemark(), corpId, userId, externalUserId, state);
+                            log.info("[欢迎语回调]活动欢迎语处理完成，活动id:{},corpId:{}}", messageMap.getCodeActivityId(), corpId);
+                            //发送欢迎语且更新兑换码信息后,释放锁
+                            LockUtil.unlock(RedeemCodeConstants.getRedeemCodeKey(corpId, messageMap.getCodeActivityId()));
+                        }
+                    } catch (InterruptedException e) {
+                        log.error("[欢迎语回调]活动欢迎语获取锁失败,e:{},活动id:{},corpId:{}", ExceptionUtils.getStackTrace(e), messageMap.getCodeActivityId(), corpId);
                     } catch (Exception e) {
-                        log.error("异步发送欢迎语消息异常：ex:{}", ExceptionUtil.getExceptionMessage(e));
+                        log.error("[欢迎语回调]拼装活动欢迎语 或 同步发送欢迎语消息异常,e:{},活动id:{},corpId:{}", ExceptionUtils.getStackTrace(e), messageMap.getCodeActivityId(), corpId);
+                        //内部处理逻辑报错,释放锁
+                        LockUtil.unlock(RedeemCodeConstants.getRedeemCodeKey(corpId, messageMap.getCodeActivityId()));
                     }
-                });
-
+                }
                 //为外部联系人添加员工活码标签
                 setEmplyCodeTag(weFlowerCustomerRel, empleCodeId, messageMap.getTagFlag());
 
@@ -369,7 +375,7 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
             if (messageMap.getMaterialList().size() > WeConstans.MAX_ATTACHMENT_NUM) {
                 throw new CustomException(ResultTip.TIP_ATTACHMENT_OVER);
             }
-            buildWeEmplyWelcomeMsg(state, corpId, weWelcomeMsgBuilder, messageMap.getMaterialList(), attachmentList);
+            buildWeEmplyWelcomeMsg(messageMap.getScenario(), userId, state, corpId, weWelcomeMsgBuilder, messageMap.getMaterialList(), attachmentList);
         }
 
         // 3.调用企业微信接口发送欢迎语
@@ -409,7 +415,7 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
     }
 
 
-    private void buildWeEmplyWelcomeMsg(String state, String corpId, WeWelcomeMsg.WeWelcomeMsgBuilder builder, List<AddWeMaterialDTO> weMaterialList, List<Attachment> attachmentList) {
+    private void buildWeEmplyWelcomeMsg(String scenario, String userId, String state, String corpId, WeWelcomeMsg.WeWelcomeMsgBuilder builder, List<AddWeMaterialDTO> weMaterialList, List<Attachment> attachmentList) {
         if (StringUtils.isBlank(corpId) || CollectionUtils.isEmpty(weMaterialList) || builder == null) {
             throw new CustomException(ResultTip.TIP_MISS_CORP_ID);
         }
@@ -420,7 +426,7 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
                 log.error("type is error!!!, type: {}", weMaterialVO.getMediaType());
                 continue;
             }
-            AttachmentParam param = AttachmentParam.costFromWeMaterialByType(weMaterialVO, typeEnum);
+            AttachmentParam param = AttachmentParam.costFromWeMaterialByType(scenario, userId, corpId, weMaterialVO, typeEnum);
             attachments = attachmentService.buildAttachment(param, corpId);
 //            attachments = weMsgTlpMaterialService.buildByWelcomeMsgType(param.getContent(), param.getPicUrl(), param.getDescription(), param.getUrl(), typeEnum, corpId);
             if (attachments != null) {

@@ -1,6 +1,7 @@
 package com.easywecom.wecom.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.easywecom.common.core.domain.model.LoginUser;
 import com.easywecom.common.core.domain.wecom.WeDepartment;
 import com.easywecom.wecom.domain.vo.sop.DepartmentVO;
 
@@ -17,12 +18,12 @@ public interface WeDepartmentService extends IService<WeDepartment> {
     /**
      * 查询企业微信组织架构相关列表
      *
-     *
-     * @param corpId 公司id
+     * @param corpId     公司id
      * @param isActivate 激活状态: 1=已激活，2=已禁用，4=未激活，5=退出企业,6=删除
+     * @param loginUser
      * @return 企业微信组织架构相关集合
      */
-    List<WeDepartment> selectWeDepartmentList(String corpId, Integer isActivate);
+    List<WeDepartment> selectWeDepartmentList(String corpId, Integer isActivate, LoginUser loginUser);
 
     /**
      * 根据用户ID获取部门名字 ,隔开
@@ -40,9 +41,10 @@ public interface WeDepartmentService extends IService<WeDepartment> {
      *
      * @param corpId 公司ID
      * @param isActivate 成员的激活状态: 1=已激活，2=已禁用，4=未激活，5=退出企业,6=删除
+     * @param loginUser
      * @return 企业微信组织架构详情列表
      */
-    List<WeDepartment> selectWeDepartmentDetailList(String corpId, Integer isActivate);
+    List<WeDepartment> selectWeDepartmentDetailList(String corpId, Integer isActivate, LoginUser loginUser);
 
     /**
      * 新增企业微信组织架构相关

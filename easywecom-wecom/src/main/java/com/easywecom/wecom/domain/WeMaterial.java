@@ -63,7 +63,6 @@ public class WeMaterial extends BaseEntity {
     @TableField("audio_time")
     private String audioTime;
 
-
     @ApiModelProperty(value = "过期时间")
     @TableField("expire_time")
     private String expireTime;
@@ -80,4 +79,11 @@ public class WeMaterial extends BaseEntity {
     @TableField("is_defined")
     private Boolean isDefined;
 
+    @ApiModelProperty(value = "链接时使用(0,不转化为雷达，1：转化为雷达)")
+    @TableField("enable_convert_radar")
+    private Boolean enableConvertRadar;
+
+    @ApiModelProperty(value = "保存雷达时使用，使用员工活码，新客进群时")
+    @TableField("radar_id")
+    private Long radarId;
 }

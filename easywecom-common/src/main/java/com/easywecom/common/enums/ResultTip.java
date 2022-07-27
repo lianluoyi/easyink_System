@@ -21,6 +21,7 @@ public enum ResultTip {
      * 报表模块错误码: 6xxx
      * 三方错误码： 7xxx
      * 应用中心错误码：8xxx
+     * 其他第三方接口错误码: 9xxx
      */
     //通用返回码
     TIP_GENERAL_SUCCESS(200, "操作成功"),
@@ -39,6 +40,17 @@ public enum ResultTip {
     TIP_MISS_APPID(601, "获取应用信息异常，请重新登录或联系管理员配置应用ID"),
     TIP_MISS_PROVIDER_CONFIG(602, "没有找到企业服务商配置"),
     TIP_MISS_SUITE_TICKET(603, "缺失服务商Ticket,请检查缓存或者在服务商后台重新获取"),
+
+    TIP_NO_SHORT_CODE(604, "shortCode不能为空"),
+    TIP_CANNOT_FIND_PAGE(605, "找不到指定页面"),
+    TIP_ERROR_CREATE_SHORT_URL(606, "生成短链失败"),
+
+    TIP_NO_MINI_APP_CONFIG(607, "没有配置小程序,请联系管理员"),
+    TIP_NO_OFFICAIL_ACCOUNT_CONFIG(608, "没有配置公众号配置,请联系管理员"),
+
+    TIP_NEED_SHORT_CODE(609, "缺失code"),
+    TIP_CANNOT_FIND_LONG_URL(610, "找不到对应的原始链接"),
+    TIP_MISSING_LONG_URL (611,"缺失长链接"),
     TIP_NOT_CONFIG_CONTACT(1000, "所在企业未配置通讯录，请联系企业管理员登录系统并完善配置!"),
     TIP_NOT_AUTH_CORP(1001, "所在企业未授权当前应用，请联系企业管理员进行授权"),
     TIP_SERVER_NOT_SUPPORT(1002, "当前环境不支持通过该二维码登录，请联系客服或技术人员"),
@@ -177,6 +189,7 @@ public enum ResultTip {
     TIP_AUTO_TAG_SCENE_TAG_NUM_LIMIT(4023, "最多可设置10个标签"),
     TIP_AUTO_TAG_MATCH_KEYWORD_NOT_BOTH_NULL(4024, "模糊匹配和精确匹配类型的关键词不能同时为空"),
     TIP_DELETE_TAG_NOT_PERMISSIONS(4025, "无权限操作标签，若标签不是在本系统创建，请前往企微后台操作"),
+    TIP_FAIL_TO_GET_CUSTOMER_INFO(4026,"无法获取客户详情"),
 
     //三方错误码
     TIP_MISSING_LOGIN_INFO(7000, "所在企业未开通「壹鸽快递工单助手」，请联系管理员"),
@@ -193,6 +206,14 @@ public enum ResultTip {
     TIP_YIGE_CHAT_BIND_ERROR(8005, "该群已绑定其它客户"),
     TIP_YIGE_CHAT_NOT_BIND_ERROR(8006, "该群未绑定客户"),
     TIP_YIGE_USER_NOT_BIND_ERROR(8007, "该员工未绑定客户"),
+    TIP_NO_APP_ID_CONFIG(9001, "没有配置公众号的appId"),
+    TIP_MISSING_USER_CODE(9002, "缺失公众号用户code"),
+    TIP_NO_APP_SECRET(9003,"没有配置公众号秘钥"),
+    TIP_WECHAT_OPEN_GET_AUTH_ERROR(9004,"获取用户授权信息异常"),
+    TIP_WECHAT_OPEN_OFFICIAL_NO_DOMAIN(9005,"未配置公众号域名"),
+    TIP_ERROR_GET_UNION_ID(9007,"获取unionId异常"),
+    TIP_OPEN_ID_CANNOT_BE_NULL (9008,"缺失openId"),
+    TIP_CANNOT_FIND_USER_BY_UNION_ID(9009,"无法通过union_id匹配到员工,请重新同步员工后再重试"),
     ;
 
     @Getter

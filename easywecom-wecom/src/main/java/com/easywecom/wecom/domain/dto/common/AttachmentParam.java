@@ -1,16 +1,27 @@
 package com.easywecom.wecom.domain.dto.common;
 
+import com.easywecom.common.constant.radar.RadarConstants;
+import com.easywecom.common.core.domain.wecom.WeUser;
 import com.easywecom.common.enums.AttachmentTypeEnum;
+import com.easywecom.common.enums.radar.RadarChannelEnum;
 import com.easywecom.common.utils.StringUtils;
+import com.easywecom.common.utils.spring.SpringUtils;
 import com.easywecom.wecom.domain.WeMaterial;
 import com.easywecom.wecom.domain.WeMsgTlpMaterial;
 import com.easywecom.wecom.domain.dto.message.Attachment;
+import com.easywecom.wecom.service.WeUserService;
+import com.easywecom.wecom.service.radar.WeRadarChannelService;
+import com.easywecom.wecom.service.radar.WeRadarService;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.MessageSource;
+
+import static com.easywecom.common.constant.radar.RadarConstants.RadarCustomerClickRecord.EMPTY_USERID;
 
 
 /**
@@ -45,21 +56,38 @@ public class AttachmentParam {
     /**
      * 将WeMsgTlpMaterial对象转化为该对象
      */
-    public static AttachmentParam costFromWeMsgTlpMaterial(WeMsgTlpMaterial weMsgTlpMaterial, AttachmentTypeEnum typeEnum) {
+    public static AttachmentParam costFromWeMsgTlpMaterial(Long radarId, String userId, String corpId, WeMsgTlpMaterial weMsgTlpMaterial, AttachmentTypeEnum typeEnum) {
         if (weMsgTlpMaterial == null) {
             return null;
         }
         AttachmentParam attachmentParam = new AttachmentParam();
         BeanUtils.copyProperties(weMsgTlpMaterial, attachmentParam);
         attachmentParam.setTypeEnum(typeEnum);
+        if (AttachmentTypeEnum.RADAR.equals(attachmentParam.getTypeEnum())) {
+            return buildRadarAttachment(radarId, RadarChannelEnum.WELCOME_MSG.getTYPE(), userId, corpId, RadarConstants.RadarCustomerClickRecord.COMMON_MSG);
+        }
         return attachmentParam;
+    }
 
+    /**
+     * 获取短链id
+     *
+     * @param radarId
+     * @param channelType
+     * @param userId
+     * @param corpId
+     * @param scenario    场景名称
+     * @return
+     */
+    private static AttachmentParam buildRadarAttachment(Long radarId, Integer channelType, String userId, String corpId, String scenario) {
+        final WeRadarService radarService = SpringUtils.getBean(WeRadarService.class);
+        return radarService.getRadarShortUrl(radarId, channelType, userId, corpId, scenario);
     }
 
     /**
      * 将WeMaterial对象转化为该对象
      */
-    public static AttachmentParam costFromWeMaterialByType(WeMaterial weMaterial, AttachmentTypeEnum typeEnum) {
+    public static AttachmentParam costFromWeMaterialByType(String scenario, String userId, String corpId, WeMaterial weMaterial, AttachmentTypeEnum typeEnum) {
         if (weMaterial == null || typeEnum == null) {
             return null;
         }
@@ -73,6 +101,8 @@ public class AttachmentParam {
                         .picUrl(weMaterial.getCoverUrl())
                         .description(weMaterial.getDigest())
                         .url(weMaterial.getMaterialUrl()).typeEnum(typeEnum).build();
+            case RADAR:
+                return buildRadarAttachment(weMaterial.getRadarId(), RadarChannelEnum.EMPLE_CODE.getTYPE(), userId, corpId, scenario);
             case MINIPROGRAM:
                 return builder.content(weMaterial.getMaterialName())
                         .picUrl(weMaterial.getCoverUrl())
@@ -88,7 +118,7 @@ public class AttachmentParam {
     /**
      * 将{@link Attachment}对象转化为该对象
      */
-    public static AttachmentParam costFromAttachment(Attachment attachment) {
+    public static AttachmentParam costFromAttachment(String sender, String corpId, String taskName, Attachment attachment) {
         if (attachment == null || StringUtils.isEmpty(attachment.getMsgtype())) {
             return null;
         }
@@ -113,6 +143,8 @@ public class AttachmentParam {
                         .picUrl(attachment.getLinkMessage().getPicurl())
                         .description(attachment.getLinkMessage().getDesc())
                         .url(attachment.getLinkMessage().getUrl()).typeEnum(typeEnum).build();
+            case RADAR:
+                return buildRadarAttachment(attachment.getRadarMessage().getRadarId(), RadarChannelEnum.GROUP_TASK.getTYPE(), sender, corpId, taskName);
             case MINIPROGRAM:
                 return builder.picUrl(attachment.getMiniprogramMessage().getPicUrl())
                         .content(attachment.getMiniprogramMessage().getTitle())

@@ -25,6 +25,7 @@
             <result property="description" column="description"/>
             <result property="url" column="url"/>
             <result property="sortNo" column="sort_no"/>
+            <result property="radarId" column="radar_id"/>
         </collection>
         <collection property="useUsers" ofType="com.easywecom.wecom.domain.vo.welcomemsg.WeUserUseScopeVO"
                     column="{defaultMsgId=id,corpId=corp_id}"

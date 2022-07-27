@@ -7,6 +7,8 @@ import com.easywecom.wecom.domain.dto.customer.req.GetByUserReq;
 import com.easywecom.wecom.domain.dto.customer.resp.GetByUserResp;
 import com.easywecom.wecom.domain.query.GroupChatStatisticQuery;
 import com.easywecom.wecom.domain.query.UserBehaviorDataQuery;
+import com.easywecom.wecom.domain.req.UnionId2ExternalUserIdReq;
+import com.easywecom.wecom.domain.resp.UnionId2ExternalUserIdResp;
 import com.easywecom.wecom.interceptor.WeAccessTokenInterceptor;
 import org.springframework.stereotype.Component;
 
@@ -118,4 +120,8 @@ public interface WeCustomerClient {
      */
     @Post(url = "/externalcontact/groupchat/statistic_group_by_day")
     GroupChatStatisticDTO getGroupChatStatisticGroupByDay(@JSONBody GroupChatStatisticQuery query, @Header("corpid") String corpId);
+
+
+    @Post("/externalcontact/unionid_to_external_userid")
+    UnionId2ExternalUserIdResp unionId2ExternalUserId (@Body("unionid")String unionid ,@Body("openid")String openid) ;
 }

@@ -2,10 +2,13 @@ package com.easywecom.wecom.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.easywecom.common.core.domain.wecom.BaseExtendPropertyRel;
+import com.easywecom.common.core.domain.wecom.WeUser;
+import com.easywecom.wecom.domain.WeCustomer;
 import com.easywecom.wecom.domain.WeCustomerTrajectory;
 import com.easywecom.wecom.domain.WeGroupMember;
 import com.easywecom.wecom.domain.WeTag;
 import com.easywecom.wecom.domain.dto.customer.EditCustomerDTO;
+import com.easywecom.wecom.domain.entity.radar.WeRadar;
 
 import java.util.List;
 
@@ -83,5 +86,12 @@ public interface WeCustomerTrajectoryService extends IService<WeCustomerTrajecto
      */
     List<WeCustomerTrajectory> listOfTrajectory(String corpId, String externalUserid, Integer trajectoryType, String userId);
 
-
+    /**
+     * 记录活动轨迹（点击雷达链接)
+     *
+     * @param radar    雷达{@link WeRadar}
+     * @param user     员工 {@link WeUser}
+     * @param customer 客户 {@link WeCustomer}
+     */
+    void recordRadarClickOperation(WeRadar radar, WeUser user, WeCustomer customer);
 }

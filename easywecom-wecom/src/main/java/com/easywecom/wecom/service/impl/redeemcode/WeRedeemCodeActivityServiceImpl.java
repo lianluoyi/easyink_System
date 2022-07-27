@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.easywecom.common.annotation.DataScope;
 import com.easywecom.common.constant.WeConstans;
+import com.easywecom.common.constant.redeemcode.RedeemCodeConstants;
 import com.easywecom.common.core.domain.model.LoginUser;
 import com.easywecom.common.enums.ResultTip;
 import com.easywecom.common.exception.CustomException;
@@ -68,15 +69,15 @@ public class WeRedeemCodeActivityServiceImpl extends ServiceImpl<WeRedeemCodeAct
             weRedeemCodeActivity.setCreateBy(user.getWeUser().getUserId());
         }
         if (StringUtils.isBlank(weRedeemCodeActivity.getEffectStartTime())) {
-            weRedeemCodeActivity.setEffectStartTime(WeConstans.REDEEM_CODE_EMPTY_TIME);
+            weRedeemCodeActivity.setEffectStartTime(RedeemCodeConstants.REDEEM_CODE_EMPTY_TIME);
         }
         if (StringUtils.isBlank(weRedeemCodeActivity.getEffectEndTime())) {
-            weRedeemCodeActivity.setEffectEndTime(WeConstans.REDEEM_CODE_EMPTY_TIME);
+            weRedeemCodeActivity.setEffectEndTime(RedeemCodeConstants.REDEEM_CODE_EMPTY_TIME);
         }
         //保存兑换码活动数据 如果设置警告同时保存员工数据
         this.baseMapper.insert(weRedeemCodeActivity);
         //存员工关系表
-        if (WeConstans.REDEEM_CODE_USER_ALARM.equals(weRedeemCodeActivity.getEnableAlarm())) {
+        if (RedeemCodeConstants.REDEEM_CODE_USER_ALARM.equals(weRedeemCodeActivity.getEnableAlarm())) {
             weRedeemCodeActivity.setAlarmUserActivityId(weRedeemCodeActivity.getId());
             this.baseMapper.insertAlarmUser(weRedeemCodeActivity.getUseUsers());
         }
@@ -105,10 +106,10 @@ public class WeRedeemCodeActivityServiceImpl extends ServiceImpl<WeRedeemCodeAct
         List<WeRedeemCodeActivityVO> weRedeemCodeActivityVOS = this.baseMapper.selectWeRedeemCodeActivityList(weRedeemCodeActivity, isSuperAdmin);
         weRedeemCodeActivity.setNowTime(DateUtils.getDate());
         weRedeemCodeActivityVOS.forEach(item -> {
-            if (WeConstans.REDEEM_CODE_EMPTY_TIME.equals(item.getEffectStartTime())) {
+            if (RedeemCodeConstants.REDEEM_CODE_EMPTY_TIME.equals(item.getEffectStartTime())) {
                 item.setEffectStartTime(StringUtils.EMPTY);
             }
-            if (WeConstans.REDEEM_CODE_EMPTY_TIME.equals(item.getEffectEndTime())) {
+            if (RedeemCodeConstants.REDEEM_CODE_EMPTY_TIME.equals(item.getEffectEndTime())) {
                 item.setEffectEndTime(StringUtils.EMPTY);
             }
         });
@@ -129,17 +130,17 @@ public class WeRedeemCodeActivityServiceImpl extends ServiceImpl<WeRedeemCodeAct
         //校验参数
         verifyParam(weRedeemCodeActivity);
         if (StringUtils.isBlank(weRedeemCodeActivity.getEffectStartTime())) {
-            weRedeemCodeActivity.setEffectStartTime(WeConstans.REDEEM_CODE_EMPTY_TIME);
+            weRedeemCodeActivity.setEffectStartTime(RedeemCodeConstants.REDEEM_CODE_EMPTY_TIME);
         }
         if (StringUtils.isBlank(weRedeemCodeActivity.getEffectEndTime())) {
-            weRedeemCodeActivity.setEffectEndTime(WeConstans.REDEEM_CODE_EMPTY_TIME);
+            weRedeemCodeActivity.setEffectEndTime(RedeemCodeConstants.REDEEM_CODE_EMPTY_TIME);
         }
         weRedeemCodeActivity.setUpdateTime(new Date());
         weRedeemCodeActivity.setUpdateBy(LoginTokenService.getUsername());
         //保存兑换码活动数据 如果设置警告同时保存员工数据
         this.baseMapper.updateById(weRedeemCodeActivity);
         //存员工关系表
-        if (weRedeemCodeActivity.getEnableAlarm().equals(WeConstans.REDEEM_CODE_USER_ALARM)) {
+        if (RedeemCodeConstants.REDEEM_CODE_USER_ALARM.equals(weRedeemCodeActivity.getEnableAlarm())) {
             weRedeemCodeActivity.setAlarmUserActivityId(weRedeemCodeActivity.getId());
             //更新员工关系表
             this.baseMapper.deleteAlarmUser(new Long[]{weRedeemCodeActivity.getId()});
@@ -232,7 +233,7 @@ public class WeRedeemCodeActivityServiceImpl extends ServiceImpl<WeRedeemCodeAct
             }
         }
 
-        if (weRedeemCodeActivityDTO.getEnableAlarm().equals(WeConstans.REDEEM_CODE_USER_ALARM)) {
+        if (RedeemCodeConstants.REDEEM_CODE_USER_ALARM.equals(weRedeemCodeActivityDTO.getEnableAlarm())) {
             if (weRedeemCodeActivityDTO.getAlarmThreshold() < 0) {
                 throw new CustomException(ResultTip.TIP_REDEEM_CODE_EMPTY_THRESHOLD);
             }

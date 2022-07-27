@@ -503,7 +503,7 @@
         ON DUPLICATE KEY UPDATE
         `name` = VALUES(`name`),avatar = VALUES(avatar),corp_name = VALUES(corp_name),
         corp_full_name = VALUES(corp_full_name),position = VALUES(position),`type` = VALUES(`type`),gender =
-        VALUES(gender)
+        VALUES(gender) , unionid = VALUES(unionid)
     </insert>
 
     <update id="updateWeCustomer" parameterType="com.easywecom.wecom.domain.WeCustomer">
@@ -511,6 +511,7 @@
         <trim prefix="SET" suffixOverrides=",">
             <if test="externalUserid != null">external_userid = #{externalUserid},</if>
             <if test="name != null">name = #{name},</if>
+            <if test="unionid != null">unionid = #{unionid},</if>
             <if test="avatar != null">avatar = #{avatar},</if>
             <if test="corpId != null">corp_id = #{corpId},</if>
             <if test="type != null">type = #{type},</if>

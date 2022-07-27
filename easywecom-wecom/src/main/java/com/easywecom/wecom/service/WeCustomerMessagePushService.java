@@ -2,6 +2,7 @@ package com.easywecom.wecom.service;
 
 
 import com.easywecom.common.core.domain.model.LoginUser;
+import com.easywecom.wecom.domain.WeCustomer;
 import com.easywecom.wecom.domain.dto.WeCustomerMessageDTO;
 import com.easywecom.wecom.domain.dto.WeCustomerMessageToUserDTO;
 import com.easywecom.wecom.domain.dto.message.CustomerMessagePushDTO;
@@ -10,6 +11,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.validation.annotation.Validated;
 
 import java.text.ParseException;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -20,12 +22,27 @@ import java.util.List;
  */
 public interface WeCustomerMessagePushService {
 
+
+    /**
+     * 客户的外部联系人id列表，仅在chat_type为single时有效，不可与sender同时为空，最多可传入1万个客户
+     *
+     * @param corpId     企业id
+     * @param pushRange  消息范围 0 全部客户  1 指定客户
+     * @param staffId    员工id
+     * @param tag        客户标签id列表
+     * @param filterTags 过滤用的标签
+     * @param gender     性别
+     * @return {@link List<WeCustomer>} 客户的外部联系人id列表
+     */
+    List<WeCustomer> getExternalUserIds(String corpId, String pushRange, String staffId, String departmentIds, String tag, String filterTags, Integer gender, Date startTime, Date endTime);
+
     /**
      * 新增群发消息发送
-     * @param loginUser 登录用户
+     *
+     * @param loginUser           登录用户
      * @param customerMessagePush 原始数据信息
-     * @throws JsonProcessingException  JsonProcessingException
-     * @throws ParseException ParseException
+     * @throws JsonProcessingException    JsonProcessingException
+     * @throws ParseException             ParseException
      * @throws CloneNotSupportedException CloneNotSupportedException
      */
     void addWeCustomerMessagePush(CustomerMessagePushDTO customerMessagePush, LoginUser loginUser) throws JsonProcessingException, ParseException, CloneNotSupportedException;

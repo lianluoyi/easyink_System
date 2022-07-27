@@ -9,7 +9,7 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 /**
- * 群发消息 0 图片消息 2视频 3文件 4 文本消息   5 链接消息   6 小程序消息 用逗号隔开
+ * 群发消息 0 图片消息 2视频 3文件 4 文本消息   5 链接消息   6 小程序消息 7 雷达 用逗号隔开
  * 注意：修改type请修改 {@link AttachmentTypeEnum#mappingFromGroupMessageType(java.lang.Integer)}
  */
 @SuppressWarnings("all")
@@ -41,8 +41,12 @@ public enum GroupMessageType {
     /**
      * 小程序消息
      */
-    MINIPROGRAM("6", "miniprogram");
+    MINIPROGRAM("6", "miniprogram"),
 
+    /**
+     * 雷达消息
+     */
+    RADAR("7", "radar");
     /**
      * 媒体类型
      */

@@ -41,8 +41,8 @@ public class WeDepartmentController extends BaseController {
     @ApiOperation("获取部门列表")
     public AjaxResult list(Integer isActivate) {
         LoginUser loginUser = LoginTokenService.getLoginUser();
-        List<WeDepartment> list = weDepartmentService.selectWeDepartmentList(loginUser.getCorpId(), isActivate);
-        return AjaxResult.success(sysDeptService.filterDataScope(list, loginUser));
+        List<WeDepartment> list = weDepartmentService.selectWeDepartmentList(loginUser.getCorpId(), isActivate, loginUser);
+        return AjaxResult.success(list);
     }
 
 

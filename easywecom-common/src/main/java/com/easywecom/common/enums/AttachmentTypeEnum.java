@@ -34,8 +34,12 @@ public enum AttachmentTypeEnum {
     /**
      * 视频媒体文件素材
      */
-    VIDEO(5, "video");
+    VIDEO(5, "video"),
 
+    /**
+     * 雷达链接
+     */
+    RADAR(7, "radar");
 
     /**
      * 素材类型
@@ -107,6 +111,8 @@ public enum AttachmentTypeEnum {
                 return LINK;
             case 6:
                 return MINIPROGRAM;
+            case 7:
+                return RADAR;
             default:
                 return null;
         }

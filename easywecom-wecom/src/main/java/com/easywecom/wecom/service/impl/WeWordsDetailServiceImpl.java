@@ -142,6 +142,9 @@ public class WeWordsDetailServiceImpl extends ServiceImpl<WeWordsDetailMapper, W
             if (weWordsDetailEntity.getSize() == null) {
                 weWordsDetailEntity.setSize(0L);
             }
+            if (weWordsDetailEntity.getRadarId() == null) {
+                weWordsDetailEntity.setRadarId(0L);
+            }
         });
     }
 
@@ -164,7 +167,7 @@ public class WeWordsDetailServiceImpl extends ServiceImpl<WeWordsDetailMapper, W
                 throw new CustomException(ResultTip.TIP_MISS_WORDS_ATTACHMENT_CONTENT);
             }
             //缺少标题
-            if (StringUtils.isBlank(weWordsDetailEntity.getTitle())){
+            if (StringUtils.isBlank(weWordsDetailEntity.getTitle())) {
                 throw new CustomException(ResultTip.TIP_MISS_WORDS_ATTACHMENT_CONTENT);
             }
             if (WeCategoryMediaTypeEnum.LINK.getMediaType().equals(weWordsDetailEntity.getMediaType())) {
@@ -174,6 +177,15 @@ public class WeWordsDetailServiceImpl extends ServiceImpl<WeWordsDetailMapper, W
             } else if (weWordsDetailEntity.getTitle().length() > ATTACHMENT_TITLE_SIZE) {
                 throw new CustomException(ResultTip.TIP_WORDS_OVER_TITLE);
             }
+
+            if (WeCategoryMediaTypeEnum.RADAR.getMediaType().equals(weWordsDetailEntity.getMediaType())) {
+                if (StringUtils.isNotBlank(weWordsDetailEntity.getTitle()) && weWordsDetailEntity.getTitle().length() > LINK_TITLE_SIZE) {
+                    throw new CustomException(ResultTip.TIP_WORDS_OVER_TITLE);
+                }
+            } else if (weWordsDetailEntity.getTitle().length() > ATTACHMENT_TITLE_SIZE) {
+                throw new CustomException(ResultTip.TIP_WORDS_OVER_TITLE);
+            }
+
         }
     }
 }

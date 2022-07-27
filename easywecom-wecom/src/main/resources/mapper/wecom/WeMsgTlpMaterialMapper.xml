@@ -13,7 +13,8 @@
                pic_url,
                description,
                url,
-               sort_no
+               sort_no,
+               radar_id
     </sql>
 
     <select id="selectWeMsgTlpMaterialListByDefaultMsgId"

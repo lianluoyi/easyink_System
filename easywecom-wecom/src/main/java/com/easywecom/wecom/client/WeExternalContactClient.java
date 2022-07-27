@@ -88,4 +88,6 @@ public interface WeExternalContactClient {
      */
     @Post(url = "/externalcontact/groupchat/transfer")
     TransferResignedGroupChatResp transferResignedGroup(@Body TransferResignedGroupChatReq req, @Header("corpId") String corpId);
+
+
 }

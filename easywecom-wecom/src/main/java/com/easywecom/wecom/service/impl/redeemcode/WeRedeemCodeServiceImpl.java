@@ -6,12 +6,14 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.easywecom.common.config.CosConfig;
 import com.easywecom.common.config.RuoYiConfig;
 import com.easywecom.common.constant.WeConstans;
+import com.easywecom.common.constant.redeemcode.RedeemCodeConstants;
 import com.easywecom.common.core.domain.entity.WeCorpAccount;
 import com.easywecom.common.core.page.PageDomain;
 import com.easywecom.common.core.page.TableSupport;
 import com.easywecom.common.enums.MessageType;
 import com.easywecom.common.enums.ResultTip;
 import com.easywecom.common.exception.CustomException;
+import com.easywecom.common.lock.LockUtil;
 import com.easywecom.common.utils.DateUtils;
 import com.easywecom.common.utils.file.FileUploadUtils;
 import com.easywecom.common.utils.spring.SpringUtils;
@@ -54,6 +56,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static com.easywecom.common.annotation.Excel.ColumnType.STRING;
@@ -168,7 +171,7 @@ public class WeRedeemCodeServiceImpl extends ServiceImpl<WeRedeemCodeMapper, WeR
                     effectiveTime = row.getCell(1).getStringCellValue();
                 } else if (DateUtil.isCellDateFormatted(row.getCell(1))) {
                     if (ObjectUtil.isEmpty(row.getCell(1).getDateCellValue())) {
-                        effectiveTime = WeConstans.REDEEM_CODE_EMPTY_TIME;
+                        effectiveTime = RedeemCodeConstants.REDEEM_CODE_EMPTY_TIME;
                     } else {
                         Date date = row.getCell(1).getDateCellValue();
                         effectiveTime = DateFormatUtils.format(date, "yyyy/M/d");
@@ -176,7 +179,7 @@ public class WeRedeemCodeServiceImpl extends ServiceImpl<WeRedeemCodeMapper, WeR
                 } else {
                     effectiveTime = row.getCell(1).getStringCellValue();
                 }
-                if (!WeConstans.REDEEM_CODE_EMPTY_TIME.equals(effectiveTime)) {
+                if (!RedeemCodeConstants.REDEEM_CODE_EMPTY_TIME.equals(effectiveTime)) {
                     //验证时间格式
                     if (Boolean.TRUE.equals(!DateUtils.isMatchFormat(effectiveTime, "yyyy/MM/dd")
                             && !DateUtils.isMatchFormat(effectiveTime, "yyyy/MM/d")
@@ -187,7 +190,7 @@ public class WeRedeemCodeServiceImpl extends ServiceImpl<WeRedeemCodeMapper, WeR
                     }
                 }
             } else {
-                effectiveTime = WeConstans.REDEEM_CODE_EMPTY_TIME;
+                effectiveTime = RedeemCodeConstants.REDEEM_CODE_EMPTY_TIME;
             }
             //验证code重复
             if (StringUtils.isNotEmpty(verifyCode.get(code))) {
@@ -255,26 +258,41 @@ public class WeRedeemCodeServiceImpl extends ServiceImpl<WeRedeemCodeMapper, WeR
         }
         String corpId = weRedeemCodeDTO.getCorpId();
         WeRedeemCode weRedeemCode = weRedeemCodeDTO.setAddOrUpdateWeRedeemCode();
+        if (StringUtils.isBlank(weRedeemCode.getEffectiveTime())) {
+            weRedeemCode.setEffectiveTime(RedeemCodeConstants.REDEEM_CODE_EMPTY_TIME);
+        }
         if (StringUtils.isNotBlank(weRedeemCode.getReceiveUserId())) {
             //判断该客户是否有参与过活动, 且该活动是否限制再次参与
             WeRedeemCode getWeRedeemCode = WeRedeemCode.builder().activityId(String.valueOf(weRedeemCodeDTO.getActivityId())).receiveUserId(weRedeemCodeDTO.getReceiveUserId()).build();
             final WeRedeemCode selectWeRedeemCode = weRedeemCodeMapper.selectOne(getWeRedeemCode);
             final WeRedeemCodeActivityVO redeemCodeActivity = weRedeemCodeActivityService.getRedeemCodeActivity(corpId, Long.valueOf(weRedeemCode.getActivityId()));
-            if (WeConstans.REDEEM_CODE_ACTIVITY_LIMITED.equals(redeemCodeActivity.getEnableLimited()) && ObjectUtil.isNotEmpty(selectWeRedeemCode)) {
+            if (RedeemCodeConstants.REDEEM_CODE_ACTIVITY_LIMITED.equals(redeemCodeActivity.getEnableLimited()) && ObjectUtil.isNotEmpty(selectWeRedeemCode)) {
                 throw new CustomException(ResultTip.TIP_REDEEM_CODE_ACTIVITY_LIMIT_ADD_USER);
             }
-            weRedeemCode.setStatus(WeConstans.REDEEM_CODE_RECEIVED);
-            weRedeemCode.setRedeemTime(DateUtils.parseDateToStr(DateUtils.YYYY_MM_DD_HH_MM_SS, new Date()));
+            //该客户符合分配兑换码条件
+            try {
+                final String redeemCodeKey = RedeemCodeConstants.getRedeemCodeKey(corpId, weRedeemCode.getActivityId());
+                if (LockUtil.tryLock(redeemCodeKey, RedeemCodeConstants.CODE_WAIT_TIME, RedeemCodeConstants.CODE_LEASE_TIME, TimeUnit.SECONDS)) {
+                    weRedeemCode.setStatus(RedeemCodeConstants.REDEEM_CODE_RECEIVED);
+                    weRedeemCode.setRedeemTime(DateUtils.parseDateToStr(DateUtils.YYYY_MM_DD_HH_MM_SS, new Date()));
+                    this.baseMapper.updateWeRedeemCode(weRedeemCode);
+                    //更新兑换码信息后,释放锁
+                    LockUtil.unlock(RedeemCodeConstants.getRedeemCodeKey(corpId, String.valueOf(weRedeemCodeDTO.getActivityId())));
+                }
+            } catch (InterruptedException e) {
+                log.error("[兑换码更新]兑换码更新兑换人获取锁失败,e:{},活动id:{},corpId:{}", ExceptionUtils.getStackTrace(e), weRedeemCodeDTO.getActivityId(), corpId);
+            } catch (Exception e) {
+                log.error("[兑换码更新]兑换码分配兑换人失败,e:{},活动id:{},corpId:{}", ExceptionUtils.getStackTrace(e), weRedeemCodeDTO.getActivityId(), corpId);
+                //内部处理逻辑报错,释放锁
+                LockUtil.unlock(RedeemCodeConstants.getRedeemCodeKey(corpId, String.valueOf(weRedeemCodeDTO.getActivityId())));
+            }
+            //告警员工
+            alarmUser(corpId, weRedeemCodeDTO.getActivityId());
         } else {
-            weRedeemCode.setStatus(WeConstans.REDEEM_CODE_NOT_RECEIVED);
-            weRedeemCode.setRedeemTime(WeConstans.REDEEM_CODE_EMPTY_TIME);
+            weRedeemCode.setStatus(RedeemCodeConstants.REDEEM_CODE_NOT_RECEIVED);
+            weRedeemCode.setRedeemTime(RedeemCodeConstants.REDEEM_CODE_EMPTY_TIME);
+            this.baseMapper.updateWeRedeemCode(weRedeemCode);
         }
-        if (StringUtils.isBlank(weRedeemCode.getEffectiveTime())) {
-            weRedeemCode.setEffectiveTime(WeConstans.REDEEM_CODE_EMPTY_TIME);
-        }
-        this.baseMapper.updateWeRedeemCode(weRedeemCode);
-        //告警员工
-        alarmUser(corpId, weRedeemCodeDTO.getActivityId());
     }
 
 
@@ -291,22 +309,22 @@ public class WeRedeemCodeServiceImpl extends ServiceImpl<WeRedeemCodeMapper, WeR
                 || ObjectUtil.isNull(redeemCodeActivity.getActivityName())
                 || ObjectUtil.isNull(redeemCodeActivity.getRemainInventory())
                 || ObjectUtil.isNull(redeemCodeActivity.getEnableLimited())) {
-            log.debug("【兑换码活动告警】,兑换码活动查询错误，活动id为{}", activityId);
+            log.info("【兑换码活动告警】,兑换码活动查询错误，活动id为{}", activityId);
             return;
         }
-        if (WeConstans.REDEEM_CODE_USER_ALARM.equals(redeemCodeActivity.getEnableAlarm())) {
+        if (RedeemCodeConstants.REDEEM_CODE_USER_ALARM.equals(redeemCodeActivity.getEnableAlarm())) {
             //等于限制发送告警员工
             final Integer remainInventory = redeemCodeActivity.getRemainInventory();
             final Integer alarmThreshold = redeemCodeActivity.getAlarmThreshold();
             log.info("兑换码活动id:{},剩余库存:{},告警阈值为{}", redeemCodeActivity.getId(), remainInventory, alarmThreshold);
             if (remainInventory.equals(alarmThreshold)) {
-                log.debug("兑换码活动{},库存不足,正在向员工告警", redeemCodeActivity.getId());
+                log.info("兑换码活动{},库存不足,正在向员工告警", redeemCodeActivity.getId());
                 if (CollectionUtils.isEmpty(redeemCodeActivity.getAlarmUserList())) {
-                    log.error("[活码回调兑换码库存告警,员工为空]");
+                    log.info("[活码回调兑换码库存告警,员工为空]");
                 } else {
                     String alarmMsg;
-                    alarmMsg = WeConstans.REDEEM_CODE_ALARM_MESSAGE_INFO.replaceAll(WeConstans.REDEEM_CODE_ACTIVITY_NAME, redeemCodeActivity.getActivityName())
-                            .replaceAll(WeConstans.REDEEM_CODE_REAMIN_INVENTORY, String.valueOf(remainInventory));
+                    alarmMsg = RedeemCodeConstants.REDEEM_CODE_ALARM_MESSAGE_INFO.replaceAll(RedeemCodeConstants.REDEEM_CODE_ACTIVITY_NAME, redeemCodeActivity.getActivityName())
+                            .replaceAll(RedeemCodeConstants.REDEEM_CODE_REAMIN_INVENTORY, String.valueOf(remainInventory));
                     redeemCodeActivity.getAlarmUserList().forEach(item -> {
                         toAlarmUser(corpId, item.getTargetId(), alarmMsg);
                     });
@@ -377,10 +395,10 @@ public class WeRedeemCodeServiceImpl extends ServiceImpl<WeRedeemCodeMapper, WeR
         startPage();
         List<WeRedeemCodeVO> weRedeemCodeList = this.baseMapper.selectWeRedeemCodeList(weRedeemCodeDTO);
         weRedeemCodeList.forEach(item -> {
-            if (item.getRedeemTime().contains(WeConstans.REDEEM_CODE_EMPTY_TIME)) {
+            if (item.getRedeemTime().contains(RedeemCodeConstants.REDEEM_CODE_EMPTY_TIME)) {
                 item.setRedeemTime(StringUtils.EMPTY);
             }
-            if (item.getEffectiveTime().contains(WeConstans.REDEEM_CODE_EMPTY_TIME)) {
+            if (item.getEffectiveTime().contains(RedeemCodeConstants.REDEEM_CODE_EMPTY_TIME)) {
                 item.setEffectiveTime(StringUtils.EMPTY);
             }
         });

@@ -20,6 +20,8 @@
         <result property="expireTime" column="expire_time"/>
         <result property="showMaterial" column="show_material"/>
         <result property="isDefined" column="is_defined"/>
+        <result property="enableConvertRadar" column="enable_convert_radar"/>
+        <result property="radarId" column="radar_id"/>
     </resultMap>
 
     <resultMap id="materialMap1" type="com.easywecom.wecom.domain.WeMaterial">
@@ -38,6 +40,8 @@
         <result property="expireTime" column="expire_time"/>
         <result property="showMaterial" column="show_material"/>
         <result property="isDefined" column="is_defined"/>
+        <result property="enableConvertRadar" column="enable_convert_radar"/>
+        <result property="radarId" column="radar_id"/>
     </resultMap>
 
     <resultMap id="materialVoMap" type="com.easywecom.wecom.domain.vo.WeMaterialVO">
@@ -56,8 +60,12 @@
         <result property="expireTime" column="expire_time"/>
         <result property="showMaterial" column="show_material"/>
         <result property="isDefined" column="is_defined"/>
+        <result property="enableConvertRadar" column="enable_convert_radar"/>
+        <result property="radarId" column="radar_id"/>
         <result property="tagIds" column="tagIds"/>
-        <collection property="tagList" column="{materialId=id,tagIds=tagIds}" ofType="com.easywecom.wecom.domain.vo.WeMaterialAndTagRel" select="com.easywecom.wecom.mapper.WeMaterialTagRelMapper.listOfTagRelByMaterialId"/>
+        <collection property="tagList" column="{materialId=id,tagIds=tagIds}"
+                    ofType="com.easywecom.wecom.domain.vo.WeMaterialAndTagRel"
+                    select="com.easywecom.wecom.mapper.WeMaterialTagRelMapper.listOfTagRelByMaterialId"/>
     </resultMap>
 
     <insert id="insertWeMaterial">
@@ -110,7 +118,13 @@
                 temp_flag,
             </if>
             <if test="isDefined!=null">
-                is_defined
+                is_defined,
+            </if>
+            <if test="enableConvertRadar != null">
+                enable_convert_radar,
+            </if>
+            <if test="radarId != null">
+                radar_id
             </if>
         </trim>
         VALUES
@@ -161,7 +175,13 @@
                 #{tempFlag},
             </if>
             <if test="isDefined!=null">
-                #{isDefined}
+                #{isDefined},
+            </if>
+            <if test="enableConvertRadar!=null">
+                #{enableConvertRadar},
+            </if>
+            <if test="radarId != null">
+                #{radarId}
             </if>
         </trim>
     </insert>
@@ -246,9 +266,16 @@
         <if test="isDefined!=null">
             is_defined=#{isDefined},
         </if>
+        <if test="enableConvertRadar != null">
+            enable_convert_radar = #{enableConvertRadar},
+        </if>
+        <if test="radarId != null">
+            radar_id = #{radarId},
+        </if>
         update_time = sysdate()
         where id=#{id}
-        and category_id in (SELECT id FROM we_category WHERE corp_id = #{corpId} AND media_type = #{mediaType} AND del_flag = ${@com.easywecom.common.constant.WeConstans@WE_CUSTOMER_MSG_RESULT_NO_DEFALE})
+        and category_id in (SELECT id FROM we_category WHERE corp_id = #{corpId} AND media_type = #{mediaType} AND
+        del_flag = ${@com.easywecom.common.constant.WeConstans@WE_CUSTOMER_MSG_RESULT_NO_DEFALE})
     </update>
     <update id="resetCategory">
         UPDATE we_material
@@ -271,9 +298,10 @@
 
     <select id="findWeMaterials" resultMap="materialVoMap">
         SELECT wm.id,wm.category_id,wm.material_url,wm.content,wm.material_name,
-          wm.digest,wm.cover_url,wm.create_by,wm.create_time,wm.update_by,wm.update_time,
-        wm.audio_time,wm.show_material,wc.media_type,#{tagIds} tagIds,wm.is_defined,
-          IF(wm.expire_time='${@com.easywecom.common.constant.WeConstans@DEFAULT_MATERIAL_NOT_EXPIRE}',NULL,wm.expire_time) expire_time
+        wm.digest,wm.cover_url,wm.create_by,wm.create_time,wm.update_by,wm.update_time,
+        wm.audio_time,wm.show_material,wc.media_type,#{tagIds} tagIds,wm.is_defined,wm.enable_convert_radar,wm.radar_id,
+        IF(wm.expire_time='${@com.easywecom.common.constant.WeConstans@DEFAULT_MATERIAL_NOT_EXPIRE}',NULL,wm.expire_time)
+        expire_time
         FROM we_material wm
         LEFT JOIN we_category wc ON wm.category_id = wc.id
         LEFT JOIN we_material_tag_rel wmr ON wmr.material_id = wm.id
@@ -288,6 +316,7 @@
         </if>
         <if test="showMaterial!=null">
             AND show_material = #{showMaterial}
+            AND wc.using = #{showMaterial}
         </if>
         <if test="isExpire!=null">
             <choose>
@@ -308,7 +337,7 @@
 
     <select id="findMaterialVoListByIds" resultMap="materialVoMap">
         SELECT wc.media_type, wm.id,
-        wm.material_url,wm.content,wm.material_name,wm.digest,wm.audio_time,wm.cover_url,wm.create_by,wm.create_time,wm.update_by,wm.update_time,wm.is_defined
+        wm.material_url,wm.content,wm.material_name,wm.digest,wm.audio_time,wm.cover_url,wm.create_by,wm.create_time,wm.update_by,wm.update_time,wm.is_defined,wm.enable_convert_radar,wm.radar_id
         from we_material wm
         left join we_category wc on wc.id = wm.category_id
         where
@@ -319,7 +348,8 @@
     </select>
 
     <sql id="material">
-        id,category_id,material_url,content,material_name,digest,cover_url,create_by,create_time,update_by,update_time,audio_time,is_defined
+        id
+        ,category_id,material_url,content,material_name,digest,cover_url,create_by,create_time,update_by,update_time,audio_time,is_defined,enable_convert_radar,radar_id
     </sql>
 
     <update id="restore">
@@ -417,7 +447,7 @@
     <select id="getListByMaterialSort" resultType="com.easywecom.wecom.domain.dto.AddWeMaterialDTO">
         SELECT
             wc.media_type, wm.id, wm.material_url,wm.content,wm.material_name,wm.digest,wm.audio_time,wm.cover_url,
-        wm.create_by,wm.create_time,wm.update_by,wm.update_time,wm.is_defined
+        wm.create_by,wm.create_time,wm.update_by,wm.update_time,wm.is_defined,wm.enable_convert_radar,wm.radar_id
         FROM we_material wm
         LEFT JOIN we_category wc ON wc.id = wm.category_id AND wc.corp_id = #{corpId}
         WHERE wm.id IN

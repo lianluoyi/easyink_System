@@ -123,4 +123,21 @@ public interface WeEmpleCodeService extends IService<WeEmpleCode> {
      */
     List<WeEmplyCodeScopeUserVO> getUserByEmplyCode(String corpId, Long id);
 
+    /**
+     * 构建普通欢迎语及附件
+     *
+     * @param messageMap
+     * @param corpId
+     * @param externalUserId
+     */
+    void buildCommonWelcomeMsg(SelectWeEmplyCodeWelcomeMsgVO messageMap, String corpId, String externalUserId);
+
+    /**
+     * 构建兑换码活动欢迎语及附件
+     *
+     * @param messageMap
+     * @param corpId
+     * @param externalUserId
+     */
+    void buildRedeemCodeActivityWelcomeMsg(SelectWeEmplyCodeWelcomeMsgVO messageMap, String corpId, String externalUserId);
 }

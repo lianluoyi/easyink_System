@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.easywecom.wecom.mapper.radar.WeRadarMapper">
+
+
+    <resultMap type="com.easywecom.wecom.domain.vo.radar.WeRadarVO"
+               id="radarMap">
+        <result property="radarId" column="id"/>
+        <result property="type" column="type"/>
+        <result property="radarTitle" column="radar_title"/>
+        <result property="createTime" column="create_time"/>
+        <result property="enableClickNotice" column="enable_click_notice"/>
+        <result property="enableBehaviorRecord" column="enable_behavior_record"/>
+        <result property="enableCustomerTag" column="enable_customer_tag"/>
+        <result property="enableUpdateNotice" column="enable_update_notice"/>
+        <result property="createId" column="user_id"/>
+        <result property="createName" column="user_name"/>
+        <result property="departmentId" column="department"/>
+        <result property="departmentName" column="name"/>
+        <result property="clickNum" column="clickNum"/>
+        <!--        <association property="clickNum" column="{radarId=id}" javaType="String"-->
+        <!--                     select="getClickNum">-->
+        <!--        </association>-->
+        <collection property="weRadarUrl"
+                    ofType="com.easywecom.wecom.domain.entity.radar.WeRadarUrl">
+            <result property="url" column="url"/>
+            <result property="coverUrl" column="cover_url"/>
+            <result property="title" column="title"/>
+            <result property="content" column="content"/>
+            <result property="isDefined" column="is_defined"/>
+        </collection>
+        <collection property="radarTagList" javaType="ArrayList"
+                    column="{radarId = id}" select="selectRadarTags">
+        </collection>
+    </resultMap>
+
+
+    <resultMap id="radarTagMap" type="com.easywecom.wecom.domain.entity.radar.WeRadarTag">
+        <result property="radarId" column="radar_id"/>
+        <result property="tagId" column="tag_id"/>
+        <result property="tagName" column="tag_name"/>
+    </resultMap>
+
+
+    <select id="getClickNum" resultType="Integer">
+        SELECT COUNT(distinct external_user_id) clickNum
+        FROM we_radar_click_record
+        WHERE radar_id = #{radarId}
+    </select>
+
+
+    <insert id="saveRadarTags">
+        INSERT INTO we_radar_tag_rel
+        (radar_id, tag_id)
+        values
+        <foreach collection="list" item="item" separator=",">
+            (#{item.radarId},#{item.tagId})
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+        radar_id = VALUES(radar_id),
+        tag_id = VALUES(tag_id)
+    </insert>
+    <delete id="deleteRadarTags">
+        DELETE
+        FROM we_radar_tag_rel
+        WHERE radar_id = #{radarId}
+    </delete>
+    <delete id="batchDeleteRadarTags">
+        DELETE FROM we_radar_tag_rel
+        <where>
+            radar_id IN
+            <if test="ids != null and ids.size() > 0">
+                <foreach collection="ids" item="id" open="(" separator="," close=")">
+                    #{id}
+                </foreach>
+            </if>
+        </where>
+    </delete>
+
+    <select id="selectRadarTags" resultMap="radarTagMap">
+        select wrtr.radar_id, wrtr.tag_id, wg.name tag_name
+        from we_radar_tag_rel wrtr
+                 LEFT JOIN we_tag wg ON wg.tag_id = wrtr.tag_id
+        where wrtr.radar_id = #{radarId}
+    </select>
+
+    <select id="list" resultMap="radarMap">
+        SELECT wr.id,
+        wr.radar_title,
+        wr.url,
+        wr.type,
+        wr.cover_url,
+        wr.title,
+        wr.content,
+        wr.is_defined,
+        wr.create_time,
+        wr.enable_click_notice,
+        wr.enable_behavior_record,
+        wr.enable_customer_tag,
+        wr.enable_update_notice,
+        wr.create_by user_id,
+        wu.user_name,
+        wu.main_department,
+        wd.name,
+        (SELECT COUNT(distinct external_user_id)
+        FROM we_radar_click_record
+        WHERE radar_id = wr.id) as clickNum
+        from we_radar wr
+        LEFT JOIN we_user wu ON wu.corp_id = wr.corp_id AND wu.user_id = wr.create_by
+        LEFT JOIN we_department wd ON wr.corp_id = wd.corp_id AND wu.main_department = wd.id
+        WHERE
+        wr.corp_id = #{radar.corpId}
+        <if test="radar.searchTitle != null and radar.searchTitle != ''">
+            AND ( wr.radar_title like concat('%', #{radar.searchTitle}, '%') or wr.title like concat('%',
+            #{radar.searchTitle}, '%') )
+        </if>
+        <if test="radar.userIds != null and radar.userIds.size() > 0">
+            AND wu.user_id in
+            <foreach item="id" collection="radar.userIds" open="(" separator="," close=")">
+                #{id}
+            </foreach>
+        </if>
+        <if test="radar.type !=null and radar.type != 0">
+            AND wr.type = #{radar.type}
+        </if>
+        <if test="isSuperAdmin != null and isSuperAdmin != false">
+            and wr.create_by = '${@com.easywecom.common.constant.Constants@SUPER_ADMIN}'
+        </if>
+        <if test="radar.enableSort != null and radar.enableSort == true">
+            ORDER BY clickNum asc, wr.create_time desc
+        </if>
+        <if test="radar.enableSort != null and radar.enableSort == false">
+            ORDER BY clickNum desc, wr.create_time desc
+        </if>
+        <if test="radar.enableSort == null">
+            ORDER BY wr.create_time desc
+        </if>
+    </select>
+    <select id="getOne" resultMap="radarMap">
+        SELECT wr.id,
+               wr.radar_title,
+               wr.url,
+               wr.type,
+               wr.cover_url,
+               wr.title,
+               wr.content,
+               wr.is_defined,
+               wr.create_time,
+               wr.enable_click_notice,
+               wr.enable_behavior_record,
+               wr.enable_customer_tag,
+               wr.enable_update_notice,
+               wr.create_by user_id,
+               wu.user_name,
+               wu.main_department,
+               wd.name
+        from we_radar wr
+                 LEFT JOIN we_user wu ON wu.corp_id = wr.corp_id AND wu.user_id = wr.create_by
+                 LEFT JOIN we_department wd ON wr.corp_id = wd.corp_id AND wu.main_department = wd.id
+        WHERE wr.corp_id = #{corpId}
+          AND wr.id = #{id}
+    </select>
+    <select id="getRadarUrl" resultType="java.lang.String">
+        SELECT url
+        FROM we_radar
+        WHERE id = #{id}
+    </select>
+<!--    根据雷达id获取需要打上的标签 -->
+    <select id="getTagListByRadarId" resultType="com.easywecom.wecom.domain.WeTag">
+        SELECT
+            tag_id
+        FROM
+            we_radar_tag_rel
+        WHERE
+            radar_id = #{id}
+    </select>
+</mapper>

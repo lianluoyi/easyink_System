@@ -954,6 +954,26 @@ INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`
                         `remark`)
 VALUES ('2298', '编辑兑换活动', '2293', '15', '', NULL, '1', 'F', '0', '0', 'redeeomCode:activity:edit', '#', 'admin',
         '2022-07-11 09:53:33', '', NULL, '');
+INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`,
+                        `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`,
+                        `remark`)
+VALUES ('2299', '雷达库', '2062', '3', 'radarManage', 'radarLibrary/radarManage', '1', 'C', '0', '0', '', '#', 'admin',
+        '2022-07-15 15:14:42', 'admin', '2022-07-15 15:27:08', '');
+INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`,
+                        `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`,
+                        `remark`)
+VALUES ('2300', '查看雷达链接详情', '2062', '1', 'radarDetail', 'radarLibrary/radarDetail', '1', 'P', '1', '0', NULL, '#',
+        'admin', '2022-07-19 09:12:38', '', NULL, '');
+INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`,
+                        `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`,
+                        `remark`)
+VALUES ('2301', '管理企业雷达', '2299', '5', '', NULL, '1', 'F', '0', '0', 'radar:corp:manage', '#', 'admin',
+        '2022-07-23 21:52:48', 'admin', '2022-07-24 16:07:55', '');
+INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`,
+                        `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`,
+                        `remark`)
+VALUES ('2302', '管理部门雷达', '2299', '10', '', NULL, '1', 'F', '0', '0', 'radar:department:manage', '#', 'admin',
+        '2022-07-23 21:53:42', 'admin', '2022-07-24 16:08:00', '');
 
 
 -- ----------------------------
@@ -1304,7 +1324,8 @@ CREATE TABLE `we_customer`
     `update_time`     datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '更新时间',
     `create_by`       varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '创建人',
     `update_by`       varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '更新人',
-    PRIMARY KEY (`external_userid`, `corp_id`) USING BTREE
+    PRIMARY KEY (`external_userid`, `corp_id`) USING BTREE,
+    KEY               `idx_union_id` (`unionid`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '企业微信客户表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
@@ -1441,6 +1462,7 @@ CREATE TABLE `we_customer_seedmessage`
     `create_time`          datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `update_by`            varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci   NOT NULL DEFAULT '' COMMENT '更新人',
     `update_time`          datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '更新时间',
+    `radar_id`             bigint(20) NOT NULL DEFAULT '0' COMMENT '雷达id，存储雷达时使用',
     `del_flag`             int(1) NOT NULL DEFAULT 0 COMMENT '0 未删除 1 已删除',
     PRIMARY KEY (`seed_message_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '群发消息  子消息表(包括 文本消息、图片消息、链接消息、小程序消息) ' ROW_FORMAT = Dynamic;
@@ -1518,6 +1540,7 @@ CREATE TABLE `we_emple_code`
     `code_fail_msg`              varchar(2000) NOT NULL DEFAULT '' COMMENT '没有可用的兑换码，或者兑换活动已被删除，发送该欢迎语',
     `code_repeat_material_sort`  varchar(255)  NOT NULL DEFAULT '' COMMENT '客户再次触发，若活动开启参与限制，发送该附件',
     `code_repeat_msg`            varchar(2000) NOT NULL DEFAULT '' COMMENT '客户再次触发，若活动开启参与限制，发送该欢迎语',
+    `app_link`                   varchar(128)  NOT NULL DEFAULT '' COMMENT '活码小程序链接',
     PRIMARY KEY (`id`) USING BTREE,
     KEY                          `normal_effecttime_open` (`effect_time_open`) USING BTREE COMMENT '普通索引effect_time_open',
     KEY                          `normal_effecttime_close` (`effect_time_close`) USING BTREE COMMENT '普通索引effect_time_close'
@@ -1562,7 +1585,7 @@ CREATE TABLE `we_flower_customer_rel`
     `user_id`          varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '添加了此外部联系人的企业成员userid',
     `external_userid`  varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '客户id',
     `corp_id`          varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '企业ID',
-    `oper_userid`      varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '发起添加的userid，如果成员主动添加，为成员的userid；如果是客户主动添加，则为客户的外部联系人userid；如果是内部成员共享/管理员分配，则为对应的成员/管理员userid',
+    `oper_userid`      varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '发起添加的userid，如果成员主动添加，为成员的userid；如果是客户主动添加，则为客户的外部联系人userid；如果是内部成员共享/管理员分配，则为对应的成员/管理员userid',
     `remark`           varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '该成员对此外部联系人的备注',
     `description`      varchar(258) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '该成员对此外部联系人的描述',
     `create_time`      datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '该成员添加此外部联系人的时间',
@@ -1723,23 +1746,25 @@ CREATE TABLE `we_group_statistic`
 DROP TABLE IF EXISTS `we_material`;
 CREATE TABLE `we_material`
 (
-    `id`            bigint(100) NOT NULL COMMENT '主键id',
-    `category_id`   bigint(100) NOT NULL DEFAULT 0 COMMENT '分类id',
-    `material_url`  varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '本地资源文件地址',
-    `content`       text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '文本内容、图片文案',
-    `material_name` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '图片名称',
-    `digest`        varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '摘要',
-    `create_by`     varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '创建人',
-    `create_time`   datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    `update_by`     varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '更新人',
-    `update_time`   datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '更新时间',
-    `cover_url`     varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '封面本地资源文件',
-    `audio_time`    varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '0' COMMENT '音频时长',
-    `expire_time`   datetime(0) NOT NULL DEFAULT '2099-01-01 00:00:00' COMMENT '过期时间',
-    `show_material` tinyint(1) NOT NULL DEFAULT 0 COMMENT '是否发布到侧边栏（0否，1是）',
-    `temp_flag`     tinyint(1) NOT NULL DEFAULT 0 COMMENT '是否为临时素材（0：正常显示的素材，1：临时素材）',
-    `is_defined`    TINYINT(1) NOT NULL DEFAULT '0'
+    `id`                   bigint(100) NOT NULL COMMENT '主键id',
+    `category_id`          bigint(100) NOT NULL DEFAULT 0 COMMENT '分类id',
+    `material_url`         varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '本地资源文件地址',
+    `content`              text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '文本内容、图片文案',
+    `material_name`        varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '图片名称',
+    `digest`               varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '摘要',
+    `create_by`            varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '创建人',
+    `create_time`          datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_by`            varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '更新人',
+    `update_time`          datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '更新时间',
+    `cover_url`            varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '封面本地资源文件',
+    `audio_time`           varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '0' COMMENT '音频时长',
+    `expire_time`          datetime(0) NOT NULL DEFAULT '2099-01-01 00:00:00' COMMENT '过期时间',
+    `show_material`        tinyint(1) NOT NULL DEFAULT 0 COMMENT '是否发布到侧边栏（0否，1是）',
+    `temp_flag`            tinyint(1) NOT NULL DEFAULT 0 COMMENT '是否为临时素材（0：正常显示的素材，1：临时素材）',
+    `is_defined`           TINYINT(1) NOT NULL DEFAULT '0'
         COMMENT '链接时使用(0:默认,1:自定义)',
+    `enable_convert_radar` tinyint(1) NOT NULL DEFAULT '0' COMMENT '链接时使用(0,不转化为雷达，1：转化为雷达)',
+    `radar_id`             bigint(20) NOT NULL DEFAULT '0' COMMENT '雷达id，存储雷达时使用',
     PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '素材表' ROW_FORMAT = Dynamic;
 
@@ -2607,6 +2632,7 @@ CREATE TABLE `we_words_detail`
     `cover_url`  varchar(255)  NOT NULL DEFAULT '' COMMENT '封面',
     `is_defined` tinyint(1) NOT NULL DEFAULT '0' COMMENT '链接时使用：0 默认，1 自定义',
     `size`       bigint(20) NOT NULL DEFAULT '0' COMMENT '视频大小',
+    `radar_id`   bigint(20) NOT NULL DEFAULT '0' COMMENT '雷达id，存储雷达时使用',
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='话术库附件表';
 
@@ -3021,15 +3047,17 @@ CREATE TABLE `we_msg_tlp`
 
 CREATE TABLE `we_msg_tlp_material`
 (
-    `id`             bigint(20) NOT NULL AUTO_INCREMENT COMMENT '欢迎语素材主键id',
-    `default_msg_id` bigint(20) NOT NULL DEFAULT '0' COMMENT '默认欢迎语模板id',
-    `special_msg_id` bigint(20) NOT NULL DEFAULT '0' COMMENT '特殊规则欢迎语模板id(如果不存在特殊时段欢迎语，且没有素材则该字段为0)',
-    `type`           tinyint(4) NOT NULL DEFAULT '0' COMMENT '素材类型 0:文本 1:图片 2:链接 3:小程序 4:文件 5:视频媒体文件',
-    `content`        varchar(255) NOT NULL DEFAULT '' COMMENT '文本内容,链接消息标题,小程序消息标题，(前端: 图片,文件,视频的标题)',
-    `pic_url`        varchar(255) NOT NULL DEFAULT '' COMMENT '图片url,链接封面url,小程序picurl,文件url,视频url',
-    `description`    varchar(255) NOT NULL DEFAULT '' COMMENT '链接消息描述,小程序appid(前端: 文件大小)',
-    `url`            varchar(255) NOT NULL DEFAULT '' COMMENT '链接url,小程序page',
-    `sort_no`        tinyint(2) NOT NULL DEFAULT '0' COMMENT '排序字段',
+    `id`                   bigint(20) NOT NULL AUTO_INCREMENT COMMENT '欢迎语素材主键id',
+    `default_msg_id`       bigint(20) NOT NULL DEFAULT '0' COMMENT '默认欢迎语模板id',
+    `special_msg_id`       bigint(20) NOT NULL DEFAULT '0' COMMENT '特殊规则欢迎语模板id(如果不存在特殊时段欢迎语，且没有素材则该字段为0)',
+    `type`                 tinyint(4) NOT NULL DEFAULT '0' COMMENT '素材类型 0:文本 1:图片 2:链接 3:小程序 4:文件 5:视频媒体文件',
+    `content`              varchar(255) NOT NULL DEFAULT '' COMMENT '文本内容,链接消息标题,小程序消息标题，(前端: 图片,文件,视频的标题)',
+    `pic_url`              varchar(255) NOT NULL DEFAULT '' COMMENT '图片url,链接封面url,小程序picurl,文件url,视频url',
+    `description`          varchar(255) NOT NULL DEFAULT '' COMMENT '链接消息描述,小程序appid(前端: 文件大小)',
+    `url`                  varchar(255) NOT NULL DEFAULT '' COMMENT '链接url,小程序page',
+    `sort_no`              tinyint(2) NOT NULL DEFAULT '0' COMMENT '排序字段',
+    `enable_convert_radar` tinyint(1) NOT NULL DEFAULT '0' COMMENT '链接时使用(0,不转化为雷达，1：转化为雷达)',
+    `radar_id`             bigint(20) NOT NULL DEFAULT '0' COMMENT '雷达id，存储雷达时使用',
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='欢迎语素材表';
 CREATE TABLE `we_msg_tlp_scope`
@@ -3287,3 +3315,113 @@ CREATE TABLE `we_redeem_code_alarm_employee_rel`
     `type`        tinyint(1) NOT NULL DEFAULT '2' COMMENT 'type, 1：存部门，2：存员工',
     PRIMARY KEY (`activity_id`, `target_id`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='兑换码活动，告警员工表';
+
+-- ----------------------------
+-- Table structure for we_radar 雷达表
+-- ----------------------------
+CREATE TABLE `we_radar`
+(
+    `id`                     bigint(20) NOT NULL,
+    `corp_id`                varchar(64)   NOT NULL DEFAULT '' COMMENT '企业ID',
+    `radar_title`            varchar(255)  NOT NULL DEFAULT '' COMMENT '雷达标题',
+    `url`                    varchar(3000) NOT NULL DEFAULT '' COMMENT '雷达原始路径url',
+    `cover_url`              varchar(1200) NOT NULL DEFAULT '' COMMENT '雷达链接封面图',
+    `title`                  varchar(255)  NOT NULL DEFAULT '' COMMENT '链接标题',
+    `content`                varchar(255)  NOT NULL DEFAULT '' COMMENT '雷达链接摘要',
+    `enable_click_notice`    tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否开启行为通知（1[true]是0[false]否）',
+    `enable_behavior_record` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否允许轨迹记录（1[true]是 0[false]否) ',
+    `enable_customer_tag`    tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否允许打上客户标签（ 1[true]是 0[false]否) ',
+    `enable_update_notice`   tinyint(1) NOT NULL DEFAULT '1' COMMENT '更新后是否通知员工（true[1]是 false[0]否) ',
+    `create_time`            datetime      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `create_by`              varchar(64)   NOT NULL DEFAULT '' COMMENT '创建人',
+    `update_time`            datetime      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '更新时间',
+    `update_by`              varchar(64)   NOT NULL DEFAULT '' COMMENT '更新人',
+    `is_defined`             tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否使用自定义链接（1[true]是,0[false]否)',
+    `type`                   tinyint(1) NOT NULL DEFAULT '1' COMMENT '雷达类型（1个人雷达，2部门雷达，3企业雷达）',
+    PRIMARY KEY (`id`),
+    KEY                      `idx_corp_id_type` (`corp_id`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='雷达表';
+-- ----------------------------
+-- Table structure for we_radar_tag_rel 雷达-标签关系表
+-- ----------------------------
+CREATE TABLE `we_radar_tag_rel`
+(
+    `radar_id` bigint(20) NOT NULL DEFAULT '0' COMMENT '雷达ID',
+    `tag_id`   varchar(64) NOT NULL DEFAULT '' COMMENT '标签ID',
+    PRIMARY KEY (`radar_id`, `tag_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='雷达-标签关系表';
+
+-- ----------------------------
+-- Table structure for we_radar_channel  渠道表
+-- ----------------------------
+CREATE TABLE `we_radar_channel`
+(
+    `id`          bigint(20) NOT NULL DEFAULT '0' COMMENT '渠道id',
+    `radar_id`    bigint(20) NOT NULL DEFAULT '0' COMMENT '雷达id',
+    `name`        varchar(32)  NOT NULL DEFAULT '' COMMENT '渠道名称',
+    `short_url`   varchar(255) NOT NULL DEFAULT '' COMMENT '渠道的短链url',
+    `create_time` datetime     NOT NULL,
+    `create_by`   varchar(64)  NOT NULL,
+    UNIQUE KEY `uniq_redar_name` (`radar_id`,`name`) USING BTREE,
+    KEY           `idx_radar_id_channel_name` (`radar_id`,`name`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='雷达-渠道表';
+
+-- ----------------------------
+-- Table structure for we_radar_click_record  雷达点击记录表
+-- ----------------------------
+CREATE TABLE `we_radar_click_record`
+(
+    `id`                       bigint(20) NOT NULL COMMENT '雷达点击记录表ID',
+    `radar_id`                 bigint(20) NOT NULL DEFAULT '0' COMMENT '雷达id',
+    `user_id`                  varchar(64)  NOT NULL DEFAULT '' COMMENT '发送活码用户id',
+    `user_name`                varchar(200) NOT NULL DEFAULT '' COMMENT '发送雷达链接的用户名称',
+    `external_user_id`         varchar(32)  NOT NULL DEFAULT '' COMMENT '客户id',
+    `external_user_name`       varchar(128) NOT NULL DEFAULT '' COMMENT '客户名称',
+    `external_user_head_image` varchar(512) NOT NULL DEFAULT '' COMMENT '客户头像url',
+    `channel_type`             tinyint(2) NOT NULL DEFAULT '0' COMMENT '渠道id（0未知渠道,1员工活码，2朋友圈，3群发，4侧边栏,5欢迎语,6 客户SOP,7群SOP，8新客进群，9群日历,10自定义渠道)',
+    `channel_name`             varchar(32)  NOT NULL DEFAULT '未知渠道' COMMENT '渠道名',
+    `detail`                   varchar(255) NOT NULL DEFAULT '' COMMENT '详情(如果是员工活码,则为员工活码使用场景，如果是新客进群则为新客进群的活码名称,如果是SOP则为SOP名称，如果是群日历，则为日历名称)',
+    `union_id`                 varchar(32)  NOT NULL DEFAULT '' COMMENT '外部联系人在微信开放平台的唯一身份标识,通过此字段企业可将外部联系人与公众号/小程序用户关联起来。',
+    `open_id`                  varchar(32)  NOT NULL DEFAULT '' COMMENT '公众号/小程序open_id',
+    `create_time`              datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `create_date`              varchar(32)  NOT NULL DEFAULT '0000-00-00' COMMENT '创建日期（格式yyyy-mm-dd)',
+    PRIMARY KEY (`id`),
+    KEY                        `idx_corp_date_external` (`radar_id`,`create_date`,`external_user_id`,`channel_name`) USING BTREE,
+    KEY                        `idx_corp_channel` (`radar_id`,`channel_name`) USING BTREE,
+    KEY                        `idx_corp_customer` (`radar_id`,`external_user_id`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='雷达点击记录表';
+
+
+-- ----------------------------
+-- Table structure for we_radar_click_record 长链短链映射表
+-- ----------------------------
+CREATE TABLE `sys_short_url_mapping`
+(
+    `id`          bigint(20) NOT NULL COMMENT 'id,短链',
+    `short_code`  varchar(32)   NOT NULL DEFAULT '' COMMENT '短链后面的唯一字符串（用于和域名拼接成短链）',
+    `long_url`    varchar(1024) NOT NULL COMMENT '原链接（长链接）',
+    `append_info` varchar(512)  NOT NULL DEFAULT '' COMMENT '附加信息Json(user_id,radar_id,channel_id,detail)',
+    `create_time` datetime      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `create_by`   varchar(64)   NOT NULL DEFAULT '' COMMENT '创建人',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uniq_short_code` (`short_code`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='长链-短链映射表';
+-- ----------------------------
+-- Table structure for we_radar_click_record
+-- ----------------------------
+
+CREATE TABLE `we_open_config`
+(
+    `corp_id`                     varchar(64)  NOT NULL DEFAULT '' COMMENT '企业id',
+    `official_account_app_id`     varchar(64)  NOT NULL DEFAULT '' COMMENT '公众号appid',
+    `official_account_app_secret` varchar(128) NOT NULL DEFAULT '' COMMENT '公众号secret',
+    `official_account_domain`     varchar(255) NOT NULL DEFAULT '' COMMENT '公众号域名',
+    `create_by`                   varchar(64)  NOT NULL DEFAULT '' COMMENT '创建人',
+    `create_time`                 datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_by`                   varchar(64)  NOT NULL DEFAULT '' COMMENT '更新人',
+    `update_time`                 datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (`corp_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='企业公众号配置表';
+
+
+

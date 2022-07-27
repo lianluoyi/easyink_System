@@ -14,10 +14,28 @@
         <result property="url" column="url"/>
         <result property="coverUrl" column="cover_url"/>
         <result property="isDefined" column="is_defined"/>
+        <result property="radarId" column="radar_id"/>
+    </resultMap>
+
+    <resultMap type="com.easywecom.wecom.domain.vo.sop.SopAttachmentVO" id="attachmentListOfRule">
+        <result property="id" column="id"/>
+        <result property="mediaType" column="media_type"/>
+        <result property="content" column="content"/>
+        <result property="title" column="title"/>
+        <result property="url" column="url"/>
+        <result property="coverUrl" column="cover_url"/>
+        <result property="isDefined" column="is_defined"/>
+        <result property="radarId" column="radar_id"/>
+        <collection property="radar" ofType="com.easywecom.wecom.domain.vo.radar.WeRadarVO"
+                    column="{id=radar_id,corpId=corp_id}"
+                    select="com.easywecom.wecom.mapper.radar.WeRadarMapper.getOne">
+        </collection>
     </resultMap>
 
     <sql id="allColumns">
-        wwd.id
+        wwd
+        .
+        id
         , wwd.corp_id
         , wwd.group_id
         , wwd.media_type
@@ -27,29 +45,31 @@
         , wwd.cover_url
         , wwd.is_defined
         , wwd.size
+        , wwd.radar_id
     </sql>
 
 
     <select id="listOfGroupId" resultMap="weWordsDetailMap">
         SELECT
         id
-        ,corp_id
-        ,group_id
-        ,media_type
-        ,content
-        ,title
-        ,url
-        ,cover_url
-        ,is_defined
+             ,corp_id
+             ,group_id
+             ,media_type
+             ,content
+             ,title
+             ,url
+             ,cover_url
+             , is_defined
+             , radar_id
         FROM we_words_detail
-        WHERE
-        corp_id = #{corpId}
-        AND group_id = #{groupId}
-        ORDER BY FIELD(`id`,${seq})
+        WHERE corp_id = #{corpId}
+          AND group_id = #{groupId}
+        ORDER BY FIELD(`id`, ${seq})
     </select>
 
     <!-- groupId -1 表示它是sop附件 与话术附件区分开来 -->
-    <select id="listOfRuleId" resultType="com.easywecom.wecom.domain.vo.sop.SopAttachmentVO">
+    <select id="listOfRuleId"
+            resultMap="attachmentListOfRule">
         SELECT
         <include refid="allColumns"/>
         FROM we_words_detail wwd
@@ -74,6 +94,7 @@
         ,cover_url
         ,is_defined
         ,size
+        ,radar_id
         )
         VALUES
         <foreach collection="list" item="item" separator=",">
@@ -88,6 +109,7 @@
             ,#{item.coverUrl}
             ,#{item.isDefined}
             ,#{item.size}
+            ,#{item.radarId}
             )
         </foreach>
         ON DUPLICATE KEY UPDATE
@@ -98,7 +120,8 @@
         url = VALUES(url),
         cover_url = VALUES(cover_url),
         size = VALUES(size),
-        is_defined = VALUES(is_defined)
+        is_defined = VALUES(is_defined),
+        radar_id = VALUES(radar_id)
     </insert>
     <delete id="deleteByGroupIds">
         delete

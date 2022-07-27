@@ -8,6 +8,7 @@ import com.easywecom.common.constant.WeConstans;
 import com.easywecom.common.enums.AttachmentTypeEnum;
 import com.easywecom.common.enums.ResultTip;
 import com.easywecom.common.exception.CustomException;
+import com.easywecom.wecom.domain.vo.radar.WeRadarVO;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
@@ -31,7 +32,6 @@ import org.springframework.util.ObjectUtils;
 @ApiModel("欢迎语素材表")
 public class WeMsgTlpMaterial {
 
-
     @ApiModelProperty(value = "主键id", hidden = true)
     @TableId(type = IdType.AUTO)
     @TableField("id")
@@ -45,7 +45,7 @@ public class WeMsgTlpMaterial {
     @TableField("special_msg_id")
     private Long specialMsgId;
 
-    @ApiModelProperty(value = "素材类型 0:文本 1:图片 2:链接 3:小程序 4:文件 5:视频媒体文件")
+    @ApiModelProperty(value = "素材类型 0:文本 1:图片 2:链接 3:小程序 4:文件 5:视频媒体文件, 7:雷达")
     @TableField("type")
     private Integer type;
 
@@ -69,6 +69,13 @@ public class WeMsgTlpMaterial {
     @TableField("sort_no")
     private Integer sortNo;
 
+    @ApiModelProperty(value = "雷达id，存储雷达时使用")
+    @TableField("radar_id")
+    private Long radarId;
+
+    @ApiModelProperty(value = "雷达VO")
+    @TableField(exist = false)
+    private WeRadarVO radar;
 
     public WeMsgTlpMaterial(Integer type, String content) {
         this.type = type;
@@ -98,6 +105,10 @@ public class WeMsgTlpMaterial {
                 }
             case LINK:
                 if (checkNotEmpty(this.content, this.picUrl, this.description, this.url)) {
+                    break;
+                }
+            case RADAR:
+                if (!ObjectUtils.isEmpty(this.radarId)) {
                     break;
                 }
             case MINIPROGRAM:

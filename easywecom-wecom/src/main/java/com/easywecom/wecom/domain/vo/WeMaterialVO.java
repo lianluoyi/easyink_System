@@ -1,5 +1,6 @@
 package com.easywecom.wecom.domain.vo;
 
+import com.easywecom.wecom.domain.vo.radar.WeRadarVO;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -96,4 +97,10 @@ public class WeMaterialVO {
     private List<WeMaterialAndTagRel> tagList;
 
     private String tagIds;
+
+    @ApiModelProperty("保存雷达时使用")
+    private Long radarId;
+
+    @ApiModelProperty("链接时使用(0,不转化为雷达，1：转化为雷达)")
+    private Boolean enableConvertRadar;
 }

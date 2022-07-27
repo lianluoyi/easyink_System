@@ -186,6 +186,11 @@ public class WeEmpleCode extends BaseEntity {
     private List<AddWeMaterialDTO> codeRepeatMaterialList;
 
 
+    @ApiModelProperty(value = "小程序活码短链url")
+    @TableField("app_link")
+    private String appLink;
+
+
     public void buildCodeMsg() {
         this.codeSuccessMsg = Optional.ofNullable(this.codeSuccessMsg).orElseGet(() -> StringUtils.EMPTY);
         this.codeSuccessMaterialSort = Optional.ofNullable(codeSuccessMaterialSort).orElseGet(() -> new String[]{});

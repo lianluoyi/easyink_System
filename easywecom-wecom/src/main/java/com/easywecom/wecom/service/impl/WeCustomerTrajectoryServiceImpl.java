@@ -21,6 +21,7 @@ import com.easywecom.wecom.domain.dto.WeMessagePushDTO;
 import com.easywecom.wecom.domain.dto.customer.EditCustomerDTO;
 import com.easywecom.wecom.domain.dto.message.TextMessageDTO;
 import com.easywecom.wecom.domain.entity.customer.WeCustomerExtendProperty;
+import com.easywecom.wecom.domain.entity.radar.WeRadar;
 import com.easywecom.wecom.domain.vo.sop.SopAttachmentVO;
 import com.easywecom.wecom.login.util.LoginTokenService;
 import com.easywecom.wecom.mapper.WeCustomerMapper;
@@ -375,6 +376,31 @@ public class WeCustomerTrajectoryServiceImpl extends ServiceImpl<WeCustomerTraje
             return trajectoryList.stream().filter(a -> loginUser.getUserId().equals(a.getUserId())).collect(Collectors.toList());
         }
         return trajectoryList;
+    }
+
+    @Override
+    public void recordRadarClickOperation(WeRadar radar, WeUser user, WeCustomer customer) {
+        if (user == null || customer == null || radar == null
+                || StringUtils.isAnyBlank(user.getUserId(), customer.getExternalUserid(), customer.getName())) {
+            log.info("[活动轨迹]记录雷达点击事件,参数缺失,radar:{},customer:{}.user:{}", radar, customer, user);
+            return;
+        }
+        Time now = new Time(System.currentTimeMillis());
+        String content = CustomerTrajectoryEnums.SubType.CLICK_RADAR.getDesc()
+                .replace(GenConstants.CUSTOMER, customer.getName())
+                .replace(GenConstants.RADAR_TITLE, radar.getRadarTitle());
+        WeCustomerTrajectory trajectory = WeCustomerTrajectory.builder()
+                .userId(user.getUserId())
+                .externalUserid(customer.getExternalUserid())
+                .trajectoryType(CustomerTrajectoryEnums.Type.ACTIVITY.getType())
+                .content(content)
+                .createDate(new Date())
+                .detail(user.getAvatarMediaid())
+                .subType(CustomerTrajectoryEnums.SubType.CLICK_RADAR.getType())
+                .corpId(radar.getCorpId())
+                .startTime(now)
+                .build();
+        this.saveOrUpdate(trajectory);
     }
 
     private void setSopAttachment(List<WeOperationsCenterSopTaskEntity> taskEntityList, WeCustomerTrajectory weCustomerTrajectory) {

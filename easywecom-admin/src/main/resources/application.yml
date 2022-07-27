@@ -93,6 +93,10 @@ ruoyi:
       - /wecom/plus/**
       - /wecom/order/login
       - /wecom/order/getNetworkList
+      - /url/**
+      - /wechatopen/appId
+      - /wechatopen/openId
+      - /test/**
 
 
 # 开发环境配置
@@ -368,6 +372,7 @@ wecome:
           - /externalcontact/groupchat/get_join_way
           - /externalcontact/groupchat/update_join_way
           - /externalcontact/groupchat/del_join_way
+          - /externalcontact/unionid_to_external_userid
   needContactTokenUrl:
           - /user/get
           - /user/create
@@ -408,6 +413,24 @@ wecome:
 chatrsakey:
   publicKey: ${CHAT_RSA_PUBLIC_KEY:}
   privateKey: ${CHAT_RSA_PRIVATE_KEY:}
+
+## 微信小程序和公众号配置(小程序活码与雷达链接需要配置)
+wechatopen:
+    miniApp:
+      appId: ${MINI_APP_ID:}
+      appSecret: ${MINI_APP_SECRET:}
+      domain: ${MINI_APP_DOMAIN:}
+      codePath: ${MINI_APP_CODE_PATH:}
+      ## 	要打开的小程序版本。正式版为 "release"，体验版为"trial"，开发版为"develop"，仅在微信外打开时生效。
+      envVersion: ${MINI_APP_ENV_VERSION:}
+    officialAccount:
+      domain: ${OFFICIAL_ACCOUNT_DOMAIN:}
+      appId: ${OFFICIAL_ACCOUNT_APPID:}
+      appSecret: ${OFFICIAL_ACCOUNT_SECRET:}
+      needTokenUrl:
+        - /cgi-bin/user/info
+        - /wxa/generate_urllink
+        - /sns/oauth2/access_token
 
 
 
