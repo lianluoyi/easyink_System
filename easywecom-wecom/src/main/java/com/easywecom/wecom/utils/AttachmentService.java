@@ -41,6 +41,8 @@ public class AttachmentService {
                 return buildImage(param.getPicUrl(), param.getTypeEnum(), corpId);
             case LINK:
                 return buildLink(param.getContent(), param.getPicUrl(), param.getDescription(), param.getUrl(), param.getTypeEnum());
+            case RADAR:
+                return buildRadar(param.getContent(), param.getPicUrl(), param.getDescription(), param.getUrl(), param.getTypeEnum());
             case MINIPROGRAM:
                 return buildMiniprogram(param.getContent(), param.getPicUrl(), param.getDescription(), param.getUrl(), param.getTypeEnum(), corpId);
             case FILE:
@@ -51,6 +53,21 @@ public class AttachmentService {
                 log.error("type error !!!");
                 return null;
         }
+    }
+
+    private Attachments buildRadar(String content, String picUrl, String description, String url, AttachmentTypeEnum type) {
+        if (StringUtils.isEmpty(content) || StringUtils.isEmpty(url)) {
+            return null;
+        }
+        Attachments attachments = new Attachments();
+        attachments.setMsgtype(type.getTypeStr());
+        attachments.setLink(Link.builder()
+                .title(content)
+                .picurl(picUrl)
+                .desc(description)
+                .url(url)
+                .build());
+        return attachments;
     }
 
 

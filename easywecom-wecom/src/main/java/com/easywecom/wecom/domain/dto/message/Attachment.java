@@ -31,5 +31,7 @@ public class Attachment {
     @ApiModelProperty("视频")
     private VideoDTO videoDTO;
 
+    @ApiModelProperty("雷达")
+    private RadarMessageDTO radarMessage;
 
 }

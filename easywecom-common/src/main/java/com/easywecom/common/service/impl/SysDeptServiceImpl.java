@@ -312,4 +312,20 @@ public class SysDeptServiceImpl implements ISysDeptService {
         return list;
     }
 
+    /**
+     * 过滤部门数据权限范围
+     *
+     * @param list      部门集合
+     * @param loginUser 登录用户实体
+     * @return 过滤后的部门集合
+     */
+    @Override
+    public List<WeDepartment> filterDepartmentDataScope(List<WeDepartment> list, LoginUser loginUser) {
+        String deptScope = loginUser.getDepartmentDataScope();
+        if (StringUtils.isBlank(deptScope)) {
+            return list;
+        }
+        List<String> deptScopeList = Arrays.asList(deptScope.split(","));
+        return list.stream().filter(item -> inDeptScope(deptScopeList, item.getId())).collect(Collectors.toList());
+    }
 }

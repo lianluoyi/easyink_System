@@ -211,6 +211,10 @@ public class GenConstants {
      */
     public static final String PROPERTY_VALUE = "${propertyValue}";
     /**
+     * 雷达标题占位符
+     */
+    public static final String RADAR_TITLE = "${radarTitle}";
+    /**
      * 客户信息动态记录模板
      */
     public static final String EDIT_CUSTOMER_RECORD_MSG = "${userName}修改了${propertyName}为：";

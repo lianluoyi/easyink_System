@@ -103,14 +103,17 @@ public class WeMomentTaskServiceImpl extends ServiceImpl<WeMomentTaskMapper, WeM
         //权限下的员工
         Set<String> userScope = getUserScope(loginUser, createMomentTaskDTO.getUsers(), departmentScope);
 
-        WeMomentTaskEntity weMomentTaskEntity = new WeMomentTaskEntity(createMomentTaskDTO,new ArrayList<>(userScope), departmentScope, loginUser.getUserId());
+        WeMomentTaskEntity weMomentTaskEntity = new WeMomentTaskEntity(createMomentTaskDTO, new ArrayList<>(userScope), departmentScope, loginUser.getUserId());
+        if (CollectionUtils.isNotEmpty(createMomentTaskDTO.getUsers()) || CollectionUtils.isNotEmpty(createMomentTaskDTO.getDepartments())) {
+            weMomentTaskEntity.setSelectUser(MomentSelectUserEnum.SELECT_USER.getType());
+        }
         //先上传一遍素材判断是否合法
         if (CollectionUtils.isNotEmpty(createMomentTaskDTO.getAttachments())) {
             buildMomentAttachment(createMomentTaskDTO.getAttachments(), weMomentTaskEntity.getCorpId());
         }
         //保存任务附件
-        saveMomentDetail(createMomentTaskDTO.getCorpId(),createMomentTaskDTO.getAttachments());
-        if (createMomentTaskDTO.getText() != null &&StringUtils.isNotBlank(createMomentTaskDTO.getText().getContent())){
+        saveMomentDetail(createMomentTaskDTO.getCorpId(), createMomentTaskDTO.getAttachments());
+        if (createMomentTaskDTO.getText() != null && StringUtils.isNotBlank(createMomentTaskDTO.getText().getContent())) {
             weMomentTaskEntity.setContent(createMomentTaskDTO.getText().getContent());
         }
         //保存we_moment_detail_rel附件关联表

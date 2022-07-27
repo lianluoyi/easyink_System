@@ -70,7 +70,7 @@
         WHERE activity_id = #{activityId}
           and status = ${@com.easywecom.common.enums.redeemcode.RedeemCodeStatusEnum@NOT_ASSIGN.getType()}
           AND (effective_time <![CDATA[ >= ]]> #{nowDate} OR
-               effective_time = ${@com.easywecom.common.constant.WeConstans@REDEEM_CODE_EMPTY_TIME})
+               effective_time = ${@com.easywecom.common.constant.redeemcode.RedeemCodeConstants@REDEEM_CODE_EMPTY_TIME})
     </select>
 
     <select id="getSumInventory" resultType="Integer">
@@ -119,16 +119,6 @@
         FROM we_redeem_code_alarm_employee_rel wrcaer
                  LEFT JOIN we_user wu ON wrcaer.target_id = wu.user_id AND wu.corp_id = #{corpId}
         WHERE wrcaer.activity_id = #{id}
-          AND wrcaer.type = ${@com.easywecom.common.constant.WeConstans@REDEEM_CODE_USE_USER}
-        UNION
-        SELECT wrcaer.activity_id,
-               wrcaer.target_id,
-               wd.name businessName,
-               wrcaer.type
-        FROM we_redeem_code_alarm_employee_rel wrcaer
-                 LEFT JOIN we_department wd ON wrcaer.target_id = wd.id AND wd.corp_id = #{corpId}
-        WHERE wrcaer.activity_id = #{id}
-          AND wrcaer.type = ${@com.easywecom.common.constant.WeConstans@REDEEM_CODE_USE_DEPARTMENT}
     </select>
 
 </mapper>

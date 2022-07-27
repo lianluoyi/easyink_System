@@ -8,6 +8,7 @@ import com.easywecom.common.utils.spring.SpringUtils;
 import com.easywecom.wecom.domain.WeWordsDetailEntity;
 import com.easywecom.wecom.domain.dto.message.ImageMessageDTO;
 import com.easywecom.wecom.domain.dto.message.LinkMessageDTO;
+import com.easywecom.wecom.domain.dto.message.RadarMessageDTO;
 import com.easywecom.wecom.domain.dto.message.VideoDTO;
 import com.easywecom.wecom.service.WeCustomerMessageService;
 import io.swagger.annotations.ApiModel;
@@ -41,8 +42,16 @@ public class MomentAttachment {
     @ApiModelProperty("链接消息")
     private LinkMessageDTO link;
 
+    @ApiModelProperty("链接消息")
+    private RadarMessageDTO radar;
+
     @ApiModelProperty("视频")
     private VideoDTO video;
+
+    private MomentAttachment(RadarMessageDTO radarMessageDTO) {
+        this.radar = radarMessageDTO;
+        this.setMsgtype(GroupMessageType.RADAR.getMessageType());
+    }
 
     private MomentAttachment(VideoDTO videoDTO) {
         this.video = videoDTO;

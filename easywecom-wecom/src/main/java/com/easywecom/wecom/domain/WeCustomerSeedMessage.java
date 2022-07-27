@@ -111,4 +111,8 @@ public class WeCustomerSeedMessage extends BaseEntity {
     @TableField("seed_message_id")
     private Long seedMessageId;
 
+    @ApiModelProperty(value = "雷达id")
+    @TableField("radar_id")
+    private Long radarId;
+
 }

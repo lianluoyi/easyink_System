@@ -6,10 +6,12 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.easywecom.common.constant.WeConstans;
+import com.easywecom.common.core.domain.model.LoginUser;
 import com.easywecom.common.core.domain.wecom.WeDepartment;
 import com.easywecom.common.core.domain.wecom.WeUser;
 import com.easywecom.common.enums.WeExceptionTip;
 import com.easywecom.common.exception.CustomException;
+import com.easywecom.common.service.ISysDeptService;
 import com.easywecom.common.utils.StringUtils;
 import com.easywecom.wecom.client.WeDepartMentClient;
 import com.easywecom.wecom.domain.dto.WeDepartMentDTO;
@@ -28,7 +30,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * 企业微信组织架构相关Service业务层处理
@@ -47,21 +51,23 @@ public class WeDepartmentServiceImpl extends ServiceImpl<WeDepartmentMapper, WeD
 
     @Autowired
     private WeUserService weUserService;
-
+    @Autowired
+    private ISysDeptService sysDeptService;
 
     /**
      * 查询企业微信组织架构相关列表
      *
      * @param corpId     公司ID
      * @param isActivate 成员的激活状态: 1=已激活，2=已禁用，4=未激活，5=退出企业,6=删除
+     * @param loginUser
      * @return 企业微信组织架构相关
      */
     @Override
-    public List<WeDepartment> selectWeDepartmentList(String corpId, Integer isActivate) {
+    public List<WeDepartment> selectWeDepartmentList(String corpId, Integer isActivate, LoginUser loginUser) {
         if (StringUtils.isBlank(corpId)) {
             return Collections.emptyList();
         }
-        return this.selectWeDepartmentDetailList(corpId, isActivate);
+        return this.selectWeDepartmentDetailList(corpId, isActivate, loginUser);
     }
 
     /**
@@ -77,11 +83,14 @@ public class WeDepartmentServiceImpl extends ServiceImpl<WeDepartmentMapper, WeD
     }
 
     @Override
-    public List<WeDepartment> selectWeDepartmentDetailList(String corpId, Integer isActivate) {
+    public List<WeDepartment> selectWeDepartmentDetailList(String corpId, Integer isActivate, LoginUser loginUser) {
         List<WeDepartment> list = this.baseMapper.selectWeDepartmentList(corpId);
-        list.forEach(d -> {
+        final List<WeDepartment> departments = sysDeptService.filterDepartmentDataScope(list, loginUser);
+        //key:departmentId value: departmentId
+        final Map<Long, Long> map = departments.stream().collect(Collectors.toMap(WeDepartment::getId, WeDepartment::getId));
+        departments.forEach(d -> {
             //查询出该部门和其所有下级部门ID
-            List<WeDepartment> deptAndChildren = this.baseMapper.selectDepartmentAndChildList(d);
+            List<WeDepartment> deptAndChildren = this.baseMapper.selectDepartmentAndChildList(d).stream().filter(a -> map.containsKey(a.getId())).collect(Collectors.toList());
             //查询所有用户数
             if (CollectionUtils.isEmpty(deptAndChildren)) {
                 d.setTotalUserCount(0);

@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.easywecom.wecom.mapper.wechatopen.WeOpenConfigMapper">
+
+
+    <insert id="insertOrUpdate">
+        INSERT INTO we_open_config
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+
+            <if test="corpId != null">
+                corp_id,
+            </if>
+            <if test="officialAccountAppId != null">
+                official_account_app_id,
+            </if>
+            <if test="officialAccountAppSecret != null">
+                official_account_app_secret,
+            </if>
+            <if test="officialAccountDomain != null">
+                `official_account_domain`,
+            </if>
+            <if test="createBy != null">
+                create_by,
+            </if>
+            <if test="createTime != null">
+                create_time,
+            </if>
+            <if test="updateBy != null">
+                update_by,
+            </if>
+            <if test="updateTime != null">
+                update_time,
+            </if>
+        </trim>
+        <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
+            <if test="corpId != null">
+                #{corpId},
+            </if>
+            <if test="officialAccountAppId != null">
+                #{officialAccountAppId},
+            </if>
+            <if test="officialAccountAppSecret != null">
+                #{officialAccountAppSecret},
+            </if>
+            <if test="officialAccountDomain != null">
+                #{officialAccountDomain},
+            </if>
+            <if test="createBy != null">
+                #{createBy},
+            </if>
+            <if test="createTime != null">
+                #{createTime},
+            </if>
+            <if test="updateBy != null">
+                #{updateBy},
+            </if>
+            <if test="updateTime != null">
+                #{updateTime},
+            </if>
+        </trim>
+        <trim prefix="ON DUPLICATE KEY UPDATE " suffix="" suffixOverrides=",">
+            <if test="officialAccountAppId != null">
+                official_account_app_id = VALUES(official_account_app_id),
+            </if>
+            <if test="officialAccountAppSecret != null">
+                official_account_app_secret = VALUES(official_account_app_secret),
+            </if>
+            <if test="officialAccountDomain != null">
+                `official_account_domain` = VALUES(`official_account_domain`),
+            </if>
+            <if test="updateBy != null">
+                update_by =VALUES(update_by),
+            </if>
+            <if test="updateTime != null">
+                update_time = VALUES(update_time),
+            </if>
+        </trim>
+    </insert>
+</mapper>

@@ -11,6 +11,7 @@ import com.easywecom.common.core.redis.RedisCache;
 import com.easywecom.common.enums.*;
 import com.easywecom.common.exception.CustomException;
 import com.easywecom.common.utils.StringUtils;
+import com.easywecom.common.utils.spring.SpringUtils;
 import com.easywecom.wecom.client.WeCustomerMessagePushClient;
 import com.easywecom.wecom.domain.WeCustomer;
 import com.easywecom.wecom.domain.WeCustomerMessage;
@@ -21,20 +22,19 @@ import com.easywecom.wecom.domain.dto.common.Attachments;
 import com.easywecom.wecom.domain.dto.message.*;
 import com.easywecom.wecom.login.util.LoginTokenService;
 import com.easywecom.wecom.mapper.WeCustomerMessageMapper;
-import com.easywecom.wecom.service.WeCustomerMessageService;
-import com.easywecom.wecom.service.WeCustomerMessgaeResultService;
-import com.easywecom.wecom.service.WeMaterialService;
-import com.easywecom.wecom.service.WeMsgTlpMaterialService;
+import com.easywecom.wecom.service.*;
 import com.easywecom.wecom.utils.AttachmentService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -134,11 +134,7 @@ public class WeCustomerMessageServiceImpl extends ServiceImpl<WeCustomerMessageM
         if (WeConstans.SEND_MESSAGE_CUSTOMER.equals(customerMessagePushDTO.getPushType())) {
             //设置发送类型
             messagePushDto.setChat_type(ChatType.of(customerMessagePushDTO.getPushType()).getName());
-            List<String> externalUserIds = customers.stream().map(WeCustomer::getExternalUserid).collect(Collectors.toList());
-            messagePushDto.setExternal_userid(externalUserIds);
-            childMessage(messagePushDto, customerMessagePushDTO);
-            //调用企微接口发送
-            sendMessage(messagePushDto, customerMessagePushDTO.getCorpId(), messageId, msgid);
+            singleSendMessage(customerMessagePushDTO, messagePushDto, messageId, msgid, customers);
         } else {
             //发给客户群
             messagePushDto.setChat_type(ChatType.of(customerMessagePushDTO.getPushType()).getName());
@@ -152,6 +148,36 @@ public class WeCustomerMessageServiceImpl extends ServiceImpl<WeCustomerMessageM
             }
         }
         this.updateMsgId(messageId, msgid);
+    }
+
+    /**
+     * 员工单独群发消息
+     *
+     * @param customerMessagePushDTO
+     * @param messagePushDto
+     * @param messageId
+     * @param msgId
+     * @param customers
+     */
+    @Async
+    void singleSendMessage(CustomerMessagePushDTO customerMessagePushDTO, WeCustomerMessagePushDTO messagePushDto, Long messageId, List<String> msgId, List<WeCustomer> customers) {
+        final Set<String> userIds = customers.stream().map(WeCustomer::getUserId).collect(Collectors.toSet());
+        for (String userId : userIds) {
+            messagePushDto.setSender(userId);
+            //查找该员工对应的客户
+            messagePushDto.setExternal_userid(SpringUtils.getBean(WeCustomerMessagePushService.class).getExternalUserIds(customerMessagePushDTO.getCorpId(),
+                    customerMessagePushDTO.getPushRange(),
+                    userId,
+                    customerMessagePushDTO.getDepartment(),
+                    customerMessagePushDTO.getTag(),
+                    customerMessagePushDTO.getFilterTags(),
+                    customerMessagePushDTO.getGender(),
+                    customerMessagePushDTO.getCustomerStartTime(),
+                    customerMessagePushDTO.getCustomerEndTime()).stream().map(WeCustomer::getExternalUserid).collect(Collectors.toList()));
+            childMessage(messagePushDto, customerMessagePushDTO);
+            //调用企微接口发送
+            sendMessage(messagePushDto, customerMessagePushDTO.getCorpId(), messageId, msgId);
+        }
     }
 
     @Override
@@ -216,7 +242,7 @@ public class WeCustomerMessageServiceImpl extends ServiceImpl<WeCustomerMessageM
         //处理附件
         if (CollectionUtils.isNotEmpty(attachments)) {
             attachments.forEach(attachment -> {
-                AttachmentParam param = AttachmentParam.costFromAttachment(attachment);
+                AttachmentParam param = AttachmentParam.costFromAttachment(weCustomerMessagePushDTO.getSender(), customerMessagePushDTO.getCorpId(), customerMessagePushDTO.getTaskName(), attachment);
                 Attachments attach = null;
                 try {
                     attach = attachmentService.buildAttachment(param, customerMessagePushDTO.getCorpId());
@@ -269,6 +295,9 @@ public class WeCustomerMessageServiceImpl extends ServiceImpl<WeCustomerMessageM
         else if (GroupMessageType.LINK.getType().equals(msgtype)) {
             jsonObject.put(WeConstans.MSG_TYPE, GroupMessageType.LINK.getMessageType());
             jsonObject.put(GroupMessageType.LINK.getMessageType(), attachment.getLinkMessage());
+        } else if (GroupMessageType.RADAR.getType().equals(msgtype)) {
+            jsonObject.put(WeConstans.MSG_TYPE, GroupMessageType.RADAR.getMessageType());
+            jsonObject.put(GroupMessageType.RADAR.getMessageType(), attachment.getLinkMessage());
         }
         //视频
         else if (GroupMessageType.VIDEO.getType().equals(msgtype)) {

@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import com.easywecom.common.constant.WeConstans;
 import com.easywecom.common.enums.GroupMessageType;
 import com.easywecom.common.utils.spring.SpringUtils;
+import com.easywecom.wecom.domain.vo.radar.WeRadarVO;
 import com.easywecom.wecom.service.WeCustomerMessageService;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.annotations.ApiModel;
@@ -51,7 +52,7 @@ public class WeWordsDetailEntity {
     /**
      * 0:海报,1:语音,2:视频,3:普通文件,4:文本,5:图文链接,6:小程序
      */
-    @ApiModelProperty(value = "0:海报,1:语音,2:视频,3:普通文件,4:文本,5:图文链接,6:小程序",required = true)
+    @ApiModelProperty(value = "0:海报,1:语音,2:视频,3:普通文件,4:文本,5:图文链接,6:小程序,7:雷达", required = true)
     @TableField("media_type")
     @NotNull
     private Integer mediaType;
@@ -94,6 +95,13 @@ public class WeWordsDetailEntity {
     @TableField(exist = false)
     private String mediaid;
 
+    @ApiModelProperty("雷达id")
+    @TableField("radar_id")
+    private Long radarId;
+
+    @ApiModelProperty("雷达VO")
+    @TableField(exist = false)
+    private WeRadarVO radar;
 
     public WeWordsDetailEntity(String corpId, Integer mediaType, String content) {
         this.corpId = corpId;
@@ -101,7 +109,7 @@ public class WeWordsDetailEntity {
         this.content = content;
     }
 
-    public void initMediaId(String corpId){
+    public void initMediaId(String corpId) {
         WeCustomerMessageService weCustomerMessageService = SpringUtils.getBean(WeCustomerMessageService.class);
         if (GroupMessageType.IMAGE.getType().equals(this.getMediaType().toString())) {
             String mediaId = weCustomerMessageService.buildMediaId(this.getUrl(), GroupMessageType.IMAGE.getMessageType(), this.getTitle(), corpId);

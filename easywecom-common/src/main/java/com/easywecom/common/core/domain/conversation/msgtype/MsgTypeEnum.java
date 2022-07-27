@@ -34,6 +34,7 @@ public enum MsgTypeEnum {
     AGREE("agree"),
     DISAGREE("disagree"),
     LINK("link"),
+    RADAR("radar"),
     WEAPP("weapp"),
     VOTE("vote"),
     COLLECT("collect"),

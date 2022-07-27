@@ -23,6 +23,11 @@ public class SelectWeEmplyCodeWelcomeMsgVO {
     private String empleCodeId;
 
     /**
+     * 活码场景（活码名称）
+     */
+    private String scenario;
+
+    /**
      * 欢迎语-文本
      */
     private String welcomeMsg;

@@ -5,16 +5,17 @@ import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.easywecom.common.constant.WeConstans;
+import com.easywecom.common.constant.redeemcode.RedeemCodeConstants;
+import com.easywecom.common.core.domain.wecom.WeUser;
 import com.easywecom.common.enums.MediaType;
 import com.easywecom.common.enums.ResultTip;
 import com.easywecom.common.enums.AttachmentTypeEnum;
+import com.easywecom.common.enums.radar.RadarChannelEnum;
 import com.easywecom.common.exception.CustomException;
 import com.easywecom.common.utils.StringUtils;
+import com.easywecom.common.utils.spring.SpringUtils;
 import com.easywecom.wecom.client.WeWelcomeMsgClient;
-import com.easywecom.wecom.domain.WeCustomer;
-import com.easywecom.wecom.domain.WeMsgTlp;
-import com.easywecom.wecom.domain.WeMsgTlpMaterial;
-import com.easywecom.wecom.domain.WeMsgTlpSpecialRule;
+import com.easywecom.wecom.domain.*;
 import com.easywecom.wecom.domain.dto.WeMediaDTO;
 import com.easywecom.wecom.domain.dto.WeWelcomeMsg;
 import com.easywecom.wecom.domain.dto.common.*;
@@ -25,6 +26,7 @@ import com.easywecom.wecom.domain.dto.welcomemsg.GroupWelcomeMsgUpdateDTO;
 import com.easywecom.wecom.domain.vo.WeUserVO;
 import com.easywecom.wecom.mapper.WeMsgTlpMaterialMapper;
 import com.easywecom.wecom.service.*;
+import com.easywecom.wecom.service.radar.WeRadarChannelService;
 import com.easywecom.wecom.utils.AttachmentService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -297,7 +299,7 @@ public class WeMsgTlpMaterialServiceImpl extends ServiceImpl<WeMsgTlpMaterialMap
                 log.error("type is error !!, type: {}", weMsgTlpMaterial.getType());
                 continue;
             }
-            AttachmentParam param = AttachmentParam.costFromWeMsgTlpMaterial(weMsgTlpMaterial, type);
+            AttachmentParam param = AttachmentParam.costFromWeMsgTlpMaterial(weMsgTlpMaterial.getRadarId(), userId, corpId, weMsgTlpMaterial, type);
             attachments = attachmentService.buildAttachment(param, corpId);
 //            attachments = this.buildByWelcomeMsgType(param.getContent(), param.getPicUrl(), param.getDescription(), param.getUrl(), param.getTypeEnum(), corpId);
             if (attachments != null) {
@@ -406,11 +408,11 @@ public class WeMsgTlpMaterialServiceImpl extends ServiceImpl<WeMsgTlpMaterialMap
                 }
             }
             //替换#兑换码#
-            if (replyText.contains(WeConstans.REDEEM_CODE)) {
+            if (replyText.contains(RedeemCodeConstants.REDEEM_CODE)) {
                 if (StringUtils.isNotEmpty(redeemCode)) {
-                    replyText = replyText.replaceAll(WeConstans.REDEEM_CODE, redeemCode);
+                    replyText = replyText.replaceAll(RedeemCodeConstants.REDEEM_CODE, redeemCode);
                 } else {
-                    replyText = replyText.replaceAll(WeConstans.REDEEM_CODE, StringUtils.EMPTY);
+                    replyText = replyText.replaceAll(RedeemCodeConstants.REDEEM_CODE, StringUtils.EMPTY);
                 }
             }
             return replyText;
@@ -537,6 +539,7 @@ public class WeMsgTlpMaterialServiceImpl extends ServiceImpl<WeMsgTlpMaterialMap
                 handleImage(picUrl, messages, corpId);
                 break;
             case LINK:
+            case RADAR:
                 handleLink(content, picUrl, description, url, messages);
                 break;
             case MINIPROGRAM:

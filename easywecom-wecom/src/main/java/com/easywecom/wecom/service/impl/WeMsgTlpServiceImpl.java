@@ -3,22 +3,26 @@ package com.easywecom.wecom.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.easywecom.common.constant.WeConstans;
+import com.easywecom.common.enums.AttachmentTypeEnum;
 import com.easywecom.common.enums.ResultTip;
 import com.easywecom.common.enums.WelcomeMsgTplTypeEnum;
 import com.easywecom.common.exception.CustomException;
 import com.easywecom.common.utils.DateUtils;
 import com.easywecom.common.utils.StringUtils;
+import com.easywecom.common.utils.spring.SpringUtils;
 import com.easywecom.wecom.client.WeWelcomeMsgClient;
 import com.easywecom.wecom.domain.WeMsgTlp;
 import com.easywecom.wecom.domain.WeMsgTlpMaterial;
 import com.easywecom.wecom.domain.WeMsgTlpScope;
 import com.easywecom.wecom.domain.WeMsgTlpSpecialRule;
+import com.easywecom.wecom.domain.dto.AddWeMaterialDTO;
 import com.easywecom.wecom.domain.dto.welcomemsg.*;
 import com.easywecom.wecom.domain.vo.welcomemsg.WeEmployMaterialVO;
 import com.easywecom.wecom.domain.vo.welcomemsg.WeMsgTlpListVO;
 import com.easywecom.wecom.domain.vo.welcomemsg.WelcomeMsgGroupMaterialCountVO;
 import com.easywecom.wecom.mapper.WeMsgTlpMapper;
 import com.easywecom.wecom.service.*;
+import com.easywecom.wecom.service.radar.WeRadarService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +31,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ObjectUtils;
 
+import javax.swing.*;
 import java.sql.Time;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -70,7 +75,14 @@ public class WeMsgTlpServiceImpl extends ServiceImpl<WeMsgTlpMapper, WeMsgTlp> i
         if (StringUtils.isEmpty(weMsgTlp.getCorpId())) {
             throw new CustomException(ResultTip.TIP_GENERAL_BAD_REQUEST);
         }
-        return weMsgTlpMapper.selectWeMsgTlpList(weMsgTlp);
+        List<WeMsgTlpListVO> list = weMsgTlpMapper.selectWeMsgTlpList(weMsgTlp);
+        list.forEach(item -> {
+            buildRadarDate(item.getDefaultMaterialList(), weMsgTlp.getCorpId());
+            //特殊规则附件
+            item.getWeMsgTlpSpecialRules().forEach(specialRule -> buildRadarDate(specialRule.getSpecialMaterialList(), weMsgTlp.getCorpId()));
+        });
+
+        return list;
     }
 
     /**
@@ -186,7 +198,30 @@ public class WeMsgTlpServiceImpl extends ServiceImpl<WeMsgTlpMapper, WeMsgTlp> i
         if (StringUtils.isEmpty(weMsgTlp.getCorpId()) || weMsgTlp.getId() == null) {
             throw new CustomException(ResultTip.TIP_GENERAL_BAD_REQUEST);
         }
-        return weMsgTlpMapper.selectWeMsgTlpList(weMsgTlp).get(0);
+        final WeMsgTlpListVO weMsgTlpListVO = weMsgTlpMapper.selectWeMsgTlpList(weMsgTlp).get(0);
+        buildRadarDate(weMsgTlpListVO.getDefaultMaterialList(), weMsgTlp.getCorpId());
+        //特殊规则附件
+        weMsgTlpListVO.getWeMsgTlpSpecialRules().forEach(item -> {
+            buildRadarDate(item.getSpecialMaterialList(), weMsgTlp.getCorpId());
+        });
+        return weMsgTlpListVO;
+    }
+
+    /**
+     * 组装雷达数据
+     *
+     * @param materialList
+     * @param corpId
+     */
+    private void buildRadarDate(List<WeMsgTlpMaterial> materialList, String corpId) {
+        if (CollectionUtils.isEmpty(materialList)) {
+            return;
+        }
+        materialList.forEach(item -> {
+            if (AttachmentTypeEnum.RADAR.getMessageType().equals(item.getType())) {
+                item.setRadar(SpringUtils.getBean(WeRadarService.class).getRadar(corpId, item.getRadarId()));
+            }
+        });
     }
 
     /**

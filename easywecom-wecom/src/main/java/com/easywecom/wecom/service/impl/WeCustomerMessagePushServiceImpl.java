@@ -15,6 +15,7 @@ import com.easywecom.common.utils.DateUtils;
 import com.easywecom.common.utils.ExceptionUtil;
 import com.easywecom.common.utils.SnowFlakeUtil;
 import com.easywecom.common.utils.StringUtils;
+import com.easywecom.common.utils.spring.SpringUtils;
 import com.easywecom.wecom.client.WeMessagePushClient;
 import com.easywecom.wecom.domain.*;
 import com.easywecom.wecom.domain.dto.WeCustomerMessageDTO;
@@ -25,6 +26,7 @@ import com.easywecom.wecom.domain.dto.message.*;
 import com.easywecom.wecom.domain.vo.CustomerMessagePushVO;
 import com.easywecom.wecom.mapper.WeCustomerMessageTimeTaskMapper;
 import com.easywecom.wecom.service.*;
+import com.easywecom.wecom.service.radar.WeRadarService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
@@ -149,7 +151,7 @@ public class WeCustomerMessagePushServiceImpl implements WeCustomerMessagePushSe
         // 发给客户
         if (WeConstans.SEND_MESSAGE_CUSTOMER.equals(customerMessagePushDTO.getPushType())) {
             //查询客户信息列表
-            customers.addAll(externalUserIds(corpId, customerMessagePushDTO.getPushRange(), customerMessagePushDTO.getStaffId(), customerMessagePushDTO.getDepartment(), customerMessagePushDTO.getTag(), customerMessagePushDTO.getFilterTags(), customerMessagePushDTO.getGender(), customerMessagePushDTO.getCustomerStartTime(), customerMessagePushDTO.getCustomerEndTime()));
+            customers.addAll(getExternalUserIds(corpId, customerMessagePushDTO.getPushRange(), customerMessagePushDTO.getStaffId(), customerMessagePushDTO.getDepartment(), customerMessagePushDTO.getTag(), customerMessagePushDTO.getFilterTags(), customerMessagePushDTO.getGender(), customerMessagePushDTO.getCustomerStartTime(), customerMessagePushDTO.getCustomerEndTime()));
             if (CollectionUtils.isEmpty(customers)) {
                 throw new CustomException(ResultTip.TIP_NO_CUSTOMER);
             }
@@ -375,7 +377,15 @@ public class WeCustomerMessagePushServiceImpl implements WeCustomerMessagePushSe
     }
 
     private WeCustomerMessageTimeTask getTimeTask(Long messageId) {
-        return customerMessageTimeTaskMapper.getTimeTask(messageId);
+        final WeCustomerMessageTimeTask timeTask = customerMessageTimeTaskMapper.getTimeTask(messageId);
+        if (CollectionUtils.isNotEmpty(timeTask.getMessageInfo().getAttachments())) {
+            timeTask.getMessageInfo().getAttachments().forEach(item -> {
+                if (GroupMessageType.RADAR.getType().equals(item.getMsgtype())) {
+                    item.getRadarMessage().setRadar(SpringUtils.getBean(WeRadarService.class).getRadar(timeTask.getMessageInfo().getCorpId(), item.getRadarMessage().getRadarId()));
+                }
+            });
+        }
+        return timeTask;
     }
 
     /**
@@ -389,7 +399,8 @@ public class WeCustomerMessagePushServiceImpl implements WeCustomerMessagePushSe
      * @param gender     性别
      * @return {@link List<WeCustomer>} 客户的外部联系人id列表
      */
-    private List<WeCustomer> externalUserIds(String corpId, String pushRange, String staffId, String departmentIds, String tag, String filterTags, Integer gender, Date startTime, Date endTime) {
+    @Override
+    public List<WeCustomer> getExternalUserIds(String corpId, String pushRange, String staffId, String departmentIds, String tag, String filterTags, Integer gender, Date startTime, Date endTime) {
         //校验CorpId
         StringUtils.checkCorpId(corpId);
         if (pushRange.equals(WeConstans.SEND_MESSAGE_CUSTOMER_ALL)) {
@@ -452,6 +463,11 @@ public class WeCustomerMessagePushServiceImpl implements WeCustomerMessagePushSe
                 linkMessage.setDesc(customerSeedMessage.getLinDesc());
                 linkMessage.setPicurl(customerSeedMessage.getPicUrl());
                 attachment.setLinkMessage(linkMessage);
+            } else if (GroupMessageType.RADAR.getType().equals(msgtype)) {
+                RadarMessageDTO radarMessage = new RadarMessageDTO();
+                radarMessage.setRadarId(customerSeedMessage.getRadarId());
+                radarMessage.setRadar(SpringUtils.getBean(WeRadarService.class).getRadar(customerMessagePushDTO.getCorpId(), radarMessage.getRadarId()));
+                attachment.setRadarMessage(radarMessage);
             }
             //视频
             else if (GroupMessageType.VIDEO.getType().equals(msgtype)) {

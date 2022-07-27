@@ -5,20 +5,23 @@ import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.dtflys.forest.exceptions.ForestRuntimeException;
 import com.easywecom.common.constant.GenConstants;
-import com.easywecom.common.enums.CommunityTaskType;
-import com.easywecom.common.enums.CustomerTrajectoryEnums;
-import com.easywecom.common.enums.ResultTip;
-import com.easywecom.common.enums.WeOperationsCenterSop;
+import com.easywecom.common.enums.*;
+import com.easywecom.common.enums.radar.RadarChannelEnum;
 import com.easywecom.common.exception.CustomException;
 import com.easywecom.common.utils.DateUtils;
 import com.easywecom.common.utils.SnowFlakeUtil;
+import com.easywecom.common.utils.spring.SpringUtils;
 import com.easywecom.wecom.domain.*;
+import com.easywecom.wecom.domain.dto.common.AttachmentParam;
 import com.easywecom.wecom.domain.vo.sop.SopAttachmentVO;
 import com.easywecom.wecom.domain.vo.sop.WeSopUserIdAndTargetIdVO;
 import com.easywecom.wecom.service.*;
+import com.easywecom.wecom.service.radar.WeRadarChannelService;
+import com.easywecom.wecom.service.radar.WeRadarService;
 import com.easywecom.wecom.utils.ApplicationMessageUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.beans.BeanUtils;
@@ -134,7 +137,7 @@ public class WeOperationsCenterSopTask {
             return;
         }
         //3、满足规则的客户,加入执行任务
-        executeGroupSopTask(sopType, content, sopEntity.getName(), corpId, sopId, customerList, sopRules, nowDate);
+        executeGroupSopTask(sopType, content, sopEntity.getName(), corpId, sopId, customerList, sopRules, nowDate, RadarChannelEnum.CUSTOMER_SOP.getTYPE());
     }
 
     /**
@@ -191,7 +194,11 @@ public class WeOperationsCenterSopTask {
             return;
         }
         //3、满足规则的客户,加入执行任务
-        executeGroupSopTask(sopType,content, sopEntity.getName(), corpId, sopId, groupSopScopeList, sopRules, nowDate);
+        if (GROUP_CALENDAR.getSopType().equals(sopType)) {
+            executeGroupSopTask(sopType, content, sopEntity.getName(), corpId, sopId, groupSopScopeList, sopRules, nowDate, RadarChannelEnum.GROUP_CALENDAR.getTYPE());
+        } else {
+            executeGroupSopTask(sopType, content, sopEntity.getName(), corpId, sopId, groupSopScopeList, sopRules, nowDate, RadarChannelEnum.GROUP_SOP.getTYPE());
+        }
     }
 
     /**
@@ -206,7 +213,7 @@ public class WeOperationsCenterSopTask {
      * @param sopRules          sop规则
      * @param nowDate           当前时间
      */
-    private void executeGroupSopTask(Integer sopType, String content, String name, String corpId, Long sopId, List<WeSopUserIdAndTargetIdVO> groupSopScopeList, List<WeOperationsCenterSopRulesEntity> sopRules, Date nowDate) {
+    private void executeGroupSopTask(Integer sopType, String content, String name, String corpId, Long sopId, List<WeSopUserIdAndTargetIdVO> groupSopScopeList, List<WeOperationsCenterSopRulesEntity> sopRules, Date nowDate, int radarChannelType) {
         if (StringUtils.isBlank(corpId) || sopId == null || CollectionUtils.isEmpty(groupSopScopeList) || CollectionUtils.isEmpty(sopRules)) {
             log.error("weOperationsCenterSopTask.executeGroupSopTask 数据为空！不再继续执行.corpId={},sopId={},groupSopScopeList={},sopRules={}", corpId, sopId, JSONObject.toJSONString(groupSopScopeList), JSONObject.toJSONString(sopRules));
             return;
@@ -259,33 +266,61 @@ public class WeOperationsCenterSopTask {
         if (CollectionUtils.isNotEmpty(detailList)) {
             sopDetailService.saveBatch(detailList);
         }
-        saveSopTask(detailList, corpId, saveRuleNameMap);
+        saveSopTask(detailList, corpId, saveRuleNameMap, radarChannelType);
     }
 
     /**
      * 保存sop待办任务
-     * @param detailList 任务详情
-     * @param corpId 企业id
+     *
+     * @param detailList      任务详情
+     * @param corpId          企业id
      * @param saveRuleNameMap 规则名称对应map
+     * @param channelType     对应雷达渠道的SOP type
      */
-    private void saveSopTask(List<WeOperationsCenterSopDetailEntity> detailList, String corpId, Map<String, String> saveRuleNameMap) {
+    private void saveSopTask(List<WeOperationsCenterSopDetailEntity> detailList, String corpId, Map<String, String> saveRuleNameMap, int channelType) {
         for (WeOperationsCenterSopDetailEntity sopDetailEntity : detailList) {
             List<WeOperationsCenterSopTaskEntity> taskEntityList = new ArrayList<>();
             List<SopAttachmentVO> sopAttachmentVos = weWordsDetailService.listOfRuleId(sopDetailEntity.getRuleId());
-            sopAttachmentVos.forEach(sopAttachmentVO -> {
+            String userId = sopDetailEntity.getUserId();
+            final String sopRuleName = saveRuleNameMap.get(userId + sopDetailEntity.getRuleId());
+            for (SopAttachmentVO sopAttachmentVO : sopAttachmentVos) {
                 WeOperationsCenterSopTaskEntity sopTask = new WeOperationsCenterSopTaskEntity();
+                if (AttachmentTypeEnum.RADAR.getMessageType().equals(sopAttachmentVO.getMediaType())) {
+                    buildRadarAttachment(sopAttachmentVO, channelType, userId, corpId, sopRuleName);
+                }
                 BeanUtils.copyProperties(sopAttachmentVO, sopTask);
                 sopTask.setId(SnowFlakeUtil.nextId());
                 taskEntityList.add(sopTask);
-            });
+            }
             if (CollectionUtils.isNotEmpty(taskEntityList)) {
                 sopTaskService.saveBatch(taskEntityList);
-                String userId = sopDetailEntity.getUserId();
                 //插入客户轨迹待办消息
                 List<String> taskIds = taskEntityList.stream().filter(task -> task.getId() != null).map(task -> task.getId().toString()).collect(Collectors.toList());
-                saveCustomerTrajectorySopTask(sopDetailEntity.getAlertTime(),saveRuleNameMap.get(userId+sopDetailEntity.getRuleId()), corpId, sopDetailEntity.getId(), String.join(StrUtil.COMMA, taskIds), userId,sopDetailEntity.getTargetId());
+                saveCustomerTrajectorySopTask(sopDetailEntity.getAlertTime(), saveRuleNameMap.get(userId + sopDetailEntity.getRuleId()), corpId, sopDetailEntity.getId(), String.join(StrUtil.COMMA, taskIds), userId, sopDetailEntity.getTargetId());
             }
         }
+    }
+
+
+    /**
+     * 构建雷达附件
+     *
+     * @param sopAttachmentVO
+     * @param channelType
+     * @param userId
+     * @param corpId
+     * @param sopRuleName
+     */
+    private void buildRadarAttachment(SopAttachmentVO sopAttachmentVO, int channelType, String userId, String corpId, String sopRuleName) {
+        final AttachmentParam radarAttachment = SpringUtils.getBean(WeRadarService.class).getRadarShortUrl(sopAttachmentVO.getRadarId(), channelType, userId, corpId, sopRuleName);
+        if (ObjectUtils.isEmpty(radarAttachment)) {
+            return;
+        }
+        sopAttachmentVO.setTitle(radarAttachment.getContent());
+        sopAttachmentVO.setContent(radarAttachment.getDescription());
+        sopAttachmentVO.setCoverUrl(radarAttachment.getPicUrl());
+        sopAttachmentVO.setUrl(radarAttachment.getUrl());
+        sopAttachmentVO.setMediaType(WeCategoryMediaTypeEnum.LINK.getMediaType());
     }
 
     /**

@@ -116,6 +116,10 @@ public class WeCustomerSeedMessageServiceImpl extends ServiceImpl<WeCustomerSeed
             customerSeedMessage.setIsDefined(Optional.ofNullable(linkMessage.getIsDefined()).orElse(Boolean.FALSE));
             customerSeedMessage.setMessageType(GroupMessageType.LINK.getType());
 
+        } else if (GroupMessageType.RADAR.getType().equals(msgtype) && attachment.getRadarMessage() != null) {
+            RadarMessageDTO radarMessage = attachment.getRadarMessage();
+            customerSeedMessage.setRadarId(radarMessage.getRadarId());
+            customerSeedMessage.setMessageType(GroupMessageType.RADAR.getType());
         }
         //视频
         else if (GroupMessageType.VIDEO.getType().equals(msgtype) && attachment.getVideoDTO() != null) {

@@ -1,5 +1,6 @@
 package com.easywecom.wecom.domain.vo.sop;
 
+import com.easywecom.wecom.domain.vo.radar.WeRadarVO;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
@@ -16,7 +17,7 @@ public class SopAttachmentVO {
 
     @ApiModelProperty(value = "话术库附件ID")
     private Long id;
-    @ApiModelProperty(value = "0:海报,1:语音,2:视频,3:普通文件,4:文本,5:图文链接,6:小程序")
+    @ApiModelProperty(value = "0:海报,1:语音,2:视频,3:普通文件,4:文本,5:图文链接,6:小程序,7雷达")
     private Integer mediaType;
 
     @ApiModelProperty(value = "话术内容")
@@ -41,4 +42,10 @@ public class SopAttachmentVO {
      */
     @ApiModelProperty(value = "链接时使用：0 默认，1 自定义")
     private Boolean isDefined;
+
+    @ApiModelProperty(value = "雷达id")
+    private Long radarId;
+
+    @ApiModelProperty(value = "雷达VO")
+    private WeRadarVO radar;
 }
