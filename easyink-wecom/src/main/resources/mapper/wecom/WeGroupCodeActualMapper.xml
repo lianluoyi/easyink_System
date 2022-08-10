@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.easyink.wecom.mapper.WeGroupCodeActualMapper">
+
+    <resultMap type="WeGroupCodeActual" id="WeGroupCodeActualResult">
+        <result property="id" column="id"/>
+        <result property="actualGroupQrCode" column="actual_group_qr_code"/>
+        <result property="groupName" column="group_name"/>
+        <result property="effectTime" column="effect_time"/>
+        <result property="scanCodeTimesLimit" column="scan_code_times_limit"/>
+        <result property="groupCodeId" column="group_code_id"/>
+        <result property="chatId" column="chat_id"/>
+        <result property="chatGroupName" column="chat_group_name"/>
+        <result property="scanCodeTimes" column="scan_code_times"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="status" column="status"/>
+    </resultMap>
+
+    <sql id="selectWeGroupCodeActualVo">
+        select id,
+               actual_group_qr_code,
+               group_name,
+               effect_time,
+               scan_code_times_limit,
+               group_code_id,
+               chat_id,
+               chat_group_name,
+               scan_code_times,
+               del_flag,
+               status,
+               IF(DATE_ADD(NOW(), INTERVAL 1 DAY) > effect_time, 1, 0) AS is_expire
+        from we_group_code_actual
+    </sql>
+
+    <select id="selectWeGroupCodeActualList" parameterType="WeGroupCodeActual" resultMap="WeGroupCodeActualResult">
+        SELECT
+        wgca.id,
+        wgca.actual_group_qr_code,
+        wgca.group_name,
+        wgca.effect_time,
+        wgca.scan_code_times_limit,
+        wgca.group_code_id,
+        wgca.chat_id,
+        wgca.chat_group_name,
+        wgca.scan_code_times,
+        wgca.del_flag,
+        wgca.STATUS,
+        IF
+        ( DATE_ADD( NOW( ), INTERVAL 1 DAY ) > wgca.effect_time, 1, 0 ) AS is_expire
+        FROM
+        we_group_code_actual wgca
+        LEFT JOIN we_group_code wgc ON wgc.id = wgca.group_code_id
+        <where>
+            wgca.del_flag = ${@com.easyink.common.constant.WeConstans@WE_CUSTOMER_MSG_RESULT_NO_DEFALE}
+            <if test="actualGroupQrCode != null  and actualGroupQrCode != ''">and wgca.actual_group_qr_code =
+                #{actualGroupQrCode}
+            </if>
+            <if test="groupName != null  and groupName != ''">and wgca.group_name like concat('%', #{groupName}, '%')
+            </if>
+            <if test="effectTime != null ">and wgca.effect_time = #{effectTime}</if>
+            <if test="scanCodeTimesLimit != null ">and wgca.scan_code_times_limit = #{scanCodeTimesLimit}</if>
+            <if test="groupCodeId != null ">and wgca.group_code_id = #{groupCodeId}</if>
+            <if test="scanCodeTimes != null ">and wgca.scan_code_times = #{scanCodeTimes}</if>
+            <if test="status != null ">and wgca.status = #{status}</if>
+            <if test="chatId != null">and wgca.chat_id = #{chatId}</if>
+            <if test="chatGroupName != null and chatGroupName !=''">and wgca.chat_group_name = #{chatGroupName}</if>
+        </where>
+        ORDER BY wgca.sort_no DESC
+    </select>
+
+    <select id="selectActualList" parameterType="WeGroupCodeActual" resultMap="WeGroupCodeActualResult">
+        SELECT wgca.id,
+               wgca.actual_group_qr_code,
+               wgca.group_name,
+               wgca.effect_time,
+               wgca.scan_code_times_limit,
+               wgca.group_code_id,
+               wgca.chat_id,
+               wgca.chat_group_name,
+               wgca.scan_code_times,
+               wgca.del_flag,
+               wgca.STATUS,
+               IF(DATE_ADD(NOW(), INTERVAL 1 DAY ) > wgca.effect_time, 1, 0) AS is_expire
+        FROM we_group_code_actual wgca
+                 LEFT JOIN we_group_code wgc ON wgc.id = wgca.group_code_id
+        WHERE wgca.group_code_id = #{groupCodeId}
+          AND wgca.del_flag = ${@com.easyink.common.constant.WeConstans@WE_CUSTOMER_MSG_RESULT_NO_DEFALE}
+        ORDER BY wgca.sort_no ASC
+    </select>
+
+    <select id="selectWeGroupCodeActualByChatId" parameterType="String" resultMap="WeGroupCodeActualResult">
+        <include refid="selectWeGroupCodeActualVo"/>
+        <where>
+            chat_id = #{chatId}
+            AND del_flag = ${@com.easyink.common.constant.WeConstans@WE_CUSTOMER_MSG_RESULT_NO_DEFALE}
+        </where>
+    </select>
+
+
+    <select id="selectWeGroupCodeActualById" parameterType="Long" resultMap="WeGroupCodeActualResult">
+        <include refid="selectWeGroupCodeActualVo"/>
+        where id = #{id}
+        AND del_flag = ${@com.easyink.common.constant.WeConstans@WE_CUSTOMER_MSG_RESULT_NO_DEFALE}
+    </select>
+
+    <select id="checkChatIdUnique" resultType="com.easyink.wecom.domain.vo.WeGroupCodeActualExistVO">
+        SELECT
+        count( 1 ) as `count`,
+        GROUP_CONCAT(wgca.chat_id) as chat_ids
+        FROM
+        we_group_code_actual wgca
+        LEFT JOIN we_group_code wgc ON wgc.id = wgca.group_code_id
+        WHERE
+        wgca.chat_id in
+        <foreach collection="actualList" index="index" item="item" open="(" close=")" separator=",">
+            #{item.chatId}
+        </foreach>
+        AND wgca.group_code_id != #{groupId}
+        AND wgca.del_flag = ${@com.easyink.common.constant.WeConstans@WE_CUSTOMER_MSG_RESULT_NO_DEFALE}
+    </select>
+
+    <select id="checkChatIdOnly" resultType="int">
+        select count(1) from we_group_code_actual where chat_id = #{chatId}
+        <if test="id != null">and id != #{id}</if>
+        AND del_flag = ${@com.easyink.common.constant.WeConstans@WE_CUSTOMER_MSG_RESULT_NO_DEFALE}
+        limit 1
+    </select>
+
+    <insert id="insertWeGroupCodeActual" parameterType="WeGroupCodeActual">
+        insert into we_group_code_actual
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="id != null">id,</if>
+            <if test="actualGroupQrCode != null">actual_group_qr_code,</if>
+            <if test="groupName != null">group_name,</if>
+            <if test="effectTime != null">effect_time,</if>
+            <if test="scanCodeTimesLimit != null">scan_code_times_limit,</if>
+            <if test="groupCodeId != null">group_code_id,</if>
+            <if test="chatId != null">chat_id,</if>
+            <if test="chatGroupName != null">chat_group_name,</if>
+            <if test="scanCodeTimes != null">scan_code_times,</if>
+            <if test="delFlag != null">del_flag,</if>
+            <if test="status != null">status,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="id != null">#{id},</if>
+            <if test="actualGroupQrCode != null">#{actualGroupQrCode},</if>
+            <if test="groupName != null">#{groupName},</if>
+            <if test="effectTime != null">#{effectTime},</if>
+            <if test="scanCodeTimesLimit != null">#{scanCodeTimesLimit},</if>
+            <if test="groupCodeId != null">#{groupCodeId},</if>
+            <if test="chatId != null">#{chatId},</if>
+            <if test="chatGroupName != null">#{chatGroupName},</if>
+            <if test="scanCodeTimes != null">#{scanCodeTimes},</if>
+            <if test="delFlag != null">#{delFlag},</if>
+            <if test="status != null">#{status},</if>
+        </trim>
+    </insert>
+    <update id="addScanCodeTimes">
+        UPDATE we_group_code_actual
+        SET scan_code_times = scan_code_times + 1
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateWeGroupCodeActual" parameterType="WeGroupCodeActual">
+        update we_group_code_actual
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="actualGroupQrCode != null">actual_group_qr_code = #{actualGroupQrCode},</if>
+            <if test="groupName != null">group_name = #{groupName},</if>
+            <if test="effectTime != null">effect_time = #{effectTime},</if>
+            <if test="scanCodeTimesLimit != null">scan_code_times_limit = #{scanCodeTimesLimit},</if>
+            <if test="groupCodeId != null">group_code_id = #{groupCodeId},</if>
+            <if test="chatId != null">chat_id = #{chatId},</if>
+            <if test="chatGroupName != null">chat_group_name = #{chatGroupName},</if>
+            <if test="scanCodeTimes != null">scan_code_times = #{scanCodeTimes},</if>
+            <if test="delFlag != null">del_flag = #{delFlag},</if>
+            <if test="status != null">status = #{status},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <update id="updateScanTimesByChatId">
+        update we_group_code_actual
+        set scan_code_times = scan_code_times + #{memberChangeCnt}
+        where chat_id = #{chatId}
+    </update>
+    <update id="updateStatus">
+        UPDATE we_group_code_actual
+        SET status = #{status}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteWeGroupCodeActualById" parameterType="Long">
+        delete
+        from we_group_code_actual
+        where id = #{id}
+    </delete>
+
+    <delete id="deleteWeGroupCodeActualByIds" parameterType="String">
+        delete from we_group_code_actual where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <delete id="deleteActualListByGroupCodeIds" parameterType="String">
+        delete from we_group_code_actual where group_code_id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+
+    <select id="selectByGroupCodeId" resultMap="WeGroupCodeActualResult">
+        <include refid="selectWeGroupCodeActualVo"/>
+        where group_code_id = #{groupCodeId}
+    </select>
+    <select id="selectGroupActualListWithGroupQr"
+            resultType="com.easyink.wecom.domain.vo.groupcode.GroupCodeDetailVO">
+        SELECT wgca.id,
+        wgca.group_code_id,
+        wgca.actual_group_qr_code,
+        wgca.chat_id,
+        wgca.group_name,
+        wgca.effect_time,
+        wgca.scan_code_times_limit,
+        wgca.scan_code_times,
+        wgca.chat_group_name,
+        wgca.del_flag,
+        wgca.STATUS,
+        wgca.chat_ids,
+        wgca.scene,
+        wgca.remark,
+        wgca.room_base_id,
+        wgca.room_base_name,
+        wgca.auto_create_room,
+        wgca.state,
+        wgca.config_id,
+        wgca.sort_no,
+        IF(DATE_ADD(NOW(), INTERVAL 1 DAY ) > wgca.effect_time, 1, 0) AS is_expire
+        FROM we_group_code_actual wgca
+        LEFT JOIN we_group_code wgc ON wgc.id = wgca.group_code_id
+        WHERE
+        wgca.group_code_id = #{id}
+        AND wgca.del_flag = ${@com.easyink.common.constant.WeConstans@WE_CUSTOMER_MSG_RESULT_NO_DEFALE}
+        <if test="status != null">
+            AND wgca.status = #{status}
+        </if>
+        ORDER BY wgca.sort_no ASC
+    </select>
+</mapper>

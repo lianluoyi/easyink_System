@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.easyink.wecom.mapper.WePresTagGroupTaskMapper">
+
+    <resultMap id="WePresTagGroupTaskResult" type="WePresTagGroupTaskVo">
+        <result property="taskId" column="task_id"/>
+        <result property="taskName" column="task_name"/>
+        <result property="welcomeMsg" column="welcome_msg"/>
+        <result property="sendType" column="send_type"/>
+        <result property="codeUrl" column="code_url"/>
+        <result property="codeId" column="group_code_id"/>
+        <result property="totalMember" column="total_member"/>
+        <result property="sendScope" column="send_scope"/>
+        <result property="sendGender" column="send_gender"/>
+        <result property="cusBeginTime" column="cus_begin_time"/>
+        <result property="cusEndTime" column="cus_end_time"/>
+        <result property="msgid" column="msgid"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="activityName" column="activity_name"/>
+        <result property="activityDesc" column="activity_desc"/>
+        <result property="createType" column="create_type"/>
+    </resultMap>
+
+    <sql id="selectTaskVo">
+        SELECT wptg.task_id,
+        wptg.task_name,
+        wptg.welcome_msg,
+        wptg.send_type,
+        wptg.send_scope,
+        wptg.send_gender,
+        wptg.cus_begin_time,
+        wptg.cus_end_time,
+        wptg.msgid,
+        wptg.create_by,
+        wptg.create_time,
+        wptg.update_by,
+        wptg.update_time,
+        wgc.code_url,
+        wgc.activity_name,
+        wgc.activity_desc,
+        wgc.create_type,
+        wgc.id as group_code_id,
+        IFNULL((SELECT SUM(wgca.scan_code_times) AS scan_times
+        FROM we_group_code_actual wgca
+        GROUP BY group_code_id
+        HAVING group_code_id = wgc.id), 0) as total_member
+        FROM we_pres_tag_group wptg
+        LEFT JOIN we_group_code wgc ON wgc.id = wptg.group_code_id
+    </sql>
+
+    <select id="selectTaskById" parameterType="Long" resultMap="WePresTagGroupTaskResult">
+        <include refid="selectTaskVo"/>
+        where wptg.task_id = #{taskId}
+    </select>
+
+    <select id="selectTaskList" resultMap="WePresTagGroupTaskResult">
+        SELECT a.*,IFNULL(wd.name,'') mainDepartmentName
+        FROM (
+            <include refid="selectTaskVo"/>
+            <where>
+                wptg.corp_id = #{corpId}
+                AND  wptg.`del_flag` = ${@com.easyink.common.constant.WeConstans@WE_CUSTOMER_MSG_RESULT_NO_DEFALE}
+                <if test="taskName != null and taskName!=''">
+                    AND wptg.task_name LIKE CONCAT("%",#{taskName},"%")
+                </if>
+                <if test="sendType != null">
+                    AND wptg.send_type = #{sendType}
+                </if>
+                <if test="beginTime != null and beginTime != ''"><!-- 开始时间检索 -->
+                    AND wptg.create_time &gt;= #{beginTime}
+                </if>
+
+                <if test="endTime != null and endTime != ''"><!-- 结束时间检索 -->
+                    AND wptg.create_time &lt;= #{endTime}
+                </if>
+                <if test="createBy!=null and createBy!=''">
+                    AND wptg.create_by LIKE CONCAT("%",#{createBy},"%")
+                </if>
+            </where>
+            order by wptg.`create_time` desc
+        ) a
+        LEFT JOIN we_user wu ON a.create_by = wu.user_name AND wu.corp_id = #{corpId}
+        LEFT JOIN we_department wd ON wd.id = wu.main_department AND wd.corp_id = #{corpId}
+    </select>
+
+    <select id="getTaskListByEmplId" resultMap="WePresTagGroupTaskResult">
+        <include refid="selectTaskVo"/>
+        LEFT JOIN we_pres_tag_group_scope wptgs ON wptgs.task_id = wptg.task_id
+        WHERE wptgs.we_user_id = #{emplId}
+        AND wptgs.is_done = #{isDone}
+        AND wptg.send_type = 1 AND wptg.`del_flag` = 0;
+    </select>
+
+
+    <select id="selectExternalUserIds" resultType="String">
+        SELECT
+        customer.`external_userid`
+        FROM
+        we_customer customer
+        WHERE 1 = 1
+        <if test="hasTag">
+            AND customer.external_userid in (
+            SELECT
+            t3.external_userid
+            FROM
+            we_pres_tag_group task
+            LEFT JOIN we_pres_tag_group_tag t1 ON t1.task_id = task.task_id
+            LEFT JOIN we_flower_customer_tag_rel t2 ON t2.tag_id = t1.tag_id
+            LEFT JOIN we_flower_customer_rel t3 ON t2.flower_customer_rel_id = t3.id
+            WHERE
+            task.task_id = #{taskId}
+            )
+        </if>
+
+        <if test="hasScope">
+            AND customer.external_userid in (
+            SELECT
+            t3.external_userid
+            FROM
+            we_pres_tag_group task
+            LEFT JOIN we_pres_tag_group_scope scope ON scope.task_id = task.task_id
+            LEFT JOIN we_flower_customer_rel t3 ON t3.user_id = scope.we_user_id
+            LEFT JOIN we_customer customer ON customer.external_userid = t3.external_userid
+            WHERE
+            task.task_id = #{taskId}
+            )
+        </if>
+
+        <!-- 性别过滤 -->
+        <if test="gender != null and gender != ''">
+            AND customer.`gender` = #{gender}
+        </if>
+        <!-- 添加客户时间过滤 -->
+        <if test="beginTime != null and beginTime != ''">
+            and customer.`create_time` &gt;= #{beginTime}
+        </if>
+        <if test="endTime != null and endTime != ''"><!-- 结束时间检索 -->
+            and customer.`create_time` &lt;= #{endTime}
+        </if>
+    </select>
+
+    <select id="getExternalUserIds" resultType="com.easyink.wecom.domain.entity.BaseExternalUserEntity">
+        SELECT
+        wfcr.`external_userid`,
+        wfcr.`user_id`,
+        wfcr.`remark`
+        FROM
+        we_customer customer
+        LEFT JOIN we_flower_customer_rel wfcr ON customer.`external_userid` = wfcr.`external_userid`
+        <where>
+            <!-- 正常状态的客户-->
+            wfcr.`status` = 0
+            and wfcr.`corp_id` = #{corpId}
+            <!-- 员工过滤-->
+            <if test="scopeUserList != null and scopeUserList.size()>0 ">
+                AND wfcr.`user_id` in
+                <foreach collection="scopeUserList" item="item" open="(" separator="," close=")">
+                    #{item}
+                </foreach>
+            </if>
+            <!-- 标签过滤-->
+            <if test="tagList != null and tagList.size()>0 ">
+                AND customer.external_userid in (
+                SELECT
+                t3.external_userid
+                FROM
+                we_flower_customer_rel t3
+                LEFT JOIN we_flower_customer_tag_rel t2 ON t2.flower_customer_rel_id = t3.id
+                WHERE
+                t2.`tag_id` in
+                <foreach collection="tagList" item="item" open="(" separator="," close=")">
+                    #{item}
+                </foreach>
+                )
+            </if>
+
+            <!-- 性别过滤 -->
+            <choose>
+                <when test="gender == 1 or gender == 2">
+                    AND customer.`gender` = #{gender}
+                </when>
+                <when test="gender == 3">
+                    AND customer.`gender` = 0
+                </when>
+            </choose>
+            <!-- 添加客户时间过滤 -->
+            <if test="beginTime != null and beginTime != ''">
+                and wfcr.`create_time` &gt;= #{beginTime}
+            </if>
+            <if test="endTime != null and endTime != ''"><!-- 结束时间检索 -->
+                and wfcr.`create_time` &lt;= #{endTime}
+            </if>
+        </where>
+        group by wfcr.`external_userid`
+    </select>
+
+
+    <insert id="insertTask" parameterType="WePresTagGroupTask">
+        INSERT INTO we_pres_tag_group
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="taskId != null">task_id,</if>
+            <if test="corpId != null">corp_id,</if>
+            <if test="taskName != null">task_name,</if>
+            <if test="sendType != null">send_type,</if>
+            <if test="groupCodeId != null">group_code_id,</if>
+            <if test="welcomeMsg != null">welcome_msg,</if>
+            <if test="sendScope != null">send_scope,</if>
+            <if test="sendGender != null">send_gender,</if>
+            <if test="cusBeginTime != null and cusBeginTime !=''">cus_begin_time,</if>
+            <if test="cusEndTime != null and cusEndTime !=''">cus_end_time,</if>
+            <if test="msgid != null">msgid,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="createBy != null">create_by,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="taskId != null">#{taskId},</if>
+            <if test="corpId != null">#{corpId},</if>
+            <if test="taskName != null">#{taskName},</if>
+            <if test="sendType != null">#{sendType},</if>
+            <if test="groupCodeId != null">#{groupCodeId},</if>
+            <if test="welcomeMsg != null">#{welcomeMsg},</if>
+            <if test="sendScope != null">#{sendScope},</if>
+            <if test="sendGender != null">#{sendGender},</if>
+            <if test="cusBeginTime != null and cusBeginTime !=''">#{cusBeginTime},</if>
+            <if test="cusEndTime != null and cusEndTime !=''">#{cusEndTime},</if>
+            <if test="msgid != null">#{msgid},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="createBy != null">#{createBy},</if>
+        </trim>
+    </insert>
+
+    <update id="updateTask" parameterType="WePresTagGroupTask">
+        UPDATE we_pres_tag_group
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="taskName != null">task_name = #{taskName},</if>
+            <if test="sendType != null">send_type = #{sendType},</if>
+            <if test="groupCodeId != null">group_code_id = #{groupCodeId},</if>
+            <if test="welcomeMsg != null">welcome_msg = #{welcomeMsg},</if>
+            <if test="sendScope != null">send_scope = #{sendScope},</if>
+            <if test="sendGender != null">send_gender = #{sendGender},</if>
+            <if test="cusBeginTime != null and cusBeginTime !=''">cus_begin_time = #{cusBeginTime},</if>
+            <if test="cusEndTime != null and cusEndTime !=''">cus_end_time = #{cusEndTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        WHERE task_id = #{taskId} and corp_id = #{corpId}
+    </update>
+
+</mapper>

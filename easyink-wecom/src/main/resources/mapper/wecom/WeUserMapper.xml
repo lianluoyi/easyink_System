@@ -1,0 +1,542 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.easyink.wecom.mapper.WeUserMapper">
+
+    <resultMap type="com.easyink.common.core.domain.wecom.WeUser" id="WeUserResult">
+        <result property="isActivate" column="is_activate"/>
+        <result property="avatarMediaid" column="head_image_url"/>
+        <result property="name" column="user_name"/>
+        <result property="alias" column="alias"/>
+        <result property="userId" column="user_id"/>
+        <result property="gender" column="gender"/>
+        <result property="mobile" column="mobile"/>
+        <result property="email" column="email"/>
+        <result property="wxAccount" column="wx_account"/>
+        <result property="department" column="department"
+                typeHandler="com.easyink.framework.handler.StringArrayJoinTypeHandler"/>
+        <result property="position" column="position"/>
+        <result property="isLeaderInDept" column="is_leader_in_dept"
+                typeHandler="com.easyink.framework.handler.StringArrayJoinTypeHandler"/>
+        <result property="joinTime" column="join_time"/>
+        <result property="idCard" column="id_card"/>
+        <result property="qqAccount" column="qq_account"/>
+        <result property="telephone" column="telephone"/>
+        <result property="address" column="address"/>
+        <result property="birthday" column="birthday"/>
+        <result property="remark" column="remark"/>
+
+    </resultMap>
+
+    <sql id="selectWeUserVo">
+        select wu.is_activate,
+               wu.head_image_url,
+               wu.user_name,
+               wu.alias,
+               wu.user_id,
+               wu.gender,
+               wu.mobile,
+               wu.email,
+               wu.wx_account,
+               wu.department,
+               wu.position,
+               wu.is_leader_in_dept,
+               wu.join_time,
+               wu.enable,
+               wu.id_card,
+               wu.qq_account,
+               wu.telephone,
+               wu.address,
+               wu.birthday,
+               wu.is_allocate,
+               wu.remark,
+               wu.main_department,
+               wu.corp_id,
+               wu.ui_color
+        from we_user wu
+    </sql>
+
+<select id="listOfUser" parameterType="com.easyink.wecom.domain.dto.QueryUserDTO" resultType="com.easyink.wecom.domain.vo.WeUserVO">
+    select wu.is_activate,
+    wu.head_image_url,
+    wu.user_name,
+    wu.alias,
+    wu.user_id,
+    wu.gender,
+    wu.mobile,
+    wu.email,
+    wu.department,
+    wu.position,
+    wu.join_time,
+    wu.enable,
+    wu.id_card,
+    wu.qq_account,
+    wu.address,
+    wu.birthday,
+    wu.main_department,
+    wu.is_allocate,
+    sr.role_id,
+    sr.role_name,
+    wu.remark,
+    wd.name as mainDepartmentName
+    from we_user wu
+    left join we_user_role r on r.user_id = wu.user_id and r.corp_id = wu.corp_id
+    left join sys_role sr on sr.role_id = r.role_id and sr.corp_id = wu.corp_id
+    left join we_department wd on wu.main_department = wd.id and wd.corp_id = wu.corp_id
+    WHERE
+    wu.corp_id = #{corpId}
+    ${params.dataScope}
+    <if test="roleId != null">
+        AND sr.role_id = #{roleId}
+    </if>
+    <choose>
+        <when test="isActivate != null">AND wu.is_activate = #{isActivate}</when>
+        <otherwise>AND wu.is_activate != ${@com.easyink.common.constant.WeConstans@WE_USER_IS_LEAVE}</otherwise>
+    </choose>
+    <if test="userName != null and userName != ''">
+        AND position(#{userName} IN wu.user_name)
+    </if>
+    <if test="isAllocate != null">
+        AND wu.is_allocate = #{isAllocate}
+    </if>
+    AND CONCAT(',',wu.main_department,',') REGEXP CONCAT(',(',REPLACE(#{departments},',','|'),'),')
+</select>
+
+    <select id="listOfUser1" resultType="com.easyink.wecom.domain.vo.WeUserVO">
+        select
+        wu.is_activate,
+        wu.head_image_url,
+        wu.user_name,
+        wu.alias,
+        wu.user_id,
+        wu.gender,
+        wu.mobile,
+        wu.email,
+        wu.department,
+        wu.position,
+        wu.join_time,
+        wu.enable,
+        wu.id_card,
+        wu.qq_account,
+        wu.address,
+        wu.birthday,
+        wu.main_department,
+        wu.is_allocate,
+        sr.role_id,
+        sr.role_name,
+        wu.remark,
+        wd.name as mainDepartmentName
+        from we_user wu
+        left join we_user_role r on r.user_id = wu.user_id and r.corp_id = wu.corp_id
+        left join sys_role sr on sr.role_id = r.role_id and sr.corp_id = wu.corp_id
+        left join we_department wd on wu.main_department = wd.id and wd.corp_id = wu.corp_id
+        WHERE
+        wu.corp_id = #{corpId}
+        AND wu.is_activate != ${@com.easyink.common.constant.WeConstans@WE_USER_IS_LEAVE}
+        <if test="userIdList != null and userIdList.size >0">
+            AND wu.user_id in
+            <foreach collection="userIdList" item="item" open="(" close=")" separator=",">
+                #{item}
+            </foreach>
+        </if>
+    </select>
+
+    <select id="selectWeUserList" parameterType="WeUser" resultMap="WeUserResult">
+        <include refid="selectWeUserVo"/>
+        WHERE
+        wu.corp_id = #{corpId}
+        AND wu.is_activate != ${@com.easyink.common.constant.WeConstans@WE_USER_IS_LEAVE}
+        ${params.dataScope}
+        <if test="isActivate != null  and isActivate != ''">and wu.is_activate = #{isActivate}</if>
+        <if test="avatarMediaid != null  and avatarMediaid != ''">and wu.head_image_url = #{avatarMediaid}</if>
+        <if test="name != null  and name != ''">and wu.user_name like concat('%', #{name}, '%')</if>
+        <if test="alias != null  and alias != ''">and wu.alias = #{alias}</if>
+        <if test="userId != null  and userId != ''">and wu.user_id = #{userId}</if>
+        <if test="gender != null ">and wu.gender = #{gender}</if>
+        <if test="mobile != null  and mobile != ''">and wu.mobile = #{mobile}</if>
+        <if test="email != null  and email != ''">and wu.email = #{email}</if>
+        <if test="wxAccount != null  and wxAccount != ''">and wu.wx_account = #{wxAccount}</if>
+        <if test="departmentStr != null  and departmentStr != ''  ">
+            and CONCAT(',',wu.main_department,',') REGEXP CONCAT(',(',REPLACE(#{departmentStr},',','|'),'),')
+        </if>
+        <if test="position != null  and position != ''">and wu.position = #{position}</if>
+        <if test="isLeaderInDept != null ">and wu.is_leader_in_dept = #{isLeaderInDept}</if>
+        <if test="beginTime != null and beginTime !='' and endTime !=null and endTime !=''">
+            and wu.join_time BETWEEN #{beginTime} AND #{endTime}
+        </if>
+        <if test="idCard != null  and idCard != ''">and wu.id_card = #{idCard}</if>
+        <if test="qqAccount != null  and qqAccount != ''">and wu.qq_account = #{qqAccount}</if>
+        <if test="telephone != null  and telephone != ''">and wu.telephone = #{telephone}</if>
+        <if test="address != null  and address != ''">and wu.address = #{address}</if>
+        <if test="birthday != null ">and wu.birthday = #{birthday}</if>
+        <if test="mainDepartment != null" > and wu.main_department = #{mainDepartment}</if>
+        <if test="lastId != null">and wu.user_id > #{lastId}</if>
+    </select>
+
+    <select id="selectWeUserById" resultMap="WeUserResult">
+        <include refid="selectWeUserVo"/>
+        WHERE wu.corp_id= #{corpId} AND wu.user_id = #{userId}
+        LIMIT 1
+    </select>
+
+    <insert id="insertWeUser" parameterType="WeUser">
+        insert into we_user
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="userId != null">user_id,</if>
+            <if test="corpId != null and corpId != ''">corp_id,</if>
+            <if test="avatarMediaid != null">head_image_url,</if>
+            <if test="name != null">user_name,</if>
+            <if test="alias != null">alias,</if>
+            <if test="gender != null">gender,</if>
+            <if test="mobile != null and mobile != ''">mobile,</if>
+            <if test="email != null">email,</if>
+            <if test="wxAccount != null">wx_account,</if>
+            <if test="department != null">department,</if>
+            <if test="position != null">position,</if>
+            <if test="isLeaderInDept != null">is_leader_in_dept,</if>
+            <if test="joinTime != null">join_time,</if>
+            <if test="enable != null">enable,</if>
+            <if test="idCard != null">id_card,</if>
+            <if test="qqAccount != null">qq_account,</if>
+            <if test="telephone != null">telephone,</if>
+            <if test="address != null">address,</if>
+            <if test="birthday != null">birthday,</if>
+            <if test="remark != null">remark,</if>
+            <if test="isActivate != null">is_activate,</if>
+            <if test="mainDepartment != null">main_department,</if>
+            <if test="uiColor != null">ui_color,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="userId != null">#{userId},</if>
+            <if test="corpId!= null and corpId != ''">#{corpId},</if>
+            <if test="avatarMediaid != null">#{avatarMediaid},</if>
+            <if test="name != null">#{name},</if>
+            <if test="alias != null">#{alias},</if>
+            <if test="gender != null">#{gender},</if>
+            <if test="mobile != null and mobile != ''">#{mobile},</if>
+            <if test="email != null">#{email},</if>
+            <if test="wxAccount != null">#{wxAccount},</if>
+            <if test="department != null">
+                #{department,jdbcType=OTHER,typeHandler=com.easyink.framework.handler.StringArrayJoinTypeHandler},
+            </if>
+            <if test="position != null">#{position},</if>
+            <if test="isLeaderInDept != null">
+                #{isLeaderInDept,jdbcType=OTHER,typeHandler=com.easyink.framework.handler.StringArrayJoinTypeHandler},
+            </if>
+            <if test="joinTime != null">#{joinTime},</if>
+            <if test="enable != null">#{enable},</if>
+            <if test="idCard != null">#{idCard},</if>
+            <if test="qqAccount != null">#{qqAccount},</if>
+            <if test="telephone != null">#{telephone},</if>
+            <if test="address != null">#{address},</if>
+            <if test="birthday != null">#{birthday},</if>
+            <if test="remark != null">#{remark},</if>
+            <if test="isActivate != null">#{isActivate},</if>
+            <if test="mainDepartment != null">#{mainDepartment},</if>
+            <if test="uiColor != null ">#{uiColor},</if>
+        </trim>
+    </insert>
+
+    <update id="updateWeUser" parameterType="WeUser">
+        update we_user
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="avatarMediaid != null">head_image_url = #{avatarMediaid},</if>
+            <if test="name != null">user_name = #{name},</if>
+            <if test="alias != null">alias = #{alias},</if>
+            <if test="userId != null">user_id = #{userId},</if>
+            <if test="gender != null">gender = #{gender},</if>
+            <if test="mobile != null">mobile = #{mobile},</if>
+            <if test="email != null">email = #{email},</if>
+            <if test="wxAccount != null">wx_account = #{wxAccount},</if>
+            <if test="department != null">department =
+                #{department,jdbcType=OTHER,typeHandler=com.easyink.framework.handler.StringArrayJoinTypeHandler},
+            </if>
+            <if test="position != null">position = #{position},</if>
+            <if test="isLeaderInDept != null">is_leader_in_dept =
+                #{isLeaderInDept,jdbcType=OTHER,typeHandler=com.easyink.framework.handler.StringArrayJoinTypeHandler},
+            </if>
+            <if test="joinTime != null">join_time = #{joinTime},</if>
+            <if test="enable != null">enable = #{enable},</if>
+            <if test="idCard != null">id_card = #{idCard},</if>
+            <if test="qqAccount != null">qq_account = #{qqAccount},</if>
+            <if test="telephone != null">telephone = #{telephone},</if>
+            <if test="address != null">address = #{address},</if>
+            <if test="birthday != null">birthday = #{birthday},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="isActivate != null">is_activate = #{isActivate},</if>
+            <if test="isAllocate != null">is_allocate = #{isAllocate},</if>
+            <if test="mainDepartment != null">main_department = #{mainDepartment},</if>
+            <if test="uiColor != null and uiColor != ''">ui_color = #{uiColor},</if>
+            dimission_time = IFNULL(#{dimissionTime},'0000-00-00 00:00:00')
+        </trim>
+        WHERE
+        corp_id = #{corpId}
+        AND user_id = #{userId}
+
+    </update>
+
+
+    <delete id="deleteWeUser">
+        delete
+        from we_user
+    </delete>
+
+
+    <update id="batchUpdateWeUser">
+        <foreach collection="weUsers" item="weUser" separator=";">
+            UPDATE we_user
+            <set>
+                <if test="weUser.avatarMediaid != null">head_image_url = #{weUser.avatarMediaid},</if>
+                <if test="weUser.name != null">user_name = #{weUser.name},</if>
+                <if test="weUser.alias != null">alias = #{weUser.alias},</if>
+                <if test="weUser.userId != null">user_id = #{weUser.userId},</if>
+                <if test="weUser.gender != null">gender = #{weUser.gender},</if>
+                <if test="weUser.mobile != null and weUser.mobile != ''">mobile = #{weUser.mobile},</if>
+                <if test="weUser.email != null">email = #{weUser.email},</if>
+                <if test="weUser.wxAccount != null">wx_account = #{weUser.wxAccount},</if>
+                <if test="weUser.department != null">department =
+                    #{weUser.department,jdbcType=OTHER,typeHandler=com.easyink.framework.handler.StringArrayJoinTypeHandler},
+                </if>
+                <if test="weUser.position != null">position = #{weUser.position},</if>
+                <if test="weUser.isLeaderInDept != null">is_leader_in_dept =
+                    #{weUser.isLeaderInDept,jdbcType=OTHER,typeHandler=com.easyink.framework.handler.StringArrayJoinTypeHandler},
+                </if>
+                <if test="weUser.joinTime != null">join_time = #{weUser.joinTime},</if>
+                <if test="weUser.enable != null">enable = #{weUser.enable},</if>
+                <if test="weUser.idCard != null">id_card = #{weUser.idCard},</if>
+                <if test="weUser.qqAccount != null">qq_account = #{weUser.qqAccount},</if>
+                <if test="weUser.telephone != null">telephone = #{weUser.telephone},</if>
+                <if test="weUser.address != null">address = #{weUser.address},</if>
+                <if test="weUser.birthday != null">birthday = #{weUser.birthday},</if>
+                <if test="weUser.remark != null">remark = #{weUser.remark},</if>
+                <if test="weUser.isActivate != null">is_activate = #{weUser.isActivate},</if>
+                <if test="weUser.mainDepartment != null">main_department = #{weUser.mainDepartment},</if>
+                <if test="weUser.dimissionTime != null">dimission_time = #{weUser.dimissionTime},</if>
+            </set>
+            WHERE corp_id= #{weUser.corpId} AND user_id = #{weUser.userId}
+        </foreach>
+    </update>
+
+    <insert id="batchInsertWeUser">
+        insert into we_user (head_image_url, user_name, alias,
+        user_id, gender, mobile, email, wx_account,
+        department, position, is_leader_in_dept,
+        join_time, enable, id_card,
+        qq_account, telephone, address,
+        birthday, remark, is_activate)
+        values
+        <foreach collection="weUsers" item="weUser" index="index" separator=",">
+            ( #{weUser.avatarMediaid},#{weUser.name},#{weUser.alias},
+            #{weUser.userId},#{weUser.gender},#{weUser.mobile},#{weUser.email},#{weUser.wxAccount},
+            #{weUser.department},#{weUser.position},#{weUser.isLeaderInDept},
+            #{weUser.joinTime},#{weUser.enable},#{weUser.idCard},
+            #{weUser.qqAccount},#{weUser.telephone},#{weUser.address},
+            #{weUser.birthday},#{weUser.remark},#{weUser.isActivate}
+            )
+        </foreach>
+        on duplicate key update head_image_url= values(head_image_url),
+        user_name= values(user_name),alias= values(alias),
+        mobile= values(mobile),email= values(email),
+        wx_account= values(wx_account),department= values(department),
+        position= values(position),is_leader_in_dept= values(is_leader_in_dept),
+        join_time= values(join_time),enable= values(enable),
+        id_card= values(id_card),qq_account= values(qq_account),
+        telephone= values(telephone),address= values(address),
+        birthday= values(birthday),remark= values(remark),
+        is_activate= values(is_activate)
+    </insert>
+    <!--    批量插入更新员工状态和离职时间-->
+    <insert id="batchInsertUpdateUserStatus">
+        INSERT INTO we_user
+        (corp_id,user_id,is_activate,dimission_time)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+             #{item.corpId},#{item.userId},#{item.isActivate},ifnull(#{item.dimissionTime},'0000-00-00 00:00:00')
+            )
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+        is_activate = VALUES(is_activate) , dimission_time = VALUES(dimission_time)
+    </insert>
+
+    <select id="findWeUserByCutomerId" resultType="com.easyink.wecom.domain.WeCustomerAddUser">
+        SELECT wu.user_name,
+               wu.user_id,
+               wu.head_image_url,
+               wfcr.create_time
+        FROM `we_flower_customer_rel` wfcr
+                 INNER JOIN we_user wu ON wfcr.user_id = wu.user_id AND wu.corp_id = wfcr.corp_id
+        WHERE wfcr.external_userid = #{externalUserid} and wfcr.corp_id = #{corpId}
+    </select>
+    <select id="selectWeUserWithRoleInfoById" resultType="com.easyink.common.core.domain.wecom.WeUser">
+        SELECT
+            is_activate,
+            head_image_url AS avatarMediaid,
+            user_name,
+            alias,
+            a.user_id,
+            gender,
+            mobile,
+            email,
+            wx_account,
+            department,
+            position,
+            is_leader_in_dept,
+            join_time,
+            ENABLE,
+            id_card,
+            qq_account,
+            telephone,
+            address,
+            birthday,
+            is_allocate,
+            remark,
+            role_id
+        FROM
+            we_user a
+        LEFT JOIN we_user_role b ON a.user_id = b.user_id
+        WHERE
+            a.user_id = #{userId}
+        LIMIT 1
+    </select>
+    <select id="listOfUserId" resultType="java.lang.String">
+        SELECT wu.user_id FROM we_user wu
+        LEFT JOIN we_department wd ON wd.id = wu.department
+        WHERE
+        wu.corp_id = #{corpId}
+        and wu.is_activate = ${@com.easyink.common.constant.WeConstans@WE_USER_IS_ACTIVATE}
+        <if test="array != null and array.length >0">
+            AND wu.main_department in
+            <foreach collection="array" index="index" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        GROUP BY wu.user_id
+    </select>
+
+    <select id="getUser" resultType="com.easyink.wecom.domain.vo.WeUserVO">
+        SELECT wu.is_activate,
+               wu.head_image_url,
+               wu.user_name,
+               wu.alias,
+               wu.user_id,
+               wu.gender,
+               wu.mobile,
+               wu.email,
+               wu.department,
+               wu.position,
+               wu.join_time,
+               wu.enable,
+               wu.id_card,
+               wu.qq_account,
+               wu.address,
+               wu.birthday,
+               wu.corp_id,
+               wu.is_allocate,
+               sr.role_id,
+               sr.role_name,
+               wu.remark,
+               wd.name as mainDepartmentName
+        FROM we_user wu
+                 LEFT JOIN we_user_role r ON r.user_id = wu.user_id and r.corp_id  = wu.corp_id
+                 LEFT JOIN sys_role sr ON sr.role_id = r.role_id and sr.corp_id = r.corp_id
+                 LEFT JOIN we_department wd ON wu.main_department = wd.id and wd.corp_id = sr.corp_id
+        WHERE wu.corp_id = #{corpId}
+          AND wu.user_id = #{userId}
+        LIMIT 1
+    </select>
+    <!--    通过部门id列表和公司Id获取成员-->
+    <select id="getUserByDepartmentList" resultType="com.easyink.common.core.domain.wecom.WeUser">
+        <include refid="selectWeUserVo"></include>
+        WHERE
+        wu.corp_id = #{corpId}
+        and wu.is_activate != ${@com.easyink.common.constant.WeConstans@WE_USER_IS_LEAVE}
+        <if test="array != null and array.length >0">
+            AND wu.main_department IN
+            <foreach collection="array" item="item" open="(" close=")" separator=",">
+                #{item}
+            </foreach>
+        </if>
+    </select>
+    <select id="getUserDetail" resultType="com.easyink.common.core.domain.wecom.WeUser">
+        SELECT wu.is_activate,
+        wu.head_image_url as avatarMediaid,
+               wu.user_name as name,
+               wu.alias,
+               wu.user_id,
+               wu.gender,
+               wu.mobile,
+               wu.email,
+               wu.department,
+        wu.main_department,
+               wu.position,
+               wu.join_time,
+               wu.enable,
+               wu.id_card,
+               wu.qq_account,
+               wu.address,
+               wu.birthday,
+               wu.corp_id,
+               wu.is_allocate,
+               wu.remark,
+        wd.name as departmentName,
+        wu.ui_color
+        FROM we_user wu
+                 LEFT JOIN we_department wd ON wu.main_department = wd.id and wd.corp_id = wu.corp_id
+        WHERE wu.corp_id = #{corpId}
+          AND wu.user_id = #{userId}
+        LIMIT 1
+    </select>
+
+    <update id="batchUpdateWeUserPositionOrDepartment">
+        update we_user
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="position != null">`position` = #{position},</if>
+            <if test="department != null">`main_department` = #{department},</if>
+        </trim>
+        WHERE
+        corp_id = #{corpId}
+        AND user_id IN
+        <foreach collection="userIdList" item="item" open="(" close=")" separator=",">
+            #{item}
+        </foreach>
+
+    </update>
+    <!--    离职未分配列表-->
+    <select id="leaveUserListV3" resultType="com.easyink.wecom.domain.vo.transfer.TransferResignedUserVO">
+        SELECT wu.user_id,
+        wu.user_name,
+        wu.head_image_url,
+        wu.main_department,
+        wu.alias,
+        wu.dimission_time,
+        wd.name as mainDepartmentName,
+        wu.is_allocate,
+        (SELECT count(id) FROM we_flower_customer_rel WHERE corp_id = #{corpId} AND user_id = wu.user_id
+        and status = ${@com.easyink.common.enums.CustomerStatusEnum@TO_BE_TRANSFERRED.code}
+        ) as allocateCustomerNum,
+        (SELECT count(chat_id) FROM we_group WHERE corp_id =#{corpId} AND owner = wu.user_id
+        and status = ${@com.easyink.common.constant.GroupConstants@OWNER_LEAVE}
+        ) as allocateGroupNum
+        FROM we_user wu
+        LEFT JOIN we_department wd ON wu.corp_id = wd.corp_id AND wd.id = wu.main_department
+        <where>
+            wu.corp_id = #{corpId}
+            ${params.dataScope}
+            AND wu.is_activate in (${@com.easyink.common.enums.StaffActivateEnum@RETIRE.code},
+            ${@com.easyink.common.enums.StaffActivateEnum@DELETE.code})
+            AND wu.is_allocate = ${@com.easyink.common.constant.WeConstans@LEAVE_NO_ALLOCATE_STATE}
+            <if test="userName != null and userName != ''">
+                AND position(#{userName} IN wu.user_name)
+            </if>
+            <if test="beginTime != null ">
+                AND  wu.dimission_time >= #{beginTime}
+            </if>
+            <if test="endTime != null" >
+                AND  wu.dimission_time &lt;= #{endTime}
+            </if>
+        </where>
+    </select>
+
+</mapper>

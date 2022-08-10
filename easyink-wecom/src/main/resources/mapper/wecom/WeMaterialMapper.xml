@@ -1,0 +1,463 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.easyink.wecom.mapper.WeMaterialMapper">
+
+    <resultMap id="materialMap" type="com.easyink.wecom.domain.WeMaterial">
+        <id property="id" column="id"/>
+        <result property="categoryId" column="category_id"/>
+        <result property="materialUrl" column="material_url"/>
+        <result property="content" column="content"/>
+        <result property="materialName" column="material_name"/>
+        <result property="digest" column="digest"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="coverUrl" column="cover_url"/>
+        <result property="audioTime" column="audio_time"/>
+        <result property="expireTime" column="expire_time"/>
+        <result property="showMaterial" column="show_material"/>
+        <result property="isDefined" column="is_defined"/>
+        <result property="enableConvertRadar" column="enable_convert_radar"/>
+        <result property="radarId" column="radar_id"/>
+    </resultMap>
+
+    <resultMap id="materialMap1" type="com.easyink.wecom.domain.WeMaterial">
+        <id property="id" column="id"/>
+        <result property="categoryId" column="category_id"/>
+        <result property="materialUrl" column="material_url"/>
+        <result property="content" column="content"/>
+        <result property="materialName" column="material_name"/>
+        <result property="digest" column="digest"/>
+        <result property="coverUrl" column="cover_url"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="audioTime" column="audio_time"/>
+        <result property="expireTime" column="expire_time"/>
+        <result property="showMaterial" column="show_material"/>
+        <result property="isDefined" column="is_defined"/>
+        <result property="enableConvertRadar" column="enable_convert_radar"/>
+        <result property="radarId" column="radar_id"/>
+    </resultMap>
+
+    <resultMap id="materialVoMap" type="com.easyink.wecom.domain.vo.WeMaterialVO">
+        <id property="mediaType" column="media_type"/>
+        <id property="id" column="id"/>
+        <result property="materialUrl" column="material_url"/>
+        <result property="content" column="content"/>
+        <result property="materialName" column="material_name"/>
+        <result property="digest" column="digest"/>
+        <result property="coverUrl" column="cover_url"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="audioTime" column="audio_time"/>
+        <result property="expireTime" column="expire_time"/>
+        <result property="showMaterial" column="show_material"/>
+        <result property="isDefined" column="is_defined"/>
+        <result property="enableConvertRadar" column="enable_convert_radar"/>
+        <result property="radarId" column="radar_id"/>
+        <result property="tagIds" column="tagIds"/>
+        <collection property="tagList" column="{materialId=id,tagIds=tagIds}"
+                    ofType="com.easyink.wecom.domain.vo.WeMaterialAndTagRel"
+                    select="com.easyink.wecom.mapper.WeMaterialTagRelMapper.listOfTagRelByMaterialId"/>
+    </resultMap>
+
+    <insert id="insertWeMaterial">
+        INSERT INTO
+        we_material
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="id!=null">
+                id,
+            </if>
+            <if test="categoryId!=null">
+                category_id,
+            </if>
+            <if test="materialUrl!=null">
+                material_url,
+            </if>
+            <if test="content!=null">
+                content,
+            </if>
+            <if test="materialName!=null">
+                material_name,
+            </if>
+            <if test="digest!=null">
+                digest,
+            </if>
+            <if test="coverUrl!=null">
+                cover_url,
+            </if>
+            <if test="createBy!=null">
+                create_by,
+            </if>
+            <if test="createTime!=null">
+                create_time,
+            </if>
+            <if test="updateBy!=null">
+                update_by,
+            </if>
+            <if test="updateTime!=null">
+                update_time,
+            </if>
+            <if test="audioTime!=null">
+                audio_time,
+            </if>
+            <if test="expireTime!=null">
+                expire_time,
+            </if>
+            <if test="showMaterial!=null">
+                show_material,
+            </if>
+            <if test="tempFlag!=null">
+                temp_flag,
+            </if>
+            <if test="isDefined!=null">
+                is_defined,
+            </if>
+            <if test="enableConvertRadar != null">
+                enable_convert_radar,
+            </if>
+            <if test="radarId != null">
+                radar_id
+            </if>
+        </trim>
+        VALUES
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="id!=null">
+                #{id},
+            </if>
+            <if test="categoryId!=null">
+                #{categoryId},
+            </if>
+            <if test="materialUrl!=null">
+                #{materialUrl},
+            </if>
+            <if test="content!=null">
+                #{content},
+            </if>
+            <if test="materialName!=null">
+                #{materialName},
+            </if>
+            <if test="digest!=null">
+                #{digest},
+            </if>
+            <if test="coverUrl!=null">
+                #{coverUrl},
+            </if>
+            <if test="createBy!=null">
+                #{createBy},
+            </if>
+            <if test="createTime!=null">
+                #{createTime},
+            </if>
+            <if test="updateBy!=null">
+                #{updateBy},
+            </if>
+            <if test="updateTime!=null">
+                #{updateTime},
+            </if>
+            <if test="audioTime!=null">
+                #{audioTime},
+            </if>
+            <if test="expireTime!=null">
+                #{expireTime},
+            </if>
+            <if test="showMaterial!=null">
+                #{showMaterial},
+            </if>
+            <if test="tempFlag!=null">
+                #{tempFlag},
+            </if>
+            <if test="isDefined!=null">
+                #{isDefined},
+            </if>
+            <if test="enableConvertRadar!=null">
+                #{enableConvertRadar},
+            </if>
+            <if test="radarId != null">
+                #{radarId}
+            </if>
+        </trim>
+    </insert>
+
+
+    <insert id="batchInsertWeMaterial">
+        INSERT INTO we_material (
+            id,
+            category_id,
+            material_url,
+            content,
+            material_name,
+            digest,
+            cover_url,
+            create_by,
+            create_time,
+            update_by,
+            update_time,
+            audio_time,
+            expire_time,
+            show_material,
+            temp_flag
+        )
+        VALUES
+        <foreach collection="list" separator="," item="item">
+            (
+            #{item.id},
+            #{item.categoryId},
+            #{item.materialUrl},
+            #{item.content},
+            #{item.materialName},
+            #{item.digest},
+            #{item.coverUrl},
+            #{item.createBy},
+            #{item.createTime},
+            #{item.updateBy},
+            #{item.updateTime},
+            #{item.audioTime},
+            #{item.expireTime},
+            #{item.showMaterial},
+            #{item.tempFlag}
+            )
+        </foreach>
+    </insert>
+
+    <update id="updateWeMaterial">
+        update we_material
+        set
+        <if test="materialUrl!=null">
+            material_url=#{materialUrl},
+        </if>
+        <if test="content!=null">
+            content=#{content},
+        </if>
+        <if test="materialName!=null">
+            material_name=#{materialName},
+        </if>
+        <if test="digest!=null">
+            digest=#{digest},
+        </if>
+        <if test="coverUrl!=null">
+            cover_url=#{coverUrl},
+        </if>
+        <if test="createBy!=null">
+            create_by=#{createBy},
+        </if>
+        <if test="createTime!=null">
+            create_time=#{createTime},
+        </if>
+        <if test="updateBy!=null">
+            update_by=#{updateBy},
+        </if>
+        <if test="audioTime!=null">
+            audio_time=#{audioTime},
+        </if>
+        <if test="expireTime!=null">
+            expire_time=#{expireTime},
+        </if>
+        <if test="showMaterial!=null">
+            show_material=#{showMaterial},
+        </if>
+        <if test="isDefined!=null">
+            is_defined=#{isDefined},
+        </if>
+        <if test="enableConvertRadar != null">
+            enable_convert_radar = #{enableConvertRadar},
+        </if>
+        <if test="radarId != null">
+            radar_id = #{radarId},
+        </if>
+        update_time = sysdate()
+        where id=#{id}
+        and category_id in (SELECT id FROM we_category WHERE corp_id = #{corpId} AND media_type = #{mediaType} AND
+        del_flag = ${@com.easyink.common.constant.WeConstans@WE_CUSTOMER_MSG_RESULT_NO_DEFALE})
+    </update>
+    <update id="resetCategory">
+        UPDATE we_material
+        <set>
+            category_id=#{categoryId}
+        </set>
+        <where>
+            id=#{material}
+        </where>
+    </update>
+
+    <select id="findWeMaterialById" resultMap="materialMap">
+        SELECT
+        <include refid="material"/>
+        FROM we_material
+        <where>
+            id=#{id}
+        </where>
+    </select>
+
+    <select id="findWeMaterials" resultMap="materialVoMap">
+        SELECT wm.id,wm.category_id,wm.material_url,wm.content,wm.material_name,
+        wm.digest,wm.cover_url,wm.create_by,wm.create_time,wm.update_by,wm.update_time,
+        wm.audio_time,wm.show_material,wc.media_type,#{tagIds} tagIds,wm.is_defined,wm.enable_convert_radar,wm.radar_id,
+        IF(wm.expire_time='${@com.easyink.common.constant.WeConstans@DEFAULT_MATERIAL_NOT_EXPIRE}',NULL,wm.expire_time)
+        expire_time
+        FROM we_material wm
+        LEFT JOIN we_category wc ON wm.category_id = wc.id
+        LEFT JOIN we_material_tag_rel wmr ON wmr.material_id = wm.id
+        WHERE wc.del_flag = ${@com.easyink.common.constant.WeConstans@WE_CUSTOMER_MSG_RESULT_NO_DEFALE}
+        AND corp_id = #{corpId}
+        AND wm.temp_flag = '${@com.easyink.common.enums.WeTempMaterialEnum@MATERIAL.tempFlag}'
+        <if test="mediaType!=null">
+            AND wc.media_type=#{mediaType}
+        </if>
+        <if test="search!=null and search!=''">
+            AND wm.material_name LIKE CONCAT('%',#{search},'%')
+        </if>
+        <if test="showMaterial!=null">
+            AND show_material = #{showMaterial}
+            AND wc.using = #{showMaterial}
+        </if>
+        <if test="isExpire!=null">
+            <choose>
+                <when test="isExpire">
+                    AND wm.expire_time &lt;= SYSDATE()
+                </when>
+                <otherwise>
+                    AND wm.expire_time &gt;= SYSDATE()
+                </otherwise>
+            </choose>
+        </if>
+        <if test="tagIds!=null and tagIds!= ''">
+            AND wmr.material_tag_id IN (${tagIds})
+        </if>
+        GROUP BY wm.id
+        ORDER BY wm.create_time DESC
+    </select>
+
+    <select id="findMaterialVoListByIds" resultMap="materialVoMap">
+        SELECT wc.media_type, wm.id,
+        wm.material_url,wm.content,wm.material_name,wm.digest,wm.audio_time,wm.cover_url,wm.create_by,wm.create_time,wm.update_by,wm.update_time,wm.is_defined,wm.enable_convert_radar,wm.radar_id
+        from we_material wm
+        left join we_category wc on wc.id = wm.category_id
+        where
+        wm.id in
+        <foreach collection="array" open="(" close=")" item="item" separator=",">
+            #{item}
+        </foreach>
+    </select>
+
+    <sql id="material">
+        id
+        ,category_id,material_url,content,material_name,digest,cover_url,create_by,create_time,update_by,update_time,audio_time,is_defined,enable_convert_radar,radar_id
+    </sql>
+
+    <update id="restore">
+        UPDATE we_material
+        set expire_time = '${@com.easyink.common.constant.WeConstans@DEFAULT_MATERIAL_NOT_EXPIRE}',
+        show_material = ${@com.easyink.common.constant.WeConstans@WE_MATERIAL_NOT_USING}
+        <where>
+            category_id in ( SELECT id FROM we_category WHERE corp_id = #{corpId} AND media_type = #{mediaType} AND del_flag = ${@com.easyink.common.constant.WeConstans@WE_CUSTOMER_MSG_RESULT_NO_DEFALE})
+            AND id in
+            <foreach collection="ids" open="(" close=")" item="item" separator=",">
+                #{item}
+            </foreach>
+        </where>
+    </update>
+
+    <update id="showMaterialSwitch">
+        UPDATE we_material
+        set show_material=#{showMaterial}
+        <where>
+            category_id in (SELECT id FROM we_category WHERE corp_id = #{corpId} AND media_type = #{mediaType} AND del_flag = ${@com.easyink.common.constant.WeConstans@WE_CUSTOMER_MSG_RESULT_NO_DEFALE} )
+            AND id in (${ids})
+        </where>
+    </update>
+
+    <delete id="deleteByIdList">
+        delete from we_material
+        where category_id in (SELECT id FROM we_category WHERE corp_id = #{corpId} AND media_type = #{mediaType} AND del_flag = ${@com.easyink.common.constant.WeConstans@WE_CUSTOMER_MSG_RESULT_NO_DEFALE})
+        AND id in (${ids})
+    </delete>
+
+    <select id="findExpireMaterialByLastExpireTime" resultType="java.lang.Long">
+        SELECT
+          wm.id
+        FROM
+          we_material wm
+        LEFT JOIN we_category wc ON wm.category_id = wc.id
+        WHERE
+          wc.corp_id = #{corpId}
+        AND wc.del_flag = ${@com.easyink.common.constant.WeConstans@WE_CUSTOMER_MSG_RESULT_NO_DEFALE}
+        AND wm.expire_time &lt;= #{lastRemoveDate}
+
+    </select>
+    <select id="getMaterialCount" parameterType="com.easyink.wecom.domain.dto.FindWeMaterialDTO"
+            resultType="com.easyink.wecom.domain.vo.WeMaterialCountVO">
+        SELECT
+        COUNT( 1 ) AS material_num,
+        IFNULL(sum( CASE WHEN ( t.show_material = 1 ) THEN 1 ELSE 0 END ),0) AS material_side_bar_num
+        FROM(
+        SELECT
+        wm.show_material AS show_material
+        FROM
+        we_material wm
+        INNER JOIN we_category wc ON wc.id = wm.category_id
+        LEFT JOIN we_material_tag_rel wmtl ON wmtl.material_id = wm.id
+        <where>
+            wc.corp_id = #{corpId}
+            AND wm.temp_flag = '${@com.easyink.common.enums.WeTempMaterialEnum@MATERIAL.tempFlag}'
+            <if test="mediaType!=null">
+                AND wc.media_type=#{mediaType}
+            </if>
+            <if test="search!=null and search!=''">
+                AND wm.material_name LIKE CONCAT('%',#{search},'%')
+            </if>
+            <if test="showMaterial!=null">
+                AND show_material = #{showMaterial}
+            </if>
+            <if test="isExpire!=null">
+                <choose>
+                    <when test="isExpire">
+                        AND wm.expire_time &lt;= SYSDATE()
+                    </when>
+                    <otherwise>
+                        AND wm.expire_time &gt;= SYSDATE()
+                    </otherwise>
+                </choose>
+            </if>
+            <if test="tagIds!=null and tagIds!=''">
+                AND wmtl.material_tag_id IN (${tagIds})
+            </if>
+        </where>
+        GROUP BY wm.id
+        ) t
+    </select>
+
+    <delete id="deleteByIdListAndCorpId">
+        delete from we_material
+        where category_id IN (SELECT id FROM we_category WHERE corp_id = #{corpId} AND del_flag = ${@com.easyink.common.constant.WeConstans@WE_CUSTOMER_MSG_RESULT_NO_DEFALE})
+        AND id in
+        <foreach collection="idList" open="(" close=")" item="item" separator=",">
+            #{item}
+        </foreach>
+    </delete>
+
+
+    <select id="getListByMaterialSort" resultType="com.easyink.wecom.domain.dto.AddWeMaterialDTO">
+        SELECT
+            wc.media_type, wm.id, wm.material_url,wm.content,wm.material_name,wm.digest,wm.audio_time,wm.cover_url,
+        wm.create_by,wm.create_time,wm.update_by,wm.update_time,wm.is_defined,wm.enable_convert_radar,wm.radar_id
+        FROM we_material wm
+        LEFT JOIN we_category wc ON wc.id = wm.category_id AND wc.corp_id = #{corpId}
+        WHERE wm.id IN
+        <foreach collection="materialSort" open="(" close=")" item="item" separator=",">
+            #{item}
+        </foreach>
+        ORDER BY FIELD(wm.id,
+        <foreach collection="materialSort" item="item" separator=",">
+            #{item}
+        </foreach>
+        )
+    </select>
+</mapper>

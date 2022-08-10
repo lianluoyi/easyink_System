@@ -161,7 +161,7 @@ WHERE role_type = 2
 ALTER TABLE `we_radar_click_record` change `corp_id` `radar_id` bigint(20) NOT NULL DEFAULT '0' COMMENT '雷达id';
 
 -- wx we_radar_click_record表 修改字段 Tower 任务: 查看个人雷达报错 ( https://tower.im/teams/636204/todos/54486 )
-ALTER TABLE `we_radar_click_record` change `channel_id` `channel_type` tinyint(2) NOT NULL DEFAULT '0' COMMENT '渠道type（0未知渠道,1员工活码，2朋友圈，3群发，4侧边栏,5欢迎语,6 客户SOP,7群SOP，8新客进群，9群日历,10自定义渠道)'
+ALTER TABLE `we_radar_click_record` change `channel_id` `channel_type` tinyint(2) NOT NULL DEFAULT '0' COMMENT '渠道type（0未知渠道,1员工活码，2朋友圈，3群发，4侧边栏,5欢迎语,6 客户SOP,7群SOP，8新客进群，9群日历,10自定义渠道)';
 
 
 -- wx we_material 添加radar_id字段 Tower 任务: 选择素材调整（工时0.6） ( https://tower.im/teams/636204/todos/54349 )
