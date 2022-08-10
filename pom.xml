@@ -4,16 +4,16 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.easywecom</groupId>
-    <artifactId>easywecom</artifactId>
+    <groupId>com.easyink</groupId>
+    <artifactId>easyink</artifactId>
     <version>3.1.0</version>
 
-    <name>easywecom</name>
+    <name>easyink</name>
     <description>企业微信管理系统</description>
 
     <properties>
         <springboot.version>2.3.7.RELEASE</springboot.version>
-        <easywecom.version>3.1.0</easywecom.version>
+        <easyink.version>3.1.0</easyink.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <java.version>1.8</java.version>
@@ -22,7 +22,7 @@
         <bitwalker.version>1.19</bitwalker.version>
         <kaptcha.version>2.3.2</kaptcha.version>
         <pagehelper.boot.version>1.3.0</pagehelper.boot.version>
-        <fastjson.version>1.2.73</fastjson.version>
+        <fastjson.version>1.2.83</fastjson.version>
         <oshi.version>3.9.1</oshi.version>
         <commons.io.version>2.5</commons.io.version>
         <commons.fileupload.version>1.3.3</commons.fileupload.version>
@@ -179,31 +179,31 @@
 
             <!-- 定时任务-->
             <dependency>
-                <groupId>com.easywecom</groupId>
-                <artifactId>easywecom-quartz</artifactId>
-                <version>${easywecom.version}</version>
+                <groupId>com.easyink</groupId>
+                <artifactId>easyink-quartz</artifactId>
+                <version>${easyink.version}</version>
             </dependency>
 
             <!-- 核心模块-->
             <dependency>
-                <groupId>com.easywecom</groupId>
-                <artifactId>easywecom-framework</artifactId>
-                <version>${easywecom.version}</version>
+                <groupId>com.easyink</groupId>
+                <artifactId>easyink-framework</artifactId>
+                <version>${easyink.version}</version>
             </dependency>
 
             <!-- 通用工具-->
             <dependency>
-                <groupId>com.easywecom</groupId>
-                <artifactId>easywecom-common</artifactId>
-                <version>${easywecom.version}</version>
+                <groupId>com.easyink</groupId>
+                <artifactId>easyink-common</artifactId>
+                <version>${easyink.version}</version>
             </dependency>
 
 
             <!-- 企业微信模块-->
             <dependency>
-                <groupId>com.easywecom</groupId>
-                <artifactId>easywecom-wecom</artifactId>
-                <version>${easywecom.version}</version>
+                <groupId>com.easyink</groupId>
+                <artifactId>easyink-wecom</artifactId>
+                <version>${easyink.version}</version>
             </dependency>
 
             <!--forset-->
@@ -280,11 +280,11 @@
     </dependencyManagement>
 
     <modules>
-        <module>easywecom-admin</module>
-        <module>easywecom-framework</module>
-        <module>easywecom-quartz</module>
-        <module>easywecom-common</module>
-        <module>easywecom-wecom</module>
+        <module>easyink-admin</module>
+        <module>easyink-framework</module>
+        <module>easyink-quartz</module>
+        <module>easyink-common</module>
+        <module>easyink-wecom</module>
     </modules>
 
     <packaging>pom</packaging>

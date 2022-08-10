@@ -1,0 +1,437 @@
+# 项目相关配置
+ruoyi:
+  #备案号
+  icp: ${INTERNET_CONTENT_PROVIDER:}
+  #当前代码线版本
+  version: ${VERSION:TAG_VERSION}
+  releaseNotes: ${RELEASE_NOTES:https://xsxda94vjq.feishu.cn/docs/doccnMJuJvbFpkRdLYq7a0Q7l5d}
+  file:
+    startCosUpload: ${START_COS_UPLOAD:true}
+#腾讯云对象存储
+    cos:
+      secretId: ${COS_SECRET_ID:}
+      secretKey: ${COS_SECRET_KEY:}
+      region: ${COS_REGION:}
+      bucketName: ${COS_BUCKET_NAME:}
+      cosImgUrlPrefix: ${COS_COS_IMG_URL_PREFIX:}
+  # 文件路径 示例（ Windows配置D:/ruoyi/uploadPath，Linux配置 /app/project/pic）
+  # 获取ip地址开关
+  addressEnabled: true
+  # 验证码类型 math 数组计算 char 字符验证
+  captchaType: ${CAPTCHA_TYPE:math}
+  # 企业微信用户首次登录系统默认密码
+  weUserDefaultPwd: admin
+  # 默认应用名
+  defaultAppName: ${DEFAULT_APP_NAME:easyInk}
+  # 服务器类型： internal内部应用，third三方应用
+  serverType: ${SERVER_TYPE:internal}
+  # 是否允许返回异常详情给前端
+  enableExceptionDetailResp: ${ENABLE_EXCEPTION_DETAIL_RESP:false}
+  thirdDefaultDomain:
+    dashboard: ${DASHBOARD:}
+    sidebar: ${SIDEBAR:}
+    scrm: ${SCRM:}
+  provider:
+    corpId: ${PROVIDER_CORP_ID:}
+    secret: ${PROVIDER_SECRET:}
+    token: ${PROVIDER_TOKEN:}
+    encodingAesKey: ${PROVIDER_ENCODING_AES_KEY:}
+    webSuite:
+      suiteId: ${WEB_SUITE_ID:}
+      secret: ${WEB_SUITE_SECRET:}
+      token: ${WEB_SUITE_TOKEN:}
+      encodingAesKey: ${WEB_SUITE_ENCODING_AES_KEY:}
+    dkSuite:
+      dkId: ${DK_SUITE_ID:}
+      secret: ${DK_SUITE_SECRET:}
+      token: ${DK_SUITE_TOKEN:}
+      encodingAesKey: ${DK_SUITE_ENCODING_AES_KEY:}
+      dkQrCode: ${DK_QRCODE:}
+  selfBuild:
+    token: ${SELF_BUILD_TOKEN:3lTqc9EEO}
+    encodingAesKey: ${SELF_BUILD_ENCODING_AES_KEY:1K3K7DD74kbNNu58De5R7xoi2CyYxBdyxv8UHibVLoZ}
+    #匿名访问的URL
+  anonUrl:
+      - /login
+      - /captchaImage
+      - /findWxQrLoginInfo
+      - /wxQrLogin
+      - /profile/**
+      - /common/download**
+      - /common/download/resource**
+      - /common/download/url**
+      - /swagger-ui.html
+      - /doc.html
+      - /swagger-resources/**
+      - /webjars/**
+      - /*/api-docs
+      - /v2/**
+      - /v3/**
+      - /api/**
+      - /favicon.ico
+      - /basic/**
+      - /wecom/callback/**
+      - /wecom/chat/collection/list
+      - /wecom/chat/collection/cancleCollection
+      - /wecom/chat/collection/addCollection
+      - /wecom/fission/poster
+      - /wecom/fission/complete/**
+      - /wecom/fission/*/progress/*
+      - /wecom/reward/getRewardByFissionId/**
+      - /wecom/groupCode/getActualCode/**
+      - /weixin/auth/**
+      - /common/findFile
+      - /wecom/chat/side/getCorpInfo
+      - /qrCodeLogin
+      - /qrCodeLogin3rd
+      - /webLogin
+      - /loginHandler
+      - /wecom/3rdapp/getServerType
+      - /wecom/3rdapp/getPreAuthCode
+      - /wecom/3rdapp/getPreLoginParam
+      - /wecom/3rdapp/getPermanentCode
+      - /wecom/plus/**
+      - /wecom/order/login
+      - /wecom/order/getNetworkList
+      - /url/**
+      - /wechatopen/appId
+      - /wechatopen/openId
+      - /test/**
+
+
+# 开发环境配置
+server:
+  # 服务器的HTTP端口，默认为8090
+  port: ${SERVER_PORT:8090}
+  servlet:
+    # 应用的访问路径
+    context-path: /
+  tomcat:
+    # tomcat的URI编码
+    uri-encoding: UTF-8
+
+# 日志配置
+logging:
+  level:
+    com.ruoyi: ${COM_RUOYI:info}
+    org.springframework: ${ORG_SPRINGFRAMEWORK:warn}
+  file:
+    path: ${LOG_PATH:./logs}
+    max-history: ${LOG_MAX_HISTORY:15}
+    name: ${LOG_NAME:/wecom.log}
+
+# Spring配置
+spring:
+  # 资源信息
+  messages:
+    # 国际化资源文件路径
+    basename: i18n/messages
+  datasource:
+        type: com.alibaba.druid.pool.DruidDataSource
+        driverClassName: com.mysql.cj.jdbc.Driver
+        druid:
+            # 主库数据源
+            master:
+              url: jdbc:mysql://${MYSQL_SERVICE_HOST:wecommysql}:${MYSQL_SERVICE_PORT:3306}/${MYSQL_SERVICE_DB_NAME:wecomscrm}?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&allowMultiQueries=true
+              username: ${MYSQL_SERVICE_USERNAME:}
+              password: ${MYSQL_SERVICE_PASSWORD:}
+            # 从库数据源
+            slave:
+                # 从数据源开关/默认关闭
+                enabled: ${MYSQL_SERVICE_SLAVE_ENABLED:false}
+                url: jdbc:mysql://${MYSQL_SERVICE_SLAVE_HOST:wecommysql}:${MYSQL_SERVICE_SLAVE_PORT:3306}/${MYSQL_SERVICE_DB_SLAVE_NAME:wecomscrm}?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
+                username: ${MYSQL_SERVICE_SLAVE_USERNAME:}
+                password: ${MYSQL_SERVICE_SLAVE_PASSWORD:}
+            # 初始连接数
+            initialSize: ${MYSQL_SERVICE_INITIAL_SIZE:5}
+            # 最小连接池数量
+            minIdle: ${MYSQL_SERVICE_MIN_IDLE:10}
+            # 最大连接池数量
+            maxActive: ${MYSQL_SERVICE_MAX_ACTIVE:20}
+            # 配置获取连接等待超时的时间
+            maxWait: ${MYSQL_SERVICE_MAX_WAIT:60000}
+            # 配置间隔多久才进行一次检测，检测需要关闭的空闲连接，单位是毫秒
+            timeBetweenEvictionRunsMillis: ${MYSQL_SERVICE_TIME_BETWEEN_EVICTION_RUNS_MILLIS:60000}
+            # 配置一个连接在池中最小生存的时间，单位是毫秒
+            minEvictableIdleTimeMillis: ${MYSQL_SERVICE_MIN_EVICTABLE_IDLE_TIME_MILLIS:300000}
+            # 配置一个连接在池中最大生存的时间，单位是毫秒
+            maxEvictableIdleTimeMillis: ${MYSQL_SERVICE_MAX_EVICTABLE_IDLE_TIME_MILLIS:900000}
+            # 配置检测连接是否有效
+            validationQuery: SELECT 1 FROM DUAL
+            testWhileIdle: ${MYSQL_SERVICE_TEST_WHILE_IDLE:true}
+            testOnBorrow: ${MYSQL_SERVICE_TEST_ON_BORROW:false}
+            testOnReturn: ${MYSQL_SERVICE_TEST_ON_RETURN:false}
+            webStatFilter:
+                enabled: ${MYSQL_SERVICE_WEB_STAT_FILTER_ENABLED:true}
+            statViewServlet:
+                enabled: ${MYSQL_SERVICE_STAT_VIEW_SERVLET_ENABLED:false}
+                # 设置白名单，不填则允许所有访问
+                allow:
+                url-pattern: ${MYSQL_SERVICE_STAT_VIEW_SERVLET_URL_PATTERN:/druid/*}
+                # 控制台管理用户名和密码
+                login-username: ${MYSQL_SERVICE_STAT_VIEW_SERVLET_LOGIN_USERNAME:}
+                login-password: ${MYSQL_SERVICE_STAT_VIEW_SERVLET_LOGIN_PASSWORD:}
+            filter:
+                stat:
+                    enabled: ${MYSQL_SERVICE_FILTER_STAT_ENABLED:true}
+                    # 慢SQL记录
+                    log-slow-sql: ${MYSQL_SERVICE_FILTER_STAT_LOG_SLOW_SQL:true}
+                    slow-sql-millis: ${MYSQL_SERVICE_FILTER_STAT_SLOW_SQL_MILLIS:1000}
+                    merge-sql: ${MYSQL_SERVICE_FILTER_STAT_MERGE_SQL:true}
+                wall:
+                    config:
+                        multi-statement-allow: ${MYSQL_SERVICE_WALL_CONFIG_MULTI_STATEMENT_ALLOW:true}
+  # 文件上传
+  servlet:
+     multipart:
+       # 单个文件大小
+       max-file-size: ${SERVLET_MULTIPART_MAX_FILE_SIZE:50MB}
+       # 设置总上传的文件大小
+       max-request-size: ${SERVLET_MULTIPART_MAX_REQUEST_SIZE:50MB}
+  task:
+    execution:
+      pool:
+        keep-alive: ${TASK_POOL_KEEP_ALIVE:10s}
+      thread-name-prefix: ${TASK_POOL_THREAD_NAME_PREFIX:common-pool-}
+  # 服务模块
+  devtools:
+    restart:
+      # 热部署开关
+      enabled: true
+  # redis 配置
+  redis:
+    # 地址
+    host: ${REDIS_SERVICE_HOST:wecomredis}
+    # 端口，默认为6379
+    port: ${REDIS_SERVICE_PORT:6379}
+    # 密码
+    password: ${REDIS_SERVICE_PASSWORD:wecomscrm}
+    # 连接超时时间
+    timeout: ${REDIS_SERVICE_TIMEOUT:10s}
+    database: ${REDIS_SERVICE_DATABASE:10}
+    lettuce:
+      pool:
+        # 连接池中的最小空闲连接
+        min-idle: ${REDIS_POOL_MIN_IDLE:0}
+        # 连接池中的最大空闲连接
+        max-idle: ${REDIS_POOL_MAX_IDLE:8}
+        # 连接池的最大数据库连接数
+        max-active: ${REDIS_POOL_MAX_ACTIVE:8}
+        # #连接池最大阻塞等待时间（使用负值表示没有限制）
+        max-wait: ${REDIS_POOL_MAX_WAIT:-1ms}
+
+# token配置
+token:
+    # 令牌自定义标识
+    header: ${TOKEN_HEADER:Authorization}
+    # 令牌密钥
+    secret: ${TOKEN_SECRET:easywecom}
+    # 令牌有效期（默认30分钟）
+    expireTime: ${TOKEN_EXPIRE_TIME:300}
+
+mybatis-plus:
+   mapper-locations: classpath*:mapper/**/*Mapper.xml
+   type-aliases-package: com.easyink.**.domain
+   type-handlers-package: com.easyink.wecom.handler.GenericTypeHandler,com.easyink.framework.handler.StringArrayJoinTypeHandler
+#   configuration: # 开发调试使用
+#     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+   global-config:
+     db-config:
+       logic-delete-field: delFlag
+       logic-delete-value: 1
+       logic-not-delete-value: 0
+
+
+# PageHelper分页插件
+pagehelper:
+  helperDialect: mysql
+  reasonable: true
+  supportMethodsArguments: true
+  params: count=countSql
+
+knife4j:
+  enable: true
+  documents:
+    - group: 1.0版本
+      name: 其他文档
+      locations: classpath*:markdown/*
+  setting:
+    language: zh-CN
+    enableSwaggerModels: true
+    enableDocumentManage: true
+    swaggerModelName: 实体类列表
+    enableVersion: false
+    enableReloadCacheParameter: false
+    enableAfterScript: true
+    enableFilterMultipartApiMethodType: POST
+    enableFilterMultipartApis: false
+    enableRequestCache: true
+    enableFooter: false
+    enableFooterCustom: true
+    footerCustomContent: Apache License 2.0 | Copyright  2017-[厦门联络易科技有限公司](www.lianluoyi.cn)
+  cors: false
+  production: ${KNIFE4J_PRODUCTION:true}
+  basic:
+    enable: false
+    username: apidoc
+    password: 123321
+
+
+
+# 防止XSS攻击
+xss:
+  # 过滤开关
+  enabled: true
+  # 排除链接（多个用逗号分隔）
+  excludes: /system/notice/*
+  # 匹配链接
+  urlPatterns: /system/*,/monitor/*,/tool/*
+
+# elasticsearch配置
+elasticsearch:
+  open: ${ES_OPEN:false}
+  schema: ${ES_SCHEMA:http}
+  address: ${ES_ADDRESS:es:9200}
+  userName: ${ES_USER_NAME:""}
+  password: ${ES_PASSWD:""}
+  connectTimeout: ${ES_CONNECT_TIMEOUT:10000}
+  socketTimeout: ${ES_SOCKET_TIMEOUT:10000}
+  connectionRequestTimeout: ${ES_CONNECTION_REQUEST_TIMEOUT:10000}
+  maxConnectNum: ${ES_MAX_CONNECT_NUM:100}
+  maxConnectPerRoute: ${ES_MAX_CONNECT_PER_ROUTE:100}
+
+# forest配置
+forest:
+  backend: httpclient
+  retry-count: ${FOREST_RETRY_COUNT:1} # 请求失败后重试次数，默认为0次不重试
+  max-retry-interval: ${FOREST_MAX_RETRY_INTERVAL:1000} #重试间隔时间
+  connect-timeout: ${FOREST_CONNECT_TIMEOUT:3000} #链接超时时间
+  timeout: ${FOREST_TIMEOUT:3000}  # 请求超时时间
+  logEnabled: ${FOREST_LOG_ENABLED:false} # 打开或关闭日志（默认为 true）
+  log-request: ${FOREST_LOG_REQUEST:false} # 打开/关闭Forest请求日志（默认为 true）
+  log-response-status: ${FOREST_LOG_RESPONSE_STATUS:false} # 打开/关闭Forest响应状态日志（默认为 true）
+  log-response-content: ${FOREST_LOG_RESPONSE_CONTENT:false}  # 打开/关闭Forest响应内容日志（默认为 false）
+  variables: #全局变量 企微和微信接口地址
+    weComServerUrl: ${FOREST_VARIABLES_WE_COM_SERVER_URL:https://qyapi.weixin.qq.com/}
+    weComePrefix: ${FOREST_VARIABLES_WE_COME_PREFIX:cgi-bin}
+    wxServerUrl: ${FOREST_VARIABLES_WX_SERVER_URL:https://api.weixin.qq.com/}
+    wxPrefix: ${FOREST_VARIABLES_WX_PREFIX:sns}
+    orderServerUrl: ${ORDER_SERVER_URL:}
+    orderAccessId: ${ORDER_ACCESS_ID:}
+    orderAccessKey: ${ORDER_ACCESS_KEY:}
+  #converters:
+  #  json:
+  #    type: com.dtflys.forest.converter.json.ForestGsonConverter
+
+wecome:
+  chatKey: ${WE_COM_CHAT_KEY:chatdata}
+  serverUrl: ${WE_COM_SERVER_URL:https://qyapi.weixin.qq.com/}
+  weComePrefix: ${WE_COM_WE_COME_PREFIX:cgi-bin}
+  noAccessTokenUrl:
+          - /gettoken
+          - /service/get_provider_token
+          - /service/get_suite_token
+          - /wecom/chat/collection/addCollection
+          - /wecom/chat/collection/cancleCollection
+          - /wecom/chat/collection/list
+  needCustomTokenUrl:
+          - /externalcontact/get_follow_user_list
+          - /externalcontact/add_contact_way
+          - /externalcontact/update_contact_way
+          - /externalcontact/del_contact_way
+          - /externalcontact/get_contact_way
+          - /externalcontact/add_corp_tag
+          - /externalcontact/get_corp_tag_list
+          - /externalcontact/del_corp_tag
+          - /externalcontact/edit_corp_tag
+          - /externalcontact/list
+          - /externalcontact/get
+          - /externalcontact/batch/get_by_user
+          - /externalcontact/groupchat/list
+          - /externalcontact/groupchat/get
+          - /externalcontact/mark_tag
+          - /externalcontact/transfer
+          - /externalcontact/resigned/transfer_customer
+          - /externalcontact/groupchat/transfer
+          - /externalcontact/get_unassigned_list
+          - /externalcontact/send_welcome_msg
+          - /externalcontact/unionid_to_external_userid
+          - /externalcontact/add_msg_template
+          - /externalcontact/get_group_msg_result
+          - /externalcontact/get_user_behavior_data
+          - /externalcontact/groupchat/statistic
+          - /externalcontact/groupchat/statistic_group_by_day
+          - /externalcontact/remark
+          - /externalcontact/transfer_customer
+          - /externalcontact/transfer_result
+          - /externalcontact/resigned/transfer_result
+          - /externalcontact/group_welcome_template/add
+          - /externalcontact/group_welcome_template/del
+          - /externalcontact/group_welcome_template/edit
+          - /externalcontact/groupchat/add_join_way
+          - /externalcontact/groupchat/get_join_way
+          - /externalcontact/groupchat/update_join_way
+          - /externalcontact/groupchat/del_join_way
+          - /externalcontact/unionid_to_external_userid
+  needContactTokenUrl:
+          - /user/get
+          - /user/create
+          - /user/update
+          - /user/delete
+          - /user/batchdelete
+          - /user/list
+          - /user/simplelist
+          - /department/list
+          - /department/create
+          - /department/update
+          - /department/delete
+          - /corp/get_join_qrcode
+  fileUplodUrl:
+          - /media/upload
+          - /media/uploadimg
+          - /media/upload_attachment
+  needChatTokenUrl:
+          - /msgaudit/get_permit_user_list
+          - /msgaudit/check_single_agree
+          - /msgaudit/check_room_agree
+          - /msgaudit/groupchat/get
+  thirdAppUrl:
+          - /user/getuserinfo
+          - /get_jsapi_ticket
+          - /ticket/get
+          - /agent/list
+          - /message/send
+          - /agent/get
+          - /agent/set
+  needErrcodeUrl: # 如果有错误码需要单独业务处理,不抛出异常的接口
+    - /externalcontact/get_group_msg_result
+    - /externalcontact/del_corp_tag
+  # JS SDK 身份校验url
+  authorizeUrl: ${WE_COM_AUTHORIZE_URL:https://open.weixin.qq.com/connect/oauth2/authorize}
+
+## 会话存档公钥秘钥 (因为环境变量写空格会报错，这里填写的公钥私钥不需要前后缀,如 -----BEGIN RSA PRIVATE KEY-----\n 和\n-----END RSA PRIVATE KEY----- ，项目会自动拼接
+chatrsakey:
+  publicKey: ${CHAT_RSA_PUBLIC_KEY:}
+  privateKey: ${CHAT_RSA_PRIVATE_KEY:}
+
+## 微信小程序和公众号配置(小程序活码与雷达链接需要配置)
+wechatopen:
+    miniApp:
+      appId: ${MINI_APP_ID:}
+      appSecret: ${MINI_APP_SECRET:}
+      domain: ${MINI_APP_DOMAIN:}
+      codePath: ${MINI_APP_CODE_PATH:}
+      ## 	要打开的小程序版本。正式版为 "release"，体验版为"trial"，开发版为"develop"，仅在微信外打开时生效。
+      envVersion: ${MINI_APP_ENV_VERSION:}
+    officialAccount:
+      domain: ${OFFICIAL_ACCOUNT_DOMAIN:}
+      appId: ${OFFICIAL_ACCOUNT_APPID:}
+      appSecret: ${OFFICIAL_ACCOUNT_SECRET:}
+      needTokenUrl:
+        - /cgi-bin/user/info
+        - /wxa/generate_urllink
+        - /sns/oauth2/access_token
+
+
+
+

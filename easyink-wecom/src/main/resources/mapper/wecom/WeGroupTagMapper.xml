@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.easyink.wecom.mapper.WeGroupTagMapper">
+
+    <insert id="batchInsert">
+        INSERT IGNORE INTO we_group_tag
+        (
+        `corp_id`
+        ,`group_id`
+        ,`name`
+        )
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+            #{item.corpId}
+            ,#{item.groupId}
+            ,#{item.name}
+            )
+        </foreach>
+    </insert>
+
+    <delete id="delTag">
+        DELETE FROM we_group_tag
+        WHERE `corp_id` = #{corpId}
+        AND `id` IN
+        <foreach collection="list" index="index" item="item" separator="," open="(" close=")">
+            #{item}
+        </foreach>
+    </delete>
+
+
+    <delete id="delByGroupId">
+        DELETE FROM we_group_tag
+        WHERE `corp_id` = #{corpId}
+        AND `group_id` IN
+        <foreach collection="groupIdList" index="index" item="item" separator="," open="(" close=")">
+            #{item}
+        </foreach>
+    </delete>
+
+    <select id="findByGroupId" resultType="com.easyink.wecom.domain.WeGroupTag">
+        SELECT
+            `id`,
+            `corp_id`,
+            `group_id`,
+            `name`
+        FROM
+            we_group_tag
+        WHERE
+            corp_id = #{corpId}
+            AND group_id = #{groupId}
+        ORDER BY id DESC
+    </select>
+
+
+    <select id="findPageByGroupId" resultType="com.easyink.wecom.domain.vo.wegrouptag.PageWeGroupTagVO">
+        SELECT
+            `id` AS `tagId`,
+            `corp_id`,
+            `group_id`,
+            `name`
+        FROM
+            we_group_tag
+        WHERE
+            corp_id = #{corpId}
+            AND group_id = #{groupId}
+        ORDER BY id DESC
+    </select>
+
+    <select id="getTagIdByGroupId" resultType="java.lang.Long">
+        SELECT
+            `id`
+        FROM
+            we_group_tag
+        WHERE
+            corp_id = #{corpId}
+            AND group_id IN
+            <foreach collection="groupIdList" index="index" item="item" separator="," open="(" close=")">
+                #{item}
+            </foreach>
+    </select>
+
+</mapper>

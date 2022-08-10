@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.easyink.wecom.mapper.WeDepartmentMapper">
+
+    <resultMap type="WeDepartment" id="WeDepartmentResult">
+        <result property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="parentId" column="parent_id"/>
+        <result property="mainDepartmentName" column="mainDepartmentName"/>
+    </resultMap>
+
+    <sql id="selectWeDepartmentVo">
+        select id, name, parent_id, corp_id
+        from we_department
+    </sql>
+
+    <select id="selectWeDepartmentList" resultMap="WeDepartmentResult">
+        select wd.id, wd.name, wd.parent_id,wd.corp_id, IFNULL ( (SELECT name FROM we_department WHERE we_department.corp_id = #{corpId} and we_department.id = wd.parent_id LIMIT 1) ,'')mainDepartmentName
+        from we_department wd
+        WHERE wd.corp_id = #{corpId}
+    </select>
+
+    <select id="selectWeDepartmentById" resultMap="WeDepartmentResult">
+        <include refid="selectWeDepartmentVo"/>
+        WHERE corp_id= #{corpId} AND id = #{id}
+    </select>
+    <select id="selectNameByUserId" resultType="java.lang.String">
+        SELECT IFNULL(group_concat(name), '')
+        FROM we_department wd
+                 LEFT JOIN we_user wu ON wu.main_department = wd.id
+        WHERE wd.corp_id = #{corpId}
+          AND user_id = #{userId}
+    </select>
+    <!--    查询部门和其下级部门的总人数-->
+    <select id="selectTotalUserCount" resultType="java.lang.Integer">
+        SELECT COUNT(0)
+        FROM we_user
+        <where>
+            corp_id = #{corpId}
+            AND main_department
+            IN
+            <if test="list != null and list.size() >0">
+                <foreach collection="list" item="item" separator="," open="(" close=")">
+                    #{item.id}
+                </foreach>
+            </if>
+            <if test="isActivate != null">
+                AND is_activate = #{isActivate}
+            </if>
+            AND is_activate != ${@com.easyink.common.enums.StaffActivateEnum@DELETE.code}
+        </where>
+    </select>
+    <!--    查询部门和其所有下级部门-->
+    <select id="selectDepartmentAndChild" resultType="java.lang.String">
+        SELECT GROUP_CONCAT(t.p_ids)
+        FROM (SELECT @ids AS p_ids,
+                     (SELECT @ids := GROUP_CONCAT(id)
+              FROM we_department
+              WHERE corp_id = #{corpId} AND FIND_IN_SET(parent_id, @ids)) AS c_ids FROM we_department,
+                      (SELECT @ids := #{id}) b
+        WHERE corp_id = #{corpId}
+          AND @ids IS NOT NULL
+            ) t
+    </select>
+    <select id="selectDepartmentByCorpId" resultType="com.easyink.common.core.domain.wecom.WeDepartment">
+        <include refid="selectWeDepartmentVo"></include>
+        WHERE
+        corp_id = #{corpId}
+    </select>
+    <!--    获取可见的根部门-->
+    <select id="getRootDepartment" resultType="java.lang.Long">
+        SELECT DISTINCT id
+        FROM we_department
+        WHERE parent_id = (SELECT min(parent_id)
+                           FROM we_department
+                           WHERE corp_id = #{corpId}
+            LIMIT 1
+            )
+          and corp_id = #{corpId}
+    </select>
+    <select id="getDepartmentDetails" resultType="com.easyink.wecom.domain.vo.sop.DepartmentVO">
+        SELECT wd.id departmentId, wd.name departmentName, wd.parent_id parentId, IFNULL ( (SELECT name FROM
+        we_department WHERE we_department.corp_id = #{corpId} AND we_department.id = wd.parent_id LIMIT 1)
+        ,'')mainDepartmentName
+        FROM we_department wd
+        WHERE wd.corp_id = #{corpId}
+        <if test="list != null and list.size()>0">
+            AND wd.id IN
+            <foreach collection="list" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+    </select>
+    <select id="selectDepartmentAndChildList" resultType="com.easyink.common.core.domain.wecom.WeDepartment">
+        SELECT T2.level_, T3.*
+        FROM (SELECT @ids as _ids,
+			( SELECT @ids := GROUP_CONCAT(id)
+				FROM we_department
+			   WHERE corp_id = #{corpId} and FIND_IN_SET(parent_id
+                   , @ids)
+                  ) as T1
+                   , @l := @l+1 as level_
+              FROM we_department,
+                  (SELECT @ids := #{id}, @l := 0 ) T4
+              WHERE corp_id = #{corpId} and @ids IS NOT NULL) T2,
+             we_department T3
+        WHERE corp_id = #{corpId}
+          and FIND_IN_SET(T3.id, T2._ids)
+        ORDER BY level_, id
+    </select>
+
+
+    <insert id="insertWeDepartment" parameterType="WeDepartment">
+        insert into we_department
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="id != null">id,</if>
+            <if test="corpId != null">corp_id,</if>
+            <if test="name != null and name != ''">name,</if>
+            <if test="parentId != null">parent_id,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="id != null">#{id},</if>
+            <if test="corpId != null">#{corpId},</if>
+            <if test="name != null and name != ''">#{name},</if>
+            <if test="parentId != null">#{parentId},</if>
+        </trim>
+    </insert>
+
+    <update id="updateWeDepartment" parameterType="WeDepartment">
+        update we_department
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="name != null and name != ''">name = #{name},</if>
+            <if test="parentId != null">parent_id = #{parentId},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+
+    <delete id="deleteAllWeDepartment">
+        delete
+        from we_department
+    </delete>
+
+
+    <insert id="batchInsertWeDepartment">
+        insert into we_department (id, name, parent_id,corp_id)
+        values
+        <foreach collection="weDepartments" item="weDepartment" index="index" separator=",">
+            (#{weDepartment.id},#{weDepartment.name},#{weDepartment.parentId},#{weDepartment.corpId})
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+        name = VALUES(name),
+        parent_id = VALUES(parent_id)
+    </insert>
+
+
+</mapper>

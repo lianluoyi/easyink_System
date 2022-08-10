@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.easyink.wecom.mapper.WeResignedGroupTransferRecordMapper">
+
+    <insert id="batchInsert">
+        INSERT INTO we_resigned_group_transfer_record
+        (record_id, chat_id, status, takeover_time, remark)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+            #{item.recordId},#{item.chatId},#{item.status},IFNULL(#{item.takeoverTime},'0000-00-00
+            00:00:00'),#{item.remark}
+            )
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+        status = VALUES(status),takeover_time = VALUES(takeover_time) ,remark = VALUES(remark)
+    </insert>
+    <!--    历史分配群聊记录-->
+    <select id="listOfGroupRecord"
+            resultType="com.easyink.wecom.domain.vo.transfer.GetResignedTransferGroupDetailVO">
+        SELECT wrgtr.record_id,
+        wrgtr.chat_id,
+        wrgtr.status as allocateResult,
+        wrgtr.takeover_time,
+        wrgtr.remark as failReason,
+        wrtr.corp_id,
+        wrtr.takeover_username as newOwnerName,
+        wrtr.takeover_userid,
+        wrtr.takeover_department_name as mainDepartmentName,
+        wrtr.handover_userid as oldOwner,
+        wrtr.handover_username as oldOwnerName,
+        wrtr.handover_department_name,
+        wrtr.transfer_time as allocateTime,
+        wrtr.dimission_time,
+        wg.group_name as groupName,
+        (SELECT count(id) FROM we_group_member WHERE corp_id = #{corpId} and chat_id=wrgtr.chat_id) as memberNum
+        FROM we_resigned_group_transfer_record wrgtr
+        LEFT JOIN we_resigned_transfer_record wrtr on wrgtr.record_id = wrtr.id
+        LEFT JOIN we_group wg ON wg.corp_id = wrtr.corp_id AND wrgtr.chat_id = wg.chat_id
+        WHERE record_id = #{recordId}
+        <if test="beginTime != null">
+            AND wrtr.dimission_time >= #{beginTime}
+        </if>
+        <if test="endTime != null">
+            AND wrtr.dimission_time &lt;= #{endTime}
+        </if>
+    </select>
+</mapper>

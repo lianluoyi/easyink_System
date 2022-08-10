@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.easyink.wecom.mapper.WeOperationsCenterGroupSopFilterCycleMapper">
+
+    <insert id="saveOrUpdate">
+        INSERT INTO `we_operations_center_group_sop_filter_cycle`
+        (
+            `corp_id`,
+            `sop_id`,
+            `cycle_start`,
+            `cycle_end`
+          )
+        VALUES (
+            #{corpId},
+	        #{sopId},
+	        #{cycleStart},
+	        #{cycleEnd}
+	    )
+        ON DUPLICATE KEY UPDATE
+	    `cycle_start` = values(`cycle_start`),
+	    `cycle_end` = values(`cycle_end`)
+    </insert>
+</mapper>

@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.easyink.wecom.mapper.WeMsgTlpScopeMapper">
+
+    <resultMap type="com.easyink.wecom.domain.WeMsgTlpScope" id="WeMsgTlpScopeResult">
+        <result property="id" column="id"/>
+        <result property="msgTlpId" column="msg_tlp_id"/>
+        <result property="useUserId" column="use_user_id"/>
+    </resultMap>
+
+    <sql id="selectWeMsgTlpScopeVo">
+        select id, msg_tlp_id, use_user_id, del_flag
+        from we_msg_tlp_scope
+    </sql>
+    <select id="selectUserNameListByDefaultMsgId"
+            resultType="com.easyink.wecom.domain.vo.welcomemsg.WeUserUseScopeVO">
+        SELECT wu.user_id, wu.user_name
+        FROM we_msg_tlp_scope wmts
+                 LEFT JOIN we_user wu ON wu.user_id = wmts.use_user_id AND wu.corp_id = #{corpId}
+        WHERE wmts.msg_tlp_id = #{defaultMsgId}
+    </select>
+    <select id="selectWeMsgTlpScopeList" parameterType="WeMsgTlpScope" resultMap="WeMsgTlpScopeResult">
+        <include refid="selectWeMsgTlpScopeVo"/>
+        <where>
+            <if test="msgTlpId != null ">and msg_tlp_id = #{msgTlpId}</if>
+            <if test="useUserId != null ">and use_user_id = #{useUserId}</if>
+        </where>
+    </select>
+
+    <select id="selectWeMsgTlpScopeById" parameterType="Long" resultMap="WeMsgTlpScopeResult">
+        <include refid="selectWeMsgTlpScopeVo"/>
+        where id = #{id}
+    </select>
+
+    <insert id="insertWeMsgTlpScope" parameterType="WeMsgTlpScope">
+        insert into we_msg_tlp_scope
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="id != null">id,</if>
+            <if test="msgTlpId != null">msg_tlp_id,</if>
+            <if test="useUserId != null">use_user_id,</if>
+            <if test="delFlag != null">del_flag,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="id != null">#{id},</if>
+            <if test="msgTlpId != null">#{msgTlpId},</if>
+            <if test="useUserId != null">#{useUserId},</if>
+            <if test="delFlag != null">#{delFlag},</if>
+        </trim>
+    </insert>
+
+    <delete id="deleteWeMsgTlpScopeById" parameterType="Long">
+        delete
+        from we_msg_tlp_scope
+        where id = #{id}
+    </delete>
+
+    <delete id="deleteWeMsgTlpScopeByIds" parameterType="String">
+        delete from we_msg_tlp_scope where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <delete id="deleteNotInUserIds">
+        DELETE
+        FROM we_msg_tlp_scope
+        WHERE msg_tlp_id = #{defaultMsgId} AND use_user_id NOT IN
+        <foreach collection="list" item="item" separator="," open="(" close=")">
+            #{item}
+        </foreach>
+    </delete>
+
+    <insert id="batchInsetWeMsgTlpScope">
+        INSERT INTO
+        we_msg_tlp_scope (msg_tlp_id,use_user_id)
+        VALUES
+        <foreach collection="weMsgTlpScopes" item="item" index="index" separator=",">
+            (
+            #{item.msgTlpId},
+            #{item.useUserId}
+            )
+        </foreach>
+    </insert>
+
+    <update id="batchRemoveWeMsgTlpScopesByMsgTlpIds">
+        update we_msg_tlp_scope set
+        del_flag = 2
+        where msgTlpId in
+        <foreach collection="msgTlpIds" item="msgTlpId" index="index"
+                 separator="," open="(" close=")">
+            #{msgTlpId.msgTlpId}
+        </foreach>
+    </update>
+    <update id="batchSaveOrUpdate">
+        insert ignore into we_msg_tlp_scope (msg_tlp_id, use_user_id)
+        values
+        <foreach collection="list" item="item" index="index" separator=",">
+            (
+            #{item.msgTlpId},#{item.useUserId}
+            )
+        </foreach>
+    </update>
+</mapper>

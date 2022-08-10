@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.easyink.wecom.mapper.WeWordsCategoryMapper">
+
+    <resultMap type="com.easyink.wecom.domain.vo.WeWordsCategoryVO" id="WeWordsCategoryResult">
+        <result property="id" column="id"/>
+        <result property="parentId" column="parent_id"/>
+        <result property="type" column="type"/>
+        <result property="useRange" column="use_range"/>
+        <result property="name" column="name"/>
+        <result property="sort" column="sort"/>
+    </resultMap>
+
+    <sql id="selectWeWordsCategoryVo">
+        select wwc.id,
+               wwc.parent_id,
+               wwc.type,
+               wwc.use_range,
+               wwc.name,
+               wwc.sort
+        from we_words_category wwc
+    </sql>
+
+    <select id="findByWeWordsCategory" parameterType="com.easyink.wecom.domain.WeWordsCategory"
+            resultMap="WeWordsCategoryResult">
+        <include refid="selectWeWordsCategoryVo"/>
+        WHERE wwc.corp_id = #{corpId}
+        <if test="parentId != null ">AND `parent_id` = #{parentId}</if>
+        <if test="type != null ">AND `type` = #{type}</if>
+        <if test="useRange != null ">AND `use_range` = #{useRange}</if>
+        <if test="name != null and name !=''">AND `name` LIKE CONCAT('%',#{name},'%')</if>
+        <if test="sort != null ">AND `sort` = #{sort}</if>
+    </select>
+
+    <insert id="batchInsert">
+        insert IGNORE into we_words_category(
+        `corp_id`
+        ,`parent_id`
+        ,`type`
+        ,`use_range`
+        ,`name`
+        ,`sort`
+        ) values
+        <foreach item="item" index="index" collection="list" separator=",">
+            (#{item.corpId}
+            ,#{item.parentId}
+            ,#{item.type}
+            ,#{item.useRange}
+            ,#{item.name}
+            ,#{item.sort})
+        </foreach>
+    </insert>
+
+    <update id="updateByIdAndCorpId"
+            parameterType="com.easyink.wecom.domain.dto.wordscategory.UpdateWeWordsCategoryDTO">
+        UPDATE we_words_category
+        SET `name` = #{name}
+        <if test="parentId != null">,`parent_id` = #{parentId}</if>
+        WHERE
+        `id` = #{id} AND `corp_id` = #{corpId}
+    </update>
+
+    <update id="batchUpdateChildSortAndName">
+        UPDATE we_words_category
+        SET `sort` = CASE `id`
+        <foreach item="item" index="index" collection="childIdList">
+            WHEN #{item.childId} THEN #{item.sort}
+        </foreach>
+        END,
+        `name` = CASE `id`
+        <foreach item="item" index="index" collection="childIdList">
+            WHEN #{item.childId} THEN #{item.name}
+        </foreach>
+        END
+        WHERE `parent_id` = #{id}
+        AND `corp_id` = #{corpId}
+        AND `id` IN
+        <foreach item="item" collection="childIdList" open="(" separator="," close=")">
+            #{item.childId}
+        </foreach>
+    </update>
+
+    <delete id="deleteByCorpIdIdList">
+        DELETE FROM we_words_category
+        WHERE `corp_id` = #{corpId}
+        AND `id` IN
+        <foreach item="id" collection="idList" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <select id="selectWeWordsCategoryList"
+            parameterType="com.easyink.wecom.domain.dto.wordscategory.FindWeWordsCategoryDTO"
+            resultMap="WeWordsCategoryResult">
+        <include refid="selectWeWordsCategoryVo"/>
+        WHERE wwc.corp_id = #{corpId}
+        <if test="parentId != null ">AND wwc.`parent_id` = #{parentId}</if>
+        <if test="type != null ">AND wwc.`type` = #{type}</if>
+        <if test="useRange != null ">AND wwc.`use_range` = #{useRange}</if>
+        <if test="name != null and name !=''">AND wwc.`name` LIKE CONCAT('%',#{name},'%')</if>
+        ORDER BY wwc.parent_id ASC, wwc.sort DESC
+    </select>
+
+    <select id="existsSameNameWordsCategory" resultType="com.easyink.wecom.domain.vo.FindExistWordsCategoryNameList">
+        select wwc.id, wwc.name
+        from we_words_category wwc
+        WHERE wwc.corp_id = #{corpId}
+        AND wwc.`type` = #{type}
+        AND wwc.`use_range` = #{useRange}
+        AND wwc.`name` IN
+        <foreach item="name" collection="nameList" open="(" separator="," close=")">
+            #{name}
+        </foreach>
+    </select>
+
+    <update id="changeSort">
+        UPDATE we_words_category
+        SET `sort` = CASE `id`
+        <foreach item="item" collection="list" >
+            WHEN  #{item.id} THEN #{item.sort}
+        </foreach>
+        END
+        WHERE corp_id = #{corpId}
+        AND id IN
+        <foreach item="item" collection="list" open="(" separator="," close=")">
+            #{item.id}
+        </foreach>
+    </update>
+</mapper>
