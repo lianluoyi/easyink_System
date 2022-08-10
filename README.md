@@ -1,12 +1,12 @@
-# **easyWeCom** 
+# **easyink** 
 
-[![easyWeCom](https://wecomsaas-1253559996.cos.ap-guangzhou.myqcloud.com/2021/11/04/easyWeCom.png)]()
+[![easyink](https://easywecom-1253559996.cos.ap-guangzhou.myqcloud.com/easyink-logo.png)]()
 
-> 访问 [「easyWecom官网」](http://www.lianluoyi.cn/)
+> 访问 [「easyink官网」](http://www.lianluoyi.cn/)
 
 ## :rocket: 做最简单易用的系统
 
-`easyWeCom` 是基于企业微信生态的一站式私域流量运营平台。包含**客户引流、客户互动、托管后台、会话存档审计**这几个主要功能模块。
+`easyink` 是基于企业微信生态的一站式私域流量运营平台。包含**客户引流、客户互动、托管后台、会话存档审计**这几个主要功能模块。
 
 为企微用户提供更便捷的企微后台管理功能，提供更全面、更规范的运营服务能力，深化企业与私域客户的互动，提高客户转化率。
 
@@ -26,9 +26,9 @@
 
 | 项目名              | 项目说明                                                | 项目地址 |
 | ------------------- | ------------------------------------------------------- | -------- |
-| **easyWeCom_System(当前项目)**    | **easyWeCom后端服务**                                       | **https://github.com/easywecom/easyWeCom_System** |
-| easyWeCom_Dashboard | easyWeCom前端服务，主要负责后台UI界面展示               | https://github.com/easywecom/easyWeCom_Dashboard |
-| easyWeCom_Sidebar   | easyWeCom前端服务，主要负责企微客户端中的侧边栏界面展示 | https://github.com/easywecom/easyWeCom_Sidebar |
+| **easyink_System(当前项目)**    | **easyWeCom后端服务**                                       | **https://github.com/easyink/easyink_System** |
+| easyink_Dashboard | easyink前端服务，主要负责后台UI界面展示               | https://github.com/easyink/easyink_Dashboard |
+| easyink_Sidebar   | easyink前端服务，主要负责企微客户端中的侧边栏界面展示 | https://github.com/easyink/easyink_Sidebar |
 
 
 ## :star2: 功能特性
@@ -44,19 +44,19 @@
 
 
 
-> 了解有关 easyWeCom 功能的更多信息，请访问  [「自建应用操作手册」](https://www.yuque.com/docs/share/9217b462-a4c2-4d4a-97cb-48eebf800784?#hsf4v)、[「三方应用操作手册」](https://www.yuque.com/docs/share/591b5dff-f705-413e-b167-e8ef72d519bf?#O35E2)
+> 了解有关 easyink 功能的更多信息，请访问  [「自建应用操作手册」](https://www.yuque.com/docs/share/9217b462-a4c2-4d4a-97cb-48eebf800784?#hsf4v)、[「三方应用操作手册」](https://www.yuque.com/docs/share/591b5dff-f705-413e-b167-e8ef72d519bf?#O35E2)
 
 ## :house: 项目结构
 
 - **后端**
 
 ```
-com.easywecom     
-├── easywecom-common      // 全局配置、工具模块
-├── easywecom-framework   // 系统框架模块
-├── easywecom-quartz      // 定时任务模块
-├── easywecom-admin       // 后台管理接口
-├── easywecom-wecom       //  企微业务模块
+com.easyink     
+├── easyink-common      // 全局配置、工具模块
+├── easyink-framework   // 系统框架模块
+├── easyink-quartz      // 定时任务模块
+├── easyink-admin       // 后台管理接口
+├── easyink-wecom       //  企微业务模块
 │       └── client        // 请求客户端
 │       └── domain        // 实体类 
 │       └── fatory        // 工厂类
@@ -69,7 +69,7 @@ com.easywecom
 
 - **前端**
 
-详细项目结构见 [**easywecom-dashboard**](https://github.com/easywecom/easyWeCom_Sidebar) 和 [**easywecom-sidebar**](https://github.com/easywecom/easyWeCom_Sidebar) 的readme文件
+详细项目结构见 [**easyink-dashboard**](https://github.com/easyink/easyink_Sidebar) 和 [**easyink-sidebar**](https://github.com/easyink/easyink_Sidebar) 的readme文件
 
 
 ## :bulb: 系统依赖
@@ -128,7 +128,7 @@ com.easywecom
 从 github.net 克隆：
 
 ```
-git clone https://github.com/easywecom/easyWeCom_System.git
+git clone https://github.com/easyink/easyink_System.git
 ```
 
 > 服务器默认运行在8090端口，访问localhost:8090查看。
@@ -136,8 +136,8 @@ git clone https://github.com/easywecom/easyWeCom_System.git
 初始化和拉取 UI 模块：
 
 ```
-git clone https://github.com/easywecom/easyWeCom_Dashboard.git
-git clone https://github.com/easywecom/easyWeCom_Sidebar.git
+git clone https://github.com/easyink/easyink_Dashboard.git
+git clone https://github.com/easyink/easyink_Sidebar.git
 ```
 
 > 您需要使用 `Nginx` 来部署 UI 模块或使用开发软件来启动它。
@@ -146,7 +146,7 @@ git clone https://github.com/easywecom/easyWeCom_Sidebar.git
 
 除了本地服务器，我们还提供了快速部署的方法。
 
-请查看: [How to deploy easyWeCom on K8s cluster](https://gitee.com/lianluoyi/easywecom-install/wikis/%E7%94%A8%E6%88%B7%E6%8C%87%E5%8D%97)
+请查看: [How to deploy easyink on K8s cluster](https://gitee.com/lianluoyi/easyink-install/wikis/%E7%94%A8%E6%88%B7%E6%8C%87%E5%8D%97)
 
 
 
