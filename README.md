@@ -12,11 +12,15 @@
 
 ## :taxi: 快速体验
 
-- [体验入口](http://www.easywecom.net)
-
 - 建议使用谷歌浏览器访问
 
+- [多租户体验入口](http://www.easyink.net)
+
 - 该环境采用第三方应用+代开发应用模式，可借助[第三方应用操作手册](https://www.yuque.com/docs/share/591b5dff-f705-413e-b167-e8ef72d519bf?#O35E2)辅助体验
+
+- [单租户体验入口](http://www.easyink.net)
+
+- 该环境采用自建应用模式，可借助[自建应用操作手册](https://www.yuque.com/docs/share/9217b462-a4c2-4d4a-97cb-48eebf800784?#hsf4v)辅助体验
 
 ## :factory: 关联项目
 
