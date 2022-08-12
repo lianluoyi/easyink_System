@@ -26,7 +26,7 @@
 
 | 项目名              | 项目说明                                                | 项目地址 |
 | ------------------- | ------------------------------------------------------- | -------- |
-| **easyink_System(当前项目)**    | **easyWeCom后端服务**                                       | **https://github.com/lianluoyi/easyink_System** |
+| **easyink_System(当前项目)**    | **EasyInk后端服务**                                       | **https://github.com/lianluoyi/easyink_System** |
 | easyink_Dashboard | easyink前端服务，主要负责后台UI界面展示               | https://github.com/lianluoyi/easyink_Dashboard |
 | easyink_Sidebar   | easyink前端服务，主要负责企微客户端中的侧边栏界面展示 | https://github.com/lianluoyi/easyink_Sidebar |
 
@@ -69,7 +69,7 @@ com.easyink
 
 - **前端**
 
-详细项目结构见 [**easyink-dashboard**](https://github.com/easyink/easyink_Sidebar) 和 [**easyink-sidebar**](https://github.com/easyink/easyink_Sidebar) 的readme文件
+详细项目结构见 [**easyink-dashboard**](https://github.com/lianluoyi/easyink_Dashboard) 和 [**easyink-sidebar**](https://github.com/lianluoyi/easyink_Sidebar) 的readme文件
 
 
 ## :bulb: 系统依赖
@@ -128,7 +128,7 @@ com.easyink
 从 github.net 克隆：
 
 ```
-git clone https://github.com/easyink/easyink_System.git
+git clone https://github.com/lianluoyi/easyink_System.git
 ```
 
 > 服务器默认运行在8090端口，访问localhost:8090查看。
@@ -169,11 +169,11 @@ git clone https://github.com/lianluoyi/easyink_Sidebar.git
 
 ## :pencil2: 贡献指南
 
-请参阅[贡献指南](https://github.com/easywecom/easyWeCom_System/blob/master/.github/CONTRIBUTING.md)
+请参阅[贡献指南](https://github.com/lianluoyi/easyink_System/blob/master/.github/CONTRIBUTING.md)
 
 ##  :triangular_ruler:行为规范
 
-请参阅[行为规范](https://github.com/easywecom/easyWeCom_System/blob/master/.github/CODE_OF_CONDUCT.md)。
+请参阅[行为规范](https://github.com/lianluoyi/easyink_System/blob/master/.github/CODE_OF_CONDUCT.md)。
 
 ## :pencil: 版权和许可
 
