@@ -136,8 +136,8 @@ git clone https://github.com/easyink/easyink_System.git
 初始化和拉取 UI 模块：
 
 ```
-git clone https://github.com/easyink/easyink_Dashboard.git
-git clone https://github.com/easyink/easyink_Sidebar.git
+git clone https://github.com/lianluoyi/easyink_Dashboard.git
+git clone https://github.com/lianluoyi/easyink_Sidebar.git
 ```
 
 > 您需要使用 `Nginx` 来部署 UI 模块或使用开发软件来启动它。
