@@ -1,6 +1,6 @@
 # **easyink** 
 
-[![easyink](https://easywecom-1253559996.cos.ap-guangzhou.myqcloud.com/easyink-logo.png)]()
+[![easyink](https://wecomsaas-1253559996.cos.ap-guangzhou.myqcloud.com/2022/08/12/easyink%20logo.png)]()
 
 > 访问 [「easyink官网」](http://www.lianluoyi.cn/)
 
@@ -26,9 +26,9 @@
 
 | 项目名              | 项目说明                                                | 项目地址 |
 | ------------------- | ------------------------------------------------------- | -------- |
-| **easyink_System(当前项目)**    | **easyWeCom后端服务**                                       | **https://github.com/easyink/easyink_System** |
-| easyink_Dashboard | easyink前端服务，主要负责后台UI界面展示               | https://github.com/easyink/easyink_Dashboard |
-| easyink_Sidebar   | easyink前端服务，主要负责企微客户端中的侧边栏界面展示 | https://github.com/easyink/easyink_Sidebar |
+| **easyink_System(当前项目)**    | **easyWeCom后端服务**                                       | **https://github.com/lianluoyi/easyink_System** |
+| easyink_Dashboard | easyink前端服务，主要负责后台UI界面展示               | https://github.com/lianluoyi/easyink_Dashboard |
+| easyink_Sidebar   | easyink前端服务，主要负责企微客户端中的侧边栏界面展示 | https://github.com/lianluoyi/easyink_Sidebar |
 
 
 ## :star2: 功能特性
