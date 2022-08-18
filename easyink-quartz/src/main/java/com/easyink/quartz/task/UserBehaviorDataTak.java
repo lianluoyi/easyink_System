@@ -62,8 +62,12 @@ public class UserBehaviorDataTak {
         log.info("定时任务开始执行------>");
         List<WeCorpAccount> weCorpAccountList = weCorpAccountService.listOfAuthCorpInternalWeCorpAccount();
         weCorpAccountList.forEach(weCorpAccount -> {
-            if (weCorpAccount != null && StringUtils.isNotBlank(weCorpAccount.getCorpId())) {
-                getUserBehaviorDataByCorpId(weCorpAccount.getCorpId());
+            try {
+                if (weCorpAccount != null && StringUtils.isNotBlank(weCorpAccount.getCorpId())) {
+                    getUserBehaviorDataByCorpId(weCorpAccount.getCorpId());
+                }
+            } catch (Exception e) {
+                log.error("[获取用户数据]统计客户任务异常,corpid:{},e:{}", weCorpAccount.getCorpId(), ExceptionUtils.getStackTrace(e));
             }
         });
         log.info("定时任务执行完成------>");
@@ -77,49 +81,47 @@ public class UserBehaviorDataTak {
         }
         // 获取根员工
         List<WeUser> visibleUser = weUserService.getVisibleUser(corpId);
-        if(CollectionUtils.isEmpty(visibleUser)) {
-            log.info("[UserBehaviorDataTak] 该企业不存在可见的部门和员工,停止执行,corpId:{}",corpId);
+        if (CollectionUtils.isEmpty(visibleUser)) {
+            log.info("[UserBehaviorDataTak] 该企业不存在可见的部门和员工,停止执行,corpId:{}", corpId);
             return;
         }
         //删除存在的数据
-        if (CollUtil.isNotEmpty(visibleUser)) {
-            Long startTime = MyDateUtil.strToDate(-1, 0);
-            Long endTime = MyDateUtil.strToDate(-1, 1);
-            LambdaQueryWrapper<WeUserBehaviorData> wrapper1 = new LambdaQueryWrapper<>();
-            wrapper1.eq(WeUserBehaviorData::getCorpId, corpId);
-            wrapper1.between(WeUserBehaviorData::getStatTime, DateUtil.date(startTime * 1000), DateUtil.date(endTime * 1000));
-            int count = weUserBehaviorDataService.count(wrapper1);
-            if (count > 0) {
-                weUserBehaviorDataService.remove(wrapper1);
-            }
-
-            if (CollUtil.isNotEmpty(visibleUser)) {
-                List<WeUserBehaviorData> dataList = new ArrayList<>();
-                UserBehaviorDataQuery query = new UserBehaviorDataQuery();
-                //前一天的数据
-                query.setStart_time(startTime);
-                query.setEnd_time(endTime);
-                visibleUser.forEach(weUser -> {
-                    List<String> idList = new ArrayList<>();
-                    idList.add(weUser.getUserId());
-                    query.setUserid(idList);
-                    try {
-                        //根据员工id获取员工的数据概览
-                        UserBehaviorDataDTO userBehaviorData = weCustomerClient.getUserBehaviorData(query, corpId);
-                        List<UserBehaviorDataDTO.BehaviorData> behaviorDataList = userBehaviorData.getBehaviorData();
-                        for (UserBehaviorDataDTO.BehaviorData data : behaviorDataList) {
-                            WeUserBehaviorData weUserBehaviorData = new WeUserBehaviorData();
-                            BeanUtils.copyPropertiesignoreOther(data, weUserBehaviorData);
-                            weUserBehaviorData.setUserId(weUser.getUserId());
-                            weUserBehaviorData.setCorpId(corpId);
-                            dataList.add(weUserBehaviorData);
-                        }
-                    } catch (ForestRuntimeException e) {
-                        log.error("员工数据拉取失败: corpId:{},userId:【{}】,ex:【{}】", corpId, weUser.getUserId(), ExceptionUtils.getStackTrace(e));
-                    }
-                });
-                weUserBehaviorDataService.saveBatch(dataList);
-            }
+        Long startTime = MyDateUtil.strToDate(-1, 0);
+        Long endTime = MyDateUtil.strToDate(-1, 1);
+        LambdaQueryWrapper<WeUserBehaviorData> wrapper1 = new LambdaQueryWrapper<>();
+        wrapper1.eq(WeUserBehaviorData::getCorpId, corpId);
+        wrapper1.between(WeUserBehaviorData::getStatTime, DateUtil.date(startTime * 1000), DateUtil.date(endTime * 1000));
+        int count = weUserBehaviorDataService.count(wrapper1);
+        if (count > 0) {
+            weUserBehaviorDataService.remove(wrapper1);
         }
+
+        List<WeUserBehaviorData> dataList = new ArrayList<>();
+        UserBehaviorDataQuery query = new UserBehaviorDataQuery();
+        //前一天的数据
+        query.setStart_time(startTime);
+        query.setEnd_time(endTime);
+        visibleUser.forEach(weUser -> {
+            List<String> idList = new ArrayList<>();
+            idList.add(weUser.getUserId());
+            query.setUserid(idList);
+            try {
+                //根据员工id获取员工的数据概览
+                UserBehaviorDataDTO userBehaviorData = weCustomerClient.getUserBehaviorData(query, corpId);
+                List<UserBehaviorDataDTO.BehaviorData> behaviorDataList = userBehaviorData.getBehaviorData();
+                for (UserBehaviorDataDTO.BehaviorData data : behaviorDataList) {
+                    WeUserBehaviorData weUserBehaviorData = new WeUserBehaviorData();
+                    BeanUtils.copyPropertiesignoreOther(data, weUserBehaviorData);
+                    weUserBehaviorData.setUserId(weUser.getUserId());
+                    weUserBehaviorData.setCorpId(corpId);
+                    dataList.add(weUserBehaviorData);
+                }
+            } catch (ForestRuntimeException e) {
+                log.error("员工数据拉取失败: corpId:{},userId:【{}】,ex:【{}】", corpId, weUser.getUserId(), ExceptionUtils.getStackTrace(e));
+            }
+        });
+        weUserBehaviorDataService.saveBatch(dataList);
+
+
     }
 }
