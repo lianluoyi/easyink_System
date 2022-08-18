@@ -271,10 +271,10 @@ INSERT INTO `sys_job`
 VALUES (6, '定时消息群发', 'SYSTEM', 'ryTask.messageTask', '0 */2 * * * ?', '1', '1', '0', 'admin', '2021-02-10 10:07:22',
         'admin', '2021-07-27 09:09:55', '');
 INSERT INTO `sys_job`
-VALUES (7, '联系客户统计数据拉取', 'SYSTEM', 'UserBehaviorDataTak.getUserBehaviorData()', '0 0 2 * * ?', '1', '1', '0', 'admin',
+VALUES (7, '联系客户统计数据拉取', 'SYSTEM', 'UserBehaviorDataTak.getUserBehaviorData()', '0 0 4 * * ?', '1', '1', '0', 'admin',
         '2021-02-25 16:47:59', 'admin', '2021-02-25 23:45:03', '');
 INSERT INTO `sys_job`
-VALUES (8, '群聊数据统计数据拉取', 'SYSTEM', 'GroupChatStatisticTask.getGroupChatData()', '0 0 2 * * ? ', '1', '1', '0', 'admin',
+VALUES (8, '群聊数据统计数据拉取', 'SYSTEM', 'GroupChatStatisticTask.getGroupChatData()', '0 0 5 * * ? ', '1', '1', '0', 'admin',
         '2021-02-25 16:49:44', '', '2021-02-25 23:45:05', '');
 INSERT INTO `sys_job`
 VALUES (9, '首页数据统计', 'SYSTEM', 'PageHomeDataTask.getPageHomeDataData()', '0 0 3 * * ? ', '1', '1', '0', 'admin',

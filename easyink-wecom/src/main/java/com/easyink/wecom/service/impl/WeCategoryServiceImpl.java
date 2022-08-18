@@ -194,19 +194,13 @@ public class WeCategoryServiceImpl extends ServiceImpl<WeCategoryMapper, WeCateg
         if(ruoYiConfig.isThirdServer()){
             //海报素材
             if (WeCategoryMediaTypeEnum.IMAGE.equals(typeEnum)) {
-                initList.add(initWeMaterial(categoryId, "联络易宣传海报.jpg", "https://wecomsaas-1253559996.cos.ap-guangzhou.myqcloud.com/2021/10/27/联络易宣传海报.jpg", "582656", createBy));
-                initList.add(initWeMaterial(categoryId, "easyWeCom宣传海报.jpg", "https://wecomsaas-1253559996.cos.ap-guangzhou.myqcloud.com/2021/10/27/easyWeCom宣传海报.jpg", "369664", createBy));
+                initList.add(initWeMaterial(categoryId, "联络易宣传海报.jpg", "https://wecomsaas-1253559996.cos.ap-guangzhou.myqcloud.com/2022/08/15/素材库-easyink联络易宣传海报示例.jpg", "582656", createBy));
+                initList.add(initWeMaterial(categoryId, "easyink企业宣传海报.jpg", "https://wecomsaas-1253559996.cos.ap-guangzhou.myqcloud.com/2022/08/15/素材库-easyink企业宣传海报示例.jpg", "369664", createBy));
             }
             //视频素材
             if (WeCategoryMediaTypeEnum.VIDEO.equals(typeEnum)) {
                 initList.add(initWeMaterial(categoryId, "中秋福利.mp4", "https://wecomsaas-1253559996.cos.ap-guangzhou.myqcloud.com/2021/10/27/中秋福利.mp4", "8713216", createBy));
                 initList.add(initWeMaterial(categoryId, "被研发抓住做测试小白是什么体验.mp4", "https://wecomsaas-1253559996.cos.ap-guangzhou.myqcloud.com/2021/10/27/被研发抓住做测试小白是什么体验.mp4", "9373696", createBy));
-            }
-            //文件素材
-            if (WeCategoryMediaTypeEnum.FILE.equals(typeEnum)) {
-                initList.add(initWeMaterial(categoryId, "easyWeCom注册使用服务表.doc", "https://wecomsaas-1253559996.cos.ap-guangzhou.myqcloud.com/2021/10/27/easyWeCom注册使用服务表.doc", "58368", createBy));
-                initList.add(initWeMaterial(categoryId, "easyWeCom功能列表.xlsx", "https://wecomsaas-1253559996.cos.ap-guangzhou.myqcloud.com/2021/10/27/easyWeCom功能列表.xlsx", "14336", createBy));
-                initList.add(initWeMaterial(categoryId, "easywecom产品介绍.pdf", "https://wecomsaas-1253559996.cos.ap-guangzhou.myqcloud.com/2021/10/27/easywecom产品介绍.pdf", "2799616", createBy));
             }
         }
         return initList;
