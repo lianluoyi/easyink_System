@@ -46,6 +46,26 @@
 
 > 了解有关 easyink 功能的更多信息，请访问  [「自建应用操作手册」](https://www.yuque.com/docs/share/9217b462-a4c2-4d4a-97cb-48eebf800784?#hsf4v)、[「三方应用操作手册」](https://www.yuque.com/docs/share/591b5dff-f705-413e-b167-e8ef72d519bf?#O35E2)
 
+## :book: 功能清单
+
+[![easyink](https://wecomsaas-1253559996.cos.ap-guangzhou.myqcloud.com/2022/08/22/功能清单.jpeg)]()
+
+## :page_with_curl: 项目演示图
+
+[![easyink](https://wecomsaas-1253559996.cos.ap-guangzhou.myqcloud.com/2022/08/22/首页统计.jpeg)]()
+
+[![easyink](https://wecomsaas-1253559996.cos.ap-guangzhou.myqcloud.com/2022/08/22/运营中心-客户群活码.jpeg)]()
+
+[![easyink](https://wecomsaas-1253559996.cos.ap-guangzhou.myqcloud.com/2022/08/22/客户中心.jpeg)]()
+
+[![easyink](https://wecomsaas-1253559996.cos.ap-guangzhou.myqcloud.com/2022/08/22/应用管理.jpeg)]()
+
+[![easyink](https://wecomsaas-1253559996.cos.ap-guangzhou.myqcloud.com/2022/08/22/企业风控.jpeg)]()
+
+[![easyink](https://wecomsaas-1253559996.cos.ap-guangzhou.myqcloud.com/2022/08/22/系统设置.jpeg)]()
+
+[![easyink](https://wecomsaas-1253559996.cos.ap-guangzhou.myqcloud.com/2022/08/22/系统监控.jpeg)]()
+
 ## :house: 项目结构
 
 - **后端**
