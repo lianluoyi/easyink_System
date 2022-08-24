@@ -161,6 +161,8 @@ git clone https://github.com/lianluoyi/easyink_Sidebar.git
 ```
 
 > 您需要使用 `Nginx` 来部署 UI 模块或使用开发软件来启动它。
+> 项目启动命令见对应项目的readme文档，
+`Nginx`部署步骤见 -> [前端部署文档](https://gitee.com/lianluoyi/easyink_Dashboard/wikis/%E5%89%8D%E7%AB%AF%E9%83%A8%E7%BD%B2%E6%96%87%E6%A1%A3?sort_id=5953163)
 
 ### 2. 在 K8s 上快速部署
 
