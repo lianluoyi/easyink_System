@@ -66,6 +66,9 @@
 
 [![easyink](https://wecomsaas-1253559996.cos.ap-guangzhou.myqcloud.com/2022/08/22/系统监控.jpeg)]()
 
+## :factory: 业务架构
+[![easyink](https://wecomsaas-1253559996.cos.ap-guangzhou.myqcloud.com/2022/08/26/%E4%B8%9A%E5%8A%A1%E6%9E%B6%E6%9E%84%E5%9B%BE.png)]()
+
 ## :house: 项目结构
 
 - **后端**
