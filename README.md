@@ -1,8 +1,20 @@
-# **easyink** 
+<p align="center">
+    <img src="https://wecomsaas-1253559996.cos.ap-guangzhou.myqcloud.com/2022/08/12/easyink%20logo.png" />
+</p>
+<p align="center">
+  <img src="https://img.shields.io/badge/edition-V1.18.2-brightgreen" />
+  <img src="https://img.shields.io/badge/license-GPL%203.0-yellow" />
+  <img src="https://img.shields.io/badge/mysql-5.7%2B-orange" />
+  <img src="https://img.shields.io/badge/jdk-1.8.301(64bit)%2B-red" />
+</p>
+<h4 align="center">
+ <a href="http://www.lianluoyi.cn" target="_blank">官网</a> |
+ <a href="http://www.easyink.net" target="_blank">体验</a> |
+ <a href="https://gitee.com/lianluoyi/easyink-install/wikis/%E7%94%A8%E6%88%B7%E6%8C%87%E5%8D%97" target="_blank">安装</a> 
+</h4>
 
-[![easyink](https://wecomsaas-1253559996.cos.ap-guangzhou.myqcloud.com/2022/08/12/easyink%20logo.png)]()
-
-> 访问 [「easyink官网」](http://www.lianluoyi.cn/)
+<h4 align="center">如果我们的项目对您有帮助的话，帮忙动动金手指在右上角点个🌟star，您的支持是我们开源团队的最大动力💪。</p>
+<hr />
 
 ## :rocket: 做最简单易用的系统
 
