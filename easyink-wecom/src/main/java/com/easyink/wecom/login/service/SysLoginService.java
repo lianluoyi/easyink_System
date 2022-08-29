@@ -32,6 +32,7 @@ import com.easyink.wecom.domain.dto.WeUserInfoDTO;
 import com.easyink.wecom.mapper.WeDepartmentMapper;
 import com.easyink.wecom.service.*;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -211,7 +212,10 @@ public class SysLoginService {
         } else {
             weUser = this.thirdGetWeUser(userId, corpId, configuredInternalApp, weCorpAccount);
         }
-
+        //如果官方接口获取的name为空,则从数据库中查找name插入
+        if(StringUtils.isBlank(weUser.getName())){
+            weUser.setName(weUserService.getUser(corpId, userId).getUserName());
+        }
         // 3. 构造 登录用户实体
         LoginUser loginUser = new LoginUser(weUser, permissionService.getMenuPermission(weUser));
         if (weCorpAccount != null) {

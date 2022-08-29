@@ -139,7 +139,7 @@ public class GetByUserResp extends WePageBaseResp<GetByUserResp.ExternalContactD
                     continue;
                 }
                 // 如果之前就存在该客户关系 ,则把流失/删除状态重置为正常
-                rel.setStatus(CustomerStatusEnum.isDel(Integer.valueOf(status)) ? CustomerStatusEnum.NORMAL.getCode().toString() : status);
+//                rel.setStatus(CustomerStatusEnum.isDel(Integer.valueOf(status)) ? CustomerStatusEnum.NORMAL.getCode().toString() : status);
             }
         }
     }

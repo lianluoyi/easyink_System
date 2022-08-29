@@ -277,7 +277,7 @@ INSERT INTO `sys_job`
 VALUES (8, '群聊数据统计数据拉取', 'SYSTEM', 'GroupChatStatisticTask.getGroupChatData()', '0 0 5 * * ? ', '1', '1', '0', 'admin',
         '2021-02-25 16:49:44', '', '2021-02-25 23:45:05', '');
 INSERT INTO `sys_job`
-VALUES (9, '首页数据统计', 'SYSTEM', 'PageHomeDataTask.getPageHomeDataData()', '0 0 3 * * ? ', '1', '1', '0', 'admin',
+VALUES (9, '首页数据统计', 'SYSTEM', 'PageHomeDataTask.getPageHomeDataData()', '0 0 7 * * ? ', '1', '1', '0', 'admin',
         '2021-02-25 16:52:23', '', '2021-02-25 23:45:07', '');
 INSERT INTO `sys_job`
 VALUES (10, '删除过期素材', 'SYSTEM', 'RemoveMaterialTask.removeExpireMaterial()', '0 0 4 * * ? ', '1', '1', '0', 'admin',

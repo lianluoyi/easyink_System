@@ -880,7 +880,9 @@ public class WeConstans {
      */
     public static final int AUTO_TAG_ADD_DEPARTMENT_TYPE = 1;
 
-
-
+    /**
+     * userId前缀
+     */
+    public static final String USER_ID_PREFIX = "woI_";
 
 }

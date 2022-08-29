@@ -54,6 +54,8 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import static com.easyink.common.constant.WeConstans.USER_ID_PREFIX;
+
 /**
  * 通讯录相关客户Service业务层处理
  *
@@ -80,6 +82,7 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
     private final WeAgentClient weAgentClient;
     @Autowired
     private WeAuthCorpInfoService weAuthCorpInfoService;
+
 
 
     @Lazy
@@ -335,6 +338,10 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
             if (hasLeft && dimissionTime != null) {
                 weUser.setDimissionTime(null);
             }
+            // 这里企微返回的weUser的name如果为userId,则不执行更新,设置为null
+            if (StringUtils.isNotBlank(weUser.getName()) && weUser.getName().startsWith(USER_ID_PREFIX)) {
+                weUser.setName(null);
+            }
             return weUserMapper.updateWeUser(weUser);
         }
         return weUserMapper.insertWeUser(weUser);
@@ -366,6 +373,9 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
         if (weUserInfo == null) {
             return weUserMapper.insertWeUser(weUser);
         } else {
+            if (StringUtils.isNotBlank(weUser.getName()) && weUser.getName().startsWith(USER_ID_PREFIX)) {
+                weUser.setName(null);
+            }
             return weUserMapper.updateWeUser(weUser);
         }
     }
