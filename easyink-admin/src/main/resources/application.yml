@@ -52,6 +52,7 @@ ruoyi:
     encodingAesKey: ${SELF_BUILD_ENCODING_AES_KEY:1K3K7DD74kbNNu58De5R7xoi2CyYxBdyxv8UHibVLoZ}
     #匿名访问的URL
   anonUrl:
+      - /wecom/updateid
       - /login
       - /captchaImage
       - /findWxQrLoginInfo
@@ -374,14 +375,10 @@ wecome:
           - /externalcontact/groupchat/del_join_way
           - /externalcontact/unionid_to_external_userid
   needContactTokenUrl:
-          - /user/get
           - /user/create
           - /user/update
           - /user/delete
           - /user/batchdelete
-          - /user/list
-          - /user/simplelist
-          - /department/list
           - /department/create
           - /department/update
           - /department/delete
@@ -406,6 +403,7 @@ wecome:
   needErrcodeUrl: # 如果有错误码需要单独业务处理,不抛出异常的接口
     - /externalcontact/get_group_msg_result
     - /externalcontact/del_corp_tag
+
   # JS SDK 身份校验url
   authorizeUrl: ${WE_COM_AUTHORIZE_URL:https://open.weixin.qq.com/connect/oauth2/authorize}
 

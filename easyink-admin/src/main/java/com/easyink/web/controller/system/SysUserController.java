@@ -38,6 +38,8 @@ import java.net.URLDecoder;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static com.easyink.common.constant.WeConstans.USER_ID_PREFIX;
+
 /**
  * 用户信息
  *
@@ -244,6 +246,9 @@ public class SysUserController extends BaseController {
             // 扫码用户更换主题颜色
             WeUser weUser = loginUser.getWeUser();
             weUser.setUiColor(color);
+            if (org.apache.commons.lang3.StringUtils.isNotBlank(weUser.getName()) && weUser.getName().startsWith(USER_ID_PREFIX)) {
+                weUser.setName(null);
+            }
             weUserMapper.updateWeUser(weUser);
         }
         // 刷新缓存

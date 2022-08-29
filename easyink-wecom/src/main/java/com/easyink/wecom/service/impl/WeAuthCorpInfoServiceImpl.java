@@ -55,10 +55,7 @@ public class WeAuthCorpInfoServiceImpl extends ServiceImpl<WeAuthCorpInfoMapper,
         }
 
         LambdaQueryWrapper<WeAuthCorpInfo> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(WeAuthCorpInfo::getCorpId, corpId)
-                .eq(WeAuthCorpInfo::getSuiteId, suiteId)
-                .eq(WeAuthCorpInfo::getCancelAuth, false)
-                .last(GenConstants.LIMIT_1);
+        queryWrapper.eq(WeAuthCorpInfo::getCorpId, corpId).eq(WeAuthCorpInfo::getSuiteId, suiteId).eq(WeAuthCorpInfo::getCancelAuth, false).last(GenConstants.LIMIT_1);
         int authCount = this.count(queryWrapper);
         return authCount > 0;
     }
@@ -76,9 +73,7 @@ public class WeAuthCorpInfoServiceImpl extends ServiceImpl<WeAuthCorpInfoMapper,
         List<WeAuthCorpInfo> authCorpInfos = this.list(queryWrapper);
         //添加扩展实体
         for (WeAuthCorpInfo authCorpInfo : authCorpInfos) {
-            WeAuthCorpInfoExtend corpInfoExtend = weAuthCorpInfoExtendService.getOne(new LambdaQueryWrapper<WeAuthCorpInfoExtend>()
-                    .eq(WeAuthCorpInfoExtend::getCorpId, authCorpInfo.getCorpId())
-                    .eq(WeAuthCorpInfoExtend::getSuiteId, suiteId));
+            WeAuthCorpInfoExtend corpInfoExtend = weAuthCorpInfoExtendService.getOne(new LambdaQueryWrapper<WeAuthCorpInfoExtend>().eq(WeAuthCorpInfoExtend::getCorpId, authCorpInfo.getCorpId()).eq(WeAuthCorpInfoExtend::getSuiteId, suiteId));
             authCorpInfo.setCorpInfoExtend(corpInfoExtend);
         }
         return authCorpInfos;
@@ -106,9 +101,7 @@ public class WeAuthCorpInfoServiceImpl extends ServiceImpl<WeAuthCorpInfoMapper,
             return new WeAuthCorpInfo();
         }
         //添加扩展实体
-        WeAuthCorpInfoExtend corpInfoExtend = weAuthCorpInfoExtendService.getOne(new LambdaQueryWrapper<WeAuthCorpInfoExtend>()
-                .eq(WeAuthCorpInfoExtend::getCorpId, corpId)
-                .eq(WeAuthCorpInfoExtend::getSuiteId, suiteId));
+        WeAuthCorpInfoExtend corpInfoExtend = weAuthCorpInfoExtendService.getOne(new LambdaQueryWrapper<WeAuthCorpInfoExtend>().eq(WeAuthCorpInfoExtend::getCorpId, corpId).eq(WeAuthCorpInfoExtend::getSuiteId, suiteId));
         authCorpInfo.setCorpInfoExtend(corpInfoExtend);
         return authCorpInfo;
     }
@@ -125,17 +118,12 @@ public class WeAuthCorpInfoServiceImpl extends ServiceImpl<WeAuthCorpInfoMapper,
         if (StringUtils.isAnyBlank(corpId, suiteId)) {
             return new WeAuthCorpInfo();
         }
-        WeAuthCorpInfo authCorpInfo = this.getOne(new LambdaQueryWrapper<WeAuthCorpInfo>()
-                .eq(WeAuthCorpInfo::getCorpId, corpId)
-                .eq(WeAuthCorpInfo::getSuiteId, suiteId)
-                .last(GenConstants.LIMIT_1));
+        WeAuthCorpInfo authCorpInfo = this.getOne(new LambdaQueryWrapper<WeAuthCorpInfo>().eq(WeAuthCorpInfo::getCorpId, corpId).eq(WeAuthCorpInfo::getSuiteId, suiteId).last(GenConstants.LIMIT_1));
         if (authCorpInfo == null) {
             return new WeAuthCorpInfo();
         }
         //添加扩展实体
-        WeAuthCorpInfoExtend corpInfoExtend = weAuthCorpInfoExtendService.getOne(new LambdaQueryWrapper<WeAuthCorpInfoExtend>()
-                .eq(WeAuthCorpInfoExtend::getCorpId, corpId)
-                .eq(WeAuthCorpInfoExtend::getSuiteId, suiteId));
+        WeAuthCorpInfoExtend corpInfoExtend = weAuthCorpInfoExtendService.getOne(new LambdaQueryWrapper<WeAuthCorpInfoExtend>().eq(WeAuthCorpInfoExtend::getCorpId, corpId).eq(WeAuthCorpInfoExtend::getSuiteId, suiteId));
         authCorpInfo.setCorpInfoExtend(corpInfoExtend);
         return authCorpInfo;
     }
@@ -162,14 +150,17 @@ public class WeAuthCorpInfoServiceImpl extends ServiceImpl<WeAuthCorpInfoMapper,
         CheckCorpIdVO checkCorpIdVO = CheckCorpIdVO.builder().dkCorp(false).build();
         if (ruoYiConfig.isThirdServer()) {
             //如果企业ID是密文则直接是代开发
-            if (StringUtils.isBlank(corpId) || corpId.startsWith("wpI")) {
-                return CheckCorpIdVO.builder().dkCorp(true).build();
-            }
-
-            WeAuthCorpInfo authCorpInfo = this.getAuthIgnoreCancel(corpId, ruoYiConfig.getProvider().getDkSuite().getDkId());
-            if (authCorpInfo != null && authCorpInfo.getCorpInfoExtend() != null && authCorpInfo.getCorpInfoExtend().getIsCustomizedApp()) {
-                checkCorpIdVO = CheckCorpIdVO.builder().dkCorp(true).build();
-            }
+//            if (StringUtils.isBlank(corpId) || corpId.startsWith("wpI")) {
+//                return CheckCorpIdVO.builder().dkCorp(true).build();
+//            }
+//
+//            WeAuthCorpInfo authCorpInfo = this.getAuthIgnoreCancel(corpId, ruoYiConfig.getProvider().getDkSuite().getDkId());
+//            if (authCorpInfo != null && authCorpInfo.getCorpInfoExtend() != null && authCorpInfo.getCorpInfoExtend().getIsCustomizedApp()) {
+//                checkCorpIdVO = CheckCorpIdVO.builder().dkCorp(true).build();
+//            }
+            // V1.8.3目前没有三方应用,所有三方的所有都是代开发
+            checkCorpIdVO.setDkCorp(true);
+            return checkCorpIdVO;
         }
         return checkCorpIdVO;
     }

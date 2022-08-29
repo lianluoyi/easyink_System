@@ -143,12 +143,7 @@ public class PageHomeServiceImpl implements PageHomeService {
         }
         WePageStaticDataDTO wePageStaticDataDto = new WePageStaticDataDTO();
         //获取数据概览的实时数据
-        WePageStaticDataDTO wePageStaticDataDtoByRedis = redisCache.getCacheObject(RedisKeyConstants.CORP_REAL_TIME + corpId);
-        if (wePageStaticDataDtoByRedis == null) {
-            wePageStaticDataDtoByRedis = initCorpRealTimeData(corpId);
-            redisCache.setCacheObject(RedisKeyConstants.CORP_REAL_TIME + corpId, wePageStaticDataDtoByRedis);
-        }
-
+        WePageStaticDataDTO  wePageStaticDataDtoByRedis = initCorpRealTimeData(corpId);
         //今天
         wePageStaticDataDto.setToday(getTodayData(corpId, wePageStaticDataDtoByRedis));
         wePageStaticDataDto.setWeek(getWeekData(corpId, wePageStaticDataDtoByRedis));
