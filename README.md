@@ -189,6 +189,7 @@ git clone https://github.com/lianluoyi/easyink_Sidebar.git
 
 ## :sunglasses: 鸣谢
 
+- [「LinkWeChat」](https://gitee.com/LinkWeChat/link-wechat):本项目部分基于LinkWeChat项目进行开发，感谢LinkWeChat的开源帮助。
 - [「forest」](https://github.com/dromara/forest):A high-level and lightweight HTTP client framework for Java. it makes sending HTTP requests in Java easier.
 - [「mybatis-plus」](https://github.com/baomidou/mybatis-plus):An powerful enhanced toolkit of MyBatis for simplify development
 - [「Knife4j」](https://github.com/xiaoymin/swagger-bootstrap-ui):Swagger-bootstrap-ui is the Swagger front-end UI implementation, the purpose is to replace the Swagger default UI implementation Swagger-UI, make the document more friendly...
