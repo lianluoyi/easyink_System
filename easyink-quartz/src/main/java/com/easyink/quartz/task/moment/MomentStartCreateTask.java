@@ -1,6 +1,7 @@
 package com.easyink.quartz.task.moment;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.easyink.common.utils.ExceptionUtil;
 import com.easyink.common.utils.StringUtils;
 import com.easyink.wecom.domain.WeWordsDetailEntity;
 import com.easyink.wecom.domain.entity.moment.WeMomentDetailRelEntity;
@@ -57,7 +58,7 @@ public class MomentStartCreateTask {
             try{
                 weMomentTaskService.startCreatMoment(weMomentTaskEntity,attachments);
             }catch (Exception e){
-                log.error("执行定时发送朋友圈失败，corpId:{},momentTaskId:{}",weMomentTaskEntity.getCorpId(),weMomentTaskEntity.getId());
+                log.error("执行定时发送朋友圈失败，corpId:{},momentTaskId:{} e:{}",weMomentTaskEntity.getCorpId(),weMomentTaskEntity.getId(), ExceptionUtil.getExceptionMessage(e));
             }
         }
     }

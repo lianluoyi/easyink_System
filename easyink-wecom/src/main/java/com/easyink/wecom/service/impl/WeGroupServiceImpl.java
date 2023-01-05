@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.easyink.common.annotation.DataScope;
 import com.easyink.common.constant.WeConstans;
+import com.easyink.common.core.domain.AjaxResult;
 import com.easyink.common.enums.CustomerTrajectoryEnums;
 import com.easyink.common.enums.ResultTip;
 import com.easyink.common.exception.BaseException;
@@ -13,6 +14,7 @@ import com.easyink.common.exception.CustomException;
 import com.easyink.common.utils.DateUtils;
 import com.easyink.common.utils.SnowFlakeUtil;
 import com.easyink.common.utils.StringUtils;
+import com.easyink.common.utils.poi.ExcelUtil;
 import com.easyink.wecom.client.WeCustomerGroupClient;
 import com.easyink.wecom.domain.WeCustomerAddGroup;
 import com.easyink.wecom.domain.WeGroup;
@@ -22,6 +24,7 @@ import com.easyink.wecom.domain.dto.WeGroupMemberDTO;
 import com.easyink.wecom.domain.dto.customer.CustomerGroupDetail;
 import com.easyink.wecom.domain.dto.customer.CustomerGroupList;
 import com.easyink.wecom.domain.dto.customer.CustomerGroupMember;
+import com.easyink.wecom.domain.vo.WeGroupExportVO;
 import com.easyink.wecom.domain.vo.sop.GroupSopVO;
 import com.easyink.wecom.domain.vo.wegrouptag.WeGroupTagRelDetail;
 import com.easyink.wecom.domain.vo.wegrouptag.WeGroupTagRelVO;
@@ -29,6 +32,7 @@ import com.easyink.wecom.mapper.WeGroupMapper;
 import com.easyink.wecom.service.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
+import org.springframework.aop.framework.AopContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Async;
@@ -566,5 +570,18 @@ public class WeGroupServiceImpl extends ServiceImpl<WeGroupMapper, WeGroup> impl
         findWeGroupDTO.setBeginTime(beginTime);
         findWeGroupDTO.setEndTime(endTime);
         return baseMapper.list(findWeGroupDTO);
+    }
+
+    @Override
+    public AjaxResult export(FindWeGroupDTO weGroup) {
+        String sheetName = "客户群报表" + DateUtils.dateTime();
+        final WeGroupService weGroupService = (WeGroupService) AopContext.currentProxy();
+        List<WeGroup> list = weGroupService.list(weGroup);
+        if(CollectionUtils.isEmpty(list)){
+            return AjaxResult.success();
+        }
+        List<WeGroupExportVO> exportList = list.stream().map(WeGroupExportVO::new).collect(Collectors.toList());
+        ExcelUtil<WeGroupExportVO> util = new ExcelUtil<>(WeGroupExportVO.class);
+        return util.exportExcel(exportList, sheetName);
     }
 }

@@ -46,6 +46,7 @@
          ,wmt.status
          ,wmt.send_time
          ,wmt.users
+         ,wmt.departments
          ,wmt.tags
         FROM we_moment_task wmt
         WHERE

@@ -245,23 +245,23 @@ public class WeConversationArchiveServiceImpl implements WeConversationArchiveSe
 
         //成员姓名查询
         if (StringUtils.isNotEmpty(query.getUserName())) {
-            boolQueryBuilder.must(QueryBuilders.boolQuery().must(QueryBuilders.wildcardQuery("fromInfo.name", "*" + query.getUserName() + "*"))
+            boolQueryBuilder.must(QueryBuilders.boolQuery().must(QueryBuilders.wildcardQuery("fromInfo.name.keyword", "*" + query.getUserName() + "*"))
                     .mustNot(QueryBuilders.existsQuery("fromInfo.externalUserid")));
         }
         //客户姓名查询
         if (StringUtils.isNotEmpty(query.getCustomerName())) {
-            boolQueryBuilder.must(QueryBuilders.boolQuery().must(QueryBuilders.wildcardQuery("fromInfo.name", "*" + query.getCustomerName() + "*"))
+            boolQueryBuilder.must(QueryBuilders.boolQuery().must(QueryBuilders.wildcardQuery("fromInfo.name.keyword", "*" + query.getCustomerName() + "*"))
                     .must(QueryBuilders.existsQuery("fromInfo.externalUserid")));
         }
 
         //发送者姓名查询
         if (StringUtils.isNotEmpty(query.getFromName())) {
-            boolQueryBuilder.must(QueryBuilders.boolQuery().must(QueryBuilders.wildcardQuery("fromInfo.name", "*" + query.getFromName() + "*")));
+            boolQueryBuilder.must(QueryBuilders.boolQuery().must(QueryBuilders.wildcardQuery("fromInfo.name.keyword", "*" + query.getFromName() + "*")));
         }
 
         //接收者姓名查询
         if (StringUtils.isNotEmpty(query.getReceiveName())) {
-            boolQueryBuilder.must(QueryBuilders.boolQuery().must(QueryBuilders.wildcardQuery("toListInfo.name", "*" + query.getReceiveName() + "*")));
+            boolQueryBuilder.must(QueryBuilders.boolQuery().must(QueryBuilders.wildcardQuery("toListInfo.name.keyword", "*" + query.getReceiveName() + "*")));
         }
 
         //消息动作
@@ -271,7 +271,7 @@ public class WeConversationArchiveServiceImpl implements WeConversationArchiveSe
 
         //关键词查询并高亮显示
         if (StringUtils.isNotEmpty(query.getKeyWord())) {
-            boolQueryBuilder.must(QueryBuilders.boolQuery().must(QueryBuilders.wildcardQuery("text.content", "*" + query.getKeyWord() + "*")));
+            boolQueryBuilder.must(QueryBuilders.boolQuery().must(QueryBuilders.wildcardQuery("text.content.keyword", "*" + query.getKeyWord() + "*")));
             builder.highlighter(new HighlightBuilder().field("text.content"));
         }
 
@@ -282,9 +282,13 @@ public class WeConversationArchiveServiceImpl implements WeConversationArchiveSe
             boolQueryBuilder.filter(QueryBuilders.rangeQuery(WeConstans.MSG_TIME).gte(beginTime.getTime()).lte(endTime.getTime()));
         }
         //权限过滤
-        boolQueryBuilder.filter(QueryBuilders.boolQuery().should(QueryBuilders.termsQuery("fromInfo.userId", userArray))
-                .should(QueryBuilders.termsQuery("toListInfo.userId", userArray))
-                .minimumShouldMatch(1));
+        //匹配发送人
+        BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().should(QueryBuilders.termsQuery("from", userArray));
+        //匹配收消息人
+        for (String userId : userArray) {
+            queryBuilder.should(QueryBuilders.matchQuery("toListInfo.userId", userId));
+        }
+        boolQueryBuilder.filter(queryBuilder.minimumShouldMatch(1));
         builder.query(boolQueryBuilder);
         PageInfo<ConversationArchiveVO> pageInfo = elasticSearch.searchPage(WeConstans.getChatDataIndex(query.getCorpId()), builder, pageNum, pageSize, ConversationArchiveVO.class);
         filterData(pageInfo, query.getCorpId());

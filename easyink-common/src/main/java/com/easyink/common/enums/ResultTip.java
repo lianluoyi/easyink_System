@@ -151,6 +151,7 @@ public enum ResultTip {
     TIP_REDEEM_CODE_WELCOME_MSG_IS_EMPTY(2080, "活动欢迎语，三个内容框必须有一个有内容"),
     TIP_REDEEM_CODE_FILE_DATA_IS_EMPTY(2081, "文件中数据为空"),
     TIP_REDEEM_CODE_ACTIVITY_LIMIT_ADD_USER(2082, "活动已开启参与限制，同一客户不能多次领取"),
+    TIP_IMAGE_FORMAT_ERROR(2083, "图片格式异常，请重新保存后上传"),
 
     //员工模块错误码
     TIP_PARAM_MISSING(3001, "请填写完整的员工信息"),

@@ -14,7 +14,6 @@ import com.easyink.common.enums.ResultTip;
 import com.easyink.common.enums.moment.*;
 import com.easyink.common.exception.CustomException;
 import com.easyink.common.utils.DateUtils;
-import com.easyink.common.utils.StringUtils;
 import com.easyink.wecom.client.WeMomentClient;
 import com.easyink.wecom.domain.WeCustomer;
 import com.easyink.wecom.domain.WeTag;
@@ -40,6 +39,7 @@ import com.github.pagehelper.PageHelper;
 import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -175,11 +175,16 @@ public class WeMomentTaskServiceImpl extends ServiceImpl<WeMomentTaskMapper, WeM
         } else {
             //个人朋友圈、发送应用消息、设置创建状态
             List<WeCustomer> weCustomers = weCustomerService.selectWeCustomerListNoRel(new WeCustomerPushMessageDTO(weMomentTaskEntity.getUsers(), weMomentTaskEntity.getTags(), weMomentTaskEntity.getCorpId(), weMomentTaskEntity.getDepartments(), String.valueOf(weMomentTaskEntity.getPushRange())));
+            List<String> userIds = new ArrayList<>();
+            if(StringUtils.isNotBlank(weMomentTaskEntity.getUsers())){
+                userIds.addAll(Arrays.asList(weMomentTaskEntity.getUsers().split(StrUtil.COMMA)));
+            }
             //通过部门查询员工
-            List<String> userIdsByDepartment = weUserService.listOfUserId(weMomentTaskEntity.getCorpId(),weMomentTaskEntity.getDepartments().split(StrUtil.COMMA));
-            List<String> userIds = new ArrayList<>(Arrays.asList(weMomentTaskEntity.getUsers().split(StrUtil.COMMA)));
-            if(CollectionUtils.isNotEmpty(userIdsByDepartment)){
-                userIds.addAll(userIdsByDepartment);
+            if(StringUtils.isNotBlank(weMomentTaskEntity.getDepartments())){
+                List<String> userIdsByDepartment = weUserService.listOfUserId(weMomentTaskEntity.getCorpId(),weMomentTaskEntity.getDepartments().split(StrUtil.COMMA));
+                if(CollectionUtils.isNotEmpty(userIdsByDepartment)){
+                    userIds.addAll(userIdsByDepartment);
+                }
             }
             if (CollectionUtils.isNotEmpty(weCustomers)){
                 Set<String> userIdSet = weCustomers.stream().map(WeCustomer::getUserId).collect(Collectors.toSet());
@@ -713,7 +718,9 @@ public class WeMomentTaskServiceImpl extends ServiceImpl<WeMomentTaskMapper, WeM
     private void checkCreateMomentTaskParam(CreateMomentTaskDTO createMomentTaskDTO) {
         Map<String, Integer> typeNumMap = new HashMap<>();
         //校验corpId
-        StringUtils.checkCorpId(createMomentTaskDTO.getCorpId());
+        if (StringUtils.isBlank(createMomentTaskDTO.getCorpId())) {
+            throw new CustomException(ResultTip.TIP_MISS_CORP_ID);
+        }
         //发布时间校验定时发送不能为空
         checkSendTime(createMomentTaskDTO.getTaskType(), createMomentTaskDTO.getSendTime(), createMomentTaskDTO.getCorpId());
 

@@ -556,7 +556,7 @@ public class WeSensitiveServiceImpl implements WeSensitiveService {
             // 过滤已经匹配入库的
             timeBuilder.filter(QueryBuilders.rangeQuery(WeConstans.MSG_TIME).gte(minTimeStamp));
             BoolQueryBuilder searchBuilder = QueryBuilders.boolQuery()
-                    .must(QueryBuilders.wildcardQuery("text.content", "*" + patternWord + "*"))
+                    .must(QueryBuilders.wildcardQuery("text.content.keyword", "*" + patternWord + "*"))
                     .must(userBuilder)
                     .must(timeBuilder);
             builder.query(searchBuilder);
