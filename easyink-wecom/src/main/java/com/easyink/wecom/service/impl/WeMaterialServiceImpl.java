@@ -2,10 +2,13 @@ package com.easyink.wecom.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.json.JSONUtil;
+import com.dtflys.forest.exceptions.ForestRuntimeException;
 import com.easyink.common.config.RuoYiConfig;
 import com.easyink.common.constant.WeConstans;
 import com.easyink.common.enums.ResultTip;
 import com.easyink.common.enums.WeCategoryMediaTypeEnum;
+import com.easyink.common.enums.WeExceptionTip;
 import com.easyink.common.exception.CustomException;
 import com.easyink.common.exception.wecom.WeComException;
 import com.easyink.common.utils.DateUtils;
@@ -202,27 +205,22 @@ public class WeMaterialServiceImpl implements WeMaterialService {
         if (StringUtils.isBlank(url) || StringUtils.isBlank(type) || StringUtils.isBlank(name) || StringUtils.isBlank(corpId)) {
             throw new CustomException("请求参数不能为空");
         }
-        HttpURLConnection conn = null;
-        InputStream inputStream = null;
-        try {
-            URL materialUrl = new URL(url);
-            conn = (HttpURLConnection) materialUrl.openConnection();
-            conn.setRequestMethod("GET");
-            conn.setConnectTimeout(20 * 1000);
-            inputStream = conn.getInputStream();
+        try (
+                InputStream inputStream = new URL(url).openConnection().getInputStream();
+        ) {
+            // 调用企微上传素材
             return weMediaClient.upload(inputStream, name, type, corpId);
+        } catch (ForestRuntimeException e) {
+            log.error("上传临时文件失败......url:{},type:{},name:{},ex:{},st:{}", url, type, name, ExceptionUtils.getMessage(e), ExceptionUtils.getStackTrace(e));
+            WeResultDTO result = JSONUtil.toBean(e.getMessage(), WeResultDTO.class);
+            if (WeExceptionTip.WE_EXCEPTION_TIP_40123.getCode().equals(result.getErrcode())) {
+                throw new CustomException(ResultTip.TIP_IMAGE_FORMAT_ERROR);
+            }
+            throw new CustomException(ResultTip.TIP_GENERAL_ERROR);
         } catch (Exception e) {
             log.error("上传临时文件失败......url:{},type:{},name:{},ex:{},st:{}", url, type, name, ExceptionUtils.getMessage(e), ExceptionUtils.getStackTrace(e));
-        } finally {
-            if (conn != null && inputStream != null) {
-                try {
-                    inputStream.close();
-                } catch (IOException e) {
-                    log.error("流关闭异常......ex:{},st:{}", ExceptionUtils.getMessage(e), ExceptionUtils.getStackTrace(e));
-                }
-            }
+            throw new CustomException(ResultTip.TIP_GENERAL_ERROR);
         }
-        return null;
     }
 
     @Override

@@ -1,6 +1,7 @@
 package com.easyink.wecom.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.easyink.common.core.domain.AjaxResult;
 import com.easyink.wecom.domain.WeCustomerAddGroup;
 import com.easyink.wecom.domain.WeGroup;
 import com.easyink.wecom.domain.WeGroupMember;
@@ -134,4 +135,11 @@ public interface WeGroupService extends IService<WeGroup> {
      */
     List<WeGroup> listNoRelTag(String corpId, String tagIds, String ownerIds, String beginTime, String endTime);
 
+    /**
+     * 导出客户群信息
+     *
+     * @param weGroupDTO
+     * @return
+     */
+    AjaxResult export(FindWeGroupDTO weGroupDTO);
 }

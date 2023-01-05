@@ -57,6 +57,13 @@ public class WeGroupController extends BaseController {
         return getDataTable(list);
     }
 
+    @PreAuthorize("@ss.hasPermi('customerManage:group:export')")
+    @GetMapping("/export")
+    @ApiOperation("导出客户群")
+    public <T> AjaxResult export(FindWeGroupDTO weGroup) {
+        weGroup.setCorpId(LoginTokenService.getLoginUser().getCorpId());
+        return weGroupService.export(weGroup);
+    }
 
     @PreAuthorize("@ss.hasPermi('customerManage:group:view')")
     @GetMapping({"/members"})

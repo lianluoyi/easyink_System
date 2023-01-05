@@ -3,6 +3,7 @@ package com.easyink.wecom.domain;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.easyink.common.annotation.Excel;
 import com.easyink.common.core.domain.RootEntity;
 import com.easyink.common.utils.DateUtils;
 import com.easyink.wecom.domain.vo.wegrouptag.WeGroupTagRelDetail;
@@ -43,6 +44,7 @@ public class WeGroup extends RootEntity {
 
     @ApiModelProperty(value = "群名")
     @TableField("group_name")
+    @Excel(name = "群昵称",sort = 1)
     private String groupName;
 
     /**
@@ -52,12 +54,14 @@ public class WeGroup extends RootEntity {
     private String corpId;
 
     @TableField(exist = false)
+    @Excel(name = "群成员",sort = 2)
     private Long memberNum;
 
     @ApiModelProperty(value = "创建时间")
     @TableField("create_time")
     @JsonFormat(timezone = "GMT+8", pattern = "yyyy-MM-dd")
     @DateTimeFormat(pattern = "yyyy-MM-dd")
+    @Excel(name = "创建时间", sort = 6, dateFormat = "yyyy/MM/dd")
     private Date createTime;
 
     @ApiModelProperty(value = "群公告")
@@ -70,9 +74,12 @@ public class WeGroup extends RootEntity {
 
     @ApiModelProperty(value = "0 - 正常;1 - 跟进人离职;2 - 离职继承中;3 - 离职继承完成")
     @TableField("status")
+    @Excel(name = "客户群状态", sort = 5, readConverterExp="0=正常,1=待继承")
     private Integer status;
 
+
     @TableField(exist = false)
+    @Excel(name = "群主",sort = 3)
     private String groupLeaderName;
 
 

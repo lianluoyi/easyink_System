@@ -299,7 +299,7 @@ public class ExcelUtil<T> {
         try {
             // 取出一共有多少个sheet.
             double sheetNo = Math.ceil((double) list.size() / SHEET_SIZE);
-            for (int index = 0; index <= sheetNo; index++) {
+            for (int index = 0; index < sheetNo; index++) {
                 createSheet(sheetNo, index);
 
                 // 产生一行

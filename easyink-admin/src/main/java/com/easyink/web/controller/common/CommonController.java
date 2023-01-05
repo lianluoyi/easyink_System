@@ -51,12 +51,17 @@ public class CommonController {
      */
     @ApiOperation(value = "通用下载")
     @GetMapping("common/download")
-    public void fileDownload(@ApiParam("文件名") String fileName, @ApiParam("是否删除本地文件") Boolean delete, HttpServletResponse response, HttpServletRequest request) {
+    public void fileDownload(@ApiParam("文件名") String fileName, @ApiParam("是否删除本地文件") Boolean delete, @ApiParam("是否带时间戳") Boolean needTimeStamp, HttpServletResponse response, HttpServletRequest request) {
         try {
             if (!FileUtils.isValidFilename(fileName)) {
                 throw new Exception(StringUtils.format("文件名称({})非法，不允许下载。 ", fileName));
             }
-            String realFileName = System.currentTimeMillis() + fileName.substring(fileName.indexOf("_") + 1);
+            // 文件名分隔符 uuid_fileName.xlsx -> fileName.xlsx
+            String splitSign = "_";
+            String realFileName = fileName.substring(fileName.indexOf(splitSign) + 1);
+            if(!Boolean.FALSE.equals(needTimeStamp)){
+                realFileName = System.currentTimeMillis() + realFileName;
+            }
             String filePath = RuoYiConfig.getDownloadPath() + fileName;
 
             response.setCharacterEncoding("utf-8");

@@ -974,6 +974,7 @@ INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`
                         `remark`)
 VALUES ('2302', '管理部门雷达', '2299', '10', '', NULL, '1', 'F', '0', '0', 'radar:department:manage', '#', 'admin',
         '2022-07-23 21:53:42', 'admin', '2022-07-24 16:08:00', '');
+INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`, `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES (2303, '导出客户群', 2003, 6, '', NULL, 1, 'F', '0', '0', 'customerManage:group:export', '#', 'admin', '2022-10-08 15:20:41', 'admin', '2022-10-08 15:22:17', '');
 
 
 -- ----------------------------
