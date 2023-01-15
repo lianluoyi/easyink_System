@@ -1,7 +1,9 @@
 package com.easyink.common.constant.radar;
 
 import com.easyink.common.enums.radar.RadarChannelEnum;
-import com.easyink.common.utils.StringUtils;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * ClassName： RadarConstants
@@ -9,12 +11,14 @@ import com.easyink.common.utils.StringUtils;
  * @author wx
  * @date 2022/7/18 17:30
  */
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class RadarConstants {
 
 
     /**
      * 参数校验异常
      */
+    @NoArgsConstructor(access = AccessLevel.PRIVATE)
     public static class ParamVerify {
         /**
          * 传输参数为空
@@ -25,6 +29,7 @@ public class RadarConstants {
     /**
      * 提示客户，自定义抛出异常给前端使用
      */
+    @NoArgsConstructor(access = AccessLevel.PRIVATE)
     public static class PromptCus {
         /**
          * 未选择标签
@@ -43,6 +48,7 @@ public class RadarConstants {
     /**
      * 新增/更新通知员工
      */
+    @NoArgsConstructor(access = AccessLevel.PRIVATE)
     public static class UpdateNoticeToUser {
         /**
          * 发送消息，企业雷达库已更新
@@ -54,14 +60,15 @@ public class RadarConstants {
          */
         public static final String DEPARTMENT_RADAR_UPDATE = "部门雷达库已更新";
 
-        // “{雷达标题}”
-        public static final String getUpdateMessage(String title) {
-            return "“{" + title + "}”";
+        // “雷达标题”
+        public static String getUpdateMessage(String title) {
+            return "“" + title + "”";
         }
 
         public static final String SEND_ALL = "@all";
     }
 
+    @NoArgsConstructor(access = AccessLevel.PRIVATE)
     public static class RadarAnalyseCount {
         /**
          * 如果不传日期默认为7天的数据
@@ -77,30 +84,29 @@ public class RadarConstants {
     /**
      * 客户点击记录
      */
+    @NoArgsConstructor(access = AccessLevel.PRIVATE)
     public static class RadarCustomerClickRecord {
 
-        public static String COMMON_MSG = "普通欢迎语";
+        public static final String COMMON_MSG = "普通欢迎语";
 
-        public static String EMPTY_USERID = StringUtils.EMPTY;
-
-        public static String EMPTY_SCENARIO = StringUtils.EMPTY;
+        public static final String EMPTY_SCENARIO = "";
         /**
          * 替换渠道来源内容
          */
-        public static String REPlACR_WORD = "【替换内容】";
+        public static final String REPlACE_WORD = "【替换内容】";
 
         public static String getRecordText(String customerName, String userName, String detail, int type, String channelName) {
-            String msg = "客户“" + customerName + "”" + "点击了员工“" + userName + "”" + "在【" + RadarChannelEnum.getChannelByType(type) + REPlACR_WORD + "】发出的雷达链接";
+            String msg = "客户“" + customerName + "”" + "点击了员工“" + userName + "”" + "在【" + RadarChannelEnum.getChannelByType(type) + REPlACE_WORD + "】发出的雷达链接";
             if (RadarChannelEnum.CUSTOMIZE.getTYPE().equals(type)) {
-                return msg.replace(REPlACR_WORD, "-{" + channelName + "}");
+                return msg.replace(REPlACE_WORD, "-{" + channelName + "}");
             }
             if (StringUtils.isNotBlank(detail)
                     && !RadarChannelEnum.MOMENT.getTYPE().equals(type)
                     && !RadarChannelEnum.SIDE_BAR.getTYPE().equals(type)
                     && !RadarChannelEnum.WELCOME_MSG.getTYPE().equals(type)) {
-                return msg.replace(REPlACR_WORD, "-{" + detail + "}");
+                return msg.replace(REPlACE_WORD, "-{" + detail + "}");
             } else {
-                return msg.replace(REPlACR_WORD, StringUtils.EMPTY);
+                return msg.replace(REPlACE_WORD, StringUtils.EMPTY);
             }
         }
     }

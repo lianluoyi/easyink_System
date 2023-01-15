@@ -142,4 +142,11 @@ public interface WeGroupService extends IService<WeGroup> {
      * @return
      */
     AjaxResult export(FindWeGroupDTO weGroupDTO);
+
+    /**
+     * 定时任务处理客户群聊统计
+     *
+     * @param corpId    企业id
+     */
+    void processGroupChatData(String corpId);
 }

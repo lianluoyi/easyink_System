@@ -1,9 +1,7 @@
 package com.easyink.web.controller.wecom;
 
 import com.easyink.common.core.domain.AjaxResult;
-import com.easyink.common.enums.BusinessType;
 import com.easyink.wecom.service.UpdateIDSecurityService;
-import com.sun.org.apache.xpath.internal.operations.Bool;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;

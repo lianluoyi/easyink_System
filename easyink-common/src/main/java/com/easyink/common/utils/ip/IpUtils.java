@@ -1,7 +1,10 @@
 package com.easyink.common.utils.ip;
 
+import com.easyink.common.utils.ExceptionUtil;
 import com.easyink.common.utils.StringUtils;
 import com.easyink.common.utils.html.EscapeUtil;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang3.ObjectUtils;
@@ -29,6 +32,7 @@ import java.util.regex.Pattern;
  * @author admin
  */
 @Slf4j
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class IpUtils {
     private static final String LOCAL_HOST = "127.0.0.1";
     public static String getIpAddr(HttpServletRequest request) {
@@ -184,17 +188,18 @@ public class IpUtils {
         }
         return "未知";
     }
-    public static String getOutIp() {
+    public static String getOutIp() throws IOException {
         Document document = null;
         try {
             document = Jsoup.connect("https://ip.chinaz.com/").get();
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("[获取服务器ip异常] e:{}", ExceptionUtil.getExceptionMessage(e));
+            throw new IOException(e);
         }
         Elements select = document.select("#leftinfo > div.IcpMain02.bor-t1s02 > div.WhoIpWrap.jspu > div.WhwtdWrap.bor-b1s.col-gray03 > span:nth-child(1)");
         String s = select.toString();
-        String ip = s.substring(s.indexOf(">") + 1, s.lastIndexOf("<"));
-        return ip;
+        //返回ip
+        return s.substring(s.indexOf(">") + 1, s.lastIndexOf("<"));
     }
 
 

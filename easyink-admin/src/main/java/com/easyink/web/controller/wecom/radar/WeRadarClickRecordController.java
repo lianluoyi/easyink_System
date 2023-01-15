@@ -37,7 +37,7 @@ public class WeRadarClickRecordController extends BaseController {
     @PostMapping("/add")
     @ApiOperation("新增雷达点击记录")
 //    @PreAuthorize("@ss.hasPermi('redeeomCode:activity:add')")
-    public <T> AjaxResult add(@RequestBody @Validated RadarClickRecordDTO clickRecordDTO) {
+    public AjaxResult add(@RequestBody @Validated RadarClickRecordDTO clickRecordDTO) {
         radarClickRecordService.saveClickRecord(clickRecordDTO);
         return AjaxResult.success();
     }

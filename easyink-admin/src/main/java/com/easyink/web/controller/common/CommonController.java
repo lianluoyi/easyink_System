@@ -5,6 +5,7 @@ import com.easyink.common.config.ServerConfig;
 import com.easyink.common.constant.Constants;
 import com.easyink.common.core.domain.AjaxResult;
 import com.easyink.common.core.domain.FileVo;
+import com.easyink.common.exception.CustomException;
 import com.easyink.common.utils.StringUtils;
 import com.easyink.common.utils.file.FileUploadUtils;
 import com.easyink.common.utils.file.FileUtils;
@@ -54,7 +55,7 @@ public class CommonController {
     public void fileDownload(@ApiParam("文件名") String fileName, @ApiParam("是否删除本地文件") Boolean delete, @ApiParam("是否带时间戳") Boolean needTimeStamp, HttpServletResponse response, HttpServletRequest request) {
         try {
             if (!FileUtils.isValidFilename(fileName)) {
-                throw new Exception(StringUtils.format("文件名称({})非法，不允许下载。 ", fileName));
+                throw new CustomException(StringUtils.format("文件名称({})非法，不允许下载。 ", fileName));
             }
             // 文件名分隔符 uuid_fileName.xlsx -> fileName.xlsx
             String splitSign = "_";

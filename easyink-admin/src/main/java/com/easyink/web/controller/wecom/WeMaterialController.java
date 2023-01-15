@@ -6,6 +6,8 @@ import com.easyink.common.core.domain.AjaxResult;
 import com.easyink.common.core.page.TableDataInfo;
 import com.easyink.common.enums.BusinessType;
 import com.easyink.common.enums.MediaType;
+import com.easyink.common.enums.ResultTip;
+import com.easyink.common.exception.CustomException;
 import com.easyink.wecom.domain.WeMaterial;
 import com.easyink.wecom.domain.WeMaterialTagEntity;
 import com.easyink.wecom.domain.dto.*;
@@ -16,6 +18,8 @@ import com.easyink.wecom.service.WeMaterialService;
 import com.easyink.wecom.service.WeMaterialTagService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import jodd.util.StringUtil;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -26,6 +30,7 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.NotNull;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * 企业微信素材Controller
@@ -134,8 +139,12 @@ public class WeMaterialController extends BaseController {
     @ApiOperation("web端发送获取素材media_id")
     public AjaxResult temporaryMaterialMediaIdForWeb(@RequestBody TemporaryMaterialDTO temporaryMaterialDTO) {
         String corpId = LoginTokenService.getLoginUser().getCorpId();
+        Optional<MediaType> mediaType = MediaType.of(temporaryMaterialDTO.getType());
+        if(!mediaType.isPresent()){
+            throw new CustomException(ResultTip.TIP_MEDIA_TYPE_ERROR);
+        }
         WeMediaDTO weMediaDto = materialService.uploadTemporaryMaterial(temporaryMaterialDTO.getUrl(),
-                MediaType.of(temporaryMaterialDTO.getType()).get().getMediaType()
+                mediaType.get().getMediaType()
                 , temporaryMaterialDTO.getName(), corpId);
         return AjaxResult.success(weMediaDto);
     }

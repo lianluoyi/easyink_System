@@ -11,9 +11,9 @@ import com.easyink.common.mapper.SysRoleDeptMapper;
 import com.easyink.common.mapper.SysRoleMapper;
 import com.easyink.common.service.ISysMenuService;
 import com.easyink.common.service.ISysRoleService;
-import com.easyink.common.utils.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -84,10 +84,10 @@ public class SysPermissionService {
         }
         //设置权限
         SysRole role = sysRoleMapper.selectRoleByWeUserId(corpId, user.getWeUser().getUserId());
-        if (role == null && org.apache.commons.lang3.StringUtils.isNotBlank(user.getWeUser().getExternalCorpId())) {
+        if (role == null && StringUtils.isNotBlank(user.getWeUser().getExternalCorpId())) {
             role = sysRoleMapper.selectRoleByWeUserId(user.getWeUser().getExternalCorpId(), user.getWeUser().getUserId());
         }
-        if(ObjectUtil.isNull(role)) {
+        if(role == null || null == role.getDataScope()) {
             return;
         }
         user.setRole(role);

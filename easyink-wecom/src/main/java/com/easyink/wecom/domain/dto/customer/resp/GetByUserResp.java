@@ -51,11 +51,11 @@ public class GetByUserResp extends WePageBaseResp<GetByUserResp.ExternalContactD
         /**
          * 外部联系人
          */
-        public ExternalContact external_contact;
+        private ExternalContact external_contact;
         /**
          * 跟进人信息
          */
-        public FollowInfo follow_info;
+        private FollowInfo follow_info;
     }
 
     @Override

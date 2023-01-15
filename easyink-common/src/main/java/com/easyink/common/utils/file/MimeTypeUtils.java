@@ -20,14 +20,44 @@ public class MimeTypeUtils {
 
     public static final String XLS = "xls";
 
-    public static final String[] IMAGE_EXTENSION = {"bmp", "gif", "jpg", "jpeg", "png"};
+    protected static final String[] IMAGE_EXTENSION = {"bmp", "gif", "jpg", "jpeg", "png"};
 
-    public static final String[] FLASH_EXTENSION = {"swf", "flv"};
+    private MimeTypeUtils() {
+    }
 
-    public static final String[] MEDIA_EXTENSION = {"swf", "flv", "mp3", "wav", "wma", "wmv", "mid", "avi", "mpg",
+    /**
+     * 获取IMAGE_EXTENSION
+     *
+     * @return IMAGE_EXTENSION
+     */
+    public static String[] getImageExtension(){
+        return IMAGE_EXTENSION;
+    }
+
+    protected static final String[] FLASH_EXTENSION = {"swf", "flv"};
+
+    /**
+     * 获取FLASH_EXTENSION
+     *
+     * @return FLASH_EXTENSION
+     */
+    public static String[] getFlashExtension(){
+        return FLASH_EXTENSION;
+    }
+
+    protected static final String[] MEDIA_EXTENSION = {"swf", "flv", "mp3", "wav", "wma", "wmv", "mid", "avi", "mpg",
             "asf", "rm", "rmvb"};
 
-    public static final String[] DEFAULT_ALLOWED_EXTENSION = {
+    /**
+     * 获取MEDIA_EXTENSION
+     *
+     * @return MEDIA_EXTENSION
+     */
+    public static String[] getMediaExtension(){
+        return MEDIA_EXTENSION;
+    }
+
+    protected static final String[] DEFAULT_ALLOWED_EXTENSION = {
             // 图片
             "bmp", "gif", "jpg", "jpeg", "png",
             // word excel powerpoint
@@ -36,6 +66,15 @@ public class MimeTypeUtils {
             "rar", "zip", "gz", "bz2",
             // pdf
             "pdf", "wav", "amr", "mp4", "mp3"};
+
+    /**
+     * 获取DEFAULT_ALLOWED_EXTENSION
+     *
+     * @return DEFAULT_ALLOWED_EXTENSION
+     */
+    public static String[] getDefaultAllowedExtension(){
+        return DEFAULT_ALLOWED_EXTENSION;
+    }
 
     public static String getExtension(String prefix) {
         switch (prefix) {

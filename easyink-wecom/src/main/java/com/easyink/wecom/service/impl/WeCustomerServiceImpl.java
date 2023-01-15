@@ -19,18 +19,22 @@ import com.easyink.common.utils.DateUtils;
 import com.easyink.common.utils.bean.BeanUtils;
 import com.easyink.common.utils.poi.ExcelUtil;
 import com.easyink.common.utils.sql.BatchInsertUtil;
+import com.easyink.common.utils.wecom.CorpSecretDecryptUtil;
 import com.easyink.wecom.client.WeCustomerClient;
+import com.easyink.wecom.client.WeUnionIdClient;
 import com.easyink.wecom.client.WeUserClient;
 import com.easyink.wecom.domain.*;
 import com.easyink.wecom.domain.dto.*;
 import com.easyink.wecom.domain.dto.customer.CustomerTagEdit;
 import com.easyink.wecom.domain.dto.customer.EditCustomerDTO;
+import com.easyink.wecom.domain.dto.customer.ExternalUserDetail;
 import com.easyink.wecom.domain.dto.customer.GetExternalDetailResp;
 import com.easyink.wecom.domain.dto.customer.req.GetByUserReq;
 import com.easyink.wecom.domain.dto.customer.resp.GetByUserResp;
 import com.easyink.wecom.domain.dto.customersop.Column;
 import com.easyink.wecom.domain.dto.pro.EditCustomerFromPlusDTO;
 import com.easyink.wecom.domain.dto.tag.RemoveWeCustomerTagDTO;
+import com.easyink.wecom.domain.dto.unionid.GetUnionIdDTO;
 import com.easyink.wecom.domain.entity.WeCustomerExportDTO;
 import com.easyink.wecom.domain.vo.QueryCustomerFromPlusVO;
 import com.easyink.wecom.domain.vo.WeCustomerExportVO;
@@ -39,12 +43,14 @@ import com.easyink.wecom.domain.vo.customer.WeCustomerSumVO;
 import com.easyink.wecom.domain.vo.customer.WeCustomerUserListVO;
 import com.easyink.wecom.domain.vo.customer.WeCustomerVO;
 import com.easyink.wecom.domain.vo.sop.CustomerSopVO;
+import com.easyink.wecom.domain.vo.unionid.GetUnionIdVO;
 import com.easyink.wecom.mapper.WeCustomerMapper;
 import com.easyink.wecom.service.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.springframework.aop.framework.AopContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Async;
@@ -93,6 +99,10 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
     @Autowired
     @Lazy
     private WeCustomerExtendPropertyService weCustomerExtendPropertyService;
+    @Autowired
+    private WeUnionIdClient weUnionIdClient ;
+    @Autowired
+    private CorpSecretDecryptUtil corpSecretDecryptUtil ;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -325,10 +335,14 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
         // 1. API请求:请求企微[批量获取客户详情]接口
         GetByUserReq req = new GetByUserReq(userId);
         GetByUserResp resp = (GetByUserResp) req.executeTillNoNextPage(corpId);
-
+        if (resp == null){
+            log.info("[批量获取客户详情] 该员工没有添加客户, corpId:{}, userId:{}", corpId, userId);
+            return;
+        }
         // 2. 数据处理:对返回的数据进行处理
         resp.handleData(corpId);
         if (resp.isEmptyResult()) {
+            log.info("[批量获取客户详情] 该员工没有添加客户, corpId:{}, userId:{}", corpId, userId);
             return;
         }
         // 3. 数据对齐:本地成员-客户关系数据与服务端对齐,同步远端修改的数据
@@ -438,7 +452,7 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void makeLabelbatch(List<WeMakeCustomerTagVO> list, String updateBy) {
+    public void batchMakeLabel(List<WeMakeCustomerTagVO> list, String updateBy) {
         if (CollUtil.isEmpty(list)) {
             return;
         }
@@ -454,8 +468,9 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
     }
 
     @Override
-    public void makeLabelbatch(List<WeMakeCustomerTagVO> weMakeCustomerTagVOS) {
-        this.makeLabelbatch(weMakeCustomerTagVOS, null);
+    @Transactional(rollbackFor = Exception.class)
+    public void batchMakeLabel(List<WeMakeCustomerTagVO> weMakeCustomerTagVOS) {
+        ((WeCustomerService)AopContext.currentProxy()).batchMakeLabel(weMakeCustomerTagVOS, null);
     }
 
     /**
@@ -519,7 +534,7 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
      * @param weMakeCustomerTag
      * @return
      */
-    private void batchMarkCustomTag(WeMakeCustomerTagVO weMakeCustomerTag) {
+    public void batchMarkCustomTag(WeMakeCustomerTagVO weMakeCustomerTag) {
         if (StringUtils.isAnyBlank(weMakeCustomerTag.getUserId(), weMakeCustomerTag.getExternalUserid(), weMakeCustomerTag.getCorpId())) {
             log.error("员工id，客户id，公司id不能为空，userId：{}，externalUserId：{}，corpId：{}", weMakeCustomerTag.getUserId(), weMakeCustomerTag.getExternalUserid(), weMakeCustomerTag.getCorpId());
             throw new CustomException("增量式打标签错误");
@@ -615,6 +630,7 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void removeLabel(String corpId, String externalUserid, String userid, List<String> delIdList) {
         RemoveWeCustomerTagDTO dto = new RemoveWeCustomerTagDTO();
         List<RemoveWeCustomerTagDTO.WeUserCustomer> list = new ArrayList<>();
@@ -828,6 +844,7 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void editByUserIdAndCustomerAvatar(EditCustomerFromPlusDTO dto) {
         if (org.apache.commons.lang3.StringUtils.isAnyBlank(dto.getCorpId(), dto.getAvatar(), dto.getUserId())) {
             return;
@@ -888,6 +905,19 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
             throw new CustomException(ResultTip.TIP_MISS_CORP_ID);
         }
         return this.baseMapper.listCustomers(customerName, corpId);
+    }
+
+    @Override
+    public GetUnionIdVO getDetailByExternalUserId(GetUnionIdDTO getUnionIdDTO) {
+        if(getUnionIdDTO == null || StringUtils.isAnyBlank(getUnionIdDTO.getCorpId(),getUnionIdDTO.getExternalUserId(), getUnionIdDTO.getCorpSecret())) {
+            throw new CustomException(ResultTip.TIP_PARAM_MISSING);
+        }
+        String corpSecret = corpSecretDecryptUtil.decryptUnionId(getUnionIdDTO.getCorpSecret()) ;
+        ExternalUserDetail userDetail = weUnionIdClient.getByExternalUserId(getUnionIdDTO.getExternalUserId(), getUnionIdDTO.getCorpId(), corpSecret);
+        if(userDetail == null || userDetail.getExternal_contact() == null ) {
+            throw new CustomException(ResultTip.TIP_GET_UNION_ID_FAIL);
+        }
+        return new GetUnionIdVO(userDetail.getExternal_contact());
     }
 
 }

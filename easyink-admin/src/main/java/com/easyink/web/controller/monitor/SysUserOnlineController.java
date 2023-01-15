@@ -12,12 +12,12 @@ import com.easyink.common.core.redis.RedisCache;
 import com.easyink.common.enums.BusinessType;
 import com.easyink.common.enums.LogoutReasonEnum;
 import com.easyink.common.service.ISysUserOnlineService;
-import com.easyink.common.utils.StringUtils;
 import com.easyink.wecom.login.util.LoginTokenService;
 import com.github.xiaoymin.knife4j.annotations.ApiSupport;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -53,20 +53,18 @@ public class SysUserOnlineController extends BaseController {
         List<SysUserOnline> userOnlineList = new ArrayList<>();
         for (String key : keys) {
             LoginUser user = redisCache.getCacheObject(key);
-            if (StringUtils.isNotEmpty(ipaddr) && StringUtils.isNotEmpty(userName)) {
-                if (StringUtils.equals(ipaddr, user.getIpaddr()) && StringUtils.equals(userName, user.getUsername())) {
-                    userOnlineList.add(userOnlineService.selectOnlineByInfo(ipaddr, userName, user));
-                }
-            } else if (StringUtils.isNotEmpty(ipaddr)) {
-                if (StringUtils.equals(ipaddr, user.getIpaddr())) {
-                    userOnlineList.add(userOnlineService.selectOnlineByIpaddr(ipaddr, user));
-                }
-            } else if (StringUtils.isNotEmpty(userName) && StringUtils.isNotNull(user.getUser())) {
-                if (StringUtils.equals(userName, user.getUsername())) {
-                    userOnlineList.add(userOnlineService.selectOnlineByUserName(userName, user));
-                }
+            SysUserOnline sysUserOnline = null;
+            if (StringUtils.isNotBlank(ipaddr) && StringUtils.isNotBlank(userName)) {
+                sysUserOnline = userOnlineService.selectOnlineByInfo(ipaddr, userName, user);
+            } else if (StringUtils.isNotBlank(ipaddr)){
+                sysUserOnline = userOnlineService.selectOnlineByIpaddr(ipaddr, user);
+            } else if (StringUtils.isNotBlank(userName)) {
+                sysUserOnline = userOnlineService.selectOnlineByUserName(userName, user);
             } else {
-                userOnlineList.add(userOnlineService.loginUserToUserOnline(user));
+                sysUserOnline = userOnlineService.loginUserToUserOnline(user);
+            }
+            if (sysUserOnline != null) {
+                userOnlineList.add(sysUserOnline);
             }
         }
         // 根据登录用户名+ip地址 按登录时间倒序排序后 去重,保留最新登录的信息(同一ip如果没有通过后台登出而是直接关闭浏览器,下次打开浏览器登录后redis若token还没过期,则会有该ip的两个同样登录用户)

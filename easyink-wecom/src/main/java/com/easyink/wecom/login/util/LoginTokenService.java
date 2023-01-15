@@ -110,10 +110,11 @@ public class LoginTokenService {
      */
     public static void refreshDataScope(String userKey) {
         RedisCache redisCache = SpringUtils.getBean(RedisCache.class);
-        LoginUser loginUser = redisCache.getCacheObject(userKey);
+        TokenService tokenService = SpringUtils.getBean(TokenService.class);
+        LoginUser loginUser = tokenService.getLoginUserByUserKey(userKey);
         if (null != loginUser) {
             SpringUtils.getBean(SysPermissionService.class).setRoleAndDepartmentDataScope(loginUser);
-            redisCache.setCacheObject(userKey, loginUser, TokenService.expireTime, TimeUnit.MINUTES);
+            redisCache.setCacheObject(userKey, loginUser, tokenService.getExpireTime(), TimeUnit.MINUTES);
         }
     }
 
@@ -184,11 +185,12 @@ public class LoginTokenService {
             return;
         }
         loginUser.setLoginTime(System.currentTimeMillis());
-        loginUser.setExpireTime(loginUser.getLoginTime() + TokenService.expireTime * TokenService.MILLIS_MINUTE);
+        TokenService tokenService = SpringUtils.getBean(TokenService.class);
+        String currentUserKey = tokenService.getUserKey(loginUser.getToken());
+        loginUser.setExpireTime(loginUser.getLoginTime() + tokenService.getExpireTime() * TokenService.MILLIS_MINUTE);
         // 获取当前登录用户
         RedisCache redisCache = SpringUtils.getBean(RedisCache.class);
-        String currentUserKey = SpringUtils.getBean(TokenService.class).getUserKey(loginUser.getToken());
-        redisCache.setCacheObject(currentUserKey, loginUser, TokenService.expireTime, TimeUnit.MINUTES);
+        redisCache.setCacheObject(currentUserKey, loginUser, tokenService.getExpireTime(), TimeUnit.MINUTES);
     }
 
     /**

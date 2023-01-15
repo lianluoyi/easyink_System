@@ -5,7 +5,6 @@ import com.easyink.common.constant.Constants;
 import com.easyink.common.core.domain.model.LoginUser;
 import com.easyink.common.core.redis.RedisCache;
 import com.easyink.common.utils.ServletUtils;
-import com.easyink.common.utils.StringUtils;
 import com.easyink.common.utils.ip.AddressUtils;
 import com.easyink.common.utils.ip.IpUtils;
 import com.easyink.common.utils.uuid.IdUtils;
@@ -13,7 +12,9 @@ import eu.bitwalker.useragentutils.UserAgent;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -43,7 +44,9 @@ public class TokenService {
     private String secret;
 
     // 令牌有效期（默认30分钟）
-    public static int expireTime;
+    @Value("${token.expireTime}")
+    @Getter
+    private int expireTime;
 
     @Autowired
     private RuoYiConfig ruoYiConfig;
@@ -109,8 +112,7 @@ public class TokenService {
             // 从令牌中获取声明
             Claims claims = parseToken(token);
             // 从声明中获取登录的uuid
-            String uuid = (String) claims.get(Constants.LOGIN_USER_KEY);
-            return uuid;
+            return (String) claims.get(Constants.LOGIN_USER_KEY);
         }
         return StringUtils.EMPTY;
     }
@@ -119,7 +121,7 @@ public class TokenService {
      * 设置用户身份信息
      */
     public void setLoginUser(LoginUser loginUser) {
-        if (StringUtils.isNotNull(loginUser) && StringUtils.isNotEmpty(loginUser.getToken())) {
+        if (null != loginUser && StringUtils.isNotEmpty(loginUser.getToken())) {
             refreshToken(loginUser);
         }
     }
@@ -281,9 +283,5 @@ public class TokenService {
         return Constants.LOGIN_TOKEN_KEY + token;
     }
 
-    @Value("${token.expireTime}")
-    public void setExpireTime(int expireTime) {
-        TokenService.expireTime = expireTime;
-    }
 
 }

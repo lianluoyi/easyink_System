@@ -280,17 +280,6 @@ public class WeCustomerMessagePushServiceImpl implements WeCustomerMessagePushSe
         }
     }
 
-    @Override
-    @Deprecated
-    public CustomerMessagePushDTO getMessageInfo(Long messageId) {
-        if (messageId == null) {
-            return new CustomerMessagePushDTO();
-        }
-        WeCustomerMessageTimeTask timeTask = getTimeTask(messageId);
-        buildUserAndDepartmentInfo(timeTask.getMessageInfo().getCorpId(), timeTask.getMessageInfo().getDepartment(), timeTask.getMessageInfo().getStaffId(), timeTask.getMessageInfo());
-        return timeTask.getMessageInfo();
-    }
-
     /**
      * 获取定时任务信息
      *

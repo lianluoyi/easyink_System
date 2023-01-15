@@ -2,6 +2,9 @@ package com.easyink.common.utils;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.dom4j.*;
 
 import java.util.List;
@@ -12,6 +15,8 @@ import java.util.List;
  * @author: 1*+
  * @date: 2021-11-19 15:11
  */
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
+@Slf4j
 public class XmlUtil {
 
 
@@ -38,10 +43,9 @@ public class XmlUtil {
         try {
             jsonObject = elementToJSONObject(strToDocument(xml).getRootElement());
         } catch (DocumentException e) {
-            e.printStackTrace();
-        } finally {
-            return jsonObject;
+            log.error("[xml转com.alibaba.fastjson.JSONObject], e{}",ExceptionUtil.getExceptionMessage(e));
         }
+        return jsonObject;
     }
 
 

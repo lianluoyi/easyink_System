@@ -398,8 +398,8 @@ public class WeConstans {
         ACTIVE_STATE_FOUR(4, "未激活"),
         ACTIVE_STATE_FIVE(5, "成员退出");
 
-        private Integer key;
-        private String value;
+        private final Integer  key;
+        private final String  value;
 
         /**
          * 构造方法
@@ -408,25 +408,18 @@ public class WeConstans {
          * @param value
          */
         corpUserEnum(int key, String value) {
-            this.setKey(key);
-            this.setValue(value);
+            this.key = key;
+            this.value = value;
         }
 
         public Integer getKey() {
             return key;
         }
 
-        public void setKey(Integer key) {
-            this.key = key;
-        }
-
         public String getValue() {
             return value;
         }
 
-        public void setValue(String value) {
-            this.value = value;
-        }
 
     }
 
@@ -438,8 +431,8 @@ public class WeConstans {
         RECEIVE_OTHER_MESSAGE("3", "-因客户已经收到其他群发消息导致发送失败"),
         ;
 
-        private String status;
-        private String desc;
+        private final String status;
+        private final String desc;
 
         /**
          * 构造方法
@@ -812,29 +805,44 @@ public class WeConstans {
     public static final Long SUBSCRIBE_EXPIRE_TIME = 60L;
 
     /**
+     * 朋友圈
+     */
+    public static final String MOMENTS = "【朋友圈】";
+
+    /**
+     *  提醒内容：您有一条发送朋友圈的任务
+     */
+    public static final String REMIND_SEND_MOMENTS = "提醒内容：您有一条发送朋友圈的任务";
+
+    /**
+     *  创建时间：{0}
+     */
+    public static final String CREATE_TIME = "创建时间：{0}";
+
+    /**
      * 个人朋友圈消息模板
      */
-    public static final String PERSONAL_MOMENT_MSG = "【朋友圈】\n" +
+    public static final String PERSONAL_MOMENT_MSG = MOMENTS + "\n" +
             "\n" +
-            "提醒内容：您有一条发送朋友圈的任务\n" +
+            REMIND_SEND_MOMENTS + "\n" +
             "\n" +
-            "创建时间：{0}\n" +
+            CREATE_TIME + "\n" +
             "\n" +
             "{1}";
 
-    public static final String ENTERPRISE_MOMENT_USER_MSG = "【朋友圈】\n" +
+    public static final String ENTERPRISE_MOMENT_USER_MSG = MOMENTS + "\n" +
             "\n" +
-            "提醒内容：您有一条发送朋友圈的任务\n" +
+            REMIND_SEND_MOMENTS + "\n" +
             "\n" +
-            "创建时间：{0}\n" +
+            CREATE_TIME + "\n" +
             "\n" +
             "请从企业微信APP前往【客户朋友圈】确认发送，记得及时完成喔！";
 
-    public static final String PERSONAL_MOMENT_USER_MSG = "【朋友圈】\n" +
+    public static final String PERSONAL_MOMENT_USER_MSG = MOMENTS + "\n" +
             "\n" +
-            "提醒内容：您有一条发送朋友圈的任务\n" +
+            REMIND_SEND_MOMENTS + "\n" +
             "\n" +
-            "创建时间：{0}\n" +
+            CREATE_TIME + "\n" +
             "\n" +
             "{1}";
     public static final String  MOMENT_NO_CUSTOMER ="该员工没有需触达客户";

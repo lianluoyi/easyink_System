@@ -21,42 +21,6 @@ import java.util.ArrayList;
 public class WeCommunityGroupSopController extends BaseController {
 
     /**
-     * 通过过滤条件获取群sop列表
-     *
-     * @param ruleName  规则名称
-     * @param createBy  创建者
-     * @param beginTime 创建区间 - 开始时间
-     * @param endTime   创建区间 - 结束时间
-     * @return 群sop规则列表
-     */
-    @ApiOperation(value = "通过过滤条件获取群sop列表", httpMethod = "GET")
-//    @PreAuthorize("@ss.hasPermi('wecom:communityGroupSop:list')")
-    @GetMapping(path = "/list")
-    @Deprecated
-    public TableDataInfo getSopList(
-            @RequestParam(value = "ruleName") String ruleName,
-            @RequestParam(value = "createBy") String createBy,
-            @RequestParam(value = "beginTime") String beginTime,
-            @RequestParam(value = "endTime") String endTime
-    ) {
-        return getDataTable(new ArrayList<>());
-    }
-
-    /**
-     * 新增SOP规则
-     *
-     * @param groupSopDto 更新数据
-     * @return 结果
-     */
-    @ApiOperation(value = "新增SOP规则", httpMethod = "POST")
-//    @PreAuthorize("@ss.hasPermi('wecom:communityGroupSop:add')")
-    @PostMapping(path = "/")
-    @Deprecated
-    public AjaxResult addGroupSop(@Validated @RequestBody WeGroupSopDTO groupSopDto) {
-        return AjaxResult.success();
-    }
-
-    /**
      * 通过规则id获取sop规则
      *
      * @param ruleId 规则id

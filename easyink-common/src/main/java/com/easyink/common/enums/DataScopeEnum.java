@@ -2,6 +2,7 @@ package com.easyink.common.enums;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import reactor.util.annotation.Nullable;
 
 import java.util.Arrays;
 /**
@@ -47,6 +48,9 @@ public enum DataScopeEnum {
      * @return
      */
     public static DataScopeEnum getDataScope(String code) {
+        if (code == null){
+            return null;
+        }
         return Arrays.stream(values()).filter(value -> value.getCode().equals(code)).findFirst().orElse(null);
     }
 }

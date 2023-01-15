@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<included>
+    <appender name="GenConsole" class="ch.qos.logback.core.ConsoleAppender">
+        <!--<encoder>-->
+        <!--<pattern>%black([%date{yyyy-MM-dd HH:mm:ss.SSS}]) %clr([%-5level]) %clr([%X{processType}]) %blue([uin:%-10X{uin}]) %cyan([deviceId:%-32X{deviceId}]) %boldRed([traceId:%X{traceId}]) %gray([%-20thread]) %highlight([%file:%line]) - %msg%n</pattern>-->
+        <!--&lt;!&ndash; 控制台也要使用UTF-8，不要使用GBK，否则会中文乱码 &ndash;&gt;-->
+        <!--<charset>UTF-8</charset>-->
+        <!--</encoder>-->
+        <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+            <jsonGeneratorDecorator
+                    class="net.logstash.logback.decorate.FeatureJsonGeneratorDecorator"/>
+            <providers>
+                <pattern>
+                    <pattern>
+                        {
+                        "date": "%date{yyyy-MM-dd HH:mm:ss.SSS}",
+                        "level": "%level",
+                        "thread": "%thread",
+                        "fileLine": "%file:%line",
+                        "msg": "%msg"
+                        }
+                    </pattern>
+                </pattern>
+            </providers>
+        </encoder>
+    </appender>
+
+
+</included>

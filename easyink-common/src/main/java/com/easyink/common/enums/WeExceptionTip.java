@@ -590,26 +590,13 @@ public enum WeExceptionTip {
         return code;
     }
 
-    public void setCode(Integer code) {
-        this.code = code;
-    }
-
     public String getTipMsg() {
         return tipMsg;
-    }
-
-    public void setTipMsg(String tipMsg) {
-        this.tipMsg = tipMsg;
     }
 
     public String getSolveTipMsg() {
         return solveTipMsg;
     }
-
-    public void setSolveTipMsg(String solveTipMsg) {
-        this.solveTipMsg = solveTipMsg;
-    }
-
 
     public static String getTipMsg(Integer code) {
         WeExceptionTip[] values = WeExceptionTip.values();

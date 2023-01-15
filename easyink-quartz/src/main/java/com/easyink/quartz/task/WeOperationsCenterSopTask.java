@@ -285,7 +285,12 @@ public class WeOperationsCenterSopTask {
             for (SopAttachmentVO sopAttachmentVO : sopAttachmentVos) {
                 WeOperationsCenterSopTaskEntity sopTask = new WeOperationsCenterSopTaskEntity();
                 if (AttachmentTypeEnum.RADAR.getMessageType().equals(sopAttachmentVO.getMediaType())) {
-                    buildRadarAttachment(sopAttachmentVO, channelType, userId, corpId, sopRuleName);
+                    try {
+                        buildRadarAttachment(sopAttachmentVO, channelType, userId, corpId, sopRuleName);
+                    } catch (Exception e) {
+                        log.error("sop处理构建雷达素材失败, corpId: {},sopRuleName: {},userId: {}, sopType: {}, radarInfo: {}, e: {}", corpId, sopRuleName, userId, channelType, sopAttachmentVO, ExceptionUtils.getMessage(e));
+                        continue;
+                    }
                 }
                 BeanUtils.copyProperties(sopAttachmentVO, sopTask);
                 sopTask.setId(SnowFlakeUtil.nextId());
@@ -295,6 +300,7 @@ public class WeOperationsCenterSopTask {
                 sopTaskService.saveBatch(taskEntityList);
                 //插入客户轨迹待办消息
                 List<String> taskIds = taskEntityList.stream().filter(task -> task.getId() != null).map(task -> task.getId().toString()).collect(Collectors.toList());
+                log.info("[保存sopTask] corpId: {}, userId: {}, targetId: {}, sopDetailId: {}, taskIds:{}", corpId, userId, sopDetailEntity.getTargetId(), sopDetailEntity.getId(), String.join(StrUtil.COMMA, taskIds));
                 saveCustomerTrajectorySopTask(sopDetailEntity.getAlertTime(), saveRuleNameMap.get(userId + sopDetailEntity.getRuleId()), corpId, sopDetailEntity.getId(), String.join(StrUtil.COMMA, taskIds), userId, sopDetailEntity.getTargetId());
             }
         }
@@ -341,7 +347,7 @@ public class WeOperationsCenterSopTask {
             weCustomerTrajectory.setExternalUserid(targetId);
             weCustomerTrajectory.setSopTaskIds(taskIds);
             weCustomerTrajectory.setContent(ruleName);
-            weCustomerTrajectory.setTrajectoryType(CustomerTrajectoryEnums.Type.TO_DO.getType());
+            weCustomerTrajectory.setTrajectoryType(CustomerTrajectoryEnums.Type.TO_DO.getDesc());
             weCustomerTrajectory.setCreateDate(alertTime);
             weCustomerTrajectory.setStartTime(Time.valueOf(DateUtils.parseDateToStr(HH_MM_SS,alertTime)));
             trajectoryService.save(weCustomerTrajectory);

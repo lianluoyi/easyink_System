@@ -14,8 +14,8 @@ public class GroupConstants {
     /**
      * 1-代表群聊成员是员工    2-代码群聊成员是客户
      */
-    private static final Integer ID_TYPE_USER = 1;
-    private static final Integer ID_TYPE_CUSTOMER = 2;
+    public static final Integer ID_TYPE_USER = 1;
+    public static final Integer ID_TYPE_CUSTOMER = 2;
 
     public static final Integer MAX_ALLOCATE_GROUP = 300;
 

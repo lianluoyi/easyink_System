@@ -17,6 +17,7 @@ import com.easyink.wecom.mapper.WeGroupCodeActualMapper;
 import com.easyink.wecom.service.We3rdAppService;
 import com.easyink.wecom.service.WeGroupCodeActualService;
 import org.apache.commons.collections4.CollectionUtils;
+import org.springframework.aop.framework.AopContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -164,16 +165,18 @@ public class WeGroupCodeActualServiceImpl extends ServiceImpl<WeGroupCodeActualM
      * @return
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public List<WeGroupCodeActual> addBatch(List<WeGroupCodeActual> weGroupCodeActualList, Long groupCodeId, String corpId) {
         checkBatch(weGroupCodeActualList, corpId);
         // 判断应用类型
         String serverType = we3rdAppService.getServerType().getServerType();
         // 保存
+        WeGroupCodeActualService weGroupCodeActualService = (WeGroupCodeActualService) AopContext.currentProxy();
         if (ServerTypeEnum.THIRD.getType().equals(serverType)) {
-            this.addThirdWeGroupCodeCorpActualBatch(weGroupCodeActualList, groupCodeId);
+            weGroupCodeActualService.addThirdWeGroupCodeCorpActualBatch(weGroupCodeActualList, groupCodeId);
         }
         if (ServerTypeEnum.INTERNAL.getType().equals(serverType)) {
-            this.addInnerWeGroupCodeCorpActualBatch(weGroupCodeActualList, groupCodeId, Boolean.TRUE, corpId);
+            weGroupCodeActualService.addInnerWeGroupCodeCorpActualBatch(weGroupCodeActualList, groupCodeId, Boolean.TRUE, corpId);
         }
         return weGroupCodeActualList;
     }
@@ -325,17 +328,19 @@ public class WeGroupCodeActualServiceImpl extends ServiceImpl<WeGroupCodeActualM
      * @return
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public int editBatch(List<WeGroupCodeActual> weGroupCodeActualList, Long groupCodeId, String corpId) {
         checkBatch(weGroupCodeActualList, corpId);
         // 判断应用类型
         String serverType = we3rdAppService.getServerType().getServerType();
         // 保存
         int result = 0;
+        WeGroupCodeActualService weGroupCodeActualService = (WeGroupCodeActualService) AopContext.currentProxy();
         if (ServerTypeEnum.THIRD.getType().equals(serverType)) {
-            result = this.editThirdWeGroupCodeCorpActualBatch(weGroupCodeActualList);
+            result = weGroupCodeActualService.editThirdWeGroupCodeCorpActualBatch(weGroupCodeActualList);
         }
         if (ServerTypeEnum.INTERNAL.getType().equals(serverType)) {
-            result = this.editInnerWeGroupCodeCorpActualBatch(weGroupCodeActualList, groupCodeId, Boolean.TRUE, corpId);
+            result = weGroupCodeActualService.editInnerWeGroupCodeCorpActualBatch(weGroupCodeActualList, groupCodeId, Boolean.TRUE, corpId);
         }
         return result;
     }
@@ -428,17 +433,19 @@ public class WeGroupCodeActualServiceImpl extends ServiceImpl<WeGroupCodeActualM
      * @return
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public int removeBatch(List<Long> removeIds, String corpId) {
         checkRemoveBatch(removeIds, corpId);
         // 判断应用类型
         String serverType = we3rdAppService.getServerType().getServerType();
         // 保存
+        WeGroupCodeActualService weGroupCodeActualService = (WeGroupCodeActualService) AopContext.currentProxy();
         int result = 0;
         if (ServerTypeEnum.THIRD.getType().equals(serverType)) {
-            result = this.removeThirdWeGroupCodeActualByIds(removeIds);
+            result = weGroupCodeActualService.removeThirdWeGroupCodeActualByIds(removeIds);
         }
         if (ServerTypeEnum.INTERNAL.getType().equals(serverType)) {
-            result = this.removeInnerWeGroupCodeActualByIds(removeIds, corpId);
+            result = weGroupCodeActualService.removeInnerWeGroupCodeActualByIds(removeIds, corpId);
         }
         return result;
     }

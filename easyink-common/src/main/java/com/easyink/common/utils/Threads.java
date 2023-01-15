@@ -31,6 +31,7 @@ public class Threads {
             executor.getQueue().put(r);
         } catch (InterruptedException e) {
             log.error("InterruptedException e:{}", ExceptionUtils.getStackTrace(e));
+            Thread.currentThread().interrupt();
         }
     });
 

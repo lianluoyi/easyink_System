@@ -64,8 +64,8 @@ public class CaptchaController {
         // 生成验证码
         if (MATH.equals(captchaType)) {
             String capText = captchaProducerMath.createText();
-            capStr = capText.substring(0, capText.lastIndexOf("@"));
-            code = capText.substring(capText.lastIndexOf("@") + 1);
+            capStr = capText.substring(0, capText.lastIndexOf('@'));
+            code = capText.substring(capText.lastIndexOf('@') + 1);
             image = captchaProducerMath.createImage(capStr);
         } else {
             capStr = code = captchaProducer.createText();

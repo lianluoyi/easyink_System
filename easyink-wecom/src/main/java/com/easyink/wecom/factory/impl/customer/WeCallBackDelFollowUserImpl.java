@@ -87,7 +87,10 @@ public class WeCallBackDelFollowUserImpl extends WeEventStrategy {
                     .eq(WeFlowerCustomerRel::getExternalUserid, message.getExternalUserId())
                     .last(GenConstants.LIMIT_1)
             );
-            weEmpleCodeAnalyseService.saveWeEmpleCodeAnalyse(corpId, message.getUserId(), message.getExternalUserId(), weFlowerCustomerRel.getState(), false);
+            // state 为空表示不是从活码加的外部联系人
+            if(weFlowerCustomerRel != null && StringUtils.isNotBlank(weFlowerCustomerRel.getState())) {
+                weEmpleCodeAnalyseService.saveWeEmpleCodeAnalyse(corpId, message.getUserId(), message.getExternalUserId(), weFlowerCustomerRel.getState(), false);
+            }
             // 客户轨迹:记录删除跟进成员事件
             weCustomerTrajectoryService.saveActivityRecord(corpId, message.getUserId(), message.getExternalUserId(),
                     CustomerTrajectoryEnums.SubType.DEL_USER.getType());

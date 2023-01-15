@@ -102,15 +102,8 @@ public class WeRadarChannelServiceImpl extends ServiceImpl<WeRadarChannelMapper,
      */
     @Override
     public List<WeRadarChannelVO> getRadarChannelList(SearchRadarChannelDTO radarChannelDTO) {
-        final boolean isSuperAdmin = LoginTokenService.getLoginUser().isSuperAdmin();
         radarChannelDTO.setCorpId(LoginTokenService.getLoginUser().getCorpId());
-        List<WeRadarChannelVO> list = this.baseMapper.list(radarChannelDTO, isSuperAdmin);
-        list.forEach(item -> {
-            if (Constants.SUPER_ADMIN.equals(item.getCreateId())) {
-                item.setCreateName(Constants.SUPER_ADMIN);
-            }
-        });
-        return list;
+        return this.baseMapper.list(radarChannelDTO);
     }
 
     /**

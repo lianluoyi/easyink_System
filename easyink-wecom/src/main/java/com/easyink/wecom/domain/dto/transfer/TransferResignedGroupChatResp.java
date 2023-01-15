@@ -9,6 +9,7 @@ import com.easyink.wecom.domain.entity.transfer.WeResignedGroupTransferRecord;
 import lombok.Data;
 import org.apache.commons.collections4.CollectionUtils;
 
+import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -19,7 +20,7 @@ import java.util.stream.Collectors;
  * @date : 2021/12/6 19:45
  */
 @Data
-public class TransferResignedGroupChatResp extends WeResultDTO {
+public class TransferResignedGroupChatResp extends WeResultDTO{
     /**
      * 没继承成功的群详情
      */

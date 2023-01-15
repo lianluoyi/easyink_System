@@ -24,10 +24,9 @@ public interface WeRadarMapper extends BaseMapper<WeRadar> {
      * 查询雷达列表
      *
      * @param radarDTO
-     * @param isSuperAdmin
      * @return
      */
-    List<WeRadarVO> list(@Param("radar") SearchRadarDTO radarDTO, @Param("isSuperAdmin") boolean isSuperAdmin);
+    List<WeRadarVO> list(@Param("radar") SearchRadarDTO radarDTO);
 
 
     /**

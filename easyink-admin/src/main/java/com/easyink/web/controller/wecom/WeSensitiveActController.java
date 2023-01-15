@@ -7,7 +7,6 @@ import com.easyink.common.core.domain.RootEntity;
 import com.easyink.common.core.page.TableDataInfo;
 import com.easyink.common.enums.BusinessType;
 import com.easyink.common.enums.ResultTip;
-import com.easyink.common.token.TokenService;
 import com.easyink.common.utils.poi.ExcelUtil;
 import com.easyink.wecom.domain.WeSensitiveAct;
 import com.easyink.wecom.domain.WeSensitiveActHit;
@@ -39,13 +38,11 @@ import java.util.stream.Collectors;
 @Api(tags = "敏感行为管理接口")
 public class WeSensitiveActController extends BaseController {
     private final WeSensitiveActService weSensitiveActService;
-    private final TokenService tokenService;
     private final WeSensitiveActHitService weSensitiveActHitService;
 
     @Autowired
-    public WeSensitiveActController(@NotNull WeSensitiveActService weSensitiveActService, @NotNull TokenService tokenService, @NotNull WeSensitiveActHitService weSensitiveActHitService) {
+    public WeSensitiveActController(@NotNull WeSensitiveActService weSensitiveActService, @NotNull WeSensitiveActHitService weSensitiveActHitService) {
         this.weSensitiveActHitService = weSensitiveActHitService;
-        this.tokenService = tokenService;
         this.weSensitiveActService = weSensitiveActService;
     }
 

@@ -46,7 +46,7 @@ public class RuoYiConfig {
     /**
      * 企业微信账号登录系统默认密码
      */
-    private String weUserDefaultPwd = "123456";
+    private String weUserDefaultPwd;
 
 
     private FileConfig file;

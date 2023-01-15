@@ -1,5 +1,7 @@
 package com.easyink.wecom.domain.req;
 
+import com.easyink.common.utils.bean.BeanUtils;
+import com.easyink.wecom.domain.dto.transfer.TransferResignedGroupChatResp;
 import com.easyink.wecom.domain.resp.WePageBaseResp;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
@@ -39,21 +41,33 @@ public abstract class WePageBaseReq<T> {
      * @param corpId 企业ID
      * @return {@link WePageBaseResp} 接口响应
      */
-    public WePageBaseResp<T> executeTillNoNextPage(String corpId) {
+    public WePageBaseResp<T> executeTillNoNextPage(String corpId)  {
         // 待返回的分页列表
         List<T> totalList = new ArrayList<>();
         // 接口单次的响应数据
-        WePageBaseResp<T> resp = null;
+        WePageBaseResp<T> onceResp = null;
+        // 保存全部数据
+        WePageBaseResp<T> respAll = null;
+        // 至少有一次正确返回
+        boolean resultSuccessFlag = false;
         do {
-            setCursorIfExist(resp);
-            resp = this.execute(corpId);
-            if (resp == null || CollectionUtils.isEmpty(resp.getPageList())) {
+            setCursorIfExist(onceResp);
+            onceResp = this.execute(corpId);
+            if (onceResp == null || CollectionUtils.isEmpty(onceResp.getPageList())) {
                 break;
             }
-            totalList.addAll(resp.getPageList());
-        } while (StringUtils.isNotBlank(resp.getNext_cursor()));
-        resp.setTotalList(totalList);
-        return resp;
+            // 其他参数只复制一次
+            if(!resultSuccessFlag){
+                respAll = onceResp;
+                resultSuccessFlag = true;
+            }
+            totalList.addAll(onceResp.getPageList());
+        } while (StringUtils.isNotBlank(onceResp.getNext_cursor()));
+        if(respAll == null){
+            return null;
+        }
+        respAll.setTotalList(totalList);
+        return respAll;
     }
 
     /**

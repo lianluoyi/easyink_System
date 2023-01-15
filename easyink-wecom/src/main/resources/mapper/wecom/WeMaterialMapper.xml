@@ -314,9 +314,11 @@
         <if test="search!=null and search!=''">
             AND wm.material_name LIKE CONCAT('%',#{search},'%')
         </if>
-        <if test="showMaterial!=null">
+        <if test="showMaterial != null">
             AND show_material = #{showMaterial}
-            AND wc.using = #{showMaterial}
+        </if>
+        <if test="usingFlag != null">
+            AND wc.using = #{usingFlag}
         </if>
         <if test="isExpire!=null">
             <choose>

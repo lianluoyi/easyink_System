@@ -130,7 +130,7 @@ public class WeAutoTagRuleHitCustomerRecordServiceImpl extends ServiceImpl<WeAut
         if (CollectionUtils.isNotEmpty(allTagList)) {
             log.info(">>>>>>>>>>>>>>>准备进行打标签,标签列表: {}", allTagList.stream().map(WeTag::getTagId).collect(Collectors.toList()));
             WeMakeCustomerTagVO weMakeCustomerTagVO = new WeMakeCustomerTagVO(customerId, userId, allTagList, corpId);
-            weCustomerService.makeLabelbatch(Collections.singletonList(weMakeCustomerTagVO), userId);
+            weCustomerService.batchMakeLabel(Collections.singletonList(weMakeCustomerTagVO), userId);
         }
 
 

@@ -1,21 +1,25 @@
 package com.easyink.common.constant.redeemcode;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+
 /**
  * ClassName： Constants
  *
  * @author wx
  * @date 2022/7/12 9:41
  */
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class RedeemCodeConstants {
 
     /**
      * 兑换码锁
      */
-    public static String REDEEM_CODE_KEY = "redeemCode";
+    public static final String REDEEM_CODE_KEY = "redeemCode";
 
-    public static long CODE_WAIT_TIME = 5L;
+    public static final long CODE_WAIT_TIME = 5L;
 
-    public static long CODE_LEASE_TIME = 5L;
+    public static final long CODE_LEASE_TIME = 5L;
 
     /**
      * 获取兑换码活动锁，用来处理分配兑换码所引发的并发操作

@@ -91,19 +91,6 @@ public class WeGroupController extends BaseController {
     }
 
     /**
-     * 离职分配单个客户群
-     *
-     * @param weLeaveAllocateVO
-     * @return
-     */
-    @PostMapping({"/allocateSingleGroup"})
-    @ApiOperation("客户离职继承分配")
-    @Deprecated
-    public AjaxResult<AllocateWeGroupResp> allocateSingleGroup(@RequestBody WeLeaveAllocateVO weLeaveAllocateVO) {
-        return AjaxResult.success();
-    }
-
-    /**
      * 根据员工id获取员工相关群
      *
      * @param userId

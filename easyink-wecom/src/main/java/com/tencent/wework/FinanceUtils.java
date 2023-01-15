@@ -14,6 +14,7 @@ import com.easyink.common.core.domain.conversation.msgtype.*;
 import com.easyink.common.core.domain.wecom.WeUser;
 import com.easyink.common.core.redis.RedisCache;
 import com.easyink.common.exception.BaseException;
+import com.easyink.common.exception.CustomException;
 import com.easyink.common.utils.DateUtils;
 import com.easyink.common.utils.StringUtils;
 import com.easyink.common.utils.file.FileUploadUtils;
@@ -28,10 +29,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.security.PrivateKey;
 import java.util.ArrayList;
 import java.util.List;
@@ -512,8 +510,8 @@ public class FinanceUtils {
                     f.mkdirs();
                 }
                 File file = new File(filePath, fileName);
-                if (!file.isDirectory()) {
-                    file.createNewFile();
+                if (!file.isDirectory() && !file.createNewFile()) {
+                    throw new CustomException("getMediaData 文件不存在，创建文件失败");
                 }
                 outputStream = new FileOutputStream(file, true);
                 outputStream.write(Finance.GetData(mediaData));

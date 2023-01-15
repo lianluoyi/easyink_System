@@ -7,11 +7,11 @@ import com.easyink.common.constant.UserConstants;
 import com.easyink.common.core.domain.entity.SysRole;
 import com.easyink.common.enums.DataScopeEnum;
 import com.easyink.common.enums.RoleTypeEnum;
-import com.easyink.common.utils.StringUtils;
 import com.easyink.wecom.domain.WeUserRole;
 import com.easyink.wecom.mapper.WeUserRoleMapper;
 import com.easyink.wecom.service.WeUserRoleService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -74,7 +74,7 @@ public class WeUserRoleServiceImpl extends ServiceImpl<WeUserRoleMapper, WeUserR
     @Override
     public Integer insertDefaultRoleAndInitMenus(SysRole role) {
         Integer res = weUserRoleMapper.insertRole(role);
-        String menuIds = null;
+        String menuIds = StringUtils.defaultString(null);
         if (UserConstants.INIT_ADMIN_ROLE_KEY.equals(role.getRoleKey())) {
             menuIds = UserConstants.ADMIN_DEFAULT_MENU_IDS;
         } else if (UserConstants.INIT_DEPARTMENT_ADMIN_ROLE_KEY.equals(role.getRoleKey())) {

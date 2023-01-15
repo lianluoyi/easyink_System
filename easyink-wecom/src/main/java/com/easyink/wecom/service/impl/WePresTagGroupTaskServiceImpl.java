@@ -38,6 +38,7 @@ import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.springframework.aop.framework.AopContext;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -133,6 +134,7 @@ public class WePresTagGroupTaskServiceImpl extends ServiceImpl<WePresTagGroupTas
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public int addTask(WePresTagGroupTaskDTO taskDTO, WePresTagGroupTask task, LoginUser loginUser) {
         if (taskDTO == null || task == null || loginUser == null) {
             throw new CustomException("请求参数不能为空");
@@ -141,6 +143,7 @@ public class WePresTagGroupTaskServiceImpl extends ServiceImpl<WePresTagGroupTas
         Integer sendType = taskDTO.getSendType();
         List<String> tagList = taskDTO.getTagList();
         Integer sendScope = taskDTO.getSendScope();
+        WePresTagGroupTaskService wePresTagGroupTaskService = (WePresTagGroupTaskService) AopContext.currentProxy();
         //Society my sister Li 个人群发需要scopeList数据(成员userId)
         if (CustomerTrajectoryEnums.TaskSendType.SINGLE.getType().equals(sendType)) {
             //选择所有客户，则需要获取当前账号下的数据权限范围的成员userId
@@ -157,16 +160,16 @@ public class WePresTagGroupTaskServiceImpl extends ServiceImpl<WePresTagGroupTas
                 }
             }
             //个人群发，客户数据需要保存到WePresTagGroupStat表
-            this.saveWePresTagGroupStat(task.getTaskId(), scopeList);
+            wePresTagGroupTaskService.saveWePresTagGroupStat(task.getTaskId(), scopeList);
         }
         //保存任务记录
-        int affectedRows = this.add(task, tagList, scopeList);
+        int affectedRows = wePresTagGroupTaskService.add(task, tagList, scopeList);
         if (affectedRows > 0) {
             boolean hasScope = CollectionUtils.isNotEmpty(scopeList);
             boolean hasTag = CollectionUtils.isNotEmpty(tagList);
             //符合筛选条件的外部客户数据
             List<String> externalIds = this.selectExternalUserIds(task.getTaskId(), hasScope, hasTag, sendScope, taskDTO.getCusBeginTime(), taskDTO.getCusEndTime());
-            this.sendMessage(task, externalIds);
+            wePresTagGroupTaskService.sendMessage(task, externalIds);
         }
         return affectedRows;
     }

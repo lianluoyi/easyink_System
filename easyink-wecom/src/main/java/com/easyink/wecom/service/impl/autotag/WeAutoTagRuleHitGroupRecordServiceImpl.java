@@ -129,7 +129,7 @@ public class WeAutoTagRuleHitGroupRecordServiceImpl extends ServiceImpl<WeAutoTa
                 List<String> userIdList = weFlowerCustomerRelService.listUpUserIdListByCustomerId(customerId, corpId);
                 for (String userId : userIdList) {
                     log.info("入群打标签: 员工: {}, 客户: {}", userId, customerId);
-                    weCustomerService.makeLabelbatch(Collections.singletonList(new WeMakeCustomerTagVO(customerId, userId, allTagList, corpId)), userId);
+                    weCustomerService.batchMakeLabel(Collections.singletonList(new WeMakeCustomerTagVO(customerId, userId, allTagList, corpId)), userId);
                 }
             }
         }

@@ -93,20 +93,6 @@ public class WeCustomerController extends BaseController {
         return AjaxResult.success(weCustomerService.weCustomerCount(weCustomer));
     }
 
-
-    /**
-     * 根据客户ID获取客户
-     *
-     * @return
-     */
-    @PreAuthorize("@ss.hasPermi('customerManage:lossRemind:view') || @ss.hasPermi('customerManage:customer:view')")
-    @GetMapping("/getCustomersByUserId/{externalUserid}/{userId}")
-    @ApiOperation("根据客户ID和员工ID获取客户详情")
-    @Deprecated
-    public AjaxResult<List<WeCustomer>> getCustomersByUserId(@PathVariable String externalUserid, @PathVariable String userId, @ApiParam("对应离职员工的离职时间,不传则获取在职员工客户") Date dimissionTime) {
-        return AjaxResult.success();
-    }
-
     @PreAuthorize("@ss.hasPermi('customerManage:lossRemind:view') || @ss.hasPermi('customerManage:customer:view')")
     @GetMapping("/getCustomersByUserIdV2/{externalUserid}/{userId}")
     @ApiOperation("根据客户ID和员工ID获取客户详情V2")
@@ -150,19 +136,6 @@ public class WeCustomerController extends BaseController {
         dto.setCorpId(loginUser.getCorpId());
         dto.setUpdateBy(loginUser.getUsername());
         weCustomerService.editCustomer(dto);
-        return AjaxResult.success();
-    }
-
-    /**
-     * 离职分配单个客户
-     *
-     * @param weLeaveAllocateVO
-     * @return
-     */
-    @PostMapping({"/allocateSingleCustomer"})
-    @ApiOperation("离职继承分配")
-    @Deprecated
-    public AjaxResult<AllocateWeCustomerResp> allocateSingleCustomer(@RequestBody WeLeaveAllocateVO weLeaveAllocateVO) {
         return AjaxResult.success();
     }
 
@@ -213,7 +186,7 @@ public class WeCustomerController extends BaseController {
     public <T> AjaxResult<T> makeLabelbatch(@Validated @RequestBody List<WeMakeCustomerTagVO> weMakeCustomerTag) {
         LoginUser loginUser = LoginTokenService.getLoginUser();
         weMakeCustomerTag.forEach(weMakeCustomerTagVO -> weMakeCustomerTagVO.setCorpId(loginUser.getCorpId()));
-        weCustomerService.makeLabelbatch(weMakeCustomerTag, loginUser.getUsername());
+        weCustomerService.batchMakeLabel(weMakeCustomerTag, loginUser.getUsername());
         return AjaxResult.success();
     }
 
@@ -233,17 +206,6 @@ public class WeCustomerController extends BaseController {
         return AjaxResult.success();
 
     }
-
-    /**
-     * 查询企业微信客户列表(六感)
-     */
-    @Deprecated
-    @GetMapping("/listConcise")
-    @ApiOperation("查询企业微信客户列表(六感)")
-    public TableDataInfo<WeCustomer> listConcise(WeCustomer weCustomer) {
-        return getDataTable(new ArrayList<>());
-    }
-
 
     @ApiOperation("查询客户所属的员工列表")
     @GetMapping("/listUserByCustomerId/{customerId}")

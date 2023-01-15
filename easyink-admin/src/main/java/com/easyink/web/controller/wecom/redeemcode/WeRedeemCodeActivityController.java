@@ -10,7 +10,6 @@ import com.easyink.wecom.domain.dto.redeemcode.WeRedeemCodeActivityDeleteDTO;
 import com.easyink.wecom.domain.vo.redeemcode.WeRedeemCodeActivityVO;
 import com.easyink.wecom.login.util.LoginTokenService;
 import com.easyink.wecom.service.redeemcode.WeRedeemCodeActivityService;
-import com.easyink.wecom.service.redeemcode.WeRedeemCodeService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,12 +32,10 @@ public class WeRedeemCodeActivityController extends BaseController {
 
 
     private final WeRedeemCodeActivityService weRedeemCodeActivityService;
-    private final WeRedeemCodeService weRedeemCodeService;
 
     @Autowired
-    public WeRedeemCodeActivityController(WeRedeemCodeActivityService weRedeemCodeActivityService, WeRedeemCodeService weRedeemCodeService) {
+    public WeRedeemCodeActivityController(WeRedeemCodeActivityService weRedeemCodeActivityService) {
         this.weRedeemCodeActivityService = weRedeemCodeActivityService;
-        this.weRedeemCodeService = weRedeemCodeService;
     }
 
     //@PreAuthorize("@ss.hasPermi('wecom:redeemcode:add')")

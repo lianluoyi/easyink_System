@@ -73,13 +73,6 @@ public interface WeCustomerMessagePushService {
     void updateTimeTask(CustomerMessagePushDTO customerMessagePushDTO, LoginUser loginUser) throws ParseException;
 
     /**
-     * 获取定时任务信息
-     * @param messageId 消息
-     * @return {@link CustomerMessagePushDTO}
-     */
-    CustomerMessagePushDTO getMessageInfo(Long messageId);
-
-    /**
      * 获取需要复制的信息
      *
      * @param messageId 消息

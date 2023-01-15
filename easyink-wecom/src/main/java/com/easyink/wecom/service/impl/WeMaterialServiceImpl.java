@@ -75,7 +75,7 @@ public class WeMaterialServiceImpl implements WeMaterialService {
             //上传临时素材
             Optional<com.easyink.common.enums.MediaType> mediaType = com.easyink.common.enums.MediaType.of(type);
             if (!mediaType.isPresent()) {
-                throw new WeComException("媒体类型出错！");
+                throw new WeComException(ResultTip.TIP_MEDIA_TYPE_ERROR.getTipMsg());
             }
             //构造返回结果
             String cosImgUrlPrefix = ruoYiConfig.getFile().getCos().getCosImgUrlPrefix();

@@ -107,7 +107,7 @@ public class WeCustomerExtendPropertyServiceImpl extends ServiceImpl<WeCustomerE
             throw new CustomException(ResultTip.TIP_GENERAL_PARAM_ERROR);
         }
         // 不允许与系统默认字段重复名字
-        if (ListUtil.toList(UserConstants.SYS_DEFAULT_PROPERTIES).contains(property.getName())) {
+        if (ListUtil.toList(UserConstants.getSysDefaultProperties()).contains(property.getName())) {
             throw new CustomException(ResultTip.TIP_IS_SYS_PROP_NAME);
         }
         if (!isUnique(property)) {
@@ -231,6 +231,17 @@ public class WeCustomerExtendPropertyServiceImpl extends ServiceImpl<WeCustomerE
             property.setCorpId(corpId);
             list.add(property);
         }
+        // 删除property中的多选框选项重新插入，这样可以不用排序，直接用传过来的顺序排序
+        List<Long> removeExtendPropertyIds = new ArrayList<>();
+        list.forEach(it -> {
+            // 记录extendPropertyId
+            removeExtendPropertyIds.add(it.getId());
+            // 将多选框id置为空，重新插入
+            it.getOptionList().forEach(option -> option.setId(null));
+        });
+        if (CollectionUtils.isNotEmpty(removeExtendPropertyIds)) {
+            extendPropertyMultipleOptionService.remove(new LambdaQueryWrapper<ExtendPropertyMultipleOption>().in(ExtendPropertyMultipleOption::getExtendPropertyId, removeExtendPropertyIds));
+        }
         this.editBatch(list, corpId);
     }
 
@@ -264,7 +275,7 @@ public class WeCustomerExtendPropertyServiceImpl extends ServiceImpl<WeCustomerE
             return;
         }
         // 过滤系统默认字段
-        selectedProperties = selectedProperties.stream().filter(a -> !ListUtil.toList(UserConstants.SYS_DEFAULT_PROPERTIES).contains(a)).collect(Collectors.toList());
+        selectedProperties = selectedProperties.stream().filter(a -> !ListUtil.toList(UserConstants.getSysDefaultProperties()).contains(a)).collect(Collectors.toList());
         // 查询该企业所有的扩展属性详情
         List<WeCustomerExtendProperty> extendPropList = this.getList(
                 WeCustomerExtendProperty.builder()

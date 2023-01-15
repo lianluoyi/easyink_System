@@ -7,6 +7,7 @@ import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
+import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.scheduling.annotation.EnableAsync;
 
 /**
@@ -18,11 +19,12 @@ import org.springframework.scheduling.annotation.EnableAsync;
 @SpringBootApplication(exclude = {DataSourceAutoConfiguration.class, PageHelperAutoConfiguration.class})
 @MapperScan("com.easyink.*.mapper")
 @ForestScan(basePackages = {"com.easyink.wecom.client", "com.easyink.wecom.wxclient"})
-@EnableAsync
+@EnableAsync(proxyTargetClass = true)
+@EnableAspectJAutoProxy(exposeProxy = true)
 public class EasyWeComApplication {
     public static void main(String[] args) {
         SpringApplication.run(EasyWeComApplication.class, args);
-        log.info("\n" +
+        System.out.println("\n" +
                 "                     ,----,                                     ,----,                                                                                                  \n" +
                 "                   ,/   .`|                                   ,/   .`|                                                                                                  \n" +
                 "  .--.--.        ,`   .'  :    ,---,        ,-.----.        ,`   .'  :           .--.--.                     ,----..     ,----..       ,---,.   .--.--.      .--.--.    \n" +

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<included>
+    <appender name="GenFileLog" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <File>${LOG_PATH}/${LOG_NAME}.log</File>
+        <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+            <jsonGeneratorDecorator
+                    class="net.logstash.logback.decorate.FeatureJsonGeneratorDecorator"/>
+            <providers>
+                <pattern>
+                    <pattern>
+                        {
+                        "date": "%date{yyyy-MM-dd HH:mm:ss.SSS}",
+                        "level": "%level",
+                        "thread": "%thread",
+                        "fileLine": "%file:%line",
+                        "msg": "%msg"
+                        }
+                    </pattern>
+                </pattern>
+            </providers>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_PATH:-/log}${LOG_NAME:-/wecom.log}.%d{yyyy-MM-dd}(%i)%d{HH.mm.ss}.gz</fileNamePattern>
+            <maxHistory>${LOG_MAX_HISTORY:-15}</maxHistory> <!-- 保留15天 -->
+            <maxFileSize>${LOG_MAX_SIZE:-100MB}</maxFileSize>
+        </rollingPolicy>
+    </appender>
+
+    <appender name="GenAsync" class="ch.qos.logback.classic.AsyncAppender">
+        <discardingThreshold>256</discardingThreshold>
+        <queueSize>2048</queueSize>
+        <neverBlock>true</neverBlock>
+        <maxFlushTime>3000</maxFlushTime>
+        <includeCallerData>true</includeCallerData>
+        <appender-ref ref ="GenFileLog"/>
+    </appender>
+
+</included>

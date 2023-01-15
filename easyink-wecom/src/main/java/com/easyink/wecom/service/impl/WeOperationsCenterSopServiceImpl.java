@@ -319,7 +319,7 @@ public class WeOperationsCenterSopServiceImpl extends ServiceImpl<WeOperationsCe
      */
     private List<WeOperationsCenterSopScopeEntity> buildScope(List<String> userIdList, List<String> departmentIdList, Long sopId, String corpId) {
         List<WeOperationsCenterSopScopeEntity> scopeEntityList = new ArrayList<>();
-        Optional.ofNullable(userIdList).orElseGet(Lists::newArrayList);
+        userIdList = Optional.ofNullable(userIdList).orElseGet(Lists::newArrayList);
         for (String userId : userIdList) {
             WeOperationsCenterSopScopeEntity scopeEntity = new WeOperationsCenterSopScopeEntity();
             scopeEntity.setTargetId(userId);
@@ -328,7 +328,7 @@ public class WeOperationsCenterSopServiceImpl extends ServiceImpl<WeOperationsCe
             scopeEntity.setSopId(sopId);
             scopeEntityList.add(scopeEntity);
         }
-        Optional.ofNullable(departmentIdList).orElseGet(Lists::newArrayList);
+        departmentIdList = Optional.ofNullable(departmentIdList).orElseGet(Lists::newArrayList);
         for (String departmentId : departmentIdList) {
             WeOperationsCenterSopScopeEntity scopeEntity = new WeOperationsCenterSopScopeEntity();
             scopeEntity.setTargetId(departmentId);

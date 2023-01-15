@@ -184,7 +184,7 @@ public class WeGroupSopV2ServiceImpl implements WeGroupSopV2Service {
      * @param chatIdList 作用范围
      */
     private void updateSopFilter(String corpId, Long sopId, Integer sopType, Integer filterType, AddGroupSopFilterDTO sopFilter, List<String> chatIdList) {
-        if (StringUtils.isBlank(corpId) || sopId == null || filterType == null) {
+        if (StringUtils.isBlank(corpId) || sopId == null || filterType == null || sopFilter == null) {
             throw new CustomException(ResultTip.TIP_GENERAL_BAD_REQUEST);
         }
         //筛选条件

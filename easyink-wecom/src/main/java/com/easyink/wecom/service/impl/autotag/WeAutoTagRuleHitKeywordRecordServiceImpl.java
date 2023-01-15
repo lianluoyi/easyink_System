@@ -184,7 +184,7 @@ public class WeAutoTagRuleHitKeywordRecordServiceImpl extends ServiceImpl<WeAuto
                 List<WeTag> weTagList = new ArrayList<>(userCustomerTagEntry.getValue());
                 log.info("关键词打标签: 员工: {}, 客户: {}, 标签列表: {}", userId, customerId, weTagList.stream()
                         .map(WeTag::getName).collect(Collectors.toList()));
-                weCustomerService.makeLabelbatch(Collections.singletonList(new WeMakeCustomerTagVO(customerId, userId, weTagList, corpId)), userId);
+                weCustomerService.batchMakeLabel(Collections.singletonList(new WeMakeCustomerTagVO(customerId, userId, weTagList, corpId)), userId);
             }
         }
     }

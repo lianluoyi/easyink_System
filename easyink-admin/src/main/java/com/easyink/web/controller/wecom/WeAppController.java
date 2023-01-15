@@ -31,20 +31,4 @@ public class WeAppController extends BaseController {
         return AjaxResult.success();
     }
 
-    @ApiOperation("添加应用")
-    @ApiOperationSupport(ignoreParameters = {"id"})
-    @PostMapping("/addWeapp")
-    @Deprecated
-    public AjaxResult addWeApp(@RequestBody WeApp weApp) {
-        return AjaxResult.success();
-    }
-
-    @ApiOperation("更新应用")
-    @PutMapping("/updateWeApp")
-    @Deprecated
-    public AjaxResult updateWeApp(@RequestBody WeApp weApp) {
-        return AjaxResult.success();
-    }
-
-
 }

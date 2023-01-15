@@ -22,7 +22,6 @@ import com.easyink.wecom.login.util.LoginTokenService;
 import com.easyink.wecom.service.WeEmpleCodeAnalyseService;
 import com.easyink.wecom.service.WeEmpleCodeService;
 import com.easyink.wecom.service.WeEmpleCodeUseScopService;
-import com.easyink.wecom.service.WeFlowerCustomerRelService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
@@ -51,14 +50,12 @@ import java.util.stream.Collectors;
 public class WeEmpleCodeController extends BaseController {
 
     private final WeEmpleCodeService weEmpleCodeService;
-    private final WeFlowerCustomerRelService weFlowerCustomerRelService;
     private final WeEmpleCodeUseScopService weEmpleCodeUseScopService;
     private final WeEmpleCodeAnalyseService weEmpleCodeAnalyseService;
 
     @Autowired
-    public WeEmpleCodeController(WeEmpleCodeService weEmpleCodeService, WeFlowerCustomerRelService weFlowerCustomerRelService, WeEmpleCodeUseScopService weEmpleCodeUseScopService, WeEmpleCodeAnalyseService weEmpleCodeAnalyseService) {
+    public WeEmpleCodeController(WeEmpleCodeService weEmpleCodeService, WeEmpleCodeUseScopService weEmpleCodeUseScopService, WeEmpleCodeAnalyseService weEmpleCodeAnalyseService) {
         this.weEmpleCodeService = weEmpleCodeService;
-        this.weFlowerCustomerRelService = weFlowerCustomerRelService;
         this.weEmpleCodeUseScopService = weEmpleCodeUseScopService;
         this.weEmpleCodeAnalyseService = weEmpleCodeAnalyseService;
     }

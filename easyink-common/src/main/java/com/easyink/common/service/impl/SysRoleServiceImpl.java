@@ -201,7 +201,7 @@ public class SysRoleServiceImpl implements ISysRoleService {
     public int insertRole(SysRole role) {
         // 新增角色信息
         role.setStatus(BaseStatusEnum.CLOSE.getCode().toString());
-        role.setMenuIds(Constants.INIT_MENU_LIST);
+        role.setMenuIds(Constants.getInitMenuList());
         roleMapper.insertRole(role);
         // 如果自定义数据范围则插入
         insertRoleDeptRelation(role);

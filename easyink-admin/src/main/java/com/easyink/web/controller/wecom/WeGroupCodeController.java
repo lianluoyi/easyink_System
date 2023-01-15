@@ -10,7 +10,6 @@ import com.easyink.common.enums.ResultTip;
 import com.easyink.common.utils.DateUtils;
 import com.easyink.common.utils.StringUtils;
 import com.easyink.common.utils.file.FileUtils;
-import com.easyink.framework.web.service.FileService;
 import com.easyink.wecom.domain.WeGroupCode;
 import com.easyink.wecom.domain.WeGroupCodeActual;
 import com.easyink.wecom.domain.dto.FindWeGroupCodeDTO;
@@ -51,13 +50,11 @@ import java.util.stream.Collectors;
 public class WeGroupCodeController extends BaseController {
 
     private final WeGroupCodeService groupCodeService;
-    private final FileService fileService;
     private final WeCorpAccountService weCorpAccountService;
 
     @Autowired
-    public WeGroupCodeController(WeGroupCodeService groupCodeService, FileService fileService, WeCorpAccountService weCorpAccountService) {
+    public WeGroupCodeController(WeGroupCodeService groupCodeService, WeCorpAccountService weCorpAccountService) {
         this.groupCodeService = groupCodeService;
-        this.fileService = fileService;
         this.weCorpAccountService = weCorpAccountService;
     }
 
@@ -164,7 +161,6 @@ public class WeGroupCodeController extends BaseController {
             //员工则保存userId
             weGroupCode.setUpdateBy(LoginTokenService.getLoginUser().getWeUser().getUserId());
         }
-        ;
         return toAjax(groupCodeService.edit(weGroupCode));
     }
 

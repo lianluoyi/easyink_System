@@ -1,5 +1,8 @@
 package com.easyink.common.utils.sign;
 
+import com.easyink.common.exception.CustomException;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,6 +15,7 @@ import java.security.MessageDigest;
  *
  * @author admin
  */
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class Md5Utils {
     private static final Logger log = LoggerFactory.getLogger(Md5Utils.class);
 
@@ -25,12 +29,12 @@ public class Md5Utils {
         } catch (Exception e) {
             log.error("MD5 Error...", e);
         }
-        return null;
+        return new byte[0];
     }
 
     private static final String toHex(byte[] hash) {
-        if (hash == null) {
-            return null;
+        if (hash == null || hash.length == 0) {
+            throw new CustomException("[工单系统接口] md5转化失败");
         }
         StringBuffer buf = new StringBuffer(hash.length * 2);
         int i;

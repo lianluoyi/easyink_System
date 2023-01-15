@@ -84,12 +84,12 @@ public class CustomerTrajectoryEnums {
 
         private String name;
 
-        private Integer type;
+        private Integer desc;
 
 
-        Type(Integer type, String name) {
+        Type(Integer desc, String name) {
             this.name = name;
-            this.type = type;
+            this.desc = desc;
         }
 
 
@@ -97,18 +97,9 @@ public class CustomerTrajectoryEnums {
             return name;
         }
 
-        public void setName(String name) {
-            this.name = name;
+        public Integer getDesc() {
+            return desc;
         }
-
-        public Integer getType() {
-            return type;
-        }
-
-        public void setType(Integer type) {
-            this.type = type;
-        }
-
 
     }
 
@@ -116,11 +107,11 @@ public class CustomerTrajectoryEnums {
         /**
          * 编辑资料
          */
-        EDIT_INFO(Type.INFO.getType(), "信息动态-补充资料", 1),
+        EDIT_INFO(Type.INFO.getDesc(), "信息动态-补充资料", 1),
         /**
          * 信息动态,打标签
          */
-        MAKE_TAGS(Type.INFO.getType(), "信息动态-设置标签", 2);
+        MAKE_TAGS(Type.INFO.getDesc(), "信息动态-设置标签", 2);
 
 
         private String name;
@@ -142,25 +133,14 @@ public class CustomerTrajectoryEnums {
             return name;
         }
 
-        public void setName(String name) {
-            this.name = name;
-        }
-
         public Integer getType() {
             return type;
-        }
-
-        public void setType(Integer type) {
-            this.type = type;
         }
 
         public Integer getKey() {
             return key;
         }
 
-        public void setKey(Integer key) {
-            this.key = key;
-        }
     }
 
     /**
