@@ -106,20 +106,6 @@ public class WeCommunityH5Controller extends BaseController {
         return AjaxResult.success();
     }
 
-    /**
-     * 用于支持H5页面的名称和关键字检索
-     *
-     * @param word 过滤字符
-     * @return 结果
-     */
-    @GetMapping(path = "/filter")
-    @ApiOperation("H5页面的名称和关键字检索")
-    @Deprecated
-    public TableDataInfo filter(@RequestParam("word") String word) {
-        return getDataTable(new ArrayList<>());
-    }
-
-
     @GetMapping("/sopTaskDetail/{emplId}")
     @ApiOperation("获取员工的SOP任务详情")
     public TableDataInfo<GetSopTaskByUserIdVO> sopTaskDetail(@PathVariable("emplId") String emplId, GetSopTaskDetailDTO getSopTaskDetailDTO) {

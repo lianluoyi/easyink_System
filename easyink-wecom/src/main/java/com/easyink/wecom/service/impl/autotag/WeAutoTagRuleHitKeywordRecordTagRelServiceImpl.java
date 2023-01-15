@@ -1,7 +1,6 @@
 package com.easyink.wecom.service.impl.autotag;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.easyink.common.utils.StringUtils;
 import com.easyink.wecom.domain.WeTag;
 import com.easyink.wecom.domain.entity.autotag.WeAutoTagRuleHitKeywordRecordTagRel;
 import com.easyink.wecom.mapper.autotag.WeAutoTagRuleHitKeywordRecordTagRelMapper;
@@ -9,6 +8,7 @@ import com.easyink.wecom.service.autotag.WeAutoTagKeywordTagRelService;
 import com.easyink.wecom.service.autotag.WeAutoTagRuleHitKeywordRecordTagRelService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -42,7 +42,7 @@ public class WeAutoTagRuleHitKeywordRecordTagRelServiceImpl extends ServiceImpl<
     @Override
     public List<WeAutoTagRuleHitKeywordRecordTagRel> buildTagRecord(String corpId, String userId, String customerId, Set<Long> matchedRuleIdSet) {
         List<WeAutoTagRuleHitKeywordRecordTagRel> batchList = new ArrayList<>();
-        if (StringUtils.isBlank(corpId) || StringUtils.isBlank(corpId) || StringUtils.isBlank(corpId)) {
+        if (StringUtils.isBlank(corpId)) {
             log.error("参数异常,取消构建关键词标签记录数据");
             return batchList;
         }

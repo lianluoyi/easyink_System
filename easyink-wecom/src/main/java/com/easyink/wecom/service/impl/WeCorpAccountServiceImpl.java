@@ -529,7 +529,7 @@ public class WeCorpAccountServiceImpl extends ServiceImpl<WeCorpAccountMapper, W
                     .and(i -> i.eq(WeCorpAccount::getStatus, Constants.NORMAL_CODE).or().eq(WeCorpAccount::getStatus, Constants.NOT_START_CODE))
                     .last(GenConstants.LIMIT_1));
         }
-        if (ObjectUtils.isNotEmpty(weCorpAccount)
+        if (null != weCorpAccount
                 && Constants.NORMAL_CODE.equals(weCorpAccount.getStatus())
                 && StringUtils.isNoneBlank(weCorpAccount.getCorpId(),
                 weCorpAccount.getCustomSecret(),

@@ -15,8 +15,22 @@
         web服务入口
     </description>
 
-    <dependencies>
 
+    <dependencies>
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>transmittable-thread-local</artifactId>
+        </dependency>
+        <!--MDC线程传递增强-->
+        <dependency>
+            <groupId>com.ofpay</groupId>
+            <artifactId>logback-mdc-ttl</artifactId>
+        </dependency>
+        <!--日志json格式化工具-->
+        <dependency>
+            <groupId>net.logstash.logback</groupId>
+            <artifactId>logstash-logback-encoder</artifactId>
+        </dependency>
         <!-- spring-boot-devtools -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

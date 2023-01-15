@@ -2,9 +2,12 @@ package com.easyink.wecom.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.date.DateUtil;
+import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.easyink.common.annotation.DataScope;
+import com.easyink.common.constant.GroupConstants;
 import com.easyink.common.constant.WeConstans;
 import com.easyink.common.core.domain.AjaxResult;
 import com.easyink.common.enums.CustomerTrajectoryEnums;
@@ -12,18 +15,24 @@ import com.easyink.common.enums.ResultTip;
 import com.easyink.common.exception.BaseException;
 import com.easyink.common.exception.CustomException;
 import com.easyink.common.utils.DateUtils;
+import com.easyink.common.utils.MyDateUtil;
 import com.easyink.common.utils.SnowFlakeUtil;
 import com.easyink.common.utils.StringUtils;
+import com.easyink.common.utils.bean.BeanUtils;
 import com.easyink.common.utils.poi.ExcelUtil;
+import com.easyink.wecom.client.WeCustomerClient;
 import com.easyink.wecom.client.WeCustomerGroupClient;
 import com.easyink.wecom.domain.WeCustomerAddGroup;
 import com.easyink.wecom.domain.WeGroup;
 import com.easyink.wecom.domain.WeGroupMember;
+import com.easyink.wecom.domain.WeGroupStatistic;
 import com.easyink.wecom.domain.dto.FindWeGroupDTO;
+import com.easyink.wecom.domain.dto.GroupChatStatisticDTO;
 import com.easyink.wecom.domain.dto.WeGroupMemberDTO;
 import com.easyink.wecom.domain.dto.customer.CustomerGroupDetail;
 import com.easyink.wecom.domain.dto.customer.CustomerGroupList;
 import com.easyink.wecom.domain.dto.customer.CustomerGroupMember;
+import com.easyink.wecom.domain.query.GroupChatStatisticQuery;
 import com.easyink.wecom.domain.vo.WeGroupExportVO;
 import com.easyink.wecom.domain.vo.sop.GroupSopVO;
 import com.easyink.wecom.domain.vo.wegrouptag.WeGroupTagRelDetail;
@@ -32,6 +41,7 @@ import com.easyink.wecom.mapper.WeGroupMapper;
 import com.easyink.wecom.service.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.aop.framework.AopContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -61,15 +71,19 @@ public class WeGroupServiceImpl extends ServiceImpl<WeGroupMapper, WeGroup> impl
     private final PageHomeService pageHomeService;
     private final WeGroupTagRelService weGroupTagRelService;
     private final WeCustomerTrajectoryService weCustomerTrajectoryService;
+    private final WeGroupStatisticService weGroupStatisticService;
+    private final WeCustomerClient weCustomerClient;
 
     @Autowired
     @Lazy
-    public WeGroupServiceImpl(WeCustomerGroupClient weCustomerGroupClient, WeGroupMemberService weGroupMemberService, PageHomeService pageHomeService, WeGroupTagRelService weGroupTagRelService, WeCustomerTrajectoryService weCustomerTrajectoryService) {
+    public WeGroupServiceImpl(WeCustomerGroupClient weCustomerGroupClient, WeGroupMemberService weGroupMemberService, PageHomeService pageHomeService, WeGroupTagRelService weGroupTagRelService, WeCustomerTrajectoryService weCustomerTrajectoryService, WeGroupStatisticService weGroupStatisticService, WeCustomerClient weCustomerClient) {
         this.weCustomerGroupClient = weCustomerGroupClient;
         this.weGroupMemberService = weGroupMemberService;
         this.pageHomeService = pageHomeService;
         this.weGroupTagRelService = weGroupTagRelService;
         this.weCustomerTrajectoryService = weCustomerTrajectoryService;
+        this.weGroupStatisticService = weGroupStatisticService;
+        this.weCustomerClient = weCustomerClient;
     }
 
     private static final int LENGTH = 3;
@@ -583,5 +597,92 @@ public class WeGroupServiceImpl extends ServiceImpl<WeGroupMapper, WeGroup> impl
         List<WeGroupExportVO> exportList = list.stream().map(WeGroupExportVO::new).collect(Collectors.toList());
         ExcelUtil<WeGroupExportVO> util = new ExcelUtil<>(WeGroupExportVO.class);
         return util.exportExcel(exportList, sheetName);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void processGroupChatData(String corpId) {
+        // 偏移量 大于500则分批处理
+        final int OFFSET = 500;
+        if (org.apache.commons.lang3.StringUtils.isBlank(corpId)) {
+            return;
+        }
+
+        //删除本日原先的数据
+        LambdaQueryWrapper<WeGroupStatistic> wrapper = new LambdaQueryWrapper<>();
+        Long startTime = MyDateUtil.strToDate(-1, 0);
+        Long endTime = MyDateUtil.strToDate(-1, 1);
+        wrapper.eq(WeGroupStatistic::getCorpId, corpId);
+        wrapper.between(WeGroupStatistic::getStatTime, DateUtil.date(startTime * 1000), DateUtil.date(endTime * 1000));
+        int count = weGroupStatisticService.count(wrapper);
+        //删除所有数据
+        if (count > 0) {
+            weGroupStatisticService.remove(wrapper);
+        }
+
+        //判断是否大于500，判断是否分批处理
+        int weGroupCount = this.count(
+                new LambdaQueryWrapper<WeGroup>()
+                        .eq(WeGroup::getCorpId, corpId)
+        );
+        //定义批量操作
+        double num = 1;
+        if (weGroupCount > OFFSET) {
+            num = Math.ceil((double) weGroupCount / OFFSET);
+        }
+        int temp = 0;
+        List<Integer> list = new ArrayList<>(2);
+        list.add(GroupConstants.OWNER_LEAVE);
+        list.add(GroupConstants.OWNER_LEAVE_EXTEND);
+        for (int i = 0; i < num; i++) {
+            QueryWrapper<WeGroup> wrapper1 = new QueryWrapper<>();
+            wrapper1.select("DISTINCT owner");
+            wrapper1.eq("corp_id", corpId);
+            wrapper1.notIn("status", list);
+            wrapper1.last("limit " + temp + "," + OFFSET);
+            List<WeGroup> weGroupList = this.list(wrapper1);
+
+            if (CollUtil.isNotEmpty(weGroupList)) {
+                List<WeGroupStatistic> weGroupStatisticList = new ArrayList<>();
+                GroupChatStatisticQuery query = new GroupChatStatisticQuery();
+                //前一天的数据
+                query.setDay_begin_time(startTime);
+                query.setDay_end_time(endTime);
+
+                weGroupList.forEach(weGroup -> {
+
+                    GroupChatStatisticQuery.OwnerFilter ownerFilter = new GroupChatStatisticQuery.OwnerFilter();
+                    List<String> idList = new ArrayList<>();
+                    idList.add(weGroup.getOwner());
+                    ownerFilter.setUserid_list(idList);
+                    query.setOwner_filter(ownerFilter);
+                    try {
+                        //状态不是离职继承中的，离职继承中的群聊无法查询
+                        //根据群主获取群聊概述
+                        GroupChatStatisticDTO groupChatStatistic = weCustomerClient.getGroupChatStatistic(query, corpId);
+                        List<GroupChatStatisticDTO.GroupchatStatisticData> items = groupChatStatistic.getItems();
+                        if (CollUtil.isNotEmpty(items)) {
+                            items.forEach(groupChatStatisticData -> {
+                                WeGroupStatistic weGroupStatistic = new WeGroupStatistic();
+                                GroupChatStatisticDTO.StatisticData data = groupChatStatisticData.getData();
+                                BeanUtils.copyPropertiesignoreOther(data, weGroupStatistic);
+                                weGroupStatistic.setChatId(groupChatStatisticData.getOwner());
+                                //返回数据不包含时间，所以使用开始时间做stat_time
+                                weGroupStatistic.setStatTime(DateUtil.date(startTime * 1000));
+                                weGroupStatistic.setCorpId(corpId);
+                                weGroupStatisticList.add(weGroupStatistic);
+                            });
+                        }
+                    } catch (Exception e) {
+                        log.error("群聊数据拉取失败: ownerFilter:【{}】,ex:【{}】", JSON.toJSONString(ownerFilter), ExceptionUtils.getStackTrace(e));
+                    }
+                });
+
+
+                weGroupStatisticService.saveBatch(weGroupStatisticList);
+            }
+
+            temp += OFFSET;
+        }
     }
 }

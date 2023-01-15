@@ -1,8 +1,8 @@
 package com.easyink.web.controller.wecom;
 
 import com.easyink.common.core.controller.BaseController;
+import com.easyink.common.core.domain.AjaxResult;
 import com.easyink.common.core.domain.ConversationArchiveQuery;
-import com.easyink.common.core.page.TableDataInfo;
 import com.easyink.common.token.TokenService;
 import com.easyink.common.utils.ServletUtils;
 import com.easyink.common.utils.StringUtils;
@@ -42,12 +42,12 @@ public class WeConversationArchiveController extends BaseController {
      */
     @ApiOperation(value = "获取单聊会话数据接口", httpMethod = "GET")
     @GetMapping("/getChatContactList")
-    public TableDataInfo<PageInfo<ConversationArchiveVO>> getChatContactList(ConversationArchiveQuery query) {
+    public AjaxResult<PageInfo<ConversationArchiveVO>> getChatContactList(ConversationArchiveQuery query) {
         if (StringUtils.isEmpty(LoginTokenService.getLoginUser().getCorpId())){
-            return getDataTable(new ArrayList<>());
+            return AjaxResult.success(new ArrayList<>());
         }
         query.setCorpId(LoginTokenService.getLoginUser().getCorpId());
-        return getDataTable(weConversationArchiveService.getChatContactList(query));
+        return AjaxResult.success(weConversationArchiveService.getChatContactList(query));
     }
 
 
@@ -61,12 +61,12 @@ public class WeConversationArchiveController extends BaseController {
      */
     @ApiOperation(value = "获取群聊会话数据接口", httpMethod = "GET")
     @GetMapping("/getChatRoomContactList")
-    public TableDataInfo<PageInfo<ConversationArchiveVO>> getChatRoomContactList(ConversationArchiveQuery query) {
+    public AjaxResult<PageInfo<ConversationArchiveVO>> getChatRoomContactList(ConversationArchiveQuery query) {
         if (StringUtils.isEmpty(LoginTokenService.getLoginUser().getCorpId())){
-            return getDataTable(new ArrayList<>());
+            return AjaxResult.success(new ArrayList<>());
         }
         query.setCorpId(LoginTokenService.getLoginUser().getCorpId());
-        return getDataTable(weConversationArchiveService.getChatRoomContactList(query));
+        return AjaxResult.success(weConversationArchiveService.getChatRoomContactList(query));
     }
 
 
@@ -78,12 +78,12 @@ public class WeConversationArchiveController extends BaseController {
      */
     @ApiOperation(value = "获取全局会话数据接口", httpMethod = "GET")
     @GetMapping("/getChatAllList")
-    public TableDataInfo<PageInfo<ConversationArchiveVO>> getChatAllList(ConversationArchiveQuery query) {
+    public AjaxResult<PageInfo<ConversationArchiveVO>> getChatAllList(ConversationArchiveQuery query) {
         if (StringUtils.isEmpty(LoginTokenService.getLoginUser().getCorpId())){
-            return getDataTable(new ArrayList<>());
+            return AjaxResult.success(new ArrayList<>());
         }
         query.setCorpId(LoginTokenService.getLoginUser().getCorpId());
-        return getDataTable(weConversationArchiveService.getChatAllList(query, tokenService.getLoginUser(ServletUtils.getRequest())));
+        return AjaxResult.success(weConversationArchiveService.getChatAllList(query, tokenService.getLoginUser(ServletUtils.getRequest())));
     }
 
 }

@@ -54,10 +54,9 @@ public class RedisLockConfig {
     }
 
     @Bean
-    public RedissonLocker redissonLocker(RedissonClient redissonClient) {
-        RedissonLocker locker = new RedissonLocker(redissonClient);
+    public RedissonClient redissonLocker(RedissonClient redissonClient) {
         //设置LockUtil的锁处理对象
-        LockUtil.setLocker(locker);
-        return locker;
+        LockUtil.setLocker(redissonClient);
+        return redissonClient;
     }
 }

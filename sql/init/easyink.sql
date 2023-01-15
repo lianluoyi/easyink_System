@@ -1600,7 +1600,8 @@ CREATE TABLE `we_flower_customer_rel`
     `delete_time`      datetime                                                      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '删除时间',
     `wechat_channel`   varchar(64)                                                   NOT NULL DEFAULT '' COMMENT '该成员添加此客户的来源add_way为10时，对应的视频号信息',
     PRIMARY KEY (`id`) USING BTREE,
-    UNIQUE INDEX `un_user_external_userid_corpid` (`external_userid`, `user_id`, `corp_id`) USING BTREE
+    UNIQUE INDEX `un_user_external_userid_corpid` (`external_userid`, `user_id`, `corp_id`) USING BTREE,
+    KEY  `idx_corp_user_id` (`corp_id`,`user_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '企业员工与客户的关系表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
@@ -1715,7 +1716,8 @@ CREATE TABLE `we_group_member`
     `name`       varchar(32)                                                  NOT NULL DEFAULT '' COMMENT '成员名称',
     `invitor`    varchar(64)                                                  NOT NULL DEFAULT '' COMMENT '邀请者userId',
     PRIMARY KEY (`id`) USING BTREE,
-    UNIQUE INDEX `un_member`(`user_id`, `chat_id`, `corp_id`) USING BTREE
+    UNIQUE INDEX `un_member`(`user_id`, `chat_id`, `corp_id`) USING BTREE,
+    KEY `idx_chat_id` (`chat_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '企业微信群成员' ROW_FORMAT = Dynamic;
 
 
@@ -3201,7 +3203,7 @@ CREATE TABLE `we_auto_tag_rule`
     `rule_name`   varchar(32) NOT NULL DEFAULT '' COMMENT '规则名称',
     `label_type`  tinyint(2) NOT NULL DEFAULT '0' COMMENT '规则类型 1:关键词 2:入群 3:新客',
     `status`      tinyint(2) NOT NULL DEFAULT '1' COMMENT '启用禁用状态 0:禁用1:启用',
-    `create_time` datetime    NOT NULL DEFAULT '0000-00-00 00:00:00' ON UPDATE CURRENT_TIMESTAMP COMMENT '创建时间',
+    `create_time` datetime    NOT NULL DEFAULT '0000-00-00 00:00:00' COMMENT '创建时间',
     `create_by`   varchar(32) NOT NULL DEFAULT '' COMMENT '创建人',
     PRIMARY KEY (`id`) USING BTREE,
     KEY           `idx_corp_id` (`corp_id`) USING BTREE

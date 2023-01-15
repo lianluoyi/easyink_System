@@ -63,21 +63,6 @@ public class WeCustomerPortraitController extends BaseController {
         return AjaxResult.success(weCustomerService.findCustomerByOperUseridAndCustomerId(externalUserid, userId, LoginTokenService.getLoginUser().getCorpId()));
     }
 
-
-    /**
-     * 客户画像资料更新
-     *
-     * @param weCustomerPortrait
-     * @return
-     */
-    @ApiOperation("客户画像资料更新")
-    @PostMapping(value = "/updateWeCustomerInfo")
-    @Deprecated
-    public AjaxResult updateWeCustomerInfo(@RequestBody WeCustomerPortrait weCustomerPortrait) {
-        return AjaxResult.success();
-    }
-
-
     /**
      * 获取当前系统所有可用标签
      *
@@ -169,15 +154,10 @@ public class WeCustomerPortraitController extends BaseController {
                 .eq(WeCustomerTrajectory::getCorpId, loginUser.getCorpId())
                 .ne(WeCustomerTrajectory::getStatus, CustomerTrajectoryEnums.TodoTaskStatusEnum.DEL.getCode())
                 .eq(WeCustomerTrajectory::getExternalUserid, externalUserid)
-                .eq(WeCustomerTrajectory::getTrajectoryType, CustomerTrajectoryEnums.Type.TO_DO.getType())
+                .eq(WeCustomerTrajectory::getTrajectoryType, CustomerTrajectoryEnums.Type.TO_DO.getDesc())
                 .eq(WeCustomerTrajectory::getUserId, userId)
                 .in(WeCustomerTrajectory::getStatus, new String[]{CustomerTrajectoryEnums.TodoTaskStatusEnum.NORMAL.getCode(), CustomerTrajectoryEnums.TodoTaskStatusEnum.INFORMED.getCode()})
         ));
-    }
-
-    @Override
-    protected <T> TableDataInfo getDataTable(PageInfo<T> pageInfo) {
-        return super.getDataTable(pageInfo);
     }
 
     /**

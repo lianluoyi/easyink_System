@@ -1,4 +1,6 @@
 package com.easyink.common.lock;
+import org.redisson.api.RLock;
+
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -15,7 +17,7 @@ public interface Locker {
     void lock(String lockKey);
 
     /**
-     * 释放锁
+     * 释放锁当前线程的锁
      *
      * @param lockKey
      */
@@ -47,16 +49,16 @@ public interface Locker {
     boolean tryLock(String lockKey);
 
     /**
-     * 尝试获取锁，在等待时间内获取到锁则返回true,否则返回false,如果获取到锁，则要么执行完后程序释放锁，
+     * 尝试获取锁，在等待时间内获取到锁则返回锁实体,否则返回null,如果获取到锁，则要么执行完后程序释放锁，
      * 要么在给定的超时时间leaseTime后释放锁
      *
      * @param lockKey
      * @param waitTime
      * @param leaseTime
      * @param unit
-     * @return
+     * @return  返回锁
      */
-    boolean tryLock(String lockKey, long waitTime, long leaseTime, TimeUnit unit)
+    RLock tryLock(String lockKey, long waitTime, long leaseTime, TimeUnit unit)
             throws InterruptedException;
 
     /**

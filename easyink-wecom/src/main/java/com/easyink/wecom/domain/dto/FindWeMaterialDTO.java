@@ -31,4 +31,7 @@ public class FindWeMaterialDTO {
 
     @ApiModelProperty(value = "标签ID,多个逗号隔开")
     private String tagIds;
+
+    @ApiModelProperty(value = "是否展示侧边栏展示海报素材标识 true: 展示 false: 不展示")
+    private Boolean usingFlag;
 }

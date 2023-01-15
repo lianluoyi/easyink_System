@@ -50,16 +50,6 @@ public class WeChatContactMappingController extends BaseController {
         return getDataTable(list);
     }
 
-    /**
-     * 按客户查询关系映射列表
-     */
-//    @PreAuthorize("@ss.hasPermi('chat:mapping:listByCustomer')")
-    @Deprecated
-    @ApiOperation(value = "按客户查询关系映射列表", httpMethod = "GET")
-    @GetMapping("/listByCustomer")
-    public TableDataInfo<PageInfo<WeCustomer>> listByCustomer() {
-        return getDataTable(new ArrayList<>());
-    }
 
     /**
      * 导出聊天关系映射列表

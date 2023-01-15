@@ -100,7 +100,9 @@
     <if test="isAllocate != null">
         AND wu.is_allocate = #{isAllocate}
     </if>
-    AND CONCAT(',',wu.main_department,',') REGEXP CONCAT(',(',REPLACE(#{departments},',','|'),'),')
+    <if test="departments != null and departments != ''">
+        AND CONCAT(',',wu.main_department,',') REGEXP CONCAT(',(',REPLACE(#{departments},',','|'),'),')
+    </if>
 </select>
 
     <select id="listOfUser1" resultType="com.easyink.wecom.domain.vo.WeUserVO">

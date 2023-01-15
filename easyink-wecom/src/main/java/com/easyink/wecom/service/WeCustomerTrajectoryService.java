@@ -9,9 +9,10 @@ import com.easyink.wecom.domain.WeGroupMember;
 import com.easyink.wecom.domain.WeTag;
 import com.easyink.wecom.domain.dto.customer.EditCustomerDTO;
 import com.easyink.wecom.domain.entity.radar.WeRadar;
+import io.swagger.annotations.ApiModel;
 
 import java.util.List;
-
+@ApiModel("活动轨迹相关Service")
 public interface WeCustomerTrajectoryService extends IService<WeCustomerTrajectory> {
 
     void waitHandleMsg(String url);

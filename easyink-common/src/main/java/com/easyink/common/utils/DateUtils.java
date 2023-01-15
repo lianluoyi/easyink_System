@@ -468,7 +468,7 @@ public class DateUtils extends org.apache.commons.lang3.time.DateUtils {
                 break;
             case TYPE_1:{
 
-                LocalDateTime localDateTime = createLocalTime.plusDays(alertData1 - 1);
+                LocalDateTime localDateTime = createLocalTime.plusDays(alertData1 - 1L);
                 int alertHH = Integer.parseInt(alertData2.split(":")[0]);
                 int alertMM = Integer.parseInt(alertData2.split(":")[1]);
 

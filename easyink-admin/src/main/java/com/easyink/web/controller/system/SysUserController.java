@@ -134,12 +134,13 @@ public class SysUserController extends BaseController {
     @Log(title = "用户管理", businessType = BusinessType.INSERT)
     @PostMapping
     public AjaxResult add(@Validated @RequestBody SysUser user) {
+        final String msgPrefix = "新增用户";
         if (UserConstants.NOT_UNIQUE.equals(userService.checkUserNameUnique(user.getUserName()))) {
-            return AjaxResult.error("新增用户'" + user.getUserName() + "'失败，登录账号已存在");
+            return AjaxResult.error(msgPrefix + user.getUserName() + "'失败，登录账号已存在");
         } else if (UserConstants.NOT_UNIQUE.equals(userService.checkPhoneUnique(user))) {
-            return AjaxResult.error("新增用户'" + user.getUserName() + "'失败，手机号码已存在");
+            return AjaxResult.error(msgPrefix+ user.getUserName() + "'失败，手机号码已存在");
         } else if (UserConstants.NOT_UNIQUE.equals(userService.checkEmailUnique(user))) {
-            return AjaxResult.error("新增用户'" + user.getUserName() + "'失败，邮箱账号已存在");
+            return AjaxResult.error(msgPrefix + user.getUserName() + "'失败，邮箱账号已存在");
         }
         user.setCreateBy(LoginTokenService.getUsername());
         user.setPassword(SecurityUtils.encryptPassword(user.getPassword()));

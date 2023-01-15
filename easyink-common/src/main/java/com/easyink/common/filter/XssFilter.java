@@ -20,12 +20,12 @@ public class XssFilter implements Filter {
     /**
      * 排除链接
      */
-    public List<String> excludes = new ArrayList<>();
+    private List<String> excludes = new ArrayList<>();
 
     /**
      * xss过滤开关
      */
-    public boolean enabled = false;
+    private boolean enabled = false;
 
     @Override
     public void init(FilterConfig filterConfig) {

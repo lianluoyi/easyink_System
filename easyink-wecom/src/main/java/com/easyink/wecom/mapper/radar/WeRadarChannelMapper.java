@@ -20,9 +20,8 @@ public interface WeRadarChannelMapper extends BaseMapper<WeRadarChannel> {
     /**
      * 查询渠道列表
      *
-     * @param radarChannelDTO
-     * @param isSuperAdmin
+     * @param radarChannelDTO   {@link com.easyink.wecom.domain.dto.radar.RadarChannelDTO}
      * @return
      */
-    List<WeRadarChannelVO> list(@Param("channel") SearchRadarChannelDTO radarChannelDTO, @Param("isSuperAdmin") boolean isSuperAdmin);
+    List<WeRadarChannelVO> list(@Param("channel") SearchRadarChannelDTO radarChannelDTO);
 }

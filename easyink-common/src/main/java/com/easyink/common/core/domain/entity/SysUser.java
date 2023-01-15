@@ -13,6 +13,7 @@ import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
@@ -31,6 +32,7 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 @ApiModel
+@EqualsAndHashCode(of = {"userId", "corpId"}, callSuper = false)
 public class SysUser extends BaseEntity {
     private static final long serialVersionUID = 1L;
 
@@ -394,21 +396,6 @@ public class SysUser extends BaseEntity {
                 .append("remark", getRemark())
                 .append("dept", getDept())
                 .toString();
-    }
-
-    /**
-     * 重写eq方法，若两个user corpId和userId相同,则相等
-     *
-     * @param obj sysUser
-     * @return corpId和userId相等则返回true
-     */
-    @Override
-    public boolean equals(Object obj) {
-        if (obj instanceof SysUser) {
-            SysUser sysUser = (SysUser) obj;
-            return this.corpId.equals(sysUser.getCorpId()) && this.userId.equals(sysUser.getUserId());
-        }
-        return false;
     }
 
 }

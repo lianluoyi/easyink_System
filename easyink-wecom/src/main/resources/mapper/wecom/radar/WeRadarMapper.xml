@@ -101,7 +101,7 @@
         wr.enable_customer_tag,
         wr.enable_update_notice,
         wr.create_by user_id,
-        wu.user_name,
+        IFNULL(wu.user_name, wr.create_by) AS user_name,
         wu.main_department,
         wd.name,
         (SELECT COUNT(distinct external_user_id)
@@ -124,9 +124,6 @@
         </if>
         <if test="radar.type !=null and radar.type != 0">
             AND wr.type = #{radar.type}
-        </if>
-        <if test="isSuperAdmin != null and isSuperAdmin != false">
-            and wr.create_by = '${@com.easyink.common.constant.Constants@SUPER_ADMIN}'
         </if>
         <if test="radar.enableSort != null and radar.enableSort == true">
             ORDER BY clickNum asc, wr.create_time desc

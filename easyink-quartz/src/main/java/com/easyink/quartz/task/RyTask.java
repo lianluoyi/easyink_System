@@ -136,27 +136,6 @@ public class RyTask {
         });
     }
 
-//    private void setRevokeInfo(List<JSONObject> msgList, Map<String, JSONObject> idMap, String corpId) {
-//        msgList.forEach(jsonObject -> {
-//            //撤回标识
-//            String msgtype = jsonObject.getString("msgtype");
-//            if ("revoke".equals(msgtype)) {
-//                String revokeMsgId = jsonObject.getJSONObject("revoke").getString("pre_msgid");
-//                if (idMap.containsKey(revokeMsgId)) {
-//                    idMap.get(revokeMsgId).put("isRevoke", Boolean.TRUE);
-//                } else {
-//                    BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery().must(QueryBuilders.matchQuery(WeConstans.MSG_ID, revokeMsgId));
-//                    SearchSourceBuilder builder = new SearchSourceBuilder();
-//                    builder.query(boolQueryBuilder);
-//                    List<JSONObject> search = elasticSearch.search(WeConstans.getChatDataIndex(corpId), builder, JSONObject.class);
-//                    if (org.apache.commons.collections.CollectionUtils.isNotEmpty(search)) {
-//                        search.get(0).put("isRevoke", Boolean.TRUE);
-//                        elasticSearch.updateBatchByJson(WeConstans.getChatDataIndex(corpId), search);
-//                    }
-//                }
-//            }
-//        });
-//    }
 
     /**
      * 设置redis中的seq
@@ -206,9 +185,12 @@ public class RyTask {
                                 log.warn("群发定时任务传入参数错误 messageId:{} , messageInfo:{}, customerInfo:{},groupsInfo:{}",
                                         task.getMessageId(), task.getMessageInfo(), task.getCustomersInfo(), task.getGroupsInfo());
                             }
-                        } catch (JsonProcessingException | InterruptedException | ForestRuntimeException e) {
+                        } catch (JsonProcessingException | ForestRuntimeException e) {
                             log.error("定时群发消息处理异常：ex:{}", ExceptionUtils.getStackTrace(e));
-                        } finally {
+                        } catch (InterruptedException e){
+                            log.error("定时群发消息处理异常：ex:{}", ExceptionUtils.getStackTrace(e));
+                            Thread.currentThread().interrupt();
+                        }finally {
                             //更新消息处理状态
                             customerMessageTimeTaskMapper.updateTaskSolvedById(task.getTaskId());
                             semaphore.release();

@@ -33,11 +33,10 @@ public interface WeTagMapper extends BaseMapper<WeTag> {
 
     /**
      * 删除企业微信标签
-     * @deprecated 调用方法已弃用
+     *
      * @param groupIds 企业微信标签组Id
      * @return 结果
      */
-    @Deprecated
     int deleteWeTagByGroupId(String[] groupIds);
 
     /**

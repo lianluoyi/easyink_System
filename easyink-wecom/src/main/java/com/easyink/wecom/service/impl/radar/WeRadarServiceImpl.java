@@ -157,9 +157,6 @@ public class WeRadarServiceImpl extends ServiceImpl<WeRadarMapper, WeRadar> impl
             if (RadarTypeEnum.DEPARTMENT.getType().equals(radarDTO.getType())) {
                 return Collections.emptyList();
             }
-            if (RadarTypeEnum.CORP.getType().equals(radarDTO.getType())) {
-                radarDTO.setType(null);
-            }
         }
         if (!isSuperAdmin) {
             if (RadarTypeEnum.DEPARTMENT.getType().equals(radarDTO.getType())) {
@@ -172,16 +169,7 @@ public class WeRadarServiceImpl extends ServiceImpl<WeRadarMapper, WeRadar> impl
             }
         }
         startPage();
-        List<WeRadarVO> list = this.baseMapper.list(radarDTO, isSuperAdmin);
-        if (CollectionUtils.isEmpty(list)) {
-            return Collections.emptyList();
-        }
-        list.forEach(item -> {
-            if (Constants.SUPER_ADMIN.equals(item.getCreateId())) {
-                item.setCreateName(Constants.SUPER_ADMIN);
-            }
-        });
-        return list;
+        return this.baseMapper.list(radarDTO);
     }
 
     /**
@@ -239,7 +227,10 @@ public class WeRadarServiceImpl extends ServiceImpl<WeRadarMapper, WeRadar> impl
             this.baseMapper.saveRadarTags(weRadarTagList);
         }
         this.baseMapper.updateById(weRadar);
-        sendToUser(radarDTO.getCorpId(), radarDTO.getRadarTitle(), radarDTO.getType());
+        //发消息通知员工
+        if (Boolean.TRUE.equals(radarDTO.getEnableUpdateNotice())) {
+            sendToUser(radarDTO.getCorpId(), radarDTO.getRadarTitle(), radarDTO.getType());
+        }
     }
 
     @Override

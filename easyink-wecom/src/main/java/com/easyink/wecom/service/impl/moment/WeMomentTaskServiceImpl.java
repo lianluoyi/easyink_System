@@ -377,15 +377,13 @@ public class WeMomentTaskServiceImpl extends ServiceImpl<WeMomentTaskMapper, WeM
             for (MomentTask momentTask : taskPublishList) {
                 taskUserList.add(momentTask.getUserid());
                 //更新执行状态
-                LambdaUpdateWrapper<WeMomentTaskResultEntity> resultEntityLambdaUpdateWrapper = new LambdaUpdateWrapper<WeMomentTaskResultEntity>()
-                        .eq(WeMomentTaskResultEntity::getUserId, momentTask.getUserid())
-                        .eq(WeMomentTaskResultEntity::getMomentTaskId, taskId)
-                        .set(WeMomentTaskResultEntity::getPublishStatus, momentTask.getPublish_status());
-                //设置发布时间
-                if (MomentPublishStatusEnum.PUBLISH.getType().equals(momentTask.getPublish_status())){
-                    resultEntityLambdaUpdateWrapper.set(WeMomentTaskResultEntity::getPublishTime,new Date());
+                Date publishTime = null;
+                if (MomentPublishStatusEnum.PUBLISH.getType().equals(momentTask.getPublish_status())) {
+                    //设置发布时间
+                    publishTime = new Date();
                 }
-                weMomentTaskResultService.update(resultEntityLambdaUpdateWrapper);
+                // 如果发布时间不为空,这里不会再次更新发布时间
+                weMomentTaskResultService.updatePublishInfo(taskId, momentTask.getUserid(), momentTask.getPublish_status(), publishTime);
                 log.info("朋友圈执行状态已更新 corpId:{},userId:{},taskId:{}", corpId, momentTask.getUserid(), taskId);
                 this.update(new LambdaUpdateWrapper<WeMomentTaskEntity>().eq(WeMomentTaskEntity::getId, taskId).set(WeMomentTaskEntity::getUpdateTime, new Date()));
                 //朋友圈触达客户(已执行产生触达)

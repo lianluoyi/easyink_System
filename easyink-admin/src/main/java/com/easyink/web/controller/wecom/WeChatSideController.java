@@ -107,6 +107,7 @@ public class WeChatSideController extends BaseController {
         String corpId = LoginTokenService.getLoginUser().getCorpId();
         findWeMaterialDTO.setCorpId(corpId);
         findWeMaterialDTO.setShowMaterial(WeConstans.DEFAULT_WE_MATERIAL_USING);
+        findWeMaterialDTO.setUsingFlag(WeConstans.DEFAULT_WE_MATERIAL_USING);
         findWeMaterialDTO.setIsExpire(WeConstans.MATERIAL_UN_EXPIRE);
         List<WeMaterialVO> weMaterials = weMaterialService.findWeMaterials(findWeMaterialDTO);
         return getDataTable(weMaterials);

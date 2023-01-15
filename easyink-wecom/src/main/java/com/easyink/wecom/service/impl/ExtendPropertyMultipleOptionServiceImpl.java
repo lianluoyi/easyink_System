@@ -11,10 +11,8 @@ import com.easyink.wecom.mapper.ExtendPropertyMultipleOptionMapper;
 import com.easyink.wecom.service.ExtendPropertyMultipleOptionService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import javax.validation.constraints.NotNull;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -30,12 +28,6 @@ import java.util.stream.Collectors;
 @Slf4j
 public class ExtendPropertyMultipleOptionServiceImpl extends ServiceImpl<ExtendPropertyMultipleOptionMapper, ExtendPropertyMultipleOption> implements ExtendPropertyMultipleOptionService {
 
-    private final ExtendPropertyMultipleOptionMapper extendPropertyMultipleOptionMapper;
-
-    @Autowired
-    public ExtendPropertyMultipleOptionServiceImpl(@NotNull ExtendPropertyMultipleOptionMapper extendPropertyMultipleOptionMapper) {
-        this.extendPropertyMultipleOptionMapper = extendPropertyMultipleOptionMapper;
-    }
 
     @Override
     public void edit(List<ExtendPropertyMultipleOption> list, Long propId) {
@@ -65,7 +57,7 @@ public class ExtendPropertyMultipleOptionServiceImpl extends ServiceImpl<ExtendP
             for (ExtendPropertyMultipleOption option : property.getOptionList()) {
                 if (option.getId() == null && propId != null) {
                     option.setExtendPropertyId(propId);
-                }else if (!propId.equals(option.getExtendPropertyId())) {
+                }else if (propId == null || !propId.equals(option.getExtendPropertyId())) {
                     log.warn("自定义参数:编辑多选值的自定义参数id与自定义参数实体id不一致");
                     throw new CustomException(ResultTip.TIP_GENERAL_PARAM_ERROR);
                 }

@@ -1,6 +1,7 @@
 package com.easyink.wecom.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
@@ -8,6 +9,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.dtflys.forest.exceptions.ForestRuntimeException;
 import com.easyink.common.annotation.DataScope;
 import com.easyink.common.config.RuoYiConfig;
 import com.easyink.common.constant.*;
@@ -19,9 +21,11 @@ import com.easyink.common.core.domain.wecom.WeUser;
 import com.easyink.common.core.redis.RedisCache;
 import com.easyink.common.enums.*;
 import com.easyink.common.exception.CustomException;
+import com.easyink.common.utils.MyDateUtil;
+import com.easyink.common.utils.bean.BeanUtils;
 import com.easyink.common.utils.file.FileUploadUtils;
-import com.easyink.common.utils.spring.SpringUtils;
 import com.easyink.wecom.client.WeAgentClient;
+import com.easyink.wecom.client.WeCustomerClient;
 import com.easyink.wecom.client.WeUserClient;
 import com.easyink.wecom.domain.*;
 import com.easyink.wecom.domain.dto.*;
@@ -30,6 +34,7 @@ import com.easyink.wecom.domain.dto.group.GroupChatListResp;
 import com.easyink.wecom.domain.dto.transfer.GetUnassignedListReq;
 import com.easyink.wecom.domain.dto.transfer.GetUnassignedListResp;
 import com.easyink.wecom.domain.dto.transfer.TransferResignedUserListDTO;
+import com.easyink.wecom.domain.query.UserBehaviorDataQuery;
 import com.easyink.wecom.domain.resp.GetAgentResp;
 import com.easyink.wecom.domain.vo.*;
 import com.easyink.wecom.domain.vo.transfer.TransferResignedUserVO;
@@ -80,6 +85,11 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
     private final WeExternalUserMappingUserService weExternalUserMappingUserService;
     private final WeCorpAccountService weCorpAccountService;
     private final WeAgentClient weAgentClient;
+    private final WeUserBehaviorDataService weUserBehaviorDataService;
+    private final WeCustomerClient weCustomerClient;
+    @Lazy
+    @Autowired
+    private WeUserService weUserService;
     @Autowired
     private WeAuthCorpInfoService weAuthCorpInfoService;
 
@@ -87,7 +97,7 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
 
     @Lazy
     @Autowired
-    public WeUserServiceImpl(WeDepartmentService weDepartmentService, WeUserMapper weUserMapper, RedisCache redisCache, We3rdAppService we3rdAppService, WeUserClient weUserClient, WeCustomerService weCustomerService, WeUserRoleMapper weUserRoleMapper, WeFlowerCustomerRelService weFlowerCustomerRelService, WeUserRoleService weUserRoleService, PageHomeService pageHomeService, WeGroupService weGroupService, WeMaterialService weMaterialService, WeExternalUserMappingUserService weExternalUserMappingUserService, RuoYiConfig ruoYiConfig, WeCorpAccountService weCorpAccountService, WeAgentClient weAgentClient) {
+    public WeUserServiceImpl(WeDepartmentService weDepartmentService, WeUserMapper weUserMapper, RedisCache redisCache, We3rdAppService we3rdAppService, WeUserClient weUserClient, WeCustomerService weCustomerService, WeUserRoleMapper weUserRoleMapper, WeFlowerCustomerRelService weFlowerCustomerRelService, WeUserRoleService weUserRoleService, PageHomeService pageHomeService, WeGroupService weGroupService, WeMaterialService weMaterialService, WeExternalUserMappingUserService weExternalUserMappingUserService, RuoYiConfig ruoYiConfig, WeCorpAccountService weCorpAccountService, WeAgentClient weAgentClient, WeUserBehaviorDataService weUserBehaviorDataService, WeCustomerClient weCustomerClient) {
         this.weDepartmentService = weDepartmentService;
         this.weUserMapper = weUserMapper;
         this.redisCache = redisCache;
@@ -103,6 +113,8 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
         this.ruoYiConfig = ruoYiConfig;
         this.weCorpAccountService = weCorpAccountService;
         this.weAgentClient = weAgentClient;
+        this.weUserBehaviorDataService = weUserBehaviorDataService;
+        this.weCustomerClient = weCustomerClient;
     }
 
     /**
@@ -128,9 +140,6 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
     @Override
     @DataScope
     public List<WeUserVO> listOfUser(QueryUserDTO queryUserDTO) {
-        if (StringUtils.isEmpty(queryUserDTO.getDepartments())) {
-            return Collections.emptyList();
-        }
         return weUserMapper.listOfUser(queryUserDTO);
     }
 
@@ -452,7 +461,7 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
         }
         // 先同步离职成员(由于如果成员离职后再进入企业,并且存在待分配的离职客户时,拉取离职员工的时候会拉取到该成员并修改状态为离职,所以此处先同步离职员工后,再同步在职成员)
         try {
-            SpringUtils.getBean(WeUserService.class).syncWeLeaveUserV2(corpId);
+            weUserService.syncWeLeaveUserV2(corpId);
         } catch (Exception e) {
             log.error("同步离职员工异常corpId:{},E:{}", corpId, ExceptionUtils.getStackTrace(e));
         }
@@ -479,7 +488,7 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
         //添加或更新员工
         for (WeUser weUser : visibleUser) {
             weUser.setCorpId(corpId);
-            insertWeUserNoToWeCom(weUser);
+            weUserService.insertWeUserNoToWeCom(weUser);
         }
         log.info("同步成员完成,corpId:{},本次同步成员数：{}", corpId, visibleUser.size());
         // 同步员工后刷新数据概览页数据
@@ -541,6 +550,10 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
         // 3. 获取所有离职员工的待分配客户和员工详情
         GetUnassignedListReq req = new GetUnassignedListReq();
         GetUnassignedListResp resp = (GetUnassignedListResp) req.executeTillNoNextPage(corpId);
+        if (resp == null) {
+            log.info("[同步离职员工]本次没有同步到离职待分配员工 corpId:{}", corpId);
+            return;
+        }
         resp.handleData(corpId);
         if (CollectionUtils.isEmpty(resp.getTotalList())) {
             log.info("[同步离职员工]本次没有同步到离职待分配员工corpId:{},resp:{}", corpId, resp);
@@ -992,12 +1005,65 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
             weUser.setExternalCorpId(externalCorpId);
             weUser.setExternalUserId(externalUserId);
             weUser.setCorpId(weExternalUserMappingUser.getCorpId());
-            this.insertWeUserNoToWeCom(weUser);
+            weUserService.insertWeUserNoToWeCom(weUser);
             weUser.setDepartmentName(weDepartmentService.selectNameByUserId(weExternalUserMappingUser.getCorpId(), weExternalUserMappingUser.getUserId()));
             return weUser;
         } else {
             return null;
         }
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public void getUserBehaviorDataByCorpId(String corpId) {
+        if (StringUtils.isBlank(corpId)) {
+            log.error("corpId不允许为空。");
+            return;
+        }
+        // 获取根员工
+        List<WeUser> visibleUser = this.getVisibleUser(corpId);
+        if (CollectionUtils.isEmpty(visibleUser)) {
+            log.info("[UserBehaviorDataTak] 该企业不存在可见的部门和员工,停止执行,corpId:{}", corpId);
+            return;
+        }
+        //删除存在的数据
+        Long startTime = MyDateUtil.strToDate(-1, 0);
+        Long endTime = MyDateUtil.strToDate(-1, 1);
+        LambdaQueryWrapper<WeUserBehaviorData> wrapper1 = new LambdaQueryWrapper<>();
+        wrapper1.eq(WeUserBehaviorData::getCorpId, corpId);
+        wrapper1.between(WeUserBehaviorData::getStatTime, DateUtil.date(startTime * 1000), DateUtil.date(endTime * 1000));
+        int count = weUserBehaviorDataService.count(wrapper1);
+        if (count > 0) {
+            weUserBehaviorDataService.remove(wrapper1);
+        }
+
+        List<WeUserBehaviorData> dataList = new ArrayList<>();
+        UserBehaviorDataQuery query = new UserBehaviorDataQuery();
+        //前一天的数据
+        query.setStart_time(startTime);
+        query.setEnd_time(endTime);
+        visibleUser.forEach(weUser -> {
+            List<String> idList = new ArrayList<>();
+            idList.add(weUser.getUserId());
+            query.setUserid(idList);
+            try {
+                //根据员工id获取员工的数据概览
+                UserBehaviorDataDTO userBehaviorData = weCustomerClient.getUserBehaviorData(query, corpId);
+                List<UserBehaviorDataDTO.BehaviorData> behaviorDataList = userBehaviorData.getBehaviorData();
+                for (UserBehaviorDataDTO.BehaviorData data : behaviorDataList) {
+                    WeUserBehaviorData weUserBehaviorData = new WeUserBehaviorData();
+                    BeanUtils.copyPropertiesignoreOther(data, weUserBehaviorData);
+                    weUserBehaviorData.setUserId(weUser.getUserId());
+                    weUserBehaviorData.setCorpId(corpId);
+                    dataList.add(weUserBehaviorData);
+                }
+            } catch (ForestRuntimeException e) {
+                log.error("员工数据拉取失败: corpId:{},userId:【{}】,ex:【{}】", corpId, weUser.getUserId(), ExceptionUtils.getStackTrace(e));
+            }
+        });
+        weUserBehaviorDataService.saveBatch(dataList);
+
+
     }
 
 }

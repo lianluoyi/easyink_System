@@ -25,7 +25,7 @@ public class WechatOpenInterceptor implements Interceptor<Object> {
 
     private final WechatOpenService wechatOpenService;
     private final WechatOpenConfig wechatOpenConfig;
-    private final static String API_PREFIX = "https://api.weixin.qq.com";
+    private static final String API_PREFIX = "https://api.weixin.qq.com";
 
     @Lazy
     public WechatOpenInterceptor(WechatOpenService wechatOpenService, WechatOpenConfig wechatOpenConfig) {

@@ -25,41 +25,6 @@ import java.util.ArrayList;
 @Deprecated
 public class SysNoticeController extends BaseController {
 
-    @PreAuthorize("@ss.hasPermi('system:notice:list')")
-    @GetMapping("/list")
-    @ApiOperation("获取通知公告列表")
-    @Deprecated
-    public TableDataInfo list(SysNotice notice) {
-        return getDataTable(new ArrayList<>());
-    }
-
-    @PreAuthorize("@ss.hasPermi('system:notice:query')")
-    @GetMapping(value = "/{noticeId}")
-    @ApiOperation("根据通知公告编号获取详细信息")
-    @Deprecated
-    public AjaxResult getInfo(@PathVariable Long noticeId) {
-        return AjaxResult.success();
-    }
-
-
-    @PreAuthorize("@ss.hasPermi('system:notice:add')")
-    @Log(title = "通知公告", businessType = BusinessType.INSERT)
-    @PostMapping
-    @ApiOperation("新增通知公告")
-    @Deprecated
-    public AjaxResult add(@Validated @RequestBody SysNotice notice) {
-        return AjaxResult.success();
-    }
-
-    @PreAuthorize("@ss.hasPermi('system:notice:edit')")
-    @Log(title = "通知公告", businessType = BusinessType.UPDATE)
-    @PutMapping
-    @ApiOperation("修改通知公告")
-    @Deprecated
-    public AjaxResult edit(@Validated @RequestBody SysNotice notice) {
-        return AjaxResult.success();
-    }
-
 
     @PreAuthorize("@ss.hasPermi('system:notice:remove')")
     @Log(title = "通知公告", businessType = BusinessType.DELETE)

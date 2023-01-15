@@ -45,6 +45,7 @@ import org.apache.poi.ss.usermodel.DateUtil;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.redisson.api.RLock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -269,21 +270,26 @@ public class WeRedeemCodeServiceImpl extends ServiceImpl<WeRedeemCodeMapper, WeR
                 throw new CustomException(ResultTip.TIP_REDEEM_CODE_ACTIVITY_LIMIT_ADD_USER);
             }
             //该客户符合分配兑换码条件
+            RLock rLock = null;
+            boolean isHaveLock = false;
             try {
                 final String redeemCodeKey = RedeemCodeConstants.getRedeemCodeKey(corpId, weRedeemCode.getActivityId());
-                if (LockUtil.tryLock(redeemCodeKey, RedeemCodeConstants.CODE_WAIT_TIME, RedeemCodeConstants.CODE_LEASE_TIME, TimeUnit.SECONDS)) {
+                rLock = LockUtil.getLock(redeemCodeKey);
+                isHaveLock = rLock.tryLock(RedeemCodeConstants.CODE_WAIT_TIME, RedeemCodeConstants.CODE_LEASE_TIME, TimeUnit.SECONDS);
+                if (isHaveLock) {
                     weRedeemCode.setStatus(RedeemCodeConstants.REDEEM_CODE_RECEIVED);
                     weRedeemCode.setRedeemTime(DateUtils.parseDateToStr(DateUtils.YYYY_MM_DD_HH_MM_SS, new Date()));
                     this.baseMapper.updateWeRedeemCode(weRedeemCode);
-                    //更新兑换码信息后,释放锁
-                    LockUtil.unlock(RedeemCodeConstants.getRedeemCodeKey(corpId, String.valueOf(weRedeemCodeDTO.getActivityId())));
                 }
             } catch (InterruptedException e) {
                 log.error("[兑换码更新]兑换码更新兑换人获取锁失败,e:{},活动id:{},corpId:{}", ExceptionUtils.getStackTrace(e), weRedeemCodeDTO.getActivityId(), corpId);
+                Thread.currentThread().interrupt();
             } catch (Exception e) {
                 log.error("[兑换码更新]兑换码分配兑换人失败,e:{},活动id:{},corpId:{}", ExceptionUtils.getStackTrace(e), weRedeemCodeDTO.getActivityId(), corpId);
-                //内部处理逻辑报错,释放锁
-                LockUtil.unlock(RedeemCodeConstants.getRedeemCodeKey(corpId, String.valueOf(weRedeemCodeDTO.getActivityId())));
+            }finally {
+                if(rLock != null){
+                    rLock.unlock();
+                }
             }
             //告警员工
             alarmUser(corpId, weRedeemCodeDTO.getActivityId());
@@ -389,6 +395,9 @@ public class WeRedeemCodeServiceImpl extends ServiceImpl<WeRedeemCodeMapper, WeR
         if (StringUtils.isNotBlank(weRedeemCodeDTO.getReceiveName())) {
             List<WeCustomerVO> customers = weCustomerService.getCustomer(weRedeemCodeDTO.getCorpId(), weRedeemCodeDTO.getReceiveName());
             List<String> externalUsers = customers.stream().map(WeCustomerVO::getExternalUserid).collect(Collectors.toList());
+            if (CollectionUtils.isEmpty(externalUsers)) {
+                return Collections.emptyList();
+            }
             weRedeemCodeDTO.setExternalUserIdList(externalUsers);
         }
         startPage();

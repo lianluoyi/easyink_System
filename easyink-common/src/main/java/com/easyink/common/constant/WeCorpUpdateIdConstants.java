@@ -1,7 +1,9 @@
 package com.easyink.common.constant;
 
 import io.swagger.annotations.ApiModel;
+import lombok.AccessLevel;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 
 /**
@@ -12,13 +14,14 @@ import lombok.Data;
  */
 @Data
 @ApiModel("企业微信帐号ID安全性全面升级常量")
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class WeCorpUpdateIdConstants {
 
     /**
      * 存储corpId的表
      *
      */
-    public static String CORP_ID_LIST =
+    public static final String CORP_ID_LIST =
             "    - we_corp_account\n" +
             "    - order_group_to_order_customer\n" +
             "    - order_user_to_order_account\n" +
@@ -97,7 +100,7 @@ public class WeCorpUpdateIdConstants {
      * 要更新的表|修改的列名
      * 要更新的表|修改的列名|条件
      */
-    public static String USER_ID_LIST =
+    public static final String USER_ID_LIST =
             "    - we_group,owner\n" +
             "    - order_user_to_order_account,user_id\n" +
             "    - we_auto_tag_rule_hit_customer_record_tag_rel,we_auto_tag_rule_hit_customer_record,rule_id,rule_id,user_id\n" +
@@ -157,7 +160,7 @@ public class WeCorpUpdateIdConstants {
      * 要更新的表|修改的列名|条件
      *
      */
-    public static String EXTERNAL_USER_ID_LIST =
+    public static final String EXTERNAL_USER_ID_LIST =
             "    - we_operations_center_sop_detail,target_id\n" +
             "    - we_redeem_code,we_redeem_code_activity,activity_id,id,receive_user_id\n" +
             "    - we_auto_tag_rule_hit_customer_record,customer_id\n" +
@@ -183,46 +186,46 @@ public class WeCorpUpdateIdConstants {
      *  代开发应用设置迁移完成openid_type参数
      *  为1时升级userid与corpid 只能同时设置为升级模式
      */
-    public static Integer MIGRATION_USER_ID_AND_CORP_ID = 1;
+    public static final Integer MIGRATION_USER_ID_AND_CORP_ID = 1;
 
     /**
      *  代开发应用设置迁移完成openid_type参数
      *  为2时升级external_userid 可以单独升级
      */
-    public static Integer MIGRATION_EXTERNAL_USER_ID = 3;
+    public static final Integer MIGRATION_EXTERNAL_USER_ID = 3;
 
     /**
      * 空时间
      */
-    public static String EMPTY_TIME = "0000-00-00 00:00:00";
+    public static final String EMPTY_TIME = "0000-00-00 00:00:00";
 
     /**
      * 数字0
      */
-    public static Integer ZERO_NUM = 0;
+    public static final Integer ZERO_NUM = 0;
 
     /**
      * corpId以wpI开头
      */
-    public static String CORP_START_WITH = "wpI";
+    public static final String CORP_START_WITH = "wpI";
     /**
      * 更新企业失败
      */
-    public static String UPDATE_CORP_FAIL = "更新企业失败: ";
+    public static final String UPDATE_CORP_FAIL = "更新企业失败: ";
 
     /**
      * 获取corpIdList
      */
-    public static String GET_CORP_ID_LIST = "corpIdList";
+    public static final String GET_CORP_ID_LIST = "corpIdList";
 
     /**
      * 获取corpIdList
      */
-    public static String GET_USER_ID_LIST = "userIdList";
+    public static final String GET_USER_ID_LIST = "userIdList";
 
     /**
      * 获取corpIdList
      */
-    public static String GET_EXTERNAL_USER_ID_LIST = "externalUserIdList";
+    public static final String GET_EXTERNAL_USER_ID_LIST = "externalUserIdList";
 
 }

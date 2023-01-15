@@ -195,21 +195,6 @@ public class WeUserController extends BaseController {
         return AjaxResult.success();
     }
 
-
-    /**
-     * 离职已分配,新接口
-     *
-     * @param weLeaveUserV2VO
-     * @return
-     */
-    @GetMapping({"/v2/leaveUserAllocateList"})
-    @ApiOperation("获取离职已分配离职员工")
-    @Deprecated
-    public TableDataInfo leaveUserAllocateListV2(WeLeaveUserV2VO weLeaveUserV2VO) {
-        startPage();
-        return getDataTable(new ArrayList<>());
-    }
-
     /**
      * 离职已分配 V3
      *
@@ -225,39 +210,12 @@ public class WeUserController extends BaseController {
 
     }
 
-    /**
-     * 离职未分配，新接口
-     *
-     * @param weLeaveUserV2VO
-     * @return
-     */
-    @GetMapping({"/v2/leaveUserNoAllocateList"})
-    @ApiOperation("获取离职未分配离职员工")
-    @Deprecated
-    public TableDataInfo<WeLeaveUserV2VO> leaveUserNoAllocateListV2(WeLeaveUserV2VO weLeaveUserV2VO) {
-        startPage();
-        return getDataTable(new ArrayList<>());
-    }
-
     @GetMapping("/v3/leaveUserNoAllocateList")
     @ApiOperation("获取离职未分配离职员工V3")
     public TableDataInfo<TransferResignedUserVO> leaveUserListV3(@Validated TransferResignedUserListDTO dto) {
         LoginUser loginUser = LoginTokenService.getLoginUser();
         dto.setCorpId(loginUser.getCorpId());
         return getDataTable(weUserService.leaveUserListV3(dto));
-    }
-
-    /**
-     * 离职分配，新接口
-     *
-     * @param weLeaveUserInfoAllocateVo
-     * @return
-     */
-    @PutMapping({"/v2/allocateLeaveUserAboutData"})
-    @ApiOperation("离职继承分配")
-    @Deprecated
-    public AjaxResult<AllocateLeaveUserResp> allocateLeaveUserAboutDataV2(@RequestBody WeLeaveUserInfoAllocateVO weLeaveUserInfoAllocateVo) {
-        return AjaxResult.success();
     }
 
     /**
@@ -290,60 +248,6 @@ public class WeUserController extends BaseController {
     public AjaxResult deleteUser(@PathVariable String[] ids) {
         weUserService.deleteUser(LoginTokenService.getLoginUser().getCorpId(), ids);
         return AjaxResult.success();
-    }
-
-
-    /**
-     * 获取历史分配记录的成员
-     *
-     * @param weAllocateCustomersVo
-     * @return
-     */
-    @GetMapping({"/getAllocateCustomers"})
-    @ApiOperation("获取历史分配记录的成员")
-    @Deprecated
-    public TableDataInfo<WeAllocateCustomersVO> getAllocateCustomers(WeAllocateCustomersVO weAllocateCustomersVo) {
-        startPage();
-        return getDataTable(new ArrayList<>());
-    }
-
-    /**
-     * 获取历史分配记录的成员,新接口
-     *
-     * @param weAllocateCustomersVo
-     * @return
-     */
-    @GetMapping({"/v2/getAllocateCustomers"})
-    @ApiOperation("获取历史分配记录的成员")
-    @Deprecated
-    public TableDataInfo<WeAllocateCustomersVO> getAllocateCustomersV2(WeAllocateCustomersVO weAllocateCustomersVo) {
-        return getDataTable(new ArrayList<>());
-    }
-
-
-    /**
-     * 获取历史分配记录的群
-     * @deprecated 已废弃
-     * @param weAllocateGroupsVo
-     * @return
-     */
-    @GetMapping({"/getAllocateGroups"})
-    @Deprecated
-    public TableDataInfo getAllocateGroups(WeAllocateGroupsVO weAllocateGroupsVo) {
-        return getDataTable(new ArrayList<>());
-    }
-
-    /**
-     * 获取历史分配记录的群，新接口
-     *
-     * @param weAllocateGroupsVo
-     * @return
-     */
-    @ApiOperation("获取历史分配记录的群")
-    @GetMapping({"/v2/getAllocateGroups"})
-    @Deprecated
-    public TableDataInfo getAllocateGroupsV2(WeAllocateGroupsVO weAllocateGroupsVo) {
-        return getDataTable(new ArrayList<>());
     }
 
 

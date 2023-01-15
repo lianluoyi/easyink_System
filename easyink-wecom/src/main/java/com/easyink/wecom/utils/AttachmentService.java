@@ -84,12 +84,12 @@ public class AttachmentService {
             // 标题
             content = StringUtils.isNotEmpty(content) ? content : FileUtil.getName(picUrl);
             // 链接地址
-            url = picUrl;
+            String useUrl = picUrl;
             // 封面图片
             picUrl = WeConstans.DEFAULT_VIDEO_COVER_URL;
             // 描述信息
             String desc = WeConstans.CLICK_SEE_VIDEO;
-            attachments = buildLink(content, picUrl, desc, url, AttachmentTypeEnum.LINK);
+            attachments = buildLink(content, picUrl, desc, useUrl, AttachmentTypeEnum.LINK);
             return attachments;
         }
         attachments = new Attachments();

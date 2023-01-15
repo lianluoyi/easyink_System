@@ -8,6 +8,10 @@ import ws.schild.jave.MultimediaObject;
 import javax.servlet.http.HttpServletRequest;
 import java.io.*;
 import java.net.*;
+import java.nio.file.DirectoryNotEmptyException;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.zip.ZipEntry;
@@ -30,31 +34,25 @@ public class FileUtils extends org.apache.commons.io.FileUtils {
      * @return
      */
     public static void writeBytes(String filePath, OutputStream os) throws IOException {
-        FileInputStream fis = null;
         try {
             File file = new File(filePath);
             if (!file.exists()) {
                 throw new FileNotFoundException(filePath);
             }
-            fis = new FileInputStream(file);
-            byte[] b = new byte[1024];
-            int length;
-            while ((length = fis.read(b)) > 0) {
-                os.write(b, 0, length);
+            try (FileInputStream fis = new FileInputStream(file)) {
+                byte[] b = new byte[1024];
+                int length;
+                while ((length = fis.read(b)) > 0) {
+                    os.write(b, 0, length);
+                }
             }
         } catch (IOException e) {
+            log.error("[输出指定文件的byte数组失败] e:{}", ExceptionUtils.getStackTrace(e));
             throw e;
         } finally {
             if (os != null) {
                 try {
                     os.close();
-                } catch (IOException e1) {
-                    log.error("异常信息 e:{}", e1.getMessage());
-                }
-            }
-            if (fis != null) {
-                try {
-                    fis.close();
                 } catch (IOException e1) {
                     log.error("异常信息 e:{}", e1.getMessage());
                 }
@@ -156,15 +154,8 @@ public class FileUtils extends org.apache.commons.io.FileUtils {
      * @param filePath 文件
      * @return
      */
-    public static boolean deleteFile(String filePath) {
-        boolean flag = false;
-        File file = new File(filePath);
-        // 路径为文件且不为空则进行删除
-        if (file.isFile() && file.exists()) {
-            file.delete();
-            flag = true;
-        }
-        return flag;
+    public static void deleteFile(String filePath) throws IOException {
+        Files.delete(Paths.get(filePath));
     }
 
     /**
@@ -218,7 +209,7 @@ public class FileUtils extends org.apache.commons.io.FileUtils {
      * @throws UnknownHostException
      * @throws IOException
      */
-    public static File getFileByUrl(String url) throws UnknownHostException, IOException {
+    public static File getFileByUrl(String url) throws IOException {
         //创建临时文件
         File tmpFile = File.createTempFile("temp", ".tmp");
         toLocalFile(url, tmpFile.getCanonicalPath());
@@ -233,11 +224,13 @@ public class FileUtils extends org.apache.commons.io.FileUtils {
      * @throws IOException
      * @throws UnknownHostException
      */
-    private static void toLocalFile(String urlStr, String localUrl) throws IOException, UnknownHostException {
+    private static void toLocalFile(String urlStr, String localUrl) throws IOException {
         byte[] data = toByteArray(urlStr);
-        FileOutputStream out = new FileOutputStream(localUrl);
-        out.write(data);
-        out.close();
+        try (FileOutputStream out = new FileOutputStream(localUrl)) {
+            out.write(data);
+        }catch (FileNotFoundException e){
+            log.error("[网络文件转换为本地文件] e:{}",ExceptionUtils.getStackTrace(e));
+        }
     }
 
     /**

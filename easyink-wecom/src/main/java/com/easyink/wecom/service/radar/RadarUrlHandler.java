@@ -232,7 +232,7 @@ public class RadarUrlHandler extends ShortUrlAdaptor {
                 .build();
         List<WeMakeCustomerTagVO > list = new ArrayList<>();
         list.add(makeCustomerTagVO);
-        weCustomerService.makeLabelbatch(list,user.getUserId());
+        weCustomerService.batchMakeLabel(list,user.getUserId());
 
     }
 
@@ -290,7 +290,7 @@ public class RadarUrlHandler extends ShortUrlAdaptor {
         //  2. 先根据union_id去客户表查询是否有数据
         WeCustomer customer = weCustomerService.getOne(new LambdaQueryWrapper<WeCustomer>().eq(WeCustomer::getUnionid, unionId).last(GenConstants.LIMIT_1));
         if (customer == null) {
-            log.info("[获取雷达原链接] 获取客户详情,根据union_id在数据库中未匹配到客户,openId:{},unionId:{},customer:{}", openId, unionId);
+            log.info("[获取雷达原链接] 获取客户详情,根据union_id在数据库中未匹配到客户,openId:{},unionId:{}", openId, unionId);
             throw new CustomException(ResultTip.TIP_CANNOT_FIND_USER_BY_UNION_ID);
         }
         return customer;

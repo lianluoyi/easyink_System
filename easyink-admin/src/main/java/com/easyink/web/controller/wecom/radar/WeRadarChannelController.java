@@ -42,7 +42,7 @@ public class WeRadarChannelController extends BaseController {
     @PostMapping("/add")
     @ApiOperation("新增雷达渠道")
 //    @PreAuthorize("@ss.hasPermi('redeeomCode:activity:add')")
-    public <T> AjaxResult add(@RequestBody @Validated RadarChannelDTO radarChannelDTO) {
+    public AjaxResult add(@RequestBody @Validated RadarChannelDTO radarChannelDTO) {
         radarChannelService.saveRadarChannel(radarChannelDTO);
         return AjaxResult.success();
     }
@@ -59,7 +59,7 @@ public class WeRadarChannelController extends BaseController {
     @Log(title = "删除雷达渠道", businessType = BusinessType.DELETE)
     @DeleteMapping("/remove")
     @ApiOperation("删除雷达渠道")
-    public <T> AjaxResult remove(@Validated @RequestBody DeleteRadarChannelDTO deleteDTO) {
+    public AjaxResult remove(@Validated @RequestBody DeleteRadarChannelDTO deleteDTO) {
         radarChannelService.batchRemoveRadarChannel(deleteDTO);
         return AjaxResult.success();
     }

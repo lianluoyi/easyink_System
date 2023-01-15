@@ -303,4 +303,11 @@ public interface WeUserService extends IService<WeUser> {
      */
     WeUser getWeUserByExternalMapping(String externalUserId, String externalCorpId);
 
+    /**
+     * 联系客户统计
+     *
+     * @param corpId    企业id
+     */
+    void getUserBehaviorDataByCorpId(String corpId);
+
 }

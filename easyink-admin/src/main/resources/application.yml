@@ -97,6 +97,7 @@ ruoyi:
       - /url/**
       - /wechatopen/appId
       - /wechatopen/openId
+      - /unionId/getByExternalUserId
       - /test/**
 
 
@@ -119,7 +120,7 @@ logging:
   file:
     path: ${LOG_PATH:./logs}
     max-history: ${LOG_MAX_HISTORY:15}
-    name: ${LOG_NAME:/wecom.log}
+    name: ${LOG_NAME:/wecom}
 
 # Spring配置
 spring:
@@ -428,7 +429,9 @@ wechatopen:
       needTokenUrl:
         - /cgi-bin/user/info
         - /wxa/generate_urllink
-        - /sns/oauth2/access_token
+
+decrypt:
+    unionIdKey: ${DECRYPT_UNIONID_KEY:}
 
 
 

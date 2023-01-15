@@ -65,7 +65,7 @@ public class FileUploadUtils {
      */
     public static String upload(MultipartFile file) throws IOException {
         try {
-            return upload(getDefaultBaseDir(), file, MimeTypeUtils.DEFAULT_ALLOWED_EXTENSION);
+            return upload(getDefaultBaseDir(), file, MimeTypeUtils.getDefaultAllowedExtension());
         } catch (Exception e) {
             throw new IOException(e.getMessage(), e);
         }
@@ -81,7 +81,7 @@ public class FileUploadUtils {
      */
     public static String upload(String baseDir, MultipartFile file) throws IOException {
         try {
-            return upload(baseDir, file, MimeTypeUtils.DEFAULT_ALLOWED_EXTENSION);
+            return upload(baseDir, file, MimeTypeUtils.getDefaultAllowedExtension());
         } catch (Exception e) {
             throw new IOException(e.getMessage(), e);
         }
@@ -110,7 +110,7 @@ public class FileUploadUtils {
         if (fileNamelength > FileUploadUtils.DEFAULT_FILE_NAME_LENGTH) {
             throw new FileNameLengthLimitExceededException(FileUploadUtils.DEFAULT_FILE_NAME_LENGTH);
         }
-        assertAllowed(file, MimeTypeUtils.DEFAULT_ALLOWED_EXTENSION);
+        assertAllowed(file, MimeTypeUtils.getDefaultAllowedExtension());
         return getPathFileName(baseDir, fileName);
     }
 
@@ -177,7 +177,7 @@ public class FileUploadUtils {
      */
     public static String upload2Cos(InputStream in,String fileName, String fileExtension, CosConfig cosConfig) throws IOException {
         try {
-            return upload2Cos(in,fileName, fileExtension, MimeTypeUtils.DEFAULT_ALLOWED_EXTENSION, cosConfig);
+            return upload2Cos(in,fileName, fileExtension, MimeTypeUtils.getDefaultAllowedExtension(), cosConfig);
         } catch (Exception e) {
             throw new IOException(e.getMessage(), e);
         }
@@ -354,13 +354,13 @@ public class FileUploadUtils {
 
         String extension = getExtension(file);
         if (allowedExtension != null && !isAllowedExtension(extension, allowedExtension)) {
-            if (allowedExtension == MimeTypeUtils.IMAGE_EXTENSION) {
+            if (allowedExtension == MimeTypeUtils.getImageExtension()) {
                 throw new InvalidExtensionException.InvalidImageExtensionException(allowedExtension, extension,
                         fileName);
-            } else if (allowedExtension == MimeTypeUtils.FLASH_EXTENSION) {
+            } else if (allowedExtension == MimeTypeUtils.getFlashExtension()) {
                 throw new InvalidExtensionException.InvalidFlashExtensionException(allowedExtension, extension,
                         fileName);
-            } else if (allowedExtension == MimeTypeUtils.MEDIA_EXTENSION) {
+            } else if (allowedExtension == MimeTypeUtils.getMediaExtension()) {
                 throw new InvalidExtensionException.InvalidMediaExtensionException(allowedExtension, extension,
                         fileName);
             } else {

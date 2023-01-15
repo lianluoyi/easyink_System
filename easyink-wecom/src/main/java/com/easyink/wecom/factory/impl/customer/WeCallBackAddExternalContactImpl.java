@@ -15,7 +15,6 @@ import com.easyink.common.enums.code.WelcomeMsgTypeEnum;
 import com.easyink.common.exception.CustomException;
 import com.easyink.common.lock.LockUtil;
 import com.easyink.common.utils.ExceptionUtil;
-import com.easyink.common.utils.StringUtils;
 import com.easyink.wecom.domain.*;
 import com.easyink.wecom.domain.dto.AddWeMaterialDTO;
 import com.easyink.wecom.domain.dto.WeMediaDTO;
@@ -34,7 +33,9 @@ import com.easyink.wecom.service.redeemcode.WeRedeemCodeService;
 import com.easyink.wecom.utils.AttachmentService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.redisson.api.RLock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -124,7 +125,7 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
             log.error("[add_external_contact]:回调数据不完整,message:{}", message);
             return false;
         }
-        if (!redisCache.addLock(message.getUniqueKey(message.getExternalUserId()), "", Constants.CALLBACK_HANDLE_LOCK_TIME)) {
+        if (Boolean.FALSE.equals(redisCache.addLock(message.getUniqueKey(message.getExternalUserId()), "", Constants.CALLBACK_HANDLE_LOCK_TIME))) {
             log.info("[{}]添加客户事件回调,该回调已处理,不重复处理,message:{}", message.getChangeType(), message);
             // 不重复处理
             return false;
@@ -192,7 +193,7 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
             WeWelcomeMsg.WeWelcomeMsgBuilder weWelcomeMsgBuilder = WeWelcomeMsg.builder().welcome_code(welcomeCode);
             SelectWeEmplyCodeWelcomeMsgVO messageMap = weEmpleCodeService.selectWelcomeMsgByState(state, corpId, externalUserId);
 
-            if (StringUtils.isNotNull(messageMap) && org.apache.commons.lang3.StringUtils.isNotBlank(messageMap.getEmpleCodeId())) {
+            if (null != messageMap && org.apache.commons.lang3.StringUtils.isNotBlank(messageMap.getEmpleCodeId())) {
                 String empleCodeId = messageMap.getEmpleCodeId();
                 //更新活码数据统计
                 weEmpleCodeAnalyseService.saveWeEmpleCodeAnalyse(corpId, userId, externalUserId, empleCodeId, true);
@@ -218,23 +219,7 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
                         }
                     });
                 } else if (WelcomeMsgTypeEnum.REDEEM_CODE_WELCOME_MSG_TYPE.getType().equals(messageMap.getWelcomeMsgType())) {
-                    try {
-                        final String redeemCodeKey = RedeemCodeConstants.getRedeemCodeKey(corpId, messageMap.getCodeActivityId());
-                        if (LockUtil.tryLock(redeemCodeKey, RedeemCodeConstants.CODE_WAIT_TIME, RedeemCodeConstants.CODE_LEASE_TIME, TimeUnit.SECONDS)) {
-                            weEmpleCodeService.buildRedeemCodeActivityWelcomeMsg(messageMap, corpId, externalUserId);
-                            //同步发送消息
-                            sendMessageToNewExternalUserId(weWelcomeMsgBuilder, messageMap, weFlowerCustomerRel.getRemark(), corpId, userId, externalUserId, state);
-                            log.info("[欢迎语回调]活动欢迎语处理完成，活动id:{},corpId:{}}", messageMap.getCodeActivityId(), corpId);
-                            //发送欢迎语且更新兑换码信息后,释放锁
-                            LockUtil.unlock(RedeemCodeConstants.getRedeemCodeKey(corpId, messageMap.getCodeActivityId()));
-                        }
-                    } catch (InterruptedException e) {
-                        log.error("[欢迎语回调]活动欢迎语获取锁失败,e:{},活动id:{},corpId:{}", ExceptionUtils.getStackTrace(e), messageMap.getCodeActivityId(), corpId);
-                    } catch (Exception e) {
-                        log.error("[欢迎语回调]拼装活动欢迎语 或 同步发送欢迎语消息异常,e:{},活动id:{},corpId:{}", ExceptionUtils.getStackTrace(e), messageMap.getCodeActivityId(), corpId);
-                        //内部处理逻辑报错,释放锁
-                        LockUtil.unlock(RedeemCodeConstants.getRedeemCodeKey(corpId, messageMap.getCodeActivityId()));
-                    }
+                    handleRedeemCodeWelcomeMsg(state, userId, externalUserId, corpId, weWelcomeMsgBuilder, messageMap, weFlowerCustomerRel);
                 }
                 //为外部联系人添加员工活码标签
                 setEmplyCodeTag(weFlowerCustomerRel, empleCodeId, messageMap.getTagFlag());
@@ -244,6 +229,42 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
             }
         } catch (Exception e) {
             log.error("empleCodeHandle error!! e={}", ExceptionUtils.getStackTrace(e));
+        }
+    }
+
+    /**
+     * 处理兑换码欢迎语
+     *
+     * @param state                 渠道
+     * @param userId                员工id
+     * @param externalUserId        外部联系人id
+     * @param corpId                企业id
+     * @param weWelcomeMsgBuilder   {@link WeWelcomeMsg.WeWelcomeMsgBuilder}
+     * @param messageMap            {@link SelectWeEmplyCodeWelcomeMsgVO}
+     * @param weFlowerCustomerRel   {@link WeFlowerCustomerRel}
+     */
+    private void handleRedeemCodeWelcomeMsg(String state, String userId, String externalUserId, String corpId, WeWelcomeMsg.WeWelcomeMsgBuilder weWelcomeMsgBuilder, SelectWeEmplyCodeWelcomeMsgVO messageMap, WeFlowerCustomerRel weFlowerCustomerRel) {
+        RLock rLock = null;
+        boolean isHaveLock = false;
+        try {
+            final String redeemCodeKey = RedeemCodeConstants.getRedeemCodeKey(corpId, messageMap.getCodeActivityId());
+            rLock = LockUtil.getLock(redeemCodeKey);
+            isHaveLock = rLock.tryLock(RedeemCodeConstants.CODE_WAIT_TIME, RedeemCodeConstants.CODE_LEASE_TIME, TimeUnit.SECONDS);
+            if (isHaveLock) {
+                weEmpleCodeService.buildRedeemCodeActivityWelcomeMsg(messageMap, corpId, externalUserId);
+                //同步发送消息
+                sendMessageToNewExternalUserId(weWelcomeMsgBuilder, messageMap, weFlowerCustomerRel.getRemark(), corpId, userId, externalUserId, state);
+                log.info("[欢迎语回调]活动欢迎语处理完成，活动id:{},corpId:{}}", messageMap.getCodeActivityId(), corpId);
+            }
+        } catch (InterruptedException e) {
+            log.error("[欢迎语回调]活动欢迎语获取锁失败,e:{},活动id:{},corpId:{}", ExceptionUtils.getStackTrace(e), messageMap.getCodeActivityId(), corpId);
+            Thread.currentThread().interrupt();
+        } catch (Exception e) {
+            log.error("[欢迎语回调]拼装活动欢迎语 或 同步发送欢迎语消息异常,e:{},活动id:{},corpId:{}", ExceptionUtils.getStackTrace(e), messageMap.getCodeActivityId(), corpId);
+        } finally {
+            if(rLock != null){
+                rLock.unlock();
+            }
         }
     }
 
@@ -331,7 +352,7 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
 
                 List<WeMakeCustomerTagVO> weMakeCustomerTagList = new ArrayList<>();
                 weMakeCustomerTagList.add(weMakeCustomerTag);
-                weCustomerService.makeLabelbatch(weMakeCustomerTagList);
+                weCustomerService.batchMakeLabel(weMakeCustomerTagList);
             }
         } catch (Exception e) {
             log.error("setEmplyCodeTag error!! empleCodeId={},e={}", empleCodeId, ExceptionUtils.getStackTrace(e));
@@ -356,7 +377,7 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
         if (EmployCodeSourceEnum.NEW_GROUP.getSource().equals(messageMap.getSource())) {
             // 新客拉群创建的员工活码欢迎语图片(群活码图片)
             String codeUrl = messageMap.getGroupCodeUrl();
-            if (StringUtils.isNotNull(codeUrl)) {
+            if (StringUtils.isNotBlank(codeUrl)) {
                 String cosImgUrlPrefix = ruoYiConfig.getFile().getCos().getCosImgUrlPrefix();
                 buildWelcomeMsgImg(corpId, codeUrl, codeUrl.replaceAll(cosImgUrlPrefix, ""), attachmentList);
             }

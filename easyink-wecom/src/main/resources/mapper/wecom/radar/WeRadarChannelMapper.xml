@@ -21,21 +21,19 @@
         wrc.name,
         wrc.short_url,
         wrc.create_time,
-        wr.create_by user_id,
-        wu.user_name,
+        wrc.create_by user_id,
+        IFNULL(wu.user_name, wrc.create_by) as user_name,
         wu.department,
         wd.name
         FROM we_radar_channel wrc
         LEFT JOIN we_radar wr ON wrc.radar_id = wr.id
-        LEFT JOIN we_user wu ON wu.user_id = wr.create_by
+        LEFT JOIN we_user wu ON wu.user_id = wrc.create_by AND wu.corp_id = wr.corp_id
         LEFT JOIN we_department wd ON wu.corp_id = wd.corp_id AND wu.department = wd.id
         WHERE wrc.radar_id = #{channel.radarId}
         <if test="channel.name != null and channel.name !=''">
             AND wrc.name like concat('%', #{channel.name}, '%')
         </if>
-        <if test="isSuperAdmin != null and isSuperAdmin == false">
-            AND wu.corp_id = #{channel.corpId}
-        </if>
+        AND wr.corp_id = #{channel.corpId}
         order by wrc.create_time desc
     </select>
 </mapper>

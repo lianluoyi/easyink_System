@@ -1,10 +1,14 @@
 package com.easyink.common.constant;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+
 /**
  * 用户常量信息
  *
  * @author admin
  */
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class UserConstants {
     /**
      * 平台内系统用户的唯一标志
@@ -150,6 +154,15 @@ public class UserConstants {
     /**
      * 系统默认字段
      */
-    public static final String[] SYS_DEFAULT_PROPERTIES = {"客户", "备注", "来源", "添加时间", "所属员工", "标签", "所属部门", "客户状态", "出生日期", "电话", "邮箱", "地址", "描述"};
+    protected static final String[] SYS_DEFAULT_PROPERTIES = {"客户", "备注", "来源", "添加时间", "所属员工", "标签", "所属部门", "客户状态", "出生日期", "电话", "邮箱", "地址", "描述"};
+
+    /**
+     * 获取系统默认字段
+     *
+     * @return SYS_DEFAULT_PROPERTIES
+     */
+    public static String[] getSysDefaultProperties(){
+        return SYS_DEFAULT_PROPERTIES;
+    }
 
 }

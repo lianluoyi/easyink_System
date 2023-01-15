@@ -1,5 +1,6 @@
 package com.easyink.wecom.domain.dto.transfer;
 
+import com.easyink.common.utils.bean.BeanUtils;
 import com.easyink.common.utils.spring.SpringUtils;
 import com.easyink.wecom.client.WeExternalContactClient;
 import com.google.common.collect.Lists;
@@ -44,19 +45,29 @@ public class TransferResignedGroupChatReq {
         // 一次最懂分配100个客户群,此处分批请求
         List<List<String>> partitionList = Lists.partition(chat_id_list, MAX_TRANSFER_NUM);
         List<TransferResignedGroupChatResp.FailResult> totalList = new ArrayList<>();
-        TransferResignedGroupChatResp resp = new TransferResignedGroupChatResp();
+        // 每批次返回数据
+        TransferResignedGroupChatResp onceResp;
+        // 保存全部的结果
+        TransferResignedGroupChatResp respAll = new TransferResignedGroupChatResp();
+        // 至少有一次正确返回
+        boolean resultSuccessFlag = false;
         for (List<String> subList : partitionList) {
             if (CollectionUtils.isEmpty(subList)) {
                 continue;
             }
             this.chat_id_list = subList;
-            resp = client.transferResignedGroup(this, corpId);
-            if (resp != null && CollectionUtils.isNotEmpty(resp.getFailed_chat_list())) {
-                totalList.addAll(resp.getFailed_chat_list());
+            onceResp = client.transferResignedGroup(this, corpId);
+            if (onceResp != null && CollectionUtils.isNotEmpty(onceResp.getFailed_chat_list())) {
+                // 其他参数只复制一次
+                if(!resultSuccessFlag){
+                    BeanUtils.copyBeanProp(respAll, onceResp);
+                    resultSuccessFlag = true;
+                }
+                totalList.addAll(onceResp.getFailed_chat_list());
             }
         }
-        resp.setFailed_chat_list(totalList);
-        return resp;
+        respAll.setFailed_chat_list(totalList);
+        return respAll;
     }
 
 

@@ -31,7 +31,7 @@ public enum ChatType {
     }
 
     public static ChatType of(String type) {
-        return Stream.of(values()).filter(s -> type.equals(s.getType())).findFirst().orElseGet(null);
+        return Stream.of(values()).filter(s -> s.getType().equals(type)).findFirst().orElse(null);
     }
 
 }

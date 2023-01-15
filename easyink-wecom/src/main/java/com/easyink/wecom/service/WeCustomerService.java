@@ -11,6 +11,7 @@ import com.easyink.wecom.domain.dto.WeWelcomeMsg;
 import com.easyink.wecom.domain.dto.customer.EditCustomerDTO;
 import com.easyink.wecom.domain.dto.pro.EditCustomerFromPlusDTO;
 import com.easyink.wecom.domain.dto.tag.RemoveWeCustomerTagDTO;
+import com.easyink.wecom.domain.dto.unionid.GetUnionIdDTO;
 import com.easyink.wecom.domain.entity.WeCustomerExportDTO;
 import com.easyink.wecom.domain.vo.QueryCustomerFromPlusVO;
 import com.easyink.wecom.domain.vo.WeMakeCustomerTagVO;
@@ -18,6 +19,7 @@ import com.easyink.wecom.domain.vo.customer.WeCustomerSumVO;
 import com.easyink.wecom.domain.vo.customer.WeCustomerUserListVO;
 import com.easyink.wecom.domain.vo.customer.WeCustomerVO;
 import com.easyink.wecom.domain.vo.sop.CustomerSopVO;
+import com.easyink.wecom.domain.vo.unionid.GetUnionIdVO;
 import org.springframework.validation.annotation.Validated;
 
 import javax.validation.constraints.NotBlank;
@@ -104,14 +106,14 @@ public interface WeCustomerService extends IService<WeCustomer> {
      * @param weMakeCustomerTagVOS
      * @param updateBy             操作人
      */
-    void makeLabelbatch(List<WeMakeCustomerTagVO> weMakeCustomerTagVOS, String updateBy);
+    void batchMakeLabel(List<WeMakeCustomerTagVO> weMakeCustomerTagVOS, String updateBy);
 
     /**
      * 客户批量打标签
      *
      * @param weMakeCustomerTagVOS
      */
-    void makeLabelbatch(List<WeMakeCustomerTagVO> weMakeCustomerTagVOS);
+    void batchMakeLabel(List<WeMakeCustomerTagVO> weMakeCustomerTagVOS);
 
     /**
      * 移除客户标签(单个客户)
@@ -294,4 +296,12 @@ public interface WeCustomerService extends IService<WeCustomer> {
      * @return
      */
     List<WeCustomerVO> getCustomer(String corpId, String customerName);
+
+    /**
+     * 根据external_user_id获取用户的unionId
+     *
+     * @param getUnionIdDTO 客户id和企业secret等参数 {@link GetUnionIdDTO }
+     * @return {@link GetUnionIdVO}
+     */
+    GetUnionIdVO getDetailByExternalUserId(GetUnionIdDTO getUnionIdDTO);
 }

@@ -149,6 +149,9 @@ public class WeAutoConfigServiceImpl implements WeAutoConfigService {
                 // 先判断是否需要短信验证
                 if (needMobileConfirm(weLoginRespStr)) {
                     WeConfirmMobileRsp mobileRsp = filterConfirmMobile(weLoginRespStr);
+                    if(mobileRsp == null || StringUtils.isBlank(mobileRsp.getTlKey())){
+                        return new WeCheckQrcodeVO(qrcodeStatus);
+                    }
                     log.info("[checkQrCode]需要短信验证,截取到的tlKEy:{}", mobileRsp);
                     // 根据该qrcodeKey锁720s,不再处理前端发起的其他check请求
                     redisCache.addLock(confirmRedisKey(qrcodeKey), mobileRsp.getTlKey(), 720L);

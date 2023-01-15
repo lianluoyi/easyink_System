@@ -28,7 +28,6 @@ public class VideoDTO {
     private String videoUrl;
 
     @ApiModelProperty(value = "视频大小", required = true)
-    @NotNull(message = "视频大小不能为空")
     private Long size;
 
     @ApiModelProperty("封面")

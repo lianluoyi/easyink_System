@@ -152,6 +152,7 @@ public enum ResultTip {
     TIP_REDEEM_CODE_FILE_DATA_IS_EMPTY(2081, "文件中数据为空"),
     TIP_REDEEM_CODE_ACTIVITY_LIMIT_ADD_USER(2082, "活动已开启参与限制，同一客户不能多次领取"),
     TIP_IMAGE_FORMAT_ERROR(2083, "图片格式异常，请重新保存后上传"),
+    TIP_MEDIA_TYPE_ERROR(2084,"媒体类型出错"),
 
     //员工模块错误码
     TIP_PARAM_MISSING(3001, "请填写完整的员工信息"),
@@ -196,6 +197,7 @@ public enum ResultTip {
     TIP_MISSING_LOGIN_INFO(7000, "所在企业未开通「壹鸽快递工单助手」，请联系管理员"),
     TIP_UN_USE_AI_SYSTEM(7001, "您没有访问权限，请联系管理员"),
     TIP_UN_BIND_NETWORK(7002, "所在企业未开通「壹鸽快递工单助手」，请联系管理员"),
+    TIP_GET_UNION_ID_FAIL(7003,"获取unionId失败 "),
 
 
     //应用中心

@@ -14,7 +14,6 @@ import com.easyink.common.enums.CustomerExtendPropertyEnum;
 import com.easyink.common.enums.CustomerTrajectoryEnums;
 import com.easyink.common.enums.ExternalGroupMemberTypeEnum;
 import com.easyink.common.enums.MessageType;
-import com.easyink.common.utils.StringUtils;
 import com.easyink.wecom.client.WeMessagePushClient;
 import com.easyink.wecom.domain.*;
 import com.easyink.wecom.domain.dto.WeMessagePushDTO;
@@ -28,10 +27,12 @@ import com.easyink.wecom.mapper.WeCustomerMapper;
 import com.easyink.wecom.mapper.WeCustomerTrajectoryMapper;
 import com.easyink.wecom.mapper.WeUserMapper;
 import com.easyink.wecom.service.*;
+import io.swagger.annotations.ApiModel;
 import joptsimple.internal.Strings;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.beanutils.ConvertUtils;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,6 +46,7 @@ import java.util.stream.Collectors;
 
 @Service
 @Slf4j
+@ApiModel("活动轨迹相关Service")
 public class WeCustomerTrajectoryServiceImpl extends ServiceImpl<WeCustomerTrajectoryMapper, WeCustomerTrajectory> implements WeCustomerTrajectoryService {
 
 
@@ -130,7 +132,7 @@ public class WeCustomerTrajectoryServiceImpl extends ServiceImpl<WeCustomerTraje
                             .corpId(corpId)
                             .userId(userId)
                             .externalUserid(externalUserId)
-                            .trajectoryType(CustomerTrajectoryEnums.Type.INFO.getType())
+                            .trajectoryType(CustomerTrajectoryEnums.Type.INFO.getDesc())
                             .createDate(new Date())
                             .detail(value)
                             .content(content)
@@ -173,7 +175,7 @@ public class WeCustomerTrajectoryServiceImpl extends ServiceImpl<WeCustomerTraje
                         .userId(userId)
                         .externalUserid(externalUserId)
                         .createDate(new Date())
-                        .trajectoryType(CustomerTrajectoryEnums.Type.INFO.getType())
+                        .trajectoryType(CustomerTrajectoryEnums.Type.INFO.getDesc())
                         .content(buildContent(updateBy, prop.getKey().getName()))
                         .subType(CustomerExtendPropertyEnum.getByType(prop.getKey().getType()).getOprSubType().getType())
                         .detail(prop.getValue())
@@ -213,7 +215,7 @@ public class WeCustomerTrajectoryServiceImpl extends ServiceImpl<WeCustomerTraje
                     .userId(userId)
                     .externalUserid(externalUserId)
                     .createDate(new Date())
-                    .trajectoryType(CustomerTrajectoryEnums.Type.INFO.getType())
+                    .trajectoryType(CustomerTrajectoryEnums.Type.INFO.getDesc())
                     .content(buildContent(updateBy, GenConstants.CUSTOMER_TAG))
                     .subType(CustomerTrajectoryEnums.SubType.EDIT_TAG.getType())
                     .detail(editTagStr)
@@ -281,15 +283,16 @@ public class WeCustomerTrajectoryServiceImpl extends ServiceImpl<WeCustomerTraje
                 continue;
             }
             WeGroup group = weGroupService.getById(member.getChatId());
-            if (group == null) {
+            if (group == null || StringUtils.isBlank(group.getGroupName())) {
                 log.info("[活动轨迹]记录客户加入/退出群聊,群聊详情获取失败,member:{}", member);
+                continue;
             }
             // 组装文本
             content = model.replace(GenConstants.CUSTOMER, member.getMemberName())
                     .replace(GenConstants.GROUP_NAME, group.getGroupName());
             WeCustomerTrajectory trajectory = WeCustomerTrajectory.builder()
                     .externalUserid(member.getUserId())
-                    .trajectoryType(CustomerTrajectoryEnums.Type.ACTIVITY.getType())
+                    .trajectoryType(CustomerTrajectoryEnums.Type.ACTIVITY.getDesc())
                     .content(content)
                     .createDate(new Date())
                     .detail(group.getGroupName())
@@ -333,7 +336,7 @@ public class WeCustomerTrajectoryServiceImpl extends ServiceImpl<WeCustomerTraje
         WeCustomerTrajectory trajectory = WeCustomerTrajectory.builder()
                 .userId(userId)
                 .externalUserid(externalUserId)
-                .trajectoryType(CustomerTrajectoryEnums.Type.ACTIVITY.getType())
+                .trajectoryType(CustomerTrajectoryEnums.Type.ACTIVITY.getDesc())
                 .content(content)
                 .createDate(new Date())
                 .detail(user.getAvatarMediaid())
@@ -352,7 +355,7 @@ public class WeCustomerTrajectoryServiceImpl extends ServiceImpl<WeCustomerTraje
                 .ne(WeCustomerTrajectory::getStatus, CustomerTrajectoryEnums.TodoTaskStatusEnum.DEL.getCode())
                 .eq(WeCustomerTrajectory::getExternalUserid, externalUserid)
                 .eq(WeCustomerTrajectory::getTrajectoryType, trajectoryType);
-        if (CustomerTrajectoryEnums.Type.TO_DO.getType().equals(trajectoryType)) {
+        if (CustomerTrajectoryEnums.Type.TO_DO.getDesc().equals(trajectoryType)) {
             wrapper.eq(WeCustomerTrajectory::getUserId, userId);
             isTodo = true;
         }
@@ -371,7 +374,7 @@ public class WeCustomerTrajectoryServiceImpl extends ServiceImpl<WeCustomerTraje
             }
         }
         // 如果是信息动态,则 过滤掉非当前操作人操作的记录
-        if (CustomerTrajectoryEnums.Type.INFO.getType().equals(trajectoryType)) {
+        if (CustomerTrajectoryEnums.Type.INFO.getDesc().equals(trajectoryType)) {
             LoginUser loginUser = LoginTokenService.getLoginUser();
             return trajectoryList.stream().filter(a -> loginUser.getUserId().equals(a.getUserId())).collect(Collectors.toList());
         }
@@ -392,7 +395,7 @@ public class WeCustomerTrajectoryServiceImpl extends ServiceImpl<WeCustomerTraje
         WeCustomerTrajectory trajectory = WeCustomerTrajectory.builder()
                 .userId(user.getUserId())
                 .externalUserid(customer.getExternalUserid())
-                .trajectoryType(CustomerTrajectoryEnums.Type.ACTIVITY.getType())
+                .trajectoryType(CustomerTrajectoryEnums.Type.ACTIVITY.getDesc())
                 .content(content)
                 .createDate(new Date())
                 .detail(user.getAvatarMediaid())

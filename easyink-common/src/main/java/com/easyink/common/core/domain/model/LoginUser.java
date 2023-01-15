@@ -17,6 +17,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -354,12 +355,21 @@ public class LoginUser implements UserDetails {
             // 账密登录用户 比较corpId 和 userId
             return this.user.equals(loginUser.user);
         } else if (!isSuperAdmin() && !loginUser.isSuperAdmin()) {
-            if (this.weUser != null && loginUser.weUser != null) {
-                // 扫码登录用户比较corpId 和 userId
-                return this.weUser.equals(loginUser.getWeUser());
+            if (this.weUser == null || loginUser.weUser == null) {
+                return false;
             }
+            // 扫码登录用户比较corpId 和 userId
+            return this.weUser.equals(loginUser.getWeUser());
         }
         return false;
+    }
+
+    @Override
+    public int hashCode() {
+        if(isSuperAdmin()){
+            return Objects.hash(user.getUserId(), user.getCorpId());
+        }
+        return Objects.hash(weUser.getUserId());
     }
 
     /**

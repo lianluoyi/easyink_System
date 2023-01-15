@@ -14,7 +14,6 @@ import com.easyink.wecom.domain.dto.radar.RadarDTO;
 import com.easyink.wecom.domain.dto.radar.SearchRadarDTO;
 import com.easyink.wecom.domain.vo.radar.WeRadarVO;
 import com.easyink.wecom.login.util.LoginTokenService;
-import com.easyink.wecom.service.radar.WeRadarChannelService;
 import com.easyink.wecom.service.radar.WeRadarService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -37,19 +36,17 @@ import java.util.List;
 public class WeRadarController extends BaseController {
 
     private final WeRadarService weRadarService;
-    private final WeRadarChannelService radarChannelService;
 
     @Autowired
-    public WeRadarController(WeRadarService weRadarService, WeRadarChannelService radarChannelService) {
+    public WeRadarController(WeRadarService weRadarService) {
         this.weRadarService = weRadarService;
-        this.radarChannelService = radarChannelService;
     }
 
     @Log(title = "新增雷达", businessType = BusinessType.INSERT)
     @PostMapping("/add")
     @ApiOperation("新增雷达")
     //@PreAuthorize("@ss.hasPermi('redeeomCode:activity:add')")
-    public <T> AjaxResult add(@RequestBody @Validated RadarDTO radarDTO) {
+    public AjaxResult add(@RequestBody @Validated RadarDTO radarDTO) {
         radarDTO.setCorpId(LoginTokenService.getLoginUser().getCorpId());
         weRadarService.saveRadar(radarDTO);
         return AjaxResult.success();
@@ -75,7 +72,7 @@ public class WeRadarController extends BaseController {
     @PutMapping("/update")
     @ApiOperation("修改雷达")
     //@PreAuthorize("@ss.hasPermi('redeeomCode:activity:edit')")
-    public <T> AjaxResult edit(@RequestBody @Validated RadarDTO radarDTO) {
+    public AjaxResult edit(@RequestBody @Validated RadarDTO radarDTO) {
         radarDTO.setCorpId(LoginTokenService.getLoginUser().getCorpId());
         weRadarService.updateRadar(radarDTO);
         return AjaxResult.success();
