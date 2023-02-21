@@ -9,7 +9,7 @@ import com.easyink.common.core.redis.RedisCache;
 import com.easyink.common.enums.ResultTip;
 import com.easyink.common.exception.CustomException;
 import com.easyink.common.mapper.SysShortUrlMappingMapper;
-import com.easyink.common.shorturl.ShortUrlAppendInfo;
+import com.easyink.common.shorturl.BaseShortUrlAppendInfo;
 import com.easyink.common.shorturl.SysShortUrlMapping;
 import com.easyink.common.shorturl.service.ShortUrlService;
 import com.easyink.common.utils.ConvertUrlUtil;
@@ -57,7 +57,7 @@ public class ShortUrlServiceImpl implements ShortUrlService {
     }
 
     @Override
-    public String createShortCode(String longUrl, String createBy, ShortUrlAppendInfo appendInfo) {
+    public String createShortCode(String longUrl, String createBy, BaseShortUrlAppendInfo appendInfo) {
         if (StringUtils.isBlank(longUrl)) {
             log.info("[创建短链]长连接为空,创建失败 ");
             return null;
@@ -71,7 +71,7 @@ public class ShortUrlServiceImpl implements ShortUrlService {
                 // 生成短链的code
                 code = ConvertUrlUtil.getShortCode(genLongUrl);
                 // 保存映射
-                SysShortUrlMapping mapping = SysShortUrlMapping.builder().shortCode(code).longUrl(longUrl).createBy(createBy).createTime(new Date()).build();
+                SysShortUrlMapping mapping = SysShortUrlMapping.builder().type(appendInfo.getType()).shortCode(code).longUrl(longUrl).createBy(createBy).createTime(new Date()).build();
                 mapping.setAppend(appendInfo);
                 success = sysShortUrlMappingMapper.insert(mapping) > 0;
                 // 增加至布隆过滤器

@@ -3,7 +3,10 @@ package com.easyink.wecom.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.easyink.wecom.domain.WeUserBehaviorData;
 import com.easyink.wecom.domain.dto.WePageCountDTO;
+import com.easyink.wecom.domain.dto.statistics.CustomerActivityDTO;
+import com.easyink.wecom.domain.dto.statistics.StatisticsDTO;
 import com.easyink.wecom.domain.query.WePageStateQuery;
+import com.easyink.wecom.domain.vo.statistics.CustomerOverviewVO;
 
 import java.util.List;
 
@@ -53,4 +56,5 @@ public interface WeUserBehaviorDataService extends IService<WeUserBehaviorData> 
      * @return List<WeUserBehaviorDataDto>
      */
     List<WePageCountDTO> getMonthCountData(WePageStateQuery wePageStateQuery);
+
 }

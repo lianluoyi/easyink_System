@@ -21,6 +21,7 @@ import com.easyink.common.token.SysPermissionService;
 import com.easyink.common.token.TokenService;
 import com.easyink.common.utils.MessageUtils;
 import com.easyink.common.utils.ServletUtils;
+import com.easyink.common.utils.wecom.RsaUtil;
 import com.easyink.wecom.client.We3rdUserClient;
 import com.easyink.wecom.client.WeAccessTokenClient;
 import com.easyink.wecom.client.WeUserClient;
@@ -45,6 +46,8 @@ import javax.annotation.Resource;
 import javax.servlet.http.Cookie;
 import javax.validation.constraints.NotNull;
 import java.util.Map;
+
+import static com.easyink.common.utils.wecom.LoginRsaUtil.decryptByPrivateKey;
 
 
 /**
@@ -126,9 +129,11 @@ public class SysLoginService {
         // 用户验证
         Authentication authentication;
         try {
+            // 解密密码
+            String decryptPassword = decryptByPrivateKey(ruoYiConfig.getLoginRsaPrivateKey(), password);
             // 该方法会去调用UserDetailsServiceImpl.loadUserByUsername
             authentication = authenticationManager
-                    .authenticate(new UsernamePasswordAuthenticationToken(username, password));
+                    .authenticate(new UsernamePasswordAuthenticationToken(username, decryptPassword));
         } catch (Exception e) {
             if (e instanceof BadCredentialsException) {
                 AsyncManager.me().execute(AsyncFactory.recordLogininfor(corpId, username, Constants.LOGIN_FAIL, MessageUtils.message("user.password.not.match"), LoginTypeEnum.BY_PASSWORD.getType()));

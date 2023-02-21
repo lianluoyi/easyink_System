@@ -277,7 +277,7 @@ INSERT INTO `sys_job`
 VALUES (8, '群聊数据统计数据拉取', 'SYSTEM', 'GroupChatStatisticTask.getGroupChatData()', '0 0 5 * * ? ', '1', '1', '0', 'admin',
         '2021-02-25 16:49:44', '', '2021-02-25 23:45:05', '');
 INSERT INTO `sys_job`
-VALUES (9, '首页数据统计', 'SYSTEM', 'PageHomeDataTask.getPageHomeDataData()', '0 0 7 * * ? ', '1', '1', '0', 'admin',
+VALUES (9, '首页数据统计', 'SYSTEM', 'PageHomeDataTask.getPageHomeDataData()', '0 30 5 * * ? ', '1', '1', '0', 'admin',
         '2021-02-25 16:52:23', '', '2021-02-25 23:45:07', '');
 INSERT INTO `sys_job`
 VALUES (10, '删除过期素材', 'SYSTEM', 'RemoveMaterialTask.removeExpireMaterial()', '0 0 4 * * ? ', '1', '1', '0', 'admin',
@@ -315,6 +315,9 @@ VALUES (19, '发送定时朋友圈任务', 'SYSTEM', 'momentStartCreateTask.crea
 INSERT INTO `sys_job`
 VALUES (20, '定期查询客户分配情况任务', 'SYSTEM', 'transferResultTask.execute', '0 */5 * * * ?', '2', '1', '0', 'admin',
         '2021-12-01 18:25:03', 'admin', '2021-12-01 18:25:51', '');
+INSERT INTO `sys_job`
+VALUES (21, '数据统计定时任务', 'SYSTEM', 'DataStatisticsTask.getDataStatistics()', '0 0 6 * * ?', '2', '1', '0', 'admin',
+        '2023-02-13 16:34:13', '', NULL, '');
 
 -- ----------------------------
 -- Table structure for sys_menu
@@ -359,7 +362,7 @@ INSERT INTO `sys_menu`
 VALUES ('101', '角色管理', '2283', '6', 'role', 'system/role/index', '1', 'C', '0', '0', 'system:role:list', '#', 'admin',
         '2018-03-16 11:33:00', 'admin', '2021-08-25 22:43:01', '角色管理菜单');
 INSERT INTO `sys_menu`
-VALUES ('102', '菜单管理', '2283', '11', 'menu', 'system/menu/index', '1', 'C', '0', '0', 'system:menu:list', '#', 'admin',
+VALUES ('102', '菜单管理', '2305', '11', 'menu', 'system/menu/index', '1', 'C', '0', '0', 'system:menu:list', '#', 'admin',
         '2018-03-16 11:33:00', 'admin', '2021-08-27 21:32:15', '菜单管理菜单');
 INSERT INTO `sys_menu`
 VALUES ('108', '日志管理', '2', '9', 'log', 'system/log/index', '1', 'M', '0', '0', '', 'log-analyse', 'admin',
@@ -453,7 +456,7 @@ INSERT INTO `sys_menu`
 VALUES ('2007', '客户群聊详情', '2001', '21', 'customerCenter/groupDetail', 'customerManage/groupDetail', '1', 'P', '1', '0',
         'customerManage:groupDetail:list', '#', 'admin', '2020-10-20 22:37:59', 'admin', '2021-09-01 22:58:02', '');
 INSERT INTO `sys_menu`
-VALUES ('2010', '企微配置', '2283', '7', 'enterpriseWechat', 'enterpriseWechat/list', '1', 'C', '0', '0',
+VALUES ('2010', '企微配置', '2305', '7', 'enterpriseWechat', 'enterpriseWechat/list', '1', 'C', '0', '0',
         'system:enterpriseWechat:list', '#', 'admin', '2020-10-20 22:48:05', 'admin', '2021-08-27 21:31:57', '');
 INSERT INTO `sys_menu`
 VALUES ('2013', '导出列表', '2002', '2', '', null, '1', 'F', '0', '0', 'customerManage:customer:export', '#', 'admin',
@@ -719,7 +722,7 @@ INSERT INTO `sys_menu`
 VALUES ('2228', '管理素材标签', '2189', '3', '', null, '1', 'F', '0', '0', 'wechat:material:tagManage', '#', 'admin',
         '2021-10-13 17:35:24', '', null, '');
 INSERT INTO `sys_menu`
-VALUES ('2229', '应用管理', '0', '5', 'appManage', null, '1', 'M', '0', '0', '', 'ApplicationManagement', 'admin',
+VALUES ('2229', '应用管理', '0', '10', 'appManage', null, '1', 'M', '0', '0', '', 'ApplicationManagement', 'admin',
         '2021-10-18 17:34:09', 'admin', '2021-10-18 17:37:22', '');
 INSERT INTO `sys_menu`
 VALUES ('2230', '我的应用', '2281', '1', 'myApp', 'appManage/myApp/index', '1', 'C', '0', '0', '', '#', 'admin',
@@ -877,7 +880,7 @@ INSERT INTO `sys_menu`
 VALUES ('2282', '企业风控', '2079', '10', 'corpSecurity', null, '1', 'M', '0', '0', '', 'enterprise-risk-control', 'admin',
         '2022-02-28 10:46:49', 'admin', '2022-02-28 11:21:05', '');
 INSERT INTO `sys_menu`
-VALUES ('2283', '系统设置', '1', '10', 'sysSetting', null, '1', 'M', '0', '0', '', 'system-hollow', 'admin',
+VALUES ('2283', '企业管理', '1', '1', 'sysSetting', null, '1', 'M', '0', '0', '', 'tree', 'admin',
         '2022-02-28 10:52:43', 'admin', '2022-02-28 11:24:52', '');
 INSERT INTO `sys_menu`
 VALUES ('2284', '系统监控', '2', '5', 'sysMonitor', null, '1', 'M', '0', '0', '', 'system-monitor', 'admin',
@@ -975,6 +978,24 @@ INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`
 VALUES ('2302', '管理部门雷达', '2299', '10', '', NULL, '1', 'F', '0', '0', 'radar:department:manage', '#', 'admin',
         '2022-07-23 21:53:42', 'admin', '2022-07-24 16:08:00', '');
 INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`, `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES (2303, '导出客户群', 2003, 6, '', NULL, 1, 'F', '0', '0', 'customerManage:group:export', '#', 'admin', '2022-10-08 15:20:41', 'admin', '2022-10-08 15:22:17', '');
+-- 2023-01-12 wx 公众号菜单 Tower 任务: 公众号配置改为通用配置 ( https://tower.im/teams/636204/todos/54975 )
+INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`, `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES (2305, '配置中心', 1, 2, 'configCenter', NULL, 1, 'M', '0', '0', '', 'system-hollow', 'admin', '2023-01-09 13:50:10', 'admin', '2023-01-09 13:59:24', '');
+INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`, `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES (2306, '公众号管理', 2305, 1, 'offAccount', 'configCenter/offAccount', 1, 'C', '0', '0', 'system:offAccount:list', '#', 'admin', '2023-01-09 13:52:03', 'admin', '2023-01-09 13:59:44', '');
+INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`, `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES (2307, '设置公众号', 2306, 1, '', NULL, 1, 'F', '0', '0', 'officialAccountsManager:set', '#', 'admin', '2023-01-12 17:43:33', '', NULL, '');
+
+-- 2023-01-16 wx 智能表单权限设置 Tower 任务: 权限和菜单 ( https://tower.im/teams/636204/todos/61416 )
+INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`, `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES (2304, '智能表单', 2062, 4, 'intelligentForm', 'intelligentForm/index', 1, 'C', '0', '0', NULL, '#', 'admin', '2023-01-09 10:09:31', '', NULL, '');
+INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`, `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES (2308, '编辑表单', 2062, 5, 'editForm', 'smartForm/addFormFiled', 1, 'P', '1', '0', NULL, '#', 'admin', '2023-01-13 13:58:18', '', NULL, '');
+INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`, `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES (2309, '查看表单详情', 2062, 6, 'formDetail', 'smartForm/formDetail', 1, 'P', '1', '0', NULL, '#', 'admin', '2023-01-15 09:58:27', '', NULL, '');
+INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`, `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES (2310, '管理企业表单', 2304, 1, '', NULL, 1, 'F', '0', '0', 'intelligentForm:manage:corp', '#', 'admin', '2023-01-16 18:00:23', '', NULL, '');
+INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`, `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES (2311, '管理部门表单', 2304, 2, '', NULL, 1, 'F', '0', '0', 'intelligentForm:manage:dept', '#', 'admin', '2023-01-16 18:01:04', '', NULL, '');
+-- 2023-02-16 wx 数据统计菜单
+INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`, `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES (2312, '数据统计', 0, 9, 'dataStatistics', NULL, 1, 'M', '0', '0', NULL, 'chart', 'admin', '2023-02-14 16:02:38', '', NULL, '');
+INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`, `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES (2313, '数据统计', 2312, 1, 'dataStatistics', NULL, 1, 'M', '0', '0', NULL, 'monitor', 'admin', '2023-02-14 16:05:14', '', NULL, '');
+INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`, `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES (2314, '客户联系', 2313, 1, 'customerContact', 'dataStatistics/customerContact/index', 1, 'C', '0', '0', NULL, '#', 'admin', '2023-02-14 16:05:43', '', NULL, '');
+INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`, `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES (2315, '员工服务', 2313, 2, 'employeeService', 'dataStatistics/employeeService/index', 1, 'C', '0', '0', NULL, '#', 'admin', '2023-02-15 09:57:17', '', NULL, '');
+INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`, `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES (2316, '导出报表', 2314, 1, '', NULL, 1, 'F', '0', '0', 'statistic:customerContact:export', '#', 'admin', '2023-02-15 16:53:30', '', NULL, '');
+INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`, `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES (2317, '导出报表', 2315, 1, '', NULL, 1, 'F', '0', '0', 'statistic:employeeService:export', '#', 'admin', '2023-02-15 16:54:01', 'admin', '2023-02-15 16:54:24', '');
 
 
 -- ----------------------------
@@ -2074,22 +2095,28 @@ CREATE TABLE `we_user`
 -- Table structure for we_user_behavior_data
 -- ----------------------------
 DROP TABLE IF EXISTS `we_user_behavior_data`;
-CREATE TABLE `we_user_behavior_data`
-(
-    `id`                    bigint(20) NOT NULL AUTO_INCREMENT,
-    `corp_id`               varchar(64)  NOT NULL DEFAULT '' COMMENT '企业ID',
-    `user_id`               varchar(128) NOT NULL DEFAULT '' COMMENT '员工id',
-    `stat_time`             datetime     NOT NULL DEFAULT '0000-00-00 00:00:00' COMMENT '数据日期，为当日0点的时间戳',
-    `new_apply_cnt`         int(10) NOT NULL DEFAULT '0' COMMENT '发起申请数',
-    `new_contact_cnt`       int(10) NOT NULL DEFAULT '0' COMMENT '新增客户数，成员新添加的客户数量',
-    `chat_cnt`              int(10) NOT NULL DEFAULT '0' COMMENT '聊天总数， 成员有主动发送过消息的单聊总数',
-    `message_cnt`           int(10) NOT NULL DEFAULT '0' COMMENT '发送消息数，成员在单聊中发送的消息总数',
-    `reply_percentage`      double       NOT NULL DEFAULT '0' COMMENT '已回复聊天占比，浮点型，客户主动发起聊天后，成员在一个自然日内有回复过消息的聊天数/客户主动发起的聊天数比例，不包括群聊，仅在确有聊天时返回',
-    `avg_reply_time`        int(10) NOT NULL DEFAULT '0' COMMENT '平均首次回复时长',
-    `negative_feedback_cnt` int(11) NOT NULL DEFAULT '0' COMMENT '删除/拉黑成员的客户数，即将成员删除或加入黑名单的客户数',
-    PRIMARY KEY (`id`) USING BTREE,
-    INDEX                   `stat_time_index` (`stat_time`,`user_id`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=1420806352176977808 DEFAULT CHARSET=utf8mb4 COMMENT='联系客户统计数据 ';
+CREATE TABLE `we_user_behavior_data` (
+                                         `id` bigint(20) NOT NULL AUTO_INCREMENT,
+                                         `corp_id` varchar(64) NOT NULL DEFAULT '' COMMENT '企业ID',
+                                         `user_id` varchar(128) NOT NULL DEFAULT '' COMMENT '员工id',
+                                         `stat_time` datetime NOT NULL DEFAULT '0000-00-00 00:00:00' COMMENT '数据日期，为当日0点的时间戳',
+                                         `new_apply_cnt` int(10) NOT NULL DEFAULT '0' COMMENT '发起申请数',
+                                         `new_contact_cnt` int(10) NOT NULL DEFAULT '0' COMMENT '新增客户数，成员新添加的客户数量',
+                                         `chat_cnt` int(10) NOT NULL DEFAULT '0' COMMENT '聊天总数， 成员有主动发送过消息的单聊总数',
+                                         `message_cnt` int(10) NOT NULL DEFAULT '0' COMMENT '发送消息数，成员在单聊中发送的消息总数',
+                                         `reply_percentage` double NOT NULL DEFAULT '0' COMMENT '已回复聊天占比，浮点型，客户主动发起聊天后，成员在一个自然日内有回复过消息的聊天数/客户主动发起的聊天数比例，不包括群聊，仅在确有聊天时返回',
+                                         `avg_reply_time` int(10) NOT NULL DEFAULT '0' COMMENT '平均首次回复时长',
+                                         `negative_feedback_cnt` int(11) NOT NULL DEFAULT '0' COMMENT '删除/拉黑成员的客户数，即将成员删除或加入黑名单的客户数',
+                                         `total_contact_cnt` int(11) NOT NULL DEFAULT '0' COMMENT '总客户数(此总数由于官方统计接口不统计,所以每日定时任务进行统计)',
+                                         `new_contact_loss_cnt` int(11) NOT NULL DEFAULT '0' COMMENT '当天加入的新客流失数(与negative_feedback_cnt不同，这是只统计当天加的流失的客户,由于当天新增客户的流失数官方统计没有提供，此数据也是由系统自行定时任务计算保存)',
+                                         `new_contact_speak_cnt` int(11) NOT NULL DEFAULT '0' COMMENT '当天新增客户中与员工对话过的人数(此数据为每日定时任务统计 会话存档ES中查找)',
+                                         `replied_within_thirty_min_customer_cnt` int(11) NOT NULL DEFAULT '0' COMMENT '当天员工首次给客户发消息，客户在30分钟内回复的客户数(此数据为每日定时任务统计 会话存档ES中查找)',
+                                         `all_chat_cnt` int(11) NOT NULL DEFAULT '0' COMMENT '当天员工会话数-不区分是否为员工主动发起(此数据为每日定时任务统计 会话存档ES中查找)',
+                                         `new_customer_loss_cnt` int(11) NOT NULL DEFAULT '0' COMMENT '当天员工新客流失客户数 （we_flower表中查找 每日定时任务获取',
+                                         `contact_total_cnt` int(11) NOT NULL DEFAULT '0' COMMENT '当天员工客户总数（we_flower表中查找 每日定时任务获取',
+                                         PRIMARY KEY (`id`) USING BTREE,
+                                         KEY `stat_time_index` (`stat_time`,`user_id`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='联系客户统计数据 ';
 
 
 DROP TABLE IF EXISTS `we_auth_corp_info`;
@@ -3393,31 +3420,176 @@ CREATE TABLE `we_radar_click_record`
 -- ----------------------------
 CREATE TABLE `sys_short_url_mapping`
 (
-    `id`          bigint(20) NOT NULL COMMENT 'id,短链',
-    `short_code`  varchar(32)   NOT NULL DEFAULT '' COMMENT '短链后面的唯一字符串（用于和域名拼接成短链）',
-    `long_url`    varchar(1024) NOT NULL COMMENT '原链接（长链接）',
-    `append_info` varchar(512)  NOT NULL DEFAULT '' COMMENT '附加信息Json(user_id,radar_id,channel_id,detail)',
-    `create_time` datetime      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    `create_by`   varchar(64)   NOT NULL DEFAULT '' COMMENT '创建人',
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uniq_short_code` (`short_code`) USING BTREE
+     `id` bigint(20) NOT NULL COMMENT 'id,短链',
+     `short_code` varchar(32) NOT NULL DEFAULT '' COMMENT '短链后面的唯一字符串（用于和域名拼接成短链）',
+     `long_url` varchar(1024) NOT NULL COMMENT '原链接（长链接）',
+     `append_info` varchar(512) NOT NULL DEFAULT '' COMMENT '附加信息Json(user_id,radar_id,channel_id,detail)',
+     `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+     `create_by` varchar(64) NOT NULL DEFAULT '' COMMENT '创建人',
+     `type` tinyint(1) NOT NULL DEFAULT '1' COMMENT '链接类型，-1：未知，1：雷达，2：表单',
+     PRIMARY KEY (`id`),
+     UNIQUE KEY `uniq_short_code` (`short_code`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='长链-短链映射表';
 -- ----------------------------
 -- Table structure for we_radar_click_record
 -- ----------------------------
-
+-- 2023-01-12 wx 公众号配置表 Tower 任务: 公众号配置改为通用配置 ( https://tower.im/teams/636204/todos/54975 )
 CREATE TABLE `we_open_config`
 (
-    `corp_id`                     varchar(64)  NOT NULL DEFAULT '' COMMENT '企业id',
-    `official_account_app_id`     varchar(64)  NOT NULL DEFAULT '' COMMENT '公众号appid',
-    `official_account_app_secret` varchar(128) NOT NULL DEFAULT '' COMMENT '公众号secret',
-    `official_account_domain`     varchar(255) NOT NULL DEFAULT '' COMMENT '公众号域名',
-    `create_by`                   varchar(64)  NOT NULL DEFAULT '' COMMENT '创建人',
-    `create_time`                 datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    `update_by`                   varchar(64)  NOT NULL DEFAULT '' COMMENT '更新人',
-    `update_time`                 datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '更新时间',
-    PRIMARY KEY (`corp_id`)
+    `corp_id` varchar(64) NOT NULL DEFAULT '' COMMENT '企业id',
+    `official_account_app_id` varchar(64) NOT NULL DEFAULT '' COMMENT '公众号appid',
+    `official_account_app_secret` varchar(128) NOT NULL DEFAULT '' COMMENT '公众号secret,待开发应用为空',
+    `official_account_domain` varchar(255) NOT NULL DEFAULT '' COMMENT '公众号域名,待开发应用为空',
+    `service_type_info` tinyint(1) NOT NULL DEFAULT '-1' COMMENT '授权方公众号类型,(0代表订阅号，1代表由历史老帐号升级后的订阅号，2代表服务号),自建应用为空',
+    `nick_name` varchar(64) NOT NULL DEFAULT '' COMMENT '授权方昵称',
+    `principal_name` varchar(64) NOT NULL DEFAULT '' COMMENT '公众号的主体名称，自建应用为空',
+    `head_img` varchar(255) NOT NULL DEFAULT '' COMMENT '授权方头像，自建应用为空',
+    `authorizer_access_token` varchar(255) NOT NULL DEFAULT '' COMMENT '授权方接口调用凭据',
+    `authorizer_refresh_token` varchar(255) NOT NULL DEFAULT '' COMMENT '接口调用凭据刷新令牌(上面令牌过期，需用此令牌刷新)',
+    `create_by` varchar(64) NOT NULL DEFAULT '' COMMENT '创建人',
+    `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_by` varchar(64) NOT NULL DEFAULT '' COMMENT '更新人',
+    `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (`corp_id`,`official_account_app_id`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='企业公众号配置表';
 
+-- 2023-01-12 wx 雷达公众号配置 Tower 任务: 公众号配置改为通用配置 ( https://tower.im/teams/636204/todos/54975 )
+CREATE TABLE `we_radar_official_account_config`
+(
+    `corp_id` varchar(64) NOT NULL COMMENT '企业id',
+    `app_id` varchar(64) NOT NULL COMMENT '公众号appid',
+    `create_by` varchar(64) NOT NULL DEFAULT '' COMMENT '创建人',
+    `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_by` varchar(64) NOT NULL DEFAULT '' COMMENT '更新人',
+    `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (`corp_id`,`app_id`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='雷达公众号配置';
+
+-- 2023-01-13 wx 智能表单操作记录表 Tower 任务: 点击表单和提交表单相关 ( https://tower.im/teams/636204/todos/61401 )
+CREATE TABLE `we_form_oper_record`
+(
+   `id` bigint(20) NOT NULL COMMENT '主键id',
+   `form_id` bigint(20) NOT NULL DEFAULT '0' COMMENT '智能表单id',
+   `user_id` varchar(64) NOT NULL DEFAULT '' COMMENT '发送智能表单的员工id',
+   `user_name` varchar(200) NOT NULL DEFAULT '' COMMENT '发送智能表单的员工名称',
+   `user_head_image` varchar(255) NOT NULL DEFAULT '' COMMENT '员工头像地址url',
+   `external_user_id` varchar(32) NOT NULL DEFAULT '' COMMENT '客户id',
+   `employees` varchar(64) NOT NULL DEFAULT '' COMMENT '客户所属员工user_id',
+   `channel_type` tinyint(1) NOT NULL DEFAULT '0' COMMENT '渠道（0未知渠道,1员工活码，2朋友圈，3群发，4侧边栏,5欢迎语,6 客户SOP,7群SOP，8新客进群，9群日历,10自定义渠道,11:推广)',
+   `union_id` varchar(32) NOT NULL DEFAULT '' COMMENT '外部联系人在微信开放平台的唯一身份标识,通过此字段企业可将外部联系人与公众号/小程序用户关联起来。',
+   `open_id` varchar(32) NOT NULL DEFAULT '' COMMENT '公众号/小程序open_id',
+   `form_result` varchar(4096) NOT NULL DEFAULT '' COMMENT '填写结果,格式[{"question":"","type":"","answer":""}]',
+   `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间/点击时间',
+   `commit_time` datetime NOT NULL DEFAULT '0000-00-00 00:00:00' COMMENT '提交时间',
+   `commit_flag` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否已提交，0：未提交，1：已提交',
+   PRIMARY KEY (`id`),
+   KEY `idx_form_date_external_channel` (`form_id`,`external_user_id`,`create_time`,`commit_time`,`channel_type`) USING BTREE COMMENT '客户操作记录查询索引'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='智能表单操作记录表';
+
+-- 2023-01-16 wx 表单短链code关联表
+CREATE TABLE `we_form_short_code_rel`
+(
+    `form_id` bigint(11) NOT NULL COMMENT '表单id',
+    `user_id` varchar(64) NOT NULL COMMENT '生成短链的员工id',
+    `short_code` varchar(32) NOT NULL COMMENT '短链后面的唯一字符串（用于和域名拼接成短链）',
+    `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    PRIMARY KEY (`form_id`,`user_id`,`short_code`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='表单-短链关联表';
 
 
+-- tigger 2023-01-16 17:56  表单表 Tower 任务: 智能表单 ( https://tower.im/teams/636204/todos/61364 )
+CREATE TABLE `we_form` (
+                           `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '主键id',
+                           `head_image_url` varchar(128) NOT NULL DEFAULT '' COMMENT '表单头图',
+                           `form_name` varchar(32) NOT NULL DEFAULT '' COMMENT '表单名称',
+                           `description` varchar(255) NOT NULL DEFAULT '' COMMENT '表单说明',
+                           `submit_text` varchar(16) NOT NULL DEFAULT '' COMMENT '提交按钮文本描述',
+                           `submit_color` varchar(16) NOT NULL DEFAULT '#6BB4AB' COMMENT '提交按钮颜色rgb值',
+                           `form_field_list_json` text NOT NULL COMMENT '表单字段列表json',
+                           `head_image_open_flag` tinyint(1) NOT NULL DEFAULT '1' COMMENT '头图开关(false:关闭 true:开启)',
+                           `show_sort_flag` tinyint(1) NOT NULL DEFAULT '1' COMMENT '显示排序开关(false:关闭 true:开启)',
+                           `description_flag` tinyint(1) NOT NULL DEFAULT '1' COMMENT '表单说明开关(false:关闭 true:开启)',
+                           `group_id` int(11) NOT NULL DEFAULT '0' COMMENT '表单分组id',
+                           `enable_flag` tinyint(1) NOT NULL DEFAULT '1' COMMENT '启用标识(0: 未启用 1:启用)',
+                           `del_flag` tinyint(1) NOT NULL DEFAULT '0' COMMENT '删除标识 0: 未删除 1:删除',
+                           `delete_id` int(11) NOT NULL DEFAULT '0' COMMENT '唯一键删除id(删除的时候给deleteId设置为主键id(不重复))',
+                           `corp_id` varchar(64) NOT NULL DEFAULT '' COMMENT '企业id',
+                           `create_by` varchar(64) NOT NULL DEFAULT '' COMMENT '创建人',
+                           `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                           `update_by` varchar(64) NOT NULL DEFAULT '' COMMENT '更新人',
+                           `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+                           PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='表单表';
+-- tigger 2023-01-16 17:56  表单设置表 Tower 任务: 智能表单 ( https://tower.im/teams/636204/todos/61364 )
+CREATE TABLE `we_form_advance_setting` (
+                                           `form_id` int(11) NOT NULL DEFAULT '0' COMMENT '关联表单id',
+                                           `dead_line_type` tinyint(1) NOT NULL COMMENT '截止时间类型(1: 永久有效 2:自定义日期)',
+                                           `custom_date` datetime NOT NULL DEFAULT '0000-00-00 00:00:00' COMMENT '截止时间的自定义时间(deadLineType == 1时才有)',
+                                           `we_chat_public_platform` varchar(255) NOT NULL DEFAULT '' COMMENT '公众号设置',
+                                           `submit_cnt_type` tinyint(1) DEFAULT '0' COMMENT '提交次数类型(1: 不限 2:每个客户限提交1次)',
+                                           `action_info_param_json` varchar(255) DEFAULT '' COMMENT '提交结果行为详情参数(当 submitActionType不为1的时候有用)',
+                                           `action_note_flag` tinyint(1) NOT NULL DEFAULT '0' COMMENT '行为通知开关(false:关闭 true:开启)',
+                                           `submit_action_type` tinyint(1) NOT NULL DEFAULT '0' COMMENT '提交结果行为类型(1:不跳转 2:跳转结果页面 3:跳转连接)',
+                                           `tract_record_flag` tinyint(1) NOT NULL DEFAULT '0' COMMENT '轨迹记录开关(false:关闭 true:开启)',
+                                           `customer_label_flag` tinyint(1) NOT NULL DEFAULT '0' COMMENT '客户标签开关(false:关闭 true:开启)',
+                                           `label_setting_json` varchar(1024) NOT NULL DEFAULT '' COMMENT '客户标签开关设置详情json 格式: {"clickLabelIdList":[""],"submitLabelIdList":[""]}',
+                                           UNIQUE KEY `form_id_unique` (`form_id`) USING BTREE COMMENT '表单id唯一索引'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='表单设置表';
+-- tigger 2023-01-16 17:56  客户评价 Tower 任务: 智能表单 ( https://tower.im/teams/636204/todos/61364 )
+CREATE TABLE `we_form_customer_feedback` (
+                                             `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '主键id',
+                                             `form_id` int(11) NOT NULL DEFAULT '0' COMMENT '表单id',
+                                             `customer_id` varchar(64) NOT NULL DEFAULT '' COMMENT '客户id',
+                                             `user_id` varchar(64) NOT NULL DEFAULT '' COMMENT '员工id',
+                                             `score` tinyint(2) NOT NULL DEFAULT '0' COMMENT '评分值(1-10)',
+                                             `corp_id` varchar(64) NOT NULL DEFAULT '' COMMENT '企业id',
+                                             `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间(提交时间)',
+                                             PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='客户好评评价表';
+-- tigger 2023-01-16 17:56  表单分组 Tower 任务: 智能表单 ( https://tower.im/teams/636204/todos/61364 )
+CREATE TABLE `we_form_group` (
+                                 `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '主键id',
+                                 `p_id` int(11) NOT NULL DEFAULT '0' COMMENT '父分组id',
+                                 `name` varchar(32) NOT NULL DEFAULT '' COMMENT '分组名称',
+                                 `source_type` tinyint(1) NOT NULL DEFAULT '0' COMMENT '分组所属类别(1:企业 2: 部门 3:个人)',
+                                 `department_id` bigint(20) NOT NULL DEFAULT '0' COMMENT '所属部门id',
+                                 `del_flag` tinyint(1) NOT NULL DEFAULT '0' COMMENT '删除标识 0: 未删除 1:删除',
+                                 `corp_id` varchar(64) NOT NULL DEFAULT '' COMMENT '企业id',
+                                 `delete_id` int(11) NOT NULL DEFAULT '0' COMMENT '唯一键删除id(删除的时候给deleteId设置为主键id(不重复))',
+                                 `sort` int(11) NOT NULL DEFAULT '0' COMMENT '排序号',
+                                 `create_by` varchar(64) NOT NULL DEFAULT '' COMMENT '创建人',
+                                 `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                                 `update_by` varchar(64) NOT NULL DEFAULT '' COMMENT '更新人',
+                                 `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+                                 PRIMARY KEY (`id`),
+                                 UNIQUE KEY `corp_id_name_delete_flag_unique` (`corp_id`,`name`,`del_flag`,`delete_id`) USING BTREE COMMENT '企业下名称逻辑删除唯一索引'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='表单分组表';
+-- tigger 2023-01-16 17:56  表单使用记录 Tower 任务: 智能表单 ( https://tower.im/teams/636204/todos/61364 )
+CREATE TABLE `we_form_use_record` (
+                                      `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '主键id',
+                                      `form_id` int(11) NOT NULL DEFAULT '0' COMMENT '表单id',
+                                      `user_id` varchar(64) NOT NULL DEFAULT '' COMMENT '员工id',
+                                      `external_user_id` varchar(64) NOT NULL COMMENT '客户id',
+                                      `use_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '使用时间(相同唯一索引则更新使用时间为新的)',
+                                      `corp_id` varchar(64) NOT NULL DEFAULT '' COMMENT '企业id',
+                                      PRIMARY KEY (`id`) USING BTREE,
+                                      KEY `form_id_user_id_corp_id_index` (`form_id`,`user_id`,`corp_id`) USING BTREE COMMENT '表单员工企业查询index'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='表单使用记录表';
+
+-- wx 2023-02-13 数据统计相关表 Tower 任务: 数据统计 ( https://tower.im/teams/636204/todos/61609 )
+CREATE TABLE `we_user_customer_message_statistics` (
+                                                       `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键id',
+                                                       `corp_id` varchar(64) NOT NULL DEFAULT '' COMMENT '企业id',
+                                                       `user_id` varchar(128) NOT NULL DEFAULT '' COMMENT '员工id 会话存档 ES中员工',
+                                                       `external_userid` varchar(32) NOT NULL DEFAULT '' COMMENT '客户id 会话存档 ES中与user_id对话的客户',
+                                                       `user_send_message_cnt` int(11) NOT NULL DEFAULT '0' COMMENT '员工发送消息数量 会话存档 ES 中 user_id对external_userid 发送的消息数',
+                                                       `external_user_send_message_cnt` int(11) NOT NULL DEFAULT '0' COMMENT '客户发送消息数量 会话存档 ES 中 external_userid对user_id发送的消息数',
+                                                       `add_time` date NOT NULL DEFAULT '0000-00-00' COMMENT '添加客户时间 user_id与exteranl_userId成为联系人的时间 we_flower_customer_rel 表中查找',
+                                                       `send_time` date NOT NULL DEFAULT '0000-00-00' COMMENT '发送消息时间 统计的时间，当天',
+                                                       `first_reply_time_interval_alter_receive` int(6) NOT NULL DEFAULT '0' COMMENT '当天收到客户消息到首次回复客户时间间隔（单位分钟） ES中查询并计算',
+                                                       `three_rounds_dialogue_flag` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否有三个轮次对话，1：有，0：无 ES中查询并统计',
+                                                       `user_active_dialogue` tinyint(1) NOT NULL DEFAULT '0' COMMENT '对话是否由员工主动发起，1：是，0：否 ES中查询并统计',
+                                                       PRIMARY KEY (`id`),
+                                                       KEY `idx_corp_id_send_add_time` (`corp_id`,`send_time`,`add_time`) USING BTREE COMMENT '企业id和发送和添加时间索引',
+                                                       KEY `idx_corp_id_user_id` (`corp_id`,`user_id`) USING BTREE COMMENT '员工id索引'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='员工客户发送消息统计数据（每天统计一次，会话存档ES中统计）';

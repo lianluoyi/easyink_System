@@ -13,6 +13,8 @@ import com.easyink.common.constant.GenConstants;
 import com.easyink.common.constant.WeConstans;
 import com.easyink.common.core.domain.AjaxResult;
 import com.easyink.common.enums.ResultTip;
+import com.easyink.common.enums.customer.SubjectTypeEnum;
+import com.easyink.common.enums.wecom.ServerTypeEnum;
 import com.easyink.common.exception.CustomException;
 import com.easyink.common.exception.wecom.WeComException;
 import com.easyink.common.utils.DateUtils;
@@ -46,6 +48,7 @@ import com.easyink.wecom.domain.vo.sop.CustomerSopVO;
 import com.easyink.wecom.domain.vo.unionid.GetUnionIdVO;
 import com.easyink.wecom.mapper.WeCustomerMapper;
 import com.easyink.wecom.service.*;
+import com.easyink.wecom.service.wechatopen.WechatOpenService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -84,6 +87,9 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
     private WeUserService weUserService;
 
     @Autowired
+    private WechatOpenService wechatOpenService;
+
+    @Autowired
     @Lazy
     private WeFlowerCustomerTagRelService weFlowerCustomerTagRelService;
 
@@ -103,6 +109,9 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
     private WeUnionIdClient weUnionIdClient ;
     @Autowired
     private CorpSecretDecryptUtil corpSecretDecryptUtil ;
+
+    @Autowired
+    private We3rdAppService we3rdAppService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -167,8 +176,9 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
         );
         // 4.对客户打标签
         if (dto.getEditTag() != null) {
-            // 去除原有标签
-            weFlowerCustomerTagRelService.removeByCustomerIdAndUserId(externalUserId, userId, corpId);
+            WeFlowerCustomerRel flowerCustomerRel = weFlowerCustomerRelService.getOne(userId, externalUserId, corpId);
+            //移除所有标签
+            this.removeAllLabel(flowerCustomerRel);
             // 批量打上新的标签
             if (!dto.getEditTag().isEmpty()) {
                 this.batchMarkCustomTag(
@@ -910,7 +920,7 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
     @Override
     public GetUnionIdVO getDetailByExternalUserId(GetUnionIdDTO getUnionIdDTO) {
         if(getUnionIdDTO == null || StringUtils.isAnyBlank(getUnionIdDTO.getCorpId(),getUnionIdDTO.getExternalUserId(), getUnionIdDTO.getCorpSecret())) {
-            throw new CustomException(ResultTip.TIP_PARAM_MISSING);
+            throw new CustomException(ResultTip.TIP_PARAM_NAME_MISSING);
         }
         String corpSecret = corpSecretDecryptUtil.decryptUnionId(getUnionIdDTO.getCorpSecret()) ;
         ExternalUserDetail userDetail = weUnionIdClient.getByExternalUserId(getUnionIdDTO.getExternalUserId(), getUnionIdDTO.getCorpId(), corpSecret);
@@ -918,6 +928,61 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
             throw new CustomException(ResultTip.TIP_GET_UNION_ID_FAIL);
         }
         return new GetUnionIdVO(userDetail.getExternal_contact());
+    }
+
+    /**
+     * 根据openId获取客户详情
+     *
+     * @param openId 公众号openid
+     * @param corpId
+     * @return 客户详情 {@link WeCustomer}
+     */
+    @Override
+    public WeCustomer getCustomerInfoByOpenId(String openId, String corpId) {
+        if (StringUtils.isBlank(openId)) {
+            return null;
+        }
+        // 1. 根据openid获取unionId
+        String unionId = wechatOpenService.getUnionIdByOpenId(openId);
+        //  2. 先根据union_id去客户表查询是否有数据
+        WeCustomer customer = getCustomerByUnionId(unionId, openId, corpId);
+        if (customer == null) {
+            log.info("[根据openId获取客户详情] 获取客户详情,根据union_id在数据库中未匹配到客户,openId:{},unionId:{}", openId, unionId);
+            throw new CustomException(ResultTip.TIP_CANNOT_FIND_USER_BY_UNION_ID);
+        }
+        return customer;
+    }
+
+    @Override
+    public WeCustomer getCustomerByUnionId(String unionId, String openId, String corpId) {
+        if (StringUtils.isAnyBlank(unionId, openId, corpId)) {
+            return null;
+        }
+        WeCustomer customer = this.getOne(new LambdaQueryWrapper<WeCustomer>()
+                .eq(WeCustomer::getUnionid, unionId)
+                .eq(WeCustomer::getCorpId, corpId)
+                .last(GenConstants.LIMIT_1));
+        // 如果在数据库中没查到客户信息, 且当前环境为待开发 则调用接口获取externalUserId
+        if (customer == null && ServerTypeEnum.THIRD.getType().equals(we3rdAppService.getServerType().getServerType())) {
+            ExternalUserDetail externalUserDetail = weCustomerClient.getExternalUserIdByUnionIdAndOpenId(unionId, openId, SubjectTypeEnum.ENTERPRISE.getCode(), corpId);
+            if (externalUserDetail == null || StringUtils.isBlank(externalUserDetail.getExternal_userid())) {
+                return null;
+            }
+            // 若正常返回exteranlUserId再查找客户信息，并将unionId写入到到数据库中
+            customer = this.getOne(new LambdaQueryWrapper<WeCustomer>()
+                    .eq(WeCustomer::getCorpId, corpId)
+                    .eq(WeCustomer::getExternalUserid, externalUserDetail.getExternal_userid())
+                    .last(GenConstants.LIMIT_1));
+            if (customer == null) {
+                return null;
+            }
+            customer.setUnionid(unionId);
+            this.update(new LambdaUpdateWrapper<WeCustomer>()
+                    .eq(WeCustomer::getExternalUserid, externalUserDetail.getExternal_userid())
+                    .eq(WeCustomer::getCorpId, corpId)
+                    .set(WeCustomer::getUnionid, unionId));
+        }
+        return customer;
     }
 
 }

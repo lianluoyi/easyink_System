@@ -2,6 +2,7 @@ package com.easyink.wecom.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.ListUtil;
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -10,6 +11,7 @@ import com.easyink.common.core.domain.model.LoginUser;
 import com.easyink.common.core.domain.wecom.WeDepartment;
 import com.easyink.common.core.domain.wecom.WeUser;
 import com.easyink.common.enums.DataScopeEnum;
+import com.easyink.common.enums.ResultTip;
 import com.easyink.common.enums.WeExceptionTip;
 import com.easyink.common.exception.CustomException;
 import com.easyink.common.service.ISysDeptService;
@@ -265,6 +267,33 @@ public class WeDepartmentServiceImpl extends ServiceImpl<WeDepartmentMapper, WeD
             return Collections.emptyList();
         }
         return this.baseMapper.getDepartmentDetails(corpId, departmentIdList);
+    }
+
+    @Override
+    public Long selectDepartmentIdByUserId(String userId, String corpId) {
+        String departmentIds = this.baseMapper.selectDepartmentIdByUserId(userId, corpId);
+        if (StringUtils.isBlank(departmentIds)) {
+            throw new CustomException(ResultTip.TIP_GENERAL_BAD_REQUEST);
+        }
+        String[] split = departmentIds.split(StrUtil.COMMA);
+        // 取最后一个子部门id
+        return Long.valueOf(split[split.length - 1]);
+    }
+
+    @Override
+    public List<Long> getDepartmentAndChildList(Integer departmentId, String corpId) {
+        if (departmentId == null) {
+            return new ArrayList<>();
+        }
+        if(StringUtils.isBlank(corpId)){
+            throw new CustomException(ResultTip.TIP_GENERAL_BAD_REQUEST);
+        }
+        WeDepartment weDepartment = this.getBaseMapper().selectOne(new LambdaQueryWrapper<WeDepartment>()
+                .eq(WeDepartment::getCorpId, corpId)
+                .eq(WeDepartment::getId, departmentId)
+        );
+        List<WeDepartment> weDepartments = baseMapper.selectDepartmentAndChildList(weDepartment);
+        return weDepartments.stream().map(WeDepartment::getId).collect(Collectors.toList());
     }
 
 

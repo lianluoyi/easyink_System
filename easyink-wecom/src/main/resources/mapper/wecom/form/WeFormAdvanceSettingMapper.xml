@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.easyink.wecom.mapper.form.WeFormAdvanceSettingMapper">
+
+    <resultMap type="com.easyink.wecom.domain.entity.form.WeFormAdvanceSetting" id="WeFormAdvanceSettingMap">
+        <result property="formId" column="form_id" jdbcType="INTEGER"/>
+        <result property="deadLineType" column="dead_line_type" jdbcType="INTEGER"/>
+        <result property="customDate" column="custom_date" jdbcType="TIMESTAMP"/>
+        <result property="weChatPublicPlatform" column="we_chat_public_platform" jdbcType="VARCHAR"/>
+        <result property="submitCntType" column="submit_cnt_type" jdbcType="INTEGER"/>
+        <result property="actionInfoParamJson" column="action_info_param_json" jdbcType="VARCHAR"/>
+        <result property="actionNoteFlag" column="action_note_flag" jdbcType="INTEGER"/>
+        <result property="submitActionType" column="submit_action_type" jdbcType="INTEGER"/>
+        <result property="tractRecordFlag" column="tract_record_flag" jdbcType="INTEGER"/>
+        <result property="customerLabelFlag" column="customer_label_flag" jdbcType="INTEGER"/>
+        <result property="labelSettingJson" column="label_setting_json" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <!-- 批量插入 -->
+    <insert id="insertBatch" keyProperty="id" useGeneratedKeys="true">
+        insert into we_form_advance_setting(form_id, dead_line_type, custom_date,
+        we_chat_public_platform, submit_cnt_type, action_info_param_json, action_note_flag, submit_action_type,
+        tract_record_flag, customer_label_flag, label_setting_json)
+        values
+        <foreach collection="entities" item="entity" separator=",">
+            (#{entity.formId}, #{entity.deadLineType}, #{entity.customDate}, #{entity.weChatPublicPlatform},
+            #{entity.submitCntType}, #{entity.actionInfoParamJson}, #{entity.actionNoteFlag},
+            #{entity.submitActionType}, #{entity.tractRecordFlag}, #{entity.customerLabelFlag},
+            #{entity.labelSettingJson})
+        </foreach>
+    </insert>
+    <!-- 批量插入或按主键更新 -->
+    <insert id="insertOrUpdateBatch" keyProperty="id" useGeneratedKeys="true">
+        insert into we_form_advance_setting(form_id, dead_line_type, custom_date,
+        we_chat_public_platform, submit_cnt_type, action_info_param_json, action_note_flag, submit_action_type,
+        tract_record_flag, customer_label_flag, label_setting_json)
+        values
+        <foreach collection="entities" item="entity" separator=",">
+            (#{entity.formId}, #{entity.deadLineType}, #{entity.customDate}, #{entity.weChatPublicPlatform},
+            #{entity.submitCntType}, #{entity.actionInfoParamJson}, #{entity.actionNoteFlag},
+            #{entity.submitActionType}, #{entity.tractRecordFlag}, #{entity.customerLabelFlag},
+            #{entity.labelSettingJson})
+        </foreach>
+        on duplicate key update
+        form_id = values(form_id) , dead_line_type = values(dead_line_type) , custom_date = values(custom_date) ,
+        we_chat_public_platform = values(we_chat_public_platform) , submit_cnt_type = values(submit_cnt_type) ,
+        action_info_param_json = values(action_info_param_json) , action_note_flag = values(action_note_flag) ,
+        submit_action_type = values(submit_action_type) , tract_record_flag = values(tract_record_flag) ,
+        customer_label_flag = values(customer_label_flag) , label_setting_json = values(label_setting_json)
+    </insert>
+
+</mapper>
+

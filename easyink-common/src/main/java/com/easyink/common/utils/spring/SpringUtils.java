@@ -47,6 +47,20 @@ public final class SpringUtils implements BeanFactoryPostProcessor, ApplicationC
     }
 
     /**
+     * 获取对象
+     *
+     * @param name
+     * @param clz
+     * @return Object 一个以所给名字注册的bean的实例
+     * @throws BeansException
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> T getBean(String name, Class<T> clz) throws BeansException {
+        return (T) beanFactory.getBean(name, clz);
+    }
+
+
+    /**
      * 获取类型为requiredType的对象
      *
      * @param clz

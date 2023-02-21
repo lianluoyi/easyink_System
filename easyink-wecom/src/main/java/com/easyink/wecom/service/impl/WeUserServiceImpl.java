@@ -13,6 +13,7 @@ import com.dtflys.forest.exceptions.ForestRuntimeException;
 import com.easyink.common.annotation.DataScope;
 import com.easyink.common.config.RuoYiConfig;
 import com.easyink.common.constant.*;
+import com.easyink.common.core.domain.ConversationArchiveQuery;
 import com.easyink.common.core.domain.entity.SysRole;
 import com.easyink.common.core.domain.entity.WeCorpAccount;
 import com.easyink.common.core.domain.model.LoginUser;
@@ -21,6 +22,7 @@ import com.easyink.common.core.domain.wecom.WeUser;
 import com.easyink.common.core.redis.RedisCache;
 import com.easyink.common.enums.*;
 import com.easyink.common.exception.CustomException;
+import com.easyink.common.utils.DateUtils;
 import com.easyink.common.utils.MyDateUtil;
 import com.easyink.common.utils.bean.BeanUtils;
 import com.easyink.common.utils.file.FileUploadUtils;
@@ -42,6 +44,7 @@ import com.easyink.wecom.login.util.LoginTokenService;
 import com.easyink.wecom.mapper.WeUserMapper;
 import com.easyink.wecom.mapper.WeUserRoleMapper;
 import com.easyink.wecom.service.*;
+import com.github.pagehelper.PageInfo;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ObjectUtils;
@@ -56,6 +59,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -87,6 +91,8 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
     private final WeAgentClient weAgentClient;
     private final WeUserBehaviorDataService weUserBehaviorDataService;
     private final WeCustomerClient weCustomerClient;
+    private final WeConversationArchiveService weConversationArchiveService;
+    private final WeUserCustomerMessageStatisticsService weUserCustomerMessageStatisticsService;
     @Lazy
     @Autowired
     private WeUserService weUserService;
@@ -97,7 +103,7 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
 
     @Lazy
     @Autowired
-    public WeUserServiceImpl(WeDepartmentService weDepartmentService, WeUserMapper weUserMapper, RedisCache redisCache, We3rdAppService we3rdAppService, WeUserClient weUserClient, WeCustomerService weCustomerService, WeUserRoleMapper weUserRoleMapper, WeFlowerCustomerRelService weFlowerCustomerRelService, WeUserRoleService weUserRoleService, PageHomeService pageHomeService, WeGroupService weGroupService, WeMaterialService weMaterialService, WeExternalUserMappingUserService weExternalUserMappingUserService, RuoYiConfig ruoYiConfig, WeCorpAccountService weCorpAccountService, WeAgentClient weAgentClient, WeUserBehaviorDataService weUserBehaviorDataService, WeCustomerClient weCustomerClient) {
+    public WeUserServiceImpl(WeDepartmentService weDepartmentService, WeUserMapper weUserMapper, RedisCache redisCache, We3rdAppService we3rdAppService, WeUserClient weUserClient, WeCustomerService weCustomerService, WeUserRoleMapper weUserRoleMapper, WeFlowerCustomerRelService weFlowerCustomerRelService, WeUserRoleService weUserRoleService, PageHomeService pageHomeService, WeGroupService weGroupService, WeMaterialService weMaterialService, WeExternalUserMappingUserService weExternalUserMappingUserService, RuoYiConfig ruoYiConfig, WeCorpAccountService weCorpAccountService, WeAgentClient weAgentClient, WeUserBehaviorDataService weUserBehaviorDataService, WeCustomerClient weCustomerClient, WeConversationArchiveService weConversationArchiveService, WeUserCustomerMessageStatisticsService weUserCustomerMessageStatisticsService) {
         this.weDepartmentService = weDepartmentService;
         this.weUserMapper = weUserMapper;
         this.redisCache = redisCache;
@@ -115,6 +121,8 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
         this.weAgentClient = weAgentClient;
         this.weUserBehaviorDataService = weUserBehaviorDataService;
         this.weCustomerClient = weCustomerClient;
+        this.weConversationArchiveService = weConversationArchiveService;
+        this.weUserCustomerMessageStatisticsService = weUserCustomerMessageStatisticsService;
     }
 
     /**
@@ -293,7 +301,7 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
     @Transactional(rollbackFor = Exception.class)
     public void insertWeUser(WeUser weUser) {
         if (weUser == null || StringUtils.isAnyBlank(weUser.getCorpId(), weUser.getUserId()) || weUser.getRoleId() == null || weUser.getMainDepartment() == null) {
-            throw new CustomException(ResultTip.TIP_PARAM_MISSING);
+            throw new CustomException(ResultTip.TIP_PARAM_NAME_MISSING);
         }
         // 1. 判断角色是否存在
         SysRole role = weUserRoleMapper.selectByRoleId(weUser.getCorpId(), weUser.getRoleId());
@@ -525,6 +533,9 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
                     visibleUsers.add(dto.transferToWeUser());
                 }
             }
+        }
+        for (WeUser visibleUser : visibleUsers) {
+            visibleUser.setCorpId(corpId);
         }
         return new ArrayList<>(visibleUsers);
     }

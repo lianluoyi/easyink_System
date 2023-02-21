@@ -54,7 +54,6 @@
                wu.main_department,
                wu.corp_id,
                wu.ui_color
-        from we_user wu
     </sql>
 
 <select id="listOfUser" parameterType="com.easyink.wecom.domain.dto.QueryUserDTO" resultType="com.easyink.wecom.domain.vo.WeUserVO">
@@ -146,6 +145,7 @@
 
     <select id="selectWeUserList" parameterType="WeUser" resultMap="WeUserResult">
         <include refid="selectWeUserVo"/>
+        FROM we_user wu
         WHERE
         wu.corp_id = #{corpId}
         AND wu.is_activate != ${@com.easyink.common.constant.WeConstans@WE_USER_IS_LEAVE}
@@ -178,6 +178,9 @@
 
     <select id="selectWeUserById" resultMap="WeUserResult">
         <include refid="selectWeUserVo"/>
+        , IFNULL(wd.name,'') AS department_name
+        FROM we_user wu
+        LEFT JOIN we_department wd ON wu.corp_id = wd.corp_id AND SUBSTRING_INDEX(wu.department,',',-1) = wd.id
         WHERE wu.corp_id= #{corpId} AND wu.user_id = #{userId}
         LIMIT 1
     </select>
@@ -451,6 +454,7 @@
     <!--    通过部门id列表和公司Id获取成员-->
     <select id="getUserByDepartmentList" resultType="com.easyink.common.core.domain.wecom.WeUser">
         <include refid="selectWeUserVo"></include>
+        FROM we_user wu
         WHERE
         wu.corp_id = #{corpId}
         and wu.is_activate != ${@com.easyink.common.constant.WeConstans@WE_USER_IS_LEAVE}

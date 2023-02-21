@@ -169,6 +169,14 @@ public class FileUtils extends org.apache.commons.io.FileUtils {
     }
 
     /**
+     * 过滤文件名中不合法的特殊字符 \ / : * ? " < > |
+     */
+    public static String replaceFileNameUnValidChar(String filename) {
+        return filename.replaceAll("[\\s\\\\/:\\*\\?\\\"<>\\|]","_");
+    }
+
+
+    /**
      * 下载文件名重新编码
      *
      * @param request  请求对象

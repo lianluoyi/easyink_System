@@ -2,11 +2,10 @@ package com.easyink.wecom.service.impl.radar;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.easyink.common.constant.Constants;
 import com.easyink.common.constant.radar.RadarConstants;
 import com.easyink.common.enums.radar.RadarChannelEnum;
 import com.easyink.common.exception.CustomException;
-import com.easyink.common.shorturl.ShortUrlAppendInfo;
+import com.easyink.common.shorturl.RadarShortUrlAppendInfo;
 import com.easyink.common.utils.DateUtils;
 import com.easyink.common.utils.bean.BeanUtils;
 import com.easyink.wecom.domain.dto.radar.DeleteRadarChannelDTO;
@@ -62,7 +61,7 @@ public class WeRadarChannelServiceImpl extends ServiceImpl<WeRadarChannelMapper,
     public String createShortUrl(String corpId, Long radarId, String userName, Integer channelType, String detail) {
         //长链
         String url = weRadarMapper.getRadarUrl(radarId);
-        final ShortUrlAppendInfo shortUrlAppendInfo = radarUrlHandler.buildAppendInfo(radarId, userName, channelType, detail);
+        final RadarShortUrlAppendInfo shortUrlAppendInfo = radarUrlHandler.buildAppendInfo(radarId, userName, channelType, detail);
         return radarUrlHandler.createRadarUrl(corpId, url, userName, shortUrlAppendInfo);
     }
 

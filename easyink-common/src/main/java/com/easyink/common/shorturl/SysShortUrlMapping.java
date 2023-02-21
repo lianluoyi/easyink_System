@@ -2,6 +2,7 @@ package com.easyink.common.shorturl;
 
 import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.annotation.TableField;
+import com.easyink.common.enums.ShortCodeType;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
@@ -48,12 +49,16 @@ public class SysShortUrlMapping {
     @ApiModelProperty(value = "创建人 ")
     private String createBy;
 
+    @TableField("type")
+    @ApiModelProperty(value = "短链类型")
+    private Integer type;
+
     /**
      * 设置附加信息
      *
-     * @param appendInfo 附加信息 实体{@link ShortUrlAppendInfo}
+     * @param appendInfo 附加信息 实体{@link RadarShortUrlAppendInfo}
      */
-    public void setAppend(ShortUrlAppendInfo appendInfo) {
+    public void setAppend(BaseShortUrlAppendInfo appendInfo) {
         if (appendInfo != null) {
             this.appendInfo = JSON.toJSONString(appendInfo);
         }
@@ -62,13 +67,38 @@ public class SysShortUrlMapping {
     /**
      * 获取附加信息
      *
-     * @return 附件信息 {@link ShortUrlAppendInfo }
+     * @return 附件信息 {@link RadarShortUrlAppendInfo }
      */
-    public ShortUrlAppendInfo getAppend() {
+    public RadarShortUrlAppendInfo getRadarAppendInfo() {
+        if (StringUtils.isBlank(this.appendInfo) || !ShortCodeType.RADAR.getCode().equals(this.type)) {
+            return null;
+        }
+        return JSON.parseObject(this.appendInfo, RadarShortUrlAppendInfo.class);
+    }
+
+    /**
+     * 获取附加信息
+     *
+     * @return 附件信息 {@link FormShortUrlAppendInfo }
+     */
+    public FormShortUrlAppendInfo getFormAppendInfo() {
+        if (StringUtils.isBlank(this.appendInfo) || !ShortCodeType.FORM.getCode().equals(this.type)) {
+            return null;
+        }
+        return JSON.parseObject(this.appendInfo, FormShortUrlAppendInfo.class);
+    }
+
+
+    /**
+     * 获取附加信息
+     *
+     * @return 附件信息 {@link BaseShortUrlAppendInfo }
+     */
+    public BaseShortUrlAppendInfo getBaseAppendInfo() {
         if (StringUtils.isBlank(this.appendInfo)) {
             return null;
         }
-        return JSON.parseObject(this.appendInfo, ShortUrlAppendInfo.class);
+        return JSON.parseObject(this.appendInfo, BaseShortUrlAppendInfo.class);
     }
 
 

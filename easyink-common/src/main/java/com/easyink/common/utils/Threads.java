@@ -20,6 +20,10 @@ public class Threads {
     private static final int CORE_POOL_SIZE = Runtime.getRuntime().availableProcessors();
 
     private static final ThreadFactory NAMED_THREAD_FACTORY = new ThreadFactoryBuilder().setNameFormat("common-pool-%d").build();
+    /**
+     * 微信开放平台线程名前缀
+     */
+    private static final ThreadFactory WE_OPEN_NAMED_THREAD_FACTORY = new ThreadFactoryBuilder().setNameFormat("weOpenCallBack-pool-%d").build();
 
 
     /**
@@ -31,6 +35,19 @@ public class Threads {
             executor.getQueue().put(r);
         } catch (InterruptedException e) {
             log.error("InterruptedException e:{}", ExceptionUtils.getStackTrace(e));
+            Thread.currentThread().interrupt();
+        }
+    });
+
+    /**
+     * 创建线程池 用于微信开放平台-回调
+     */
+    public static final ThreadPoolExecutor WE_OPEN_THREAD_POOL = new ThreadPoolExecutor(CORE_POOL_SIZE, CORE_POOL_SIZE + 1, 10L, TimeUnit.SECONDS,
+            new SynchronousQueue<>(), WE_OPEN_NAMED_THREAD_FACTORY, (r, executor) -> {
+        try {
+            executor.getQueue().put(r);
+        } catch (InterruptedException e) {
+            log.error("weOpenCallBack-InterruptedException e:{}", ExceptionUtils.getStackTrace(e));
             Thread.currentThread().interrupt();
         }
     });

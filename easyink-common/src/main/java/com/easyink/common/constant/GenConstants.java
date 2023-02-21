@@ -15,6 +15,7 @@ public class GenConstants {
      * limit 1
      */
     public static final String LIMIT_1 = "LIMIT 1";
+    public static final String LIMIT_5 = "LIMIT 5";
 
     /**
      * 群聊名称占位符
@@ -37,6 +38,12 @@ public class GenConstants {
      * 雷达标题占位符
      */
     public static final String RADAR_TITLE = "${radarTitle}";
+
+    /**
+     * 表单名称占位符
+     */
+    public static final String FORM_NAME = "${formName}";
+
     /**
      * 客户信息动态记录模板
      */

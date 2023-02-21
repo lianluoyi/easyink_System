@@ -1,16 +1,22 @@
 package com.easyink.wecom.service.impl;
 
+import cn.hutool.core.date.DateUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.easyink.wecom.domain.WeUserBehaviorData;
 import com.easyink.wecom.domain.dto.WePageCountDTO;
+import com.easyink.wecom.domain.dto.statistics.CustomerActivityDTO;
+import com.easyink.wecom.domain.dto.statistics.StatisticsDTO;
 import com.easyink.wecom.domain.query.WePageStateQuery;
+import com.easyink.wecom.domain.vo.statistics.CustomerOverviewVO;
 import com.easyink.wecom.mapper.WeUserBehaviorDataMapper;
 import com.easyink.wecom.service.WeUserBehaviorDataService;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -20,6 +26,7 @@ import java.util.List;
  * @date 2021-02-24
  */
 @Service
+@Slf4j
 public class WeUserBehaviorDataServiceImpl extends ServiceImpl<WeUserBehaviorDataMapper, WeUserBehaviorData> implements WeUserBehaviorDataService {
 
     @Override
@@ -67,6 +74,7 @@ public class WeUserBehaviorDataServiceImpl extends ServiceImpl<WeUserBehaviorDat
 
     @Override
     public List<WePageCountDTO> getWeekCountData(WePageStateQuery wePageStateQuery) {
+        // 先获取基础数据的列表
         return this.baseMapper.getWeekCountData(wePageStateQuery);
     }
 
@@ -74,4 +82,21 @@ public class WeUserBehaviorDataServiceImpl extends ServiceImpl<WeUserBehaviorDat
     public List<WePageCountDTO> getMonthCountData(WePageStateQuery wePageStateQuery) {
         return this.baseMapper.getMonthCountData(wePageStateQuery);
     }
+
+    /**
+     * 获取统计时间
+     * @param isToday 是否要统计到今日
+     * @return 时间
+     */
+    private static String getStatTime(Boolean isToday) {
+        if(Boolean.TRUE.equals(isToday)) {
+            // 如果是实时数据则取今天
+            return DateUtil.beginOfDay(new Date()).toString() ;
+        }else {
+            return DateUtil.beginOfDay(DateUtil.yesterday()).toString() ;
+        }
+    }
+
+
+
 }

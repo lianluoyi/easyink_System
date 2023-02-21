@@ -190,6 +190,8 @@ public class CustomerTrajectoryEnums {
          */
         QUIT_GROUP("quit_group", "${customer}退出了群聊【${groupName}】"),
         CLICK_RADAR("click_radar", "${customer}打开了雷达链接“${radarTitle}”"),
+        CLICK_FORM("click_form","${customer}访问了表单【${formName}】"),
+        COMMIT_FORM("commit_form","${customer}提交了表单【${formName}】"),
         UNKNOWN("un_known", ""),
         ;
         /**

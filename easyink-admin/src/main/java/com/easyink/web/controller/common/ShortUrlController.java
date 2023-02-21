@@ -51,12 +51,12 @@ public class ShortUrlController {
         try {
             serverIp = IpUtils.getOutIp();
         } catch (Exception e) {
-            log.error("[雷达链接]获取服务器ip异常.e:{}", ExceptionUtils.getStackTrace(e));
+            log.error("[雷达/表单链接]获取服务器ip异常.e:{}", ExceptionUtils.getStackTrace(e));
         }
         String ip = IpUtils.getIpAddr(ServletUtils.getRequest());
-        log.info("[雷达短链]有人点击了短链,shortCode:{},openId:{},ip:{},serverIp:{}", shortCode, openId, ip, serverIp);
+        log.info("[雷达/表单短链]有人点击了短链,shortCode:{},openId:{},ip:{},serverIp:{}", shortCode, openId, ip, serverIp);
         if (serverIp.equals(ip)) {
-            log.info("[雷达短链]ip与服务器ip一样,不处理,ip:{}", ip);
+            log.info("[雷达/表单短链]ip与服务器ip一样,不处理,ip:{}", ip);
             return AjaxResult.success();
         }
         return AjaxResult.success("success", radarUrlHandler.getOriginUrlAndRecord(shortCode, openId));

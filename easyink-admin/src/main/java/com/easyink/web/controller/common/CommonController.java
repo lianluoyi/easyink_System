@@ -16,6 +16,7 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,6 +26,7 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.regex.Pattern;
 
 /**
  * 类名: CommonController
@@ -44,6 +46,15 @@ public class CommonController {
     @Autowired
     private FileService fileService;
 
+    @Autowired
+    private RuoYiConfig ruoYiConfig;
+
+    @GetMapping("/getPublicKey")
+    @ApiOperation(value = "获取登录公钥")
+    public AjaxResult<String> getPublicKey() {
+        return AjaxResult.success(null, ruoYiConfig.getLoginRsaPublicKey()) ;
+    }
+
     /**
      * 通用下载请求
      *
@@ -54,9 +65,7 @@ public class CommonController {
     @GetMapping("common/download")
     public void fileDownload(@ApiParam("文件名") String fileName, @ApiParam("是否删除本地文件") Boolean delete, @ApiParam("是否带时间戳") Boolean needTimeStamp, HttpServletResponse response, HttpServletRequest request) {
         try {
-            if (!FileUtils.isValidFilename(fileName)) {
-                throw new CustomException(StringUtils.format("文件名称({})非法，不允许下载。 ", fileName));
-            }
+            fileName = FileUtils.replaceFileNameUnValidChar(fileName);
             // 文件名分隔符 uuid_fileName.xlsx -> fileName.xlsx
             String splitSign = "_";
             String realFileName = fileName.substring(fileName.indexOf(splitSign) + 1);
@@ -74,7 +83,7 @@ public class CommonController {
                 FileUtils.deleteFile(filePath);
             }
         } catch (Exception e) {
-            log.error("下载文件失败", e);
+           log.error("下载文件失败 e:{}", ExceptionUtils.getStackTrace(e));
         }
     }
 
@@ -157,6 +166,7 @@ public class CommonController {
     @ApiOperation(value = "上传到云存储")
     @PostMapping("/common/uploadFile2Cos")
     public AjaxResult uploadFile2Cos(@ApiParam("资源文件") MultipartFile file,String fileName) {
+        FileUploadUtils.fileSuffixVerify(fileName, ruoYiConfig.getFile().getAllowUploadExtensionList());
         try {
             SysFile sysFile;
             if (StringUtils.isNotBlank(fileName)) {

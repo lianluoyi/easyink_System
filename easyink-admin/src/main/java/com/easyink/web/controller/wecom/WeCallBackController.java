@@ -3,9 +3,11 @@ package com.easyink.web.controller.wecom;
 import com.alibaba.fastjson.JSON;
 import com.easyink.common.config.RuoYiConfig;
 import com.easyink.common.config.WeCrypt;
+import com.easyink.common.config.WechatOpenConfig;
 import com.easyink.common.enums.ResultTip;
 import com.easyink.common.exception.CustomException;
 import com.easyink.common.utils.Threads;
+import com.easyink.common.utils.WXBizMsgCrypt;
 import com.easyink.common.utils.wecom.WxCryptUtil;
 import com.easyink.wecom.domain.vo.WxCpXmlMessageVO;
 import com.easyink.wecom.factory.WeCallBackEventFactory;
@@ -21,10 +23,10 @@ import me.chanjar.weixin.cp.bean.WxCpXmlMessage;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
-
 /**
  * 类名: 企业微信回调接口
  *
@@ -38,11 +40,16 @@ import javax.servlet.http.HttpServletRequest;
 public class WeCallBackController {
     private final WeEventHandle weEventHandle;
     private final RuoYiConfig ruoYiConfig;
+    private final WechatOpenConfig wechatOpenConfig;
 
     @Autowired
-    public WeCallBackController(WeEventHandle weEventHandle, RuoYiConfig ruoYiConfig) {
+    private RedisTemplate redisTemplate;
+
+    @Autowired
+    public WeCallBackController(WeEventHandle weEventHandle, RuoYiConfig ruoYiConfig, WechatOpenConfig wechatOpenConfig) {
         this.weEventHandle = weEventHandle;
         this.ruoYiConfig = ruoYiConfig;
+        this.wechatOpenConfig = wechatOpenConfig;
     }
 
     /**
@@ -168,7 +175,6 @@ public class WeCallBackController {
             return "error";
         }
     }
-
 
     private WxCpXmlMessageVO strXmlToBean(String xmlStr) {
         XStream xstream = XStreamInitializer.getInstance();

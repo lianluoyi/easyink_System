@@ -2,7 +2,7 @@ package com.easyink.wecom.service.radar;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.easyink.common.core.domain.wecom.WeUser;
-import com.easyink.common.shorturl.ShortUrlAppendInfo;
+import com.easyink.common.shorturl.RadarShortUrlAppendInfo;
 import com.easyink.wecom.domain.WeCustomer;
 import com.easyink.wecom.domain.dto.radar.*;
 import com.easyink.wecom.domain.entity.radar.WeRadarClickRecord;
@@ -83,10 +83,10 @@ public interface WeRadarClickRecordService extends IService<WeRadarClickRecord> 
     /**
      * 创建雷达点击记录
      *
-     * @param appendInfo 附件信息  {@link ShortUrlAppendInfo }
+     * @param appendInfo 附件信息  {@link RadarShortUrlAppendInfo }
      * @param customer   客户信息 {@link WeCustomer}
      * @param openId     公众号openId
      * @param user       使用雷达员工信息{@link WeUser}
      */
-    void createRecord(ShortUrlAppendInfo appendInfo, WeCustomer customer, String openId, WeUser user);
+    void createRecord(RadarShortUrlAppendInfo appendInfo, WeCustomer customer, String openId, WeUser user);
 }

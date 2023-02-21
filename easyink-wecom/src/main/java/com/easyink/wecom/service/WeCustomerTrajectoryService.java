@@ -8,6 +8,8 @@ import com.easyink.wecom.domain.WeCustomerTrajectory;
 import com.easyink.wecom.domain.WeGroupMember;
 import com.easyink.wecom.domain.WeTag;
 import com.easyink.wecom.domain.dto.customer.EditCustomerDTO;
+import com.easyink.wecom.domain.entity.form.WeForm;
+import com.easyink.wecom.domain.entity.form.WeFormOperRecord;
 import com.easyink.wecom.domain.entity.radar.WeRadar;
 import io.swagger.annotations.ApiModel;
 
@@ -95,4 +97,24 @@ public interface WeCustomerTrajectoryService extends IService<WeCustomerTrajecto
      * @param customer 客户 {@link WeCustomer}
      */
     void recordRadarClickOperation(WeRadar radar, WeUser user, WeCustomer customer);
+
+    /**
+     * 记录活动轨迹（提交表单链接)
+     *
+     * @param weForm           表单{@link WeForm}
+     * @param weFormOperRecord 表单操作记录{@link WeFormOperRecord}
+     * @param user             员工 {@link WeUser}
+     * @param customer         客户 {@link WeCustomer}
+     */
+    void recordFormCommitOperation(WeForm weForm, WeFormOperRecord weFormOperRecord, WeUser user, WeCustomer customer);
+
+    /**
+     * 记录活动轨迹（点击表单链接)
+     *
+     * @param weForm           表单{@link WeForm}
+     * @param weFormOperRecord 表单操作记录{@link WeFormOperRecord}
+     * @param user             员工 {@link WeUser}
+     * @param customer         客户 {@link WeCustomer}
+     */
+    void recordFormClickOperation(WeForm weForm, WeFormOperRecord weFormOperRecord, WeUser user, WeCustomer customer);
 }

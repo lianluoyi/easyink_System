@@ -47,7 +47,14 @@ public class RuoYiConfig {
      * 企业微信账号登录系统默认密码
      */
     private String weUserDefaultPwd;
-
+    /**
+     * 登录密码RSA公钥
+     */
+    private String loginRsaPublicKey ;
+    /**
+     * 登录密码RSA私钥
+     */
+    private String loginRsaPrivateKey;
 
     private FileConfig file;
     /**

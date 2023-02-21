@@ -40,10 +40,13 @@ public class PageHomeDataTask {
     public void getPageHomeDataData() {
         log.info("定时任务开始执行------>");
         List<WeCorpAccount> weCorpAccountList = weCorpAccountService.listOfAuthCorpInternalWeCorpAccount();
+        // 先统计截止至今日的客户总数
         weCorpAccountList.forEach(weCorpAccount -> {
             if (weCorpAccount != null && StringUtils.isNotBlank(weCorpAccount.getCorpId())) {
-                pageHomeService.getCorpBasicData(weCorpAccount.getCorpId());
+                pageHomeService.doSystemCustomStat(weCorpAccount.getCorpId(), false );
                 getCorpRealTimeData(weCorpAccount.getCorpId());
+                pageHomeService.getCorpBasicData(weCorpAccount.getCorpId());
+
             }
         });
         log.info("定时任务执行完成------>");

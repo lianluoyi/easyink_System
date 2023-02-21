@@ -17,4 +17,10 @@ public class FileConfig {
      * 文件前缀
      */
     private String imgUrlPrefix;
+
+    /**
+     * 允许上传文件的后缀
+     */
+    private String[] allowUploadExtensionList;
+
 }

@@ -304,4 +304,23 @@ public interface WeCustomerService extends IService<WeCustomer> {
      * @return {@link GetUnionIdVO}
      */
     GetUnionIdVO getDetailByExternalUserId(GetUnionIdDTO getUnionIdDTO);
+
+    /**
+     * 根据openId获取客户详情
+     *
+     * @param openId 公众号openid
+     * @param corpId 企业id
+     * @return 客户详情 {@link WeCustomer}
+     */
+    WeCustomer getCustomerInfoByOpenId(String openId, String corpId);
+
+    /**
+     * 通过unionId和openId获取员工详情
+     *
+     * @param unionId unionId
+     * @param openId  openId
+     * @param corpId  企业id
+     * @return
+     */
+    WeCustomer getCustomerByUnionId(String unionId, String openId, String corpId);
 }

@@ -18,6 +18,7 @@
     </description>
 
     <dependencies>
+
         <!--        redisson 框架-->
         <dependency>
             <groupId>org.redisson</groupId>
@@ -54,6 +55,11 @@
         <dependency>
             <groupId>javax.validation</groupId>
             <artifactId>validation-api</artifactId>
+        </dependency>
+        <!-- 自定义验证注解 -->
+        <dependency>
+            <groupId>org.hibernate.validator</groupId>
+            <artifactId>hibernate-validator</artifactId>
         </dependency>
 
         <!--常用工具类 -->
@@ -193,7 +199,6 @@
             <groupId>com.google.zxing</groupId>
             <artifactId>core</artifactId>
         </dependency>
-
 
         <dependency>
             <groupId>com.baomidou</groupId>

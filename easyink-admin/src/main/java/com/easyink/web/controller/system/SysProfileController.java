@@ -28,6 +28,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 
+import static com.easyink.common.utils.wecom.LoginRsaUtil.decryptByPrivateKey;
+
 /**
  * 个人信息 业务处理
  *
@@ -47,6 +49,8 @@ public class SysProfileController extends BaseController {
     private WeUserService weUserService;
     @Autowired
     private WeUserClient weUserClient;
+    @Autowired
+    private RuoYiConfig ruoYiConfig;
     /**
      * 个人信息
      */
@@ -90,15 +94,17 @@ public class SysProfileController extends BaseController {
         LoginUser loginUser = tokenService.getLoginUser(ServletUtils.getRequest());
         String userName = loginUser.getUsername();
         String password = loginUser.getPassword();
-        if (!SecurityUtils.matchesPassword(oldPassword, password)) {
+        String decryptOldPassword = decryptByPrivateKey(ruoYiConfig.getLoginRsaPrivateKey(), oldPassword);
+        String decryptNewPassword = decryptByPrivateKey(ruoYiConfig.getLoginRsaPrivateKey(), newPassword);
+        if (!SecurityUtils.matchesPassword(decryptOldPassword, password)) {
             return AjaxResult.error("修改密码失败，旧密码错误");
         }
-        if (SecurityUtils.matchesPassword(newPassword, password)) {
+        if (SecurityUtils.matchesPassword(decryptNewPassword, password)) {
             return AjaxResult.error("新密码不能与旧密码相同");
         }
-        if (userService.resetUserPwd(userName, SecurityUtils.encryptPassword(newPassword)) > 0) {
+        if (userService.resetUserPwd(userName, SecurityUtils.encryptPassword(decryptNewPassword)) > 0) {
             // 更新缓存用户密码
-            loginUser.getUser().setPassword(SecurityUtils.encryptPassword(newPassword));
+            loginUser.getUser().setPassword(SecurityUtils.encryptPassword(decryptNewPassword));
             tokenService.setLoginUser(loginUser);
             return AjaxResult.success();
         }
@@ -111,8 +117,9 @@ public class SysProfileController extends BaseController {
     @Log(title = "用户头像", businessType = BusinessType.UPDATE)
     @PostMapping("/avatar")
     @ApiOperation("头像上传")
-    public AjaxResult avatar(@RequestParam("avatarfile") MultipartFile file) throws IOException {
+    public AjaxResult avatar(@RequestParam("avatarfile") MultipartFile file, String fileName) throws IOException {
         if (!file.isEmpty()) {
+            FileUploadUtils.fileSuffixVerify(fileName, ruoYiConfig.getFile().getAllowUploadExtensionList());
             LoginUser loginUser = tokenService.getLoginUser(ServletUtils.getRequest());
             //判断是系统用户（超管）还是企微用户
             if (loginUser.isSuperAdmin()) {

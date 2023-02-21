@@ -30,7 +30,7 @@ public class DictUtils {
      * @param dictDatas 字典数据列表
      */
     public static void setDictCache(String key, List<SysDictData> dictDatas) {
-        SpringUtils.getBean(RedisCache.class).setCacheObject(getCacheKey(key), dictDatas);
+        SpringUtils.getBean("redisCache", RedisCache.class).setCacheObject(getCacheKey(key), dictDatas);
     }
 
     /**
@@ -40,7 +40,7 @@ public class DictUtils {
      * @return dictDatas 字典数据列表
      */
     public static List<SysDictData> getDictCache(String key) {
-        Object cacheObj = SpringUtils.getBean(RedisCache.class).getCacheObject(getCacheKey(key));
+        Object cacheObj = SpringUtils.getBean("redisCache", RedisCache.class).getCacheObject(getCacheKey(key));
         if (StringUtils.isNotNull(cacheObj)) {
             return StringUtils.cast(cacheObj);
         }
@@ -135,8 +135,8 @@ public class DictUtils {
      * 清空字典缓存
      */
     public static void clearDictCache() {
-        Collection<String> keys = SpringUtils.getBean(RedisCache.class).keys(Constants.SYS_DICT_KEY + "*");
-        SpringUtils.getBean(RedisCache.class).deleteObject(keys);
+        Collection<String> keys = SpringUtils.getBean("redisCache", RedisCache.class).keys(Constants.SYS_DICT_KEY + "*");
+        SpringUtils.getBean("redisCache", RedisCache.class).deleteObject(keys);
     }
 
     /**

@@ -1,7 +1,7 @@
 package com.easyink.common.shorturl.service;
 
-import com.easyink.common.constant.WeConstans;
-import com.easyink.common.shorturl.ShortUrlAppendInfo;
+import com.easyink.common.constant.form.FormConstants;
+import com.easyink.common.shorturl.BaseShortUrlAppendInfo;
 import com.easyink.common.shorturl.SysShortUrlMapping;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
@@ -36,10 +36,10 @@ public class ShortUrlAdaptor {
      *
      * @param longUrl    长链接
      * @param createBy   创建人,如果是员工则是userId,管理员为admin
-     * @param appendInfo 附件信息{@link ShortUrlAppendInfo}
+     * @param appendInfo 附件信息{@link BaseShortUrlAppendInfo}
      * @return 短链接
      */
-    public String createShortCode(String longUrl, String createBy, ShortUrlAppendInfo appendInfo) {
+    public String createShortCode(String longUrl, String createBy, BaseShortUrlAppendInfo appendInfo) {
         return shortUrlService.createShortCode(longUrl, createBy, appendInfo);
     }
 
@@ -86,7 +86,7 @@ public class ShortUrlAdaptor {
      * @return 完整的短链
      */
     public String genShortUrl(String domain, String code) {
-        return domain + WeConstans.SLASH + code;
+        return FormConstants.genShortUrl(domain, code);
     }
 
 

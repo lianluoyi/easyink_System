@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
 @BaseRequest(baseURL = "https://api.weixin.qq.com", interceptor = WechatOpenInterceptor.class)
 public interface WechatOpenClient {
     /**
-     * 【公众号】获取用户授权信息
+     * 【公众号】获取用户授权信息 (自建)
      *
      * @param appId     公众号appid
      * @param secret    公众号secret
@@ -28,9 +28,21 @@ public interface WechatOpenClient {
     @Get("/sns/oauth2/access_token")
     GetOfficialAuthInfoResp getAuthInfo(@Query("appid") String appId, @Query("secret") String secret, @Query("code") String code, @Query("grant_type") String grantType,@Header("corpId") String corpId);
 
-
-
-
+    /**
+     * 【代公众号】通过 code 换取 access_token (代开发)
+     *
+     * @param appId                  公众号appid
+     * @param code                   前端传来的code
+     * @param grantType              默认值  authorization_code
+     * @param componentAppid         服务开发方的 appid
+     * @param componentAccessToken   服务开发方的 access_token
+     * @return {@link GetOfficialAuthInfoResp}
+     */
+    @Get("/sns/oauth2/component/access_token")
+    GetOfficialAuthInfoResp getAccessTokenByCode(@Query("appid") String appId, @Query("code") String code,
+                                                 @Query("grant_type") String grantType,
+                                                 @Query("component_appid") String componentAppid,
+                                                 @Query("component_access_token") String componentAccessToken);
 
     /**
      * 【小程序】生成小程序的跳转链接

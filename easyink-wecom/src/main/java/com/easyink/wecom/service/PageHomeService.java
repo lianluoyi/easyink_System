@@ -51,4 +51,13 @@ public interface PageHomeService {
      * @return 首页基础数据DTO
      */
     WePageStaticDataDTO initCorpRealTimeData(String corpId);
+
+    /**
+     *  进行系统自定义的统计
+     *  (统计新客流失数、客户总数)
+     *
+     * @param corpId  企业id
+     * @param isToday 是否统计今天,实时的统计今天, 定时任务统计昨天的
+     */
+    void doSystemCustomStat(String corpId, boolean isToday);
 }

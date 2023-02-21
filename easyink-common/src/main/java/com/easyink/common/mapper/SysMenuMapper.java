@@ -22,6 +22,15 @@ public interface SysMenuMapper {
      */
     List<SysMenu> selectMenuList(SysMenu menu);
 
+
+    /**
+     * 通过菜单ids查询系统菜单列表
+     *
+     * @param menuIds 菜单信息
+     * @return 菜单列表
+     */
+    List<SysMenu> selectMenuListByMenuIds(@Param("menuIds") Long [] menuIds);
+
     /**
      * 根据用户查询系统菜单列表
      *

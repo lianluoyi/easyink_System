@@ -6,6 +6,8 @@ import com.easyink.common.core.domain.model.LoginUser;
 import com.easyink.wecom.domain.vo.ConversationArchiveVO;
 import com.github.pagehelper.PageInfo;
 
+import java.util.List;
+
 /**
  * @author admin
  * @description 会话存档业务接口
@@ -50,5 +52,15 @@ public interface WeConversationArchiveService {
      * @return ConversationArchiveVO
      */
     PageInfo<ConversationArchiveVO> getChatAllList(ConversationArchiveQuery query, LoginUser loginUser);
+
+    /**
+     * 获取聊天列表 （不分页 不需登录）
+     *
+     * @param query     {@link ConversationArchiveQuery}
+     * @param pageNum   页码
+     * @param pageSize  页大小
+     * @return ConversationArchiveVO
+     */
+    PageInfo<ConversationArchiveVO> getChatList(ConversationArchiveQuery query, Integer pageNum, Integer pageSize);
 }
 

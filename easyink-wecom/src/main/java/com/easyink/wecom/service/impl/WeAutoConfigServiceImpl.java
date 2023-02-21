@@ -336,7 +336,7 @@ public class WeAutoConfigServiceImpl implements WeAutoConfigService {
     @Override
     public void confirmMobileCaptcha(String captcha, String tlKey, String qrKey) {
         if (StringUtils.isAnyBlank(captcha, tlKey, qrKey)) {
-            throw new CustomException(ResultTip.TIP_PARAM_MISSING);
+            throw new CustomException(ResultTip.TIP_PARAM_NAME_MISSING);
         }
         if (StringUtils.isAnyBlank(captcha, tlKey, qrKey)) {
             throw new CustomException(ResultTip.TIP_NO_CAPTCHA_OR_TLKEY);
@@ -359,7 +359,7 @@ public class WeAutoConfigServiceImpl implements WeAutoConfigService {
     @Override
     public void sendCaptcha(String tlKey, String qrcodeKey) {
         if (StringUtils.isBlank(tlKey)) {
-            throw new CustomException(ResultTip.TIP_PARAM_MISSING);
+            throw new CustomException(ResultTip.TIP_PARAM_NAME_MISSING);
         }
         // 调用发送验证码接口
         weAdminClient.sendCaptcha(tlKey, qrcodeKey, genReferrerUrl(tlKey));

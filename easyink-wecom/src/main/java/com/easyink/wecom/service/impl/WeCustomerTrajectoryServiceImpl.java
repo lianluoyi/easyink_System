@@ -20,6 +20,8 @@ import com.easyink.wecom.domain.dto.WeMessagePushDTO;
 import com.easyink.wecom.domain.dto.customer.EditCustomerDTO;
 import com.easyink.wecom.domain.dto.message.TextMessageDTO;
 import com.easyink.wecom.domain.entity.customer.WeCustomerExtendProperty;
+import com.easyink.wecom.domain.entity.form.WeForm;
+import com.easyink.wecom.domain.entity.form.WeFormOperRecord;
 import com.easyink.wecom.domain.entity.radar.WeRadar;
 import com.easyink.wecom.domain.vo.sop.SopAttachmentVO;
 import com.easyink.wecom.login.util.LoginTokenService;
@@ -401,6 +403,60 @@ public class WeCustomerTrajectoryServiceImpl extends ServiceImpl<WeCustomerTraje
                 .detail(user.getAvatarMediaid())
                 .subType(CustomerTrajectoryEnums.SubType.CLICK_RADAR.getType())
                 .corpId(radar.getCorpId())
+                .startTime(now)
+                .build();
+        this.saveOrUpdate(trajectory);
+    }
+
+    @Override
+    public void recordFormCommitOperation(WeForm weForm, WeFormOperRecord weFormOperRecord, WeUser user, WeCustomer customer) {
+        if (user == null || customer == null || weForm == null || weFormOperRecord == null
+                || StringUtils.isAnyBlank(user.getUserId(), customer.getExternalUserid(), customer.getName())) {
+            log.info("[活动轨迹] 记录表单提交事件,参数缺失,weForm:{}, weFormOperRecord:{}, customer:{}. user:{}", weForm, weFormOperRecord, customer, user);
+            return;
+        }
+        recordFormOperation(CustomerTrajectoryEnums.SubType.COMMIT_FORM, weForm, weFormOperRecord, user, customer, weFormOperRecord.getCommitTime());
+    }
+
+    @Override
+    public void recordFormClickOperation(WeForm weForm, WeFormOperRecord weFormOperRecord, WeUser user, WeCustomer customer) {
+        if (user == null || customer == null || weForm == null || weFormOperRecord == null
+                || StringUtils.isAnyBlank(user.getUserId(), customer.getExternalUserid(), customer.getName())) {
+            log.info("[活动轨迹] 记录表单点击事件,参数缺失,weForm:{}, weFormOperRecord:{}, customer:{}. user:{}", weForm, weFormOperRecord, customer, user);
+            return;
+        }
+        recordFormOperation(CustomerTrajectoryEnums.SubType.CLICK_FORM, weForm, weFormOperRecord, user, customer, weFormOperRecord.getCreateTime());
+    }
+
+    /**
+     * 记录表单轨迹记录
+     *
+     * @param subType          {@link CustomerTrajectoryEnums.SubType}
+     * @param weForm           {@link WeForm}
+     * @param weFormOperRecord {@link WeFormOperRecord}
+     * @param user             {@link WeUser}
+     * @param customer         {@link WeCustomer}
+     * @param eventTime        发生事件时间
+     */
+    public void recordFormOperation(CustomerTrajectoryEnums.SubType subType, WeForm weForm, WeFormOperRecord weFormOperRecord, WeUser user, WeCustomer customer, Date eventTime) {
+        if (subType == null || user == null || customer == null || weForm == null || weFormOperRecord == null
+                || StringUtils.isAnyBlank(user.getUserId(), customer.getExternalUserid(), customer.getName())) {
+            return;
+        }
+        Time now = new Time(System.currentTimeMillis());
+        String content = subType.getDesc()
+                .replace(GenConstants.CUSTOMER, customer.getName())
+                .replace(GenConstants.FORM_NAME, weForm.getFormName());
+
+        WeCustomerTrajectory trajectory = WeCustomerTrajectory.builder()
+                .userId(user.getUserId())
+                .externalUserid(customer.getExternalUserid())
+                .trajectoryType(CustomerTrajectoryEnums.Type.ACTIVITY.getDesc())
+                .content(content)
+                .createDate(eventTime)
+                .detail(user.getAvatarMediaid())
+                .subType(subType.getType())
+                .corpId(weForm.getCorpId())
                 .startTime(now)
                 .build();
         this.saveOrUpdate(trajectory);

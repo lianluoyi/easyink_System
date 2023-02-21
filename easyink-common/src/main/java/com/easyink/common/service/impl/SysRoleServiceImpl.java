@@ -18,6 +18,7 @@ import com.easyink.common.mapper.*;
 import com.easyink.common.service.ISysRoleService;
 import com.easyink.common.utils.StringUtils;
 import com.easyink.common.utils.spring.SpringUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +26,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static com.easyink.common.constant.UserConstants.*;
 
 /**
  * 角色 业务层处理
@@ -294,12 +297,37 @@ public class SysRoleServiceImpl implements ISysRoleService {
         List<Long> defaultPageIds = sysMenuMapper.selectDefaultPage().stream().map(SysMenu::getMenuId).collect(Collectors.toList());
         List<SysRoleMenu> defaultRoleMenuList = genRoleMenuList(defaultPageIds.toArray(new Long[]{}), role.getRoleId());
         list.addAll(defaultRoleMenuList);
+        // 移除没有子菜单的目录
+//        filterCatalogWithOutChild(list);
         if (CollUtil.isNotEmpty(list)) {
             return roleMenuMapper.batchRoleMenu(list);
         }
         return BigDecimal.ONE.intValue();
     }
 
+    /**
+     * 过滤掉没有子菜单的目录
+     *
+     * @param list   List {@link SysRoleMenu}
+     */
+    private void filterCatalogWithOutChild(List<SysRoleMenu> list) {
+        if (CollectionUtils.isEmpty(list)) {
+            return;
+        }
+        Long[] menuIds = list.stream().map(SysRoleMenu::getMenuId).toArray(Long[]::new);
+        List<SysMenu> sysMenus = sysMenuMapper.selectMenuListByMenuIds(menuIds);
+        // 获取非最上级菜单的目录菜单
+        List<Long> catalogMenuIds = sysMenus.stream().filter(it -> TYPE_DIR.equals(it.getMenuType()) && !ROOT_MENU_PARENT_ID.equals(String.valueOf(it.getParentId())))
+                .map(SysMenu::getMenuId).collect(Collectors.toList());
+        // 非目录菜单且非页面的parentId字段map
+        Set<Long> parentIdSet = sysMenus.stream().filter(it -> !TYPE_DIR.equals(it.getMenuType()) && !TYPE_PAGE.equals(it.getMenuType())).map(SysMenu::getParentId).collect(Collectors.toSet());
+        for (Long catalogMenuId : catalogMenuIds) {
+            boolean haveChild = parentIdSet.contains(catalogMenuId);
+            if (!haveChild) {
+                list.removeIf(it -> catalogMenuId.equals(it.getMenuId()));
+            }
+        }
+    }
     /**
      * 生成角色-菜单 实体集合
      * @param menuIds

@@ -20,11 +20,13 @@ import com.easyink.wecom.service.WeCorpAccountService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -74,9 +76,9 @@ public class SysLoginController {
 
     @ApiOperation("网页登录")
     @GetMapping("/webLogin")
-    public AjaxResult<LoginResult> webLogin(@ApiParam("网页登录返回的授权码") @RequestParam("code") String code){
+    public AjaxResult<LoginResult> webLogin(@ApiParam("网页登录返回的授权码") @RequestParam("code") String code) {
         LoginResult loginResult = loginService.loginHandler(code, LoginTypeEnum.BY_WEB.getState());
-        if (StringUtils.isNotBlank(loginResult.getErrorMsg())){
+        if (StringUtils.isNotBlank(loginResult.getErrorMsg())) {
             return AjaxResult.error(loginResult.getErrorMsg());
         }
         return AjaxResult.success(loginResult);
@@ -85,7 +87,7 @@ public class SysLoginController {
     @ApiOperation("三方扫码登录")
     @GetMapping("/qrCodeLogin3rd")
     public AjaxResult<LoginResult> qrCodeLogin3rd(@ApiParam("扫码登录返回的授权码") @RequestParam("authCode") String authCode) {
-        LoginResult loginResult = loginService.loginHandler(authCode,LoginTypeEnum.BY_THIRD_SCAN.getState());
+        LoginResult loginResult = loginService.loginHandler(authCode, LoginTypeEnum.BY_THIRD_SCAN.getState());
         loginResult.setLoginUser(null);
         if (StringUtils.isNotBlank(loginResult.getErrorMsg())) {
             return AjaxResult.error(loginResult.getErrorMsg());
@@ -96,9 +98,9 @@ public class SysLoginController {
     @ApiOperation("登录处理器（扫码、网页登录）")
     @GetMapping("/loginHandler")
     public AjaxResult<LoginResult> loginHandler(@ApiParam("登录返回的授权码") @RequestParam("code") String code,
-                                                @ApiParam("登录返回的自定义state 内部扫码：INTERNAL_SCAN_LOGIN 三方扫码：THIRD_SCAN_LOGIN 网页登录：WEB_LOGIN ") @RequestParam("state") String state){
+                                                @ApiParam("登录返回的自定义state 内部扫码：INTERNAL_SCAN_LOGIN 三方扫码：THIRD_SCAN_LOGIN 网页登录：WEB_LOGIN ") @RequestParam("state") String state) {
         LoginResult loginResult = loginService.loginHandler(code, state);
-        if (StringUtils.isNotBlank(loginResult.getErrorMsg())){
+        if (StringUtils.isNotBlank(loginResult.getErrorMsg())) {
             return AjaxResult.error(loginResult.getErrorMsg());
         }
         return AjaxResult.success(loginResult);
@@ -114,7 +116,7 @@ public class SysLoginController {
         Set<String> permissions = permissionService.getMenuPermission(loginUser);
         // 刷新TOKEN
         LoginTokenService.refreshDataScope();
-        return AjaxResult.success(new LoginUserVO(loginUser,(HashSet)roles,(HashSet)permissions));
+        return AjaxResult.success(new LoginUserVO(loginUser, (HashSet) roles, (HashSet) permissions));
     }
 
     @ApiOperation("获取路由信息")
@@ -123,7 +125,57 @@ public class SysLoginController {
         LoginUser loginUser = tokenService.getLoginUser(ServletUtils.getRequest());
         // 用户信息
         List<SysMenu> menus = menuService.selectMenuTreeByLoginUser(loginUser);
-        return AjaxResult.success(menuService.buildMenus(menus));
+        List<RouterVo> routerVos = menuService.buildMenus(menus);
+        delMenuWithNoChild(routerVos);
+        return AjaxResult.success(routerVos);
+    }
+
+    private void delMenuWithNoChild(List<RouterVo> routerVos) {
+        for (Iterator<RouterVo> it = routerVos.iterator(); it.hasNext(); ) {
+            RouterVo vo = it.next();
+            if (CollectionUtils.isEmpty(vo.getChildren()) || isAllPageChildren(vo.getChildren())) {
+                // 判断是否有孩子节点 且不是横栏的目录（比如客户中心）
+                if (isMenu(vo) &&  !Boolean.TRUE.equals(vo.getIsFrameMenu())) {
+                    // 删除该节点
+                    it.remove();
+                }
+                if(CollectionUtils.isNotEmpty(vo.getChildren())) {
+                    delMenuWithNoChild(vo.getChildren());
+                }
+            } else {
+                delMenuWithNoChild(vo.getChildren());
+            }
+        }
+    }
+
+    /**
+     * 子节点全部是页面
+     *
+     * @param children 子节点列表
+     * @return true or false
+     */
+    private boolean isAllPageChildren(List<RouterVo> children) {
+        if(CollectionUtils.isEmpty(children)) {
+            return false ;
+        }
+        boolean isAllPageChildren = true;
+        for(RouterVo vo : children) {
+            if(Boolean.FALSE.equals(vo.getIsPage()) ) {
+                return false ;
+            }
+        }
+        return isAllPageChildren;
+    }
+
+    /**
+     * 判断是否是菜单节点
+     *
+     * @param vo vo
+     * @return true or false
+     */
+    private boolean isMenu(RouterVo vo) {
+        String noDirect = "noRedirect";
+        return noDirect.equals(vo.getRedirect());
     }
 
     @ApiOperation("获取内部应用登录二维码构造相关参数")
@@ -132,8 +184,6 @@ public class SysLoginController {
         WeCorpAccount validWeCorpAccount = iWxCorpAccountService.findValidWeCorpAccount();
         return AjaxResult.success(new WeInternalPreLoginParamVO(validWeCorpAccount));
     }
-
-
 
 
 }

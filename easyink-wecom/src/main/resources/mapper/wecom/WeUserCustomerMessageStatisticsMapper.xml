@@ -1,0 +1,330 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.easyink.wecom.mapper.WeUserCustomerMessageStatisticsMapper">
+
+    <resultMap type="com.easyink.wecom.domain.entity.WeUserCustomerMessageStatistics" id="WeUserCustomerMessageStatisticsMap">
+        <result property="id" column="id" jdbcType="INTEGER"/>
+        <result property="corpId" column="corp_id" jdbcType="VARCHAR"/>
+        <result property="userId" column="user_id" jdbcType="VARCHAR"/>
+        <result property="externalUserid" column="external_userid" jdbcType="VARCHAR"/>
+        <result property="userSendMessageCnt" column="user_send_message_cnt" jdbcType="INTEGER"/>
+        <result property="externalUserSendMessageCnt" column="external_user_send_message_cnt" jdbcType="INTEGER"/>
+        <result property="addTime" column="add_time" jdbcType="TIMESTAMP"/>
+        <result property="sendTime" column="send_time" jdbcType="TIMESTAMP"/>
+        <result property="firstReplyTimeIntervalAlterReceive" column="first_reply_time_interval_alter_receive" jdbcType="INTEGER"/>
+        <result property="threeRoundsDialogueFlag" column="three_rounds_dialogue_flag" jdbcType="INTEGER"/>
+        <result property="userActiveDialogue" column="user_active_dialogue" jdbcType="INTEGER"/>
+    </resultMap>
+
+    <sql id="searchTime">
+        AND wucms.external_userid != '-1'
+        <if test="beginTime !=null">
+            AND wucms.send_time &gt;= #{beginTime}
+        </if>
+        <if test="endTime !=null">
+            AND wucms.send_time &lt;= #{endTime}
+        </if>
+    </sql>
+    <!--获取员工服务-数据总览-员工维度-->
+    <select id="getUserServiceOfUser" resultType="com.easyink.wecom.domain.vo.statistics.UserServiceVO">
+        SELECT
+            ucms.user_id,
+            wu.`user_name`,
+            wd.`name` departmentName,
+            wu.`head_image_url` userHeadImage,
+            IFNULL((SELECT COUNT(wucms.external_userid)
+                FROM we_user_customer_message_statistics wucms
+                WHERE wucms.corp_id = ucms.corp_id
+                AND wucms.user_id = ucms.user_id
+                <include refid="searchTime"/>
+                    ), 0) AS chatTotal,
+            IFNULL(SUM(ucms.user_send_message_cnt), 0) AS sendContactCnt,
+            IF(IFNULL(COUNT(ucms.external_userid), 0) = 0, 0, CAST(IFNULL(SUM(ucms.user_send_message_cnt), 0) *1./ COUNT(ucms.external_userid) as decimal(8,2))) AS averageChatTotal,
+            IFNULL((SELECT
+                        IF(IFNULL(COUNT(wucms.external_userid), 0)=0,0,CAST(IFNULL(SUM(wucms.first_reply_time_interval_alter_receive), 0) *1./ COUNT(wucms.external_userid) as decimal(8,2)))
+                    FROM we_user_customer_message_statistics wucms
+                    WHERE wucms.corp_id = ucms.corp_id
+                      AND wucms.user_id = ucms.user_id
+                      AND wucms.user_active_dialogue = 0
+                    <include refid="searchTime"/>
+                    ), 0) AS averageFirstReplyDuration,
+            IFNULL((SELECT COUNT(wucms.id)
+                    FROM we_user_customer_message_statistics wucms
+                    WHERE wucms.corp_id = ucms.corp_id
+                      AND wucms.user_id = ucms.user_id
+                      AND wucms.user_active_dialogue = 0
+                    <include refid="searchTime"/>
+                    ),0) AS customerActiveStartContactCnt,
+            IFNULL((SELECT COUNT(wucms.id)
+                    FROM we_user_customer_message_statistics wucms
+                    WHERE wucms.corp_id = ucms.corp_id
+                      AND wucms.user_id = ucms.user_id
+                      AND wucms.user_send_message_cnt != 0
+                      AND wucms.user_active_dialogue = 0
+                    <include refid="searchTime"/>
+                    ), 0) AS userReplyContactCnt,
+            <if test="replyRateSort != null and replyRateSort != ''">
+                IF(IFNULL((SELECT COUNT(wucms.external_userid)
+                           FROM we_user_customer_message_statistics wucms
+                           WHERE wucms.corp_id = ucms.corp_id
+                             AND wucms.user_id = ucms.user_id
+                             AND wucms.user_active_dialogue = 1
+                    <include refid="searchTime"/>
+                    ),0) = 0, 0,
+                CAST(IFNULL((SELECT COUNT(wucms.external_userid)
+                             FROM we_user_customer_message_statistics wucms
+                             WHERE wucms.corp_id = ucms.corp_id
+                               AND wucms.user_id = ucms.user_id
+                               AND wucms.user_active_dialogue = 1
+                    <include refid="searchTime"/>
+                    ),0) * 1./
+                (SELECT COUNT(wucms.external_userid)
+                 FROM we_user_customer_message_statistics wucms
+                 WHERE wucms.corp_id = ucms.corp_id
+                   AND wucms.user_id = ucms.user_id
+                   AND wucms.user_active_dialogue = 1
+                <include refid="searchTime"/>
+                ) as decimal(8,2))) AS replyRate,
+            </if>
+            <if test="effectiveCommunicationRateSort != null and effectiveCommunicationRateSort != ''">
+                IF(IFNULL(COUNT(ucms.external_userid), 0) = 0, 0, CAST(IFNULL(SUM(three_rounds_dialogue_flag),0) *1./ COUNT(ucms.external_userid) as decimal(8,2))) AS effectiveCommunicationRate,
+            </if>
+            IFNULL(SUM(ucms.three_rounds_dialogue_flag),0) AS effectiveCommunicationCustomerCnt
+        FROM we_user_customer_message_statistics ucms
+                 LEFT JOIN we_user wu ON wu.user_id = ucms.user_id AND wu.corp_id = ucms.corp_id
+                 LEFT JOIN we_department wd ON wd.id = wu.main_department AND wd.corp_id = wu.corp_id
+        WHERE
+            ucms.corp_id = #{corpId}
+            ${params.dataScope}
+            AND wu.`user_name` IS NOT NULL
+            <if test="beginTime !=null">
+                AND ucms.send_time &gt;= #{beginTime}
+            </if>
+            <if test="endTime !=null">
+                AND ucms.send_time &lt;= #{endTime}
+            </if>
+            <if test="userIds != null and userIds.size() > 0">
+                AND ucms.user_id IN
+                <foreach collection="userIds" item="userId" open="(" separator="," close=")">
+                    #{userId}
+                </foreach>
+            </if>
+        GROUP BY ucms.user_id
+        <if test="chatTotalSort != null and chatTotalSort != ''">
+            ORDER BY chatTotal #{chatTotalSort}
+        </if>
+        <if test="sendContactCntSort != null and sendContactCntSort != ''">
+            ORDER BY sendContactCnt #{sendContactCntSort}
+        </if>
+        <if test="averageChatTotalSort != null and averageChatTotalSort != ''">
+            ORDER BY averageChatTotal #{averageChatTotalSort}
+        </if>
+        <if test="averageFirstReplyDurationSort != null and averageFirstReplyDurationSort != ''">
+            ORDER BY averageFirstReplyDuration #{averageFirstReplyDurationSort}
+        </if>
+        <if test="replyRateSort != null and replyRateSort != ''">
+            ORDER BY replyRate #{replyRateSort}
+        </if>
+        <if test="effectiveCommunicationCustomerCntSort != null and effectiveCommunicationCustomerCntSort != ''">
+            ORDER BY effectiveCommunicationCustomerCnt #{effectiveCommunicationCustomerCntSort}
+        </if>
+        <if test="effectiveCommunicationRateSort != null and effectiveCommunicationRateSort != ''">
+            ORDER BY effectiveCommunicationRate #{effectiveCommunicationRateSort}
+        </if>
+    </select>
+
+    <!--获取员工服务-数据总览-子查询条件-->
+    <sql id="getUserServiceOfTotalCondition">
+        AND wucms.external_userid != '-1'
+        <if test="beginTime !=null">
+            AND wucms.send_time &gt;= #{beginTime}
+        </if>
+        <if test="endTime !=null">
+            AND wucms.send_time &lt;= #{endTime}
+        </if>
+        <if test="userIds != null and userIds.size() > 0">
+            AND wucms.user_id IN
+            <foreach collection="userIds" item="userId" open="(" separator="," close=")">
+                #{userId}
+            </foreach>
+        </if>
+    </sql>
+    <!--获取员工服务-数据总览-->
+    <select id="getUserServiceOfTotal" resultType="com.easyink.wecom.domain.vo.statistics.UserServiceVO">
+        SELECT
+            IFNULL((SELECT COUNT(wucms.external_userid)
+                    FROM we_user_customer_message_statistics wucms
+            LEFT JOIN we_user wu ON wu.corp_id = wucms.corp_id AND wu.user_id = wucms.user_id
+            WHERE wucms.corp_id = #{corpId}
+            ${params.dataScope}
+            <include refid="getUserServiceOfTotalCondition"/>
+            ), 0) AS chatTotal,
+            IFNULL(SUM(ucms.user_send_message_cnt), 0) AS sendContactCnt,
+            IFNULL((SUM(ucms.user_send_message_cnt) / COUNT(ucms.external_userid)), 0) AS averageChatTotal,
+            IFNULL((SELECT
+                        IF(IFNULL(COUNT(wucms.external_userid), 0)=0,0, CAST(IFNULL(SUM(wucms.first_reply_time_interval_alter_receive), 0) *1./ COUNT(wucms.external_userid) as decimal(8,2)))
+                    FROM we_user_customer_message_statistics wucms
+                    LEFT JOIN we_user wu ON wu.corp_id = wucms.corp_id AND wu.user_id = wucms.user_id
+                    WHERE wucms.corp_id = #{corpId} AND wucms.user_active_dialogue = 0
+                    ${params.dataScope}
+                    <include refid="getUserServiceOfTotalCondition"/>
+                    ), 0) AS averageFirstReplyDuration,
+            IFNULL((SELECT COUNT(wucms.id)
+                    FROM we_user_customer_message_statistics wucms
+                    LEFT JOIN we_user wu ON wu.corp_id = wucms.corp_id AND wu.user_id = wucms.user_id
+                    WHERE wucms.corp_id = #{corpId}
+                    ${params.dataScope}
+                      AND wucms.user_active_dialogue = 0
+                    <include refid="getUserServiceOfTotalCondition"/>
+                    ),0) AS customerActiveStartContactCnt,
+            IFNULL((SELECT COUNT(wucms.id)
+                    FROM we_user_customer_message_statistics wucms
+                    LEFT JOIN we_user wu ON wu.corp_id = wucms.corp_id AND wu.user_id = wucms.user_id
+                    WHERE wucms.corp_id = #{corpId}
+                      AND wucms.user_active_dialogue = 0
+                      AND wucms.user_send_message_cnt != 0
+                    ${params.dataScope}
+                    <include refid="getUserServiceOfTotalCondition"/>
+                    ), 0) AS userReplyContactCnt,
+            IFNULL(SUM(ucms.three_rounds_dialogue_flag),0) AS effectiveCommunicationCustomerCnt
+        FROM we_user_customer_message_statistics ucms
+        LEFT JOIN we_user wu ON wu.corp_id = ucms.corp_id AND wu.user_id = ucms.user_id
+        WHERE
+            ucms.corp_id = #{corpId}
+        ${params.dataScope}
+            <if test="beginTime !=null">
+                AND ucms.send_time &gt;= #{beginTime}
+            </if>
+            <if test="endTime !=null">
+                AND ucms.send_time &lt;= #{endTime}
+            </if>
+            <if test="userIds != null and userIds.size() > 0">
+                AND ucms.user_id IN
+                <foreach collection="userIds" item="userId" open="(" separator="," close=")">
+                    #{userId}
+                </foreach>
+            </if>
+    </select>
+
+    <!--客户活跃度查询条件-->
+    <sql id="searchCondition" >
+        ucms.corp_id = #{corpId}
+        AND ucms.external_userid != '-1'
+        <if test="userIds != null and userIds.size() > 0">
+            AND ucms.user_id IN
+            <foreach collection="userIds" item="userId" open="(" separator="," close=")">
+                #{userId}
+            </foreach>
+        </if>
+        <if test="beginTime !=null">
+            AND ucms.add_time &gt;= #{beginTime}
+        </if>
+        <if test="endTime !=null">
+            AND ucms.add_time &lt;= #{endTime}
+        </if>
+        <if test="sendStartTime !=null">
+            AND ucms.send_time &gt;= #{sendStartTime}
+        </if>
+        <if test="sendEndTime !=null">
+            AND ucms.send_time &lt;= #{sendEndTime}
+        </if>
+    </sql>
+
+    <!--获取客户活跃度-日期维度-->
+    <select id="getCustomerActivityOfDate"
+            resultType="com.easyink.wecom.domain.vo.statistics.CustomerActivityOfDateVO">
+        SELECT
+            ucms.send_time AS time,
+            IFNULL(SUM(ucms.user_send_message_cnt), 0) AS userSendMessageCnt,
+            IFNULL(SUM(ucms.external_user_send_message_cnt), 0) AS customerSendMessageCnt,
+            IFNULL(COUNT(DISTINCT ucms.external_userid), 0) AS chatCustomerCnt
+        FROM we_user_customer_message_statistics ucms
+            LEFT JOIN we_user wu ON wu.corp_id = ucms.corp_id AND wu.user_id = ucms.user_id
+        WHERE
+            <include refid="searchCondition"/>
+        ${params.dataScope}
+        GROUP BY ucms.send_time
+    </select>
+
+    <!--获取客户活跃度-趋势图-->
+    <select id="getCustomerActivityOfDateTrend"
+            resultType="com.easyink.wecom.domain.vo.statistics.SendMessageCntVO">
+        SELECT
+            ucms.send_time AS time,
+            IFNULL(SUM(ucms.user_send_message_cnt), 0) AS userSendMessageCnt,
+            IFNULL(SUM(ucms.external_user_send_message_cnt), 0) AS customerSendMessageCnt
+        FROM we_user_customer_message_statistics ucms
+            LEFT JOIN we_user wu ON wu.corp_id = ucms.corp_id AND wu.user_id = ucms.user_id
+        WHERE
+            <include refid="searchCondition"/>
+        ${params.dataScope}
+        GROUP BY ucms.send_time
+    </select>
+
+    <!--获取客户活跃度-员工维度-->
+    <select id="getCustomerActivityOfUser"
+            resultType="com.easyink.wecom.domain.vo.statistics.CustomerActivityOfUserVO">
+        SELECT
+            ucms.user_id,
+            wu.`user_name`,
+            wd.`name` departmentName,
+            wu.`head_image_url` userHeadImage,
+            IFNULL(SUM(ucms.user_send_message_cnt), 0) AS userSendMessageCnt,
+            IFNULL(SUM(ucms.external_user_send_message_cnt), 0) AS customerSendMessageCnt,
+            IFNULL(COUNT(DISTINCT ucms.external_userid), 0) AS chatCustomerCnt
+        FROM we_user_customer_message_statistics ucms
+                 LEFT JOIN we_user wu ON wu.user_id = ucms.user_id AND wu.corp_id = ucms.corp_id
+                 LEFT JOIN we_department wd ON wd.id = wu.main_department AND wd.corp_id = wu.corp_id
+        WHERE
+            <include refid="searchCondition"/>
+        ${params.dataScope}
+        GROUP BY ucms.user_id
+        ORDER BY customerSendMessageCnt
+    </select>
+
+    <!--获取客户活跃度-客户维度-->
+    <select id="getCustomerActivityOfCustomer"
+            resultType="com.easyink.wecom.domain.vo.statistics.CustomerActivityOfCustomerVO">
+        SELECT
+            ucms.external_userid,
+            wc.`name` externalUserName,
+            wc.`avatar` externalUserHeadImage,
+            ucms.user_id,
+            wu.`user_name`,
+            wd.`name` departmentName,
+            IFNULL(SUM(ucms.user_send_message_cnt), 0) AS userSendMessageCnt,
+            IFNULL(SUM(ucms.external_user_send_message_cnt), 0) AS customerSendMessageCnt
+        FROM we_user_customer_message_statistics ucms
+            LEFT JOIN we_customer wc ON wc.`external_userid` = ucms.external_userid AND wc.corp_id = ucms.corp_id
+            LEFT JOIN we_user wu ON wu.user_id = ucms.user_id AND wu.corp_id = ucms.corp_id
+            LEFT JOIN we_department wd ON wd.id = wu.main_department AND wd.corp_id = wu.corp_id
+        WHERE
+            <include refid="searchCondition"/>
+        ${params.dataScope}
+        GROUP BY ucms.external_userid
+    </select>
+
+    <!--获取客户活跃度-员工维度-详情-->
+    <select id="getCustomerActivityOfUserDetail"
+            resultType="com.easyink.wecom.domain.vo.statistics.CustomerActivityOfCustomerVO">
+        SELECT
+            ucms.external_userid,
+            wc.`name` externalUserName,
+            wc.`avatar` externalUserHeadImage,
+            IFNULL(SUM(user_send_message_cnt), 0) AS userSendMessageCnt,
+            IFNULL(SUM(external_user_send_message_cnt), 0) AS customerSendMessageCnt
+        FROM we_user_customer_message_statistics ucms
+                 LEFT JOIN we_customer wc ON wc.`external_userid` = ucms.external_userid AND wc.corp_id = ucms.corp_id
+        LEFT JOIN we_user wu ON wu.corp_id = ucms.corp_id AND wu.user_id = ucms.user_id
+        WHERE
+            <include refid="searchCondition"/>
+            <if test="customerName != null and customerName != ''">
+                <bind name="likeCustomerName" value="'%' + customerName + '%'"/>
+                AND wc.`name` LIKE #{likeCustomerName}
+            </if>
+        ${params.dataScope}
+        GROUP BY ucms.external_userid
+    </select>
+
+</mapper>
+

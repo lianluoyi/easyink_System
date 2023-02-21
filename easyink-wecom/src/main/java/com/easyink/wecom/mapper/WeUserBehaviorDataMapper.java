@@ -3,7 +3,10 @@ package com.easyink.wecom.mapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.easyink.wecom.domain.WeUserBehaviorData;
 import com.easyink.wecom.domain.dto.WePageCountDTO;
+import com.easyink.wecom.domain.dto.statistics.CustomerOverviewDTO;
+import com.easyink.wecom.domain.dto.statistics.StatisticsDTO;
 import com.easyink.wecom.domain.query.WePageStateQuery;
+import com.easyink.wecom.domain.vo.statistics.CustomerOverviewVO;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 
@@ -52,4 +55,27 @@ public interface WeUserBehaviorDataMapper extends BaseMapper<WeUserBehaviorData>
      */
     List<WePageCountDTO> getMonthCountData(WePageStateQuery wePageStateQuery);
 
+    /**
+     * 获取群聊总数和 群成员总数的每周数据统计
+     *
+     * @param wePageStateQuery 入参
+     * @return
+     */
+    List<WePageCountDTO> getGroupCntWeekDate(WePageStateQuery wePageStateQuery);
+
+    /**
+     * 获取客户概况-数据总览
+     *
+     * @param dto   {@link StatisticsDTO}
+     * @return
+     */
+    CustomerOverviewVO getCustomerOverViewOfTotal(StatisticsDTO dto);
+
+    /**
+     * 获取客户概况-数据总览-员工维度
+     *
+     * @param dto   {@link CustomerOverviewDTO}
+     * @return
+     */
+    List<CustomerOverviewVO> getCustomerOverViewOfUser(CustomerOverviewDTO dto);
 }

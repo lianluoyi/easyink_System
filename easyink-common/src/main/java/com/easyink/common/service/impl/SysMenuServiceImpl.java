@@ -17,6 +17,7 @@ import com.easyink.common.mapper.SysMenuMapper;
 import com.easyink.common.mapper.SysRoleMenuMapper;
 import com.easyink.common.service.ISysMenuService;
 import com.easyink.common.utils.StringUtils;
+import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -131,6 +132,8 @@ public class SysMenuServiceImpl implements ISysMenuService {
         return menuMapper.selectMenuListByRoleId(roleId);
     }
 
+    private static List<Long> frameMenuId = Lists.newArrayList(2188L, 2001L, 2229L, 2282L, 2312L, 2079L, 1L, 2L);
+
     /**
      * 构建前端路由所需要的菜单
      *
@@ -142,8 +145,10 @@ public class SysMenuServiceImpl implements ISysMenuService {
         List<RouterVo> routers = new LinkedList<>();
         for (SysMenu menu : menus) {
             // 如果是三方应用需要屏蔽一些菜单
-            if (ruoYiConfig.isThirdServer() && isBanMenu(menu)) {
-                continue;
+            if (ruoYiConfig.isThirdServer()){
+                if (isBanMenu(menu) || needFilterMenu(menu)) {
+                    continue;
+                }
             }
             RouterVo router = new RouterVo();
             router.setHidden("1".equals(menu.getVisible()));
@@ -151,6 +156,8 @@ public class SysMenuServiceImpl implements ISysMenuService {
             router.setPath(getRouterPath(menu));
             router.setComponent(getComponent(menu));
             router.setMeta(new MetaVo(menu.getMenuName(), menu.getIcon()));
+            router.setIsPage(UserConstants.TYPE_DIR.equals(menu.getMenuType()));
+            router.setIsFrameMenu(frameMenuId.contains(menu.getMenuId()));
             List<SysMenu> cMenus = menu.getChildren();
             if (!cMenus.isEmpty() && CollUtil.isNotEmpty(cMenus) && UserConstants.TYPE_DIR.equals(menu.getMenuType())) {
                 router.setAlwaysShow(true);
@@ -169,6 +176,23 @@ public class SysMenuServiceImpl implements ISysMenuService {
             routers.add(router);
         }
         return routers;
+    }
+
+    /**
+     * 过滤菜单 如果一个二级菜单没有子节点 或 只剩一个节点 且 该节点被屏蔽
+     *
+     * @param menu  菜单
+     * @return
+     */
+    private boolean needFilterMenu(SysMenu menu) {
+        if(!UserConstants.TYPE_DIR.equals(menu.getMenuType())) {
+            return false;
+        }
+        // 长度是1
+        int one = 1;
+        int firstIndex = 0;
+        // 如果一个二级菜单没有子节点 或 只剩一个节点 且 该节点被屏蔽
+        return menu.getChildren().isEmpty() || (menu.getChildren().size() == one && isBanMenu(menu.getChildren().get(firstIndex)));
     }
 
     /**

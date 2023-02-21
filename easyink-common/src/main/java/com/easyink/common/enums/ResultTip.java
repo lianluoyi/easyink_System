@@ -31,10 +31,13 @@ public enum ResultTip {
     TIP_GENERAL_NOT_FOUND(404, "资源，服务未找到!"),
     TIP_GENERAL_FORCE_LOGOUT(405, "你已被管理员强制退出，请重新登录或联系管理员"),
     TIP_GENERAL_CORP_ID_CHANGED(406, "企业信息变更，为保证系统正常使用，请重新登录"),
+    TIP_NOT_ALLOW_UPLOAD_FILE_TYPE(407,"不支持上传该文件"),
+    TIP_FILE_NAME_IS_NULL(408,"没有上传文件名"),
     TIP_GENERAL_ERROR(500, "服务异常，请联系客服或技术人员"),
 
     //系统自定义业务返回码
     TIP_ATTRIBUTED(501, "有员工在使用该角色，不可删除"),
+    TIP_PARAM_MISSING(503, "参数缺失"),
     TIP_NOT_AVAILABLE_CONFIG_FOUND(503, "没有可用的企业微信配置，请联系管理员"),
     TIP_MISS_CORP_ID(600, "获取企业信息异常，请重新登录或联系管理员配置企业ID"),
     TIP_MISS_APPID(601, "获取应用信息异常，请重新登录或联系管理员配置应用ID"),
@@ -155,7 +158,7 @@ public enum ResultTip {
     TIP_MEDIA_TYPE_ERROR(2084,"媒体类型出错"),
 
     //员工模块错误码
-    TIP_PARAM_MISSING(3001, "请填写完整的员工信息"),
+    TIP_PARAM_NAME_MISSING(3001, "请填写完整的员工信息"),
     TIP_ERROR_UPLOAD_HEAD_IMG(3002, "上传头像失败"),
     TIP_USER_NOT_ACTIVE(3003, "员工不存在或者未激活"),
     TIP_HANDOVER_USER_ERROR(3004, "原跟进成员不存在或者错误"),
@@ -193,6 +196,30 @@ public enum ResultTip {
     TIP_DELETE_TAG_NOT_PERMISSIONS(4025, "无权限操作标签，若标签不是在本系统创建，请前往企微后台操作"),
     TIP_FAIL_TO_GET_CUSTOMER_INFO(4026,"无法获取客户详情"),
 
+    // 动态表单 5000开始
+    TIP_GROUP_FORM_SOURCE_TYPE_ERROR(50001,"表单分组类别错误"),
+    TIP_GROUP_FORM_NAME_IS_NOT_BLANK(50002,"表单分组名称不能为空"),
+    TIP_GROUP_FORM_NAME_DUPLICATE(50003,"分组名称不能重复"),
+    TIP_GROUP_FORM_ID_IS_NOT_NULL(50004,"分组id不能为空"),
+    TIP_GROUP_FORM_NOT_EXIST(50005,"分组不存在"),
+    TIP_GROUP_FORM_CHANGE_SORT_ERROR(50006,"只能修改同级别同类型下的分组排序"),
+    TIP_FORM_HEAD_IMAGE_IS_NOT_BLANK(50007,"头图不能为空"),
+    TIP_FORM_DESC_IS_NOT_BLANK(50008,"表单说明不能为空"),
+    TIP_FORM_CUSTOM_DATE_IS_NOT_NULL(50009,"自定义日期不能为空"),
+    TIP_FORM_WECHAT_PUBLIC_PLATFORM_IS_NOT_NULL(50010,"请选择公众号"),
+    TIP_FORM_JUMP_RESULT_PARAMS_ERROR(50011,"跳转结果参数异常"),
+    TIP_FORM_JUMP_LINK_PARAMS_ERROR(50012,"跳转链接参数异常"),
+    TIP_FORM_CUSTOMER_LABEL_SETTING_IS_NOT_NULL(50013,"客户标签设置不能为空"),
+    TIP_FORM_NAME_IS_NOT_BLANK(50014,"表单名称不能为空"),
+    TIP_FORM_NAME_EXIST(50015,"表单名称不能重复"),
+    TIP_FORM_ID_IS_NOT_NULL(50016,"请选择需要修改的表单"),
+    TIP_FORM_ID_LIST_IS_NOT_NULL(50017,"请选择需要删除的的表单"),
+    TIP_FORM_IS_NOT_EXIST(50018,"表单不存在"),
+    TIP_FORM_USE_RECORD_IS_NOT_EXIST(50019, "表单使用使用记录不存在"),
+    TIP_GET_FORM_ERROR(50020, "获取表单失败"),
+    TIP_GET_MIDDLE_PAGE_DOMAIN_ERROR(50021, "获取中间页域名失败"),
+    TIP_FORM_OFFICE_ACCOUNT_IS_NULL(50022, "链接生成失败，请检查公众号配置是否正确"),
+
     //三方错误码
     TIP_MISSING_LOGIN_INFO(7000, "所在企业未开通「壹鸽快递工单助手」，请联系管理员"),
     TIP_UN_USE_AI_SYSTEM(7001, "您没有访问权限，请联系管理员"),
@@ -216,14 +243,14 @@ public enum ResultTip {
     TIP_WECHAT_OPEN_OFFICIAL_NO_DOMAIN(9005,"未配置公众号域名"),
     TIP_ERROR_GET_UNION_ID(9007,"获取unionId异常"),
     TIP_OPEN_ID_CANNOT_BE_NULL (9008,"缺失openId"),
-    TIP_CANNOT_FIND_USER_BY_UNION_ID(9009,"无法通过union_id匹配到员工,请重新同步员工后再重试"),
+    TIP_CANNOT_FIND_USER_BY_UNION_ID(9009,"无法通过union_id匹配到客户,请重新同步客户后再重试"),
     ;
 
     @Getter
-    private Integer code;
+    private final Integer code;
 
     @Getter
-    private String tipMsg;
+    private final String tipMsg;
 
     ResultTip(Integer code, String tipMsg) {
         this.code = code;

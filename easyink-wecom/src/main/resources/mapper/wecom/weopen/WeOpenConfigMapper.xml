@@ -22,6 +22,24 @@
             <if test="officialAccountDomain != null">
                 `official_account_domain`,
             </if>
+            <if test="serviceTypeInfo != null">
+                `service_type_info`,
+            </if>
+            <if test="nickName != null">
+                `nick_name`,
+            </if>
+            <if test="principalName != null">
+                `principal_name`,
+            </if>
+            <if test="headImg != null">
+                `head_img`,
+            </if>
+            <if test="authorizerAccessToken != null">
+                `authorizer_access_token`,
+            </if>
+            <if test="authorizerRefreshToken != null">
+                `authorizer_refresh_token`,
+            </if>
             <if test="createBy != null">
                 create_by,
             </if>
@@ -48,6 +66,24 @@
             <if test="officialAccountDomain != null">
                 #{officialAccountDomain},
             </if>
+            <if test="serviceTypeInfo != null">
+                #{serviceTypeInfo},
+            </if>
+            <if test="nickName != null">
+                #{nickName},
+            </if>
+            <if test="principalName != null">
+                #{principalName},
+            </if>
+            <if test="headImg != null">
+                #{headImg},
+            </if>
+            <if test="authorizerAccessToken != null">
+                #{authorizerAccessToken},
+            </if>
+            <if test="authorizerRefreshToken != null">
+                #{authorizerRefreshToken},
+            </if>
             <if test="createBy != null">
                 #{createBy},
             </if>
@@ -71,6 +107,27 @@
             <if test="officialAccountDomain != null">
                 `official_account_domain` = VALUES(`official_account_domain`),
             </if>
+            <if test="serviceTypeInfo != null">
+                service_type_info = VALUES(service_type_info),
+            </if>
+            <if test="nickName != null">
+                nick_name = VALUES(nick_name),
+            </if>
+            <if test="principalName != null">
+                principal_name = VALUES(principal_name),
+            </if>
+            <if test="headImg != null">
+                head_img = VALUES(head_img),
+            </if>
+            <if test="authorizerAccessToken != null">
+                authorizer_access_token = VALUES(authorizer_access_token),
+            </if>
+            <if test="authorizerRefreshToken != null">
+                authorizer_refresh_token = VALUES(authorizer_refresh_token),
+            </if>
+            <if test="createBy != null">
+                create_by = VALUES(create_by),
+            </if>
             <if test="updateBy != null">
                 update_by =VALUES(update_by),
             </if>
@@ -79,4 +136,20 @@
             </if>
         </trim>
     </insert>
+
+    <!--获取微信公众号配置-->
+    <select id="getConfigList" resultType="com.easyink.wecom.domain.vo.WeOpenConfigVO">
+        SELECT
+            official_account_app_id,
+            official_account_app_secret,
+            official_account_domain,
+            service_type_info,
+            nick_name,
+            principal_name,
+            head_img,
+            create_time
+        FROM we_open_config
+        WHERE `corp_id` = #{corpId}
+        ORDER BY create_time
+    </select>
 </mapper>

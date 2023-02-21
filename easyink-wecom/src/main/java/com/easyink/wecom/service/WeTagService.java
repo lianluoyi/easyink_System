@@ -2,6 +2,7 @@ package com.easyink.wecom.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.easyink.wecom.domain.WeTag;
+import com.easyink.wecom.domain.vo.autotag.TagInfoVO;
 
 import java.util.List;
 
@@ -15,6 +16,7 @@ public interface WeTagService extends IService<WeTag> {
 
     /**
      * 批量修改客户数据
+     *
      * @param list
      */
     void updatWeTagsById(List<WeTag> list);
@@ -36,6 +38,7 @@ public interface WeTagService extends IService<WeTag> {
 
     /**
      * 根据标签id删除标签
+     *
      * @param groupIds 标签id
      * @return
      */
@@ -51,13 +54,23 @@ public interface WeTagService extends IService<WeTag> {
 
     /**
      * 感觉标签id删除标签
+     *
      * @param tagId 标签id
      */
     void deleteTag(String tagId, String corpId);
 
     /**
      * 根据标签id修改标签
+     *
      * @param tagId 标签id
      */
     void updateTag(String tagId, String corpId);
+
+    /**
+     * 根据标签ids查询标签详情
+     *
+     * @param collect 标签id列表
+     * @return 标签基础详情列表
+     */
+    List<TagInfoVO> selectTagByIds(List<String> collect);
 }
