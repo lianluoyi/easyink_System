@@ -4,6 +4,7 @@ import cn.hutool.core.collection.CollUtil;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.easyink.common.constant.GenConstants;
 import com.easyink.common.constant.GroupConstants;
 import com.easyink.common.constant.WeConstans;
 import com.easyink.common.core.domain.ConversationArchiveQuery;
@@ -329,6 +330,38 @@ public class WeConversationArchiveServiceImpl implements WeConversationArchiveSe
         return pageInfo;
     }
 
+    @Override
+    public PageInfo<ConversationArchiveVO> getChatList(ConversationArchiveQuery query, Integer pageNum, Integer pageSize) {
+        if (ObjectUtils.isEmpty(query) || StringUtils.isEmpty(query.getCorpId())) {
+            return null;
+        }
+        log.info("查询员工:{}的会话数据数据: roomid:{},corpId:{}", query.getFromId(), query.getRoomId(), query.getCorpId());
+        SearchSourceBuilder builder = new SearchSourceBuilder();
+        pageNum = pageNum == null ? 1 : pageNum;
+        pageSize = pageSize == null ? 10 : pageSize;
+        int from = (pageNum - 1) * pageSize;
+        builder.size(pageSize);
+        builder.from(from);
+        builder.sort(WeConstans.MSG_TIME, SortOrder.ASC);
+
+        BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
+        boolQueryBuilder.mustNot(QueryBuilders.termQuery(WeConstans.MSG_TYPE, "agree"))
+                .mustNot(QueryBuilders.termQuery(WeConstans.MSG_TYPE, "disagree"));
+        //时间范围查询
+        if (StringUtils.isNotEmpty(query.getBeginTime()) && StringUtils.isNotEmpty(query.getEndTime())) {
+            Date beginTime = DateUtils.dateTime(DateUtils.YYYY_MM_DD_HH_MM, query.getBeginTime());
+            Date endTime = DateUtils.dateTime(DateUtils.YYYY_MM_DD_HH_MM, query.getEndTime());
+            boolQueryBuilder.filter(QueryBuilders.rangeQuery(WeConstans.MSG_TIME).gte(beginTime.getTime()).lte(endTime.getTime()));
+        }
+        //匹配发送人
+        BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().should(QueryBuilders.termsQuery("from", query.getFromId()));
+        //匹配收消息人
+        queryBuilder.should(QueryBuilders.matchQuery("toListInfo.userId", query.getFromId()));
+        boolQueryBuilder.filter(queryBuilder.minimumShouldMatch(1));
+        builder.query(boolQueryBuilder);
+        return elasticSearch.searchPage(WeConstans.getChatDataIndex(query.getCorpId()), builder, pageNum, pageSize, ConversationArchiveVO.class);
+    }
+
     private String getExtraChatName(List<WeGroupMemberDTO> memberLists) {
         StringBuilder chatName = new StringBuilder();
         int customerNum = 0;
@@ -369,7 +402,7 @@ public class WeConversationArchiveServiceImpl implements WeConversationArchiveSe
                         WeUser user = weUserService.getById(fromId);
                         conversationArchiveVO.setFromInfo(JSON.parseObject(JSON.toJSONString(user)));
                     } else {
-                        WeCustomer weCustomer = weCustomerService.selectWeCustomerById(fromId, corpId);
+                        WeCustomer weCustomer = weCustomerService.getOne(new LambdaQueryWrapper<WeCustomer>().eq(WeCustomer::getExternalUserid, fromId).eq(WeCustomer::getCorpId, corpId).last(GenConstants.LIMIT_1));
                         conversationArchiveVO.setFromInfo(JSON.parseObject(JSON.toJSONString(weCustomer)));
                     }
                 }
@@ -383,7 +416,7 @@ public class WeConversationArchiveServiceImpl implements WeConversationArchiveSe
                     conversationArchiveVO.setToListInfo(JSON.parseObject(JSON.toJSONString(user)));
                 } else {
                     String toUserId = conversationArchiveVO.getToList().get(0);
-                    WeCustomer weCustomer = weCustomerService.selectWeCustomerById(toUserId, corpId);
+                    WeCustomer weCustomer = weCustomerService.getOne(new LambdaQueryWrapper<WeCustomer>().eq(WeCustomer::getExternalUserid, toUserId).eq(WeCustomer::getCorpId, corpId).last(GenConstants.LIMIT_1));
                     conversationArchiveVO.setToListInfo(JSON.parseObject(JSON.toJSONString(weCustomer)));
                 }
             }

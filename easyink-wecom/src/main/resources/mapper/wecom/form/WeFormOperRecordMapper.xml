@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.easyink.wecom.mapper.form.WeFormOperRecordMapper">
+
+    <resultMap type="com.easyink.wecom.domain.entity.form.WeFormOperRecord" id="WeFormOperRecordMap">
+        <result property="id" column="id" jdbcType="INTEGER"/>
+        <result property="formId" column="form_id" jdbcType="INTEGER"/>
+        <result property="userId" column="user_id" jdbcType="VARCHAR"/>
+        <result property="userName" column="user_name" jdbcType="VARCHAR"/>
+        <result property="userHeadImage" column="user_head_image" jdbcType="VARCHAR"/>
+        <result property="externalUserId" column="external_user_id" jdbcType="VARCHAR"/>
+        <result property="channelType" column="channel_type" jdbcType="INTEGER"/>
+        <result property="unionId" column="union_id" jdbcType="VARCHAR"/>
+        <result property="openId" column="open_id" jdbcType="VARCHAR"/>
+        <result property="formResult" column="form_result" jdbcType="VARCHAR"/>
+        <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+        <result property="commitTime" column="commit_time" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <!--获取客户操作记录-->
+    <select id="getCustomerOperRecord" resultType="com.easyink.wecom.domain.vo.form.FormCustomerOperRecordVO">
+        SELECT
+               wfor.`id` recordId,
+               wfor.`external_user_id` externalUserId,
+               wc.`name` externalUserName,
+               wc.`avatar` externalUserHeadImage,
+               wfor.`employees` user_id,
+               wu.`user_name`,
+               wd.`name` departmentName,
+               wfor.`channel_type`,
+               wfor.`create_time`,
+               wfor.`commit_time`
+        FROM we_form_oper_record wfor
+                 LEFT JOIN we_customer wc ON wfor.external_user_id = wc.external_userid
+                 LEFT JOIN we_user wu ON wu.user_id = wfor.employees AND wu.corp_id = wc.corp_id
+                 LEFT JOIN we_department wd ON wd.id = wu.main_department AND wd.corp_id = wu.corp_id
+        WHERE
+            wfor.form_id = #{formId}
+            <if test="clickTimeFlag != null and clickTimeFlag == true"><!-- 检索点击时间 -->
+                <if test="beginTime != null"><!-- 开始时间检索 -->
+                    AND wfor.`create_time` &gt;= #{beginTime}
+                </if>
+                <if test="endTime != null"><!-- 结束时间检索 -->
+                    AND wfor.`create_time` &lt;= #{endTime}
+                </if>
+            </if>
+            <if test="clickTimeFlag != null and clickTimeFlag == false"><!-- 检索提交时间 -->
+                <if test="beginTime != null"><!-- 开始时间检索 -->
+                    AND wfor.`commit_time` &gt;= #{beginTime}
+                </if>
+                <if test="endTime != null"><!-- 结束时间检索 -->
+                    AND wfor.`commit_time` &lt;= #{endTime}
+                </if>
+            </if>
+            <if test="customerName != null and customerName != ''">
+                <bind name="likeCustomerName" value="'%' + customerName + '%'"/>
+                AND wc.`name` LIKE #{likeCustomerName}
+            </if>
+            <if test="channelType != null">
+                AND wfor.`channel_type`= #{channelType}
+            </if>
+            AND wfor.commit_flag = TRUE
+            AND wfor.`external_user_id` &lt;&gt; ''
+        ORDER BY wfor.`commit_time` DESC
+    </select>
+
+    <!--获取员工发送记录-->
+    <select id="getUserSendRecord" resultType="com.easyink.wecom.domain.vo.form.FormUserSendRecordVO">
+        SELECT wfor.`user_id`,
+               wfor.`user_name`,
+               wfor.`user_head_image`,
+               IFNULL(wd.`name`, '') departmentName,
+        (SELECT COUNT(DISTINCT external_user_id) FROM we_form_oper_record WHERE `form_id` = wfor.`form_id` AND `user_id` = wfor.`user_id` AND `external_user_id` &lt;&gt; '') AS clickCount,
+        (SELECT COUNT(DISTINCT external_user_id) FROM we_form_oper_record WHERE `form_id` = wfor.`form_id` AND `user_id` = wfor.`user_id` AND commit_flag = TRUE AND `external_user_id` &lt;&gt; '') AS submitCount
+        FROM we_form_oper_record wfor
+                 LEFT JOIN we_form wf ON wf.`id` = wfor.`form_id`
+                 LEFT JOIN we_user wu ON wu.user_id = wfor.user_id
+                 LEFT JOIN we_department wd ON wd.id = wu.main_department AND wd.corp_id = wu.corp_id
+        WHERE
+            wfor.form_id = #{formId}
+            AND wf.corp_id = #{corpId}
+            AND wfor.`external_user_id` &lt;&gt; ''
+            <if test="clickTimeFlag != null and clickTimeFlag == true"><!-- 检索点击时间 -->
+                <if test="beginTime != null"><!-- 开始时间检索 -->
+                    AND wfor.`create_time` &gt;= #{beginTime}
+                </if>
+                <if test="endTime != null"><!-- 结束时间检索 -->
+                    AND wfor.`create_time` &lt;= #{endTime}
+                </if>
+            </if>
+            <if test="clickTimeFlag != null and clickTimeFlag == false"><!-- 检索提交时间 -->
+                <if test="beginTime != null"><!-- 开始时间检索 -->
+                    AND wfor.`commit_time` &gt;= #{beginTime}
+                </if>
+                <if test="endTime != null"><!-- 结束时间检索 -->
+                    AND wfor.`commit_time` &lt;= #{endTime}
+                </if>
+            </if>
+            <if test="userName != null and userName != ''">
+                <bind name="likeUserName" value="'%' + userName + '%'"/>
+                AND wfor.`user_name` LIKE #{likeUserName}
+            </if>
+            GROUP BY wfor.`user_id`
+            ORDER BY clickCount DESC
+    </select>
+
+    <!--获取客服提交表单详情-->
+    <select id="getFormResult" resultType="com.easyink.wecom.domain.vo.form.FormOperRecordDetailVO">
+        SELECT wfor.`id` recordId,
+               wfor.`external_user_id` externalUserId,
+               wc.`name` externalUserName,
+               wc.`avatar` externalUserHeadImage,
+               wfor.`form_result`,
+               wfor.`channel_type`,
+               wfor.`commit_time`
+        FROM we_form_oper_record wfor
+            LEFT JOIN we_customer wc ON wfor.external_user_id = wc.external_userid
+        WHERE
+            wfor.form_id = #{formId}
+            AND wc.corp_id = #{corpId}
+            AND wfor.commit_flag = TRUE
+            AND wfor.`external_user_id` IS NOT NULL
+        ORDER BY wfor.`commit_time` DESC
+    </select>
+
+    <!--导出客户操作记录-->
+    <select id="exportCustomerOperRecord" resultType="com.easyink.wecom.domain.vo.form.FormCustomerOperRecordExportVO">
+        SELECT wfor.`external_user_id` externalUserId,
+        wc.`name` externalUserName,
+        wc.`avatar` externalUserHeadImage,
+        wfor.`form_result`,
+        wfor.`channel_type`,
+        wfor.`employees` userId,
+        wu.`user_name`,
+        wd.`name`,
+        wfor.`create_time`,
+        wfor.`commit_time`
+        FROM we_form_oper_record wfor
+        LEFT JOIN we_customer wc ON wfor.external_user_id = wc.external_userid
+        LEFT JOIN we_user wu ON wu.user_id = wfor.employees AND wu.corp_id = wc.corp_id
+        LEFT JOIN we_department wd ON wd.id = wu.main_department AND wd.corp_id = wu.corp_id
+        WHERE
+        wfor.form_id = #{formId}
+        AND wc.corp_id = #{corpId}
+        AND wfor.commit_flag = TRUE
+        AND wfor.`external_user_id` &lt;&gt; ''
+        <if test="clickTimeFlag != null and clickTimeFlag == true"><!-- 检索点击时间 -->
+            <if test="beginTime != null"><!-- 开始时间检索 -->
+                AND wfor.`create_time` &gt;= #{beginTime}
+            </if>
+            <if test="endTime != null"><!-- 结束时间检索 -->
+                AND wfor.`create_time` &lt;= #{endTime}
+            </if>
+        </if>
+        <if test="clickTimeFlag != null and clickTimeFlag == false"><!-- 检索提交时间 -->
+            <if test="beginTime != null"><!-- 开始时间检索 -->
+                AND wfor.`commit_time` &gt;= #{beginTime}
+            </if>
+            <if test="endTime != null"><!-- 结束时间检索 -->
+                AND wfor.`commit_time` &lt;= #{endTime}
+            </if>
+        </if>
+        <if test="customerName != null and customerName != ''">
+            <bind name="likeCustomerName" value="'%' + customerName + '%'"/>
+            AND wc.`name` LIKE #{likeCustomerName}
+        </if>
+        <if test="channelType != null">
+            AND wfor.`channel_type`= #{channelType}
+        </if>
+        ORDER BY wfor.`commit_time` DESC
+    </select>
+
+</mapper>
+

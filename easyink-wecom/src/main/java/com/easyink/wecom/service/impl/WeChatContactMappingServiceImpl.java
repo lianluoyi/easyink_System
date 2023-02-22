@@ -7,6 +7,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.easyink.common.annotation.DataScope;
+import com.easyink.common.constant.GenConstants;
 import com.easyink.common.constant.WeConstans;
 import com.easyink.common.core.domain.wecom.WeUser;
 import com.easyink.common.utils.StringUtils;
@@ -295,7 +296,10 @@ public class WeChatContactMappingServiceImpl extends ServiceImpl<WeChatContactMa
             }
         } else if (WeConstans.ID_TYPE_EX.equals(fromType)) {
             //获取外部联系人信息
-            WeCustomer weCustomer = weCustomerMapper.selectWeCustomerById(fromId, corpId);
+            WeCustomer weCustomer = weCustomerMapper.selectOne(new LambdaQueryWrapper<WeCustomer>()
+                    .eq(WeCustomer::getCorpId, corpId)
+                    .eq(WeCustomer::getExternalUserid, fromId)
+                    .last(GenConstants.LIMIT_1));
             if (key.equals(WeConstans.TO_LIST_INFO)) {
                 chatData.setToListInfo(JSON.parse(JSON.toJSONString(weCustomer)));
             } else if (key.equals(WeConstans.FROMM_INFO)) {
@@ -319,7 +323,10 @@ public class WeChatContactMappingServiceImpl extends ServiceImpl<WeChatContactMa
             chatData.put(key, JSON.parse(JSON.toJSONString(weUser)));
         } else if (WeConstans.ID_TYPE_EX.equals(fromType)) {
             //获取外部联系人信息
-            WeCustomer weCustomer = weCustomerMapper.selectWeCustomerById(fromId, corpId);
+            WeCustomer weCustomer = weCustomerMapper.selectOne(new LambdaQueryWrapper<WeCustomer>().
+                    eq(WeCustomer::getCorpId, corpId)
+                    .eq(WeCustomer::getExternalUserid, fromId)
+                    .last(GenConstants.LIMIT_1));
             chatData.put(key, JSON.parse(JSON.toJSONString(weCustomer)));
         } else if (WeConstans.ID_TYPE_MACHINE.equals(fromType)) {
             //拉去机器人信息暂不处理

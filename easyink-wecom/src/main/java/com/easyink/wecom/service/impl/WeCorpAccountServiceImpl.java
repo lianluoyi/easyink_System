@@ -59,7 +59,9 @@ public class WeCorpAccountServiceImpl extends ServiceImpl<WeCorpAccountMapper, W
 
     @Autowired
     @Lazy
-    public WeCorpAccountServiceImpl(WeAccessTokenService weAccessTokenService, RedisCache redisCache, WeAuthCorpInfoService weAuthCorpInfoService, RuoYiConfig ruoYiConfig, WeDepartmentService weDepartmentService, WeAuthCorpInfoExtendService weAuthCorpInfoExtendService, We3rdUserClient we3rdUserClient, WeInitService weInitService) {
+    public WeCorpAccountServiceImpl(WeAccessTokenService weAccessTokenService, RedisCache redisCache, WeAuthCorpInfoService weAuthCorpInfoService,
+                                    RuoYiConfig ruoYiConfig, WeDepartmentService weDepartmentService, WeAuthCorpInfoExtendService weAuthCorpInfoExtendService,
+                                    We3rdUserClient we3rdUserClient, WeInitService weInitService) {
         this.weAccessTokenService = weAccessTokenService;
         this.redisCache = redisCache;
         this.weAuthCorpInfoService = weAuthCorpInfoService;
@@ -488,6 +490,7 @@ public class WeCorpAccountServiceImpl extends ServiceImpl<WeCorpAccountMapper, W
             weCorpAccount.setWxQrLoginRedirectUri(loginUrl);
         }
         this.saveOrUpdate(weCorpAccount);
+
     }
 
     /**

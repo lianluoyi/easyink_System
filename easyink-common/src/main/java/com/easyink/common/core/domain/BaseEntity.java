@@ -14,6 +14,7 @@ import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 import java.util.Date;
+import java.util.function.Supplier;
 
 /**
  * Entity基类
@@ -124,6 +125,7 @@ public class BaseEntity extends RootEntity implements Serializable {
         }
     }
 
+
     public Date getCreateTime() {
         return createTime;
     }
@@ -137,12 +139,28 @@ public class BaseEntity extends RootEntity implements Serializable {
 
     }
 
+    public void setNullCreateTime() {
+        this.createTime = null;
+    }
+
     public String getUpdateBy() {
         return updateBy;
     }
 
     public void setUpdateBy(String updateBy) {
         this.updateBy = updateBy;
+    }
+    /**
+     * 根据登录用户设置更新人,如果是超级管理员则为admin,其他用户则为userId
+     *
+     * @param loginUser 登录用户
+     */
+    public void setUpdateBy(LoginUser loginUser) {
+        if (loginUser.isSuperAdmin()) {
+            this.updateBy = Constants.SUPER_ADMIN;
+        } else if (loginUser.getWeUser() != null && StringUtils.isNotBlank(loginUser.getWeUser().getUserId())) {
+            this.updateBy = loginUser.getWeUser().getUserId();
+        }
     }
 
     public Date getUpdateTime() {

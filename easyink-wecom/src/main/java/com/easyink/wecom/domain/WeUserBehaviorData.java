@@ -87,6 +87,36 @@ public class WeUserBehaviorData implements Serializable {
     @Excel(name = "删除/拉黑成员的客户数，即将成员删除或加入黑名单的客户数")
     private Integer negativeFeedbackCnt;
 
+    @ApiModelProperty(value = "总客户数 ")
+    @TableField(value = "total_contact_cnt")
+    @Excel(name = "总客户数")
+    private Integer totalContactCnt ;
+
+    @ApiModelProperty(value = "今日新客流失数")
+    @TableField(value = "new_contact_loss_cnt")
+    @Excel(name = "今日新客流失数")
+    private Integer newContactLossCnt ;
+
+    @ApiModelProperty(value = "当天新增客户中与员工对话过的人数")
+    @TableField(value = "new_contact_speak_cnt")
+    private Integer newContactSpeakCnt;
+
+    @ApiModelProperty(value = "当天员工首次给客户发消息，客户在30分钟内回复的客户数")
+    @TableField(value = "replied_within_thirty_min_customer_cnt")
+    private Integer repliedWithinThirtyMinCustomerCnt;
+
+    @ApiModelProperty(value = "当天会话数-不区分是否为员工主动发起")
+    @TableField(value = "all_chat_cnt")
+    private Integer allChatCnt;
+
+    @ApiModelProperty("当天员工新客流失客户数 （we_flower表中查找 每日定时任务获取")
+    @TableField("new_customer_loss_cnt")
+    private Integer newCustomerLossCnt;
+
+    @ApiModelProperty("当天员工客户总数（we_flower表中查找 每日定时任务获取")
+    @TableField("contact_total_cnt")
+    private Integer contactTotalCnt;
+
     @TableField(exist = false)
     private Map<String, Object> params = new HashMap<>();
 }

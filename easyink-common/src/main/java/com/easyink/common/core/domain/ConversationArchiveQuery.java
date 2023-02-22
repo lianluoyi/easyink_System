@@ -3,6 +3,7 @@ package com.easyink.common.core.domain;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
  * @author admin
@@ -11,6 +12,7 @@ import lombok.Data;
  **/
 @ApiModel("会话存档接口入参实体")
 @Data
+@NoArgsConstructor
 public class ConversationArchiveQuery extends BaseEntity {
     /**
      * 发送人Id

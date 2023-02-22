@@ -4,27 +4,15 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.easyink.wecom.mapper.WeGroupStatisticMapper">
 
-    <resultMap type="WeGroupStatistic" id="WeGroupStatisticResult">
-        <result property="id" column="id"/>
-        <result property="chatId" column="chat_id"/>
-        <result property="statTime" column="stat_time"/>
-        <result property="newChatCnt" column="new_chat_cnt"/>
-        <result property="chatTotal" column="chat_total"/>
-        <result property="chatHasMsg" column="chat_has_msg"/>
-        <result property="newMemberCnt" column="new_member_cnt"/>
-        <result property="memberTotal" column="member_total"/>
-        <result property="memberHasMsg" column="member_has_msg"/>
-        <result property="msgTotal" column="msg_total"/>
-    </resultMap>
 
     <select id="getCountDataByDayNew" resultType="com.easyink.wecom.domain.dto.WePageCountDTO">
         select
         date_format(wgsc.stat_time, '%Y-%m-%d') as x_time,
         IFNULL(sum(wgsc.new_chat_cnt), 0) as new_chat_cnt,
-        IFNULL(sum(wgsc.chat_total), 0) as chat_total,
+        IFNULL(max(wgsc.chat_total), 0) as chat_total,
         IFNULL(sum(wgsc.chat_has_msg), 0) as chat_has_msg,
         IFNULL(sum(wgsc.new_member_cnt), 0) as new_member_cnt,
-        IFNULL(sum(wgsc.member_total), 0) as member_total,
+        IFNULL(max(wgsc.member_total), 0) as member_total,
         IFNULL(sum(wgsc.member_has_msg), 0) as member_has_msg,
         IFNULL(sum(wgsc.msg_total), 0) as msg_total
         from
@@ -32,8 +20,8 @@
         SELECT *
         FROM we_group_statistic
         WHERE corp_id = #{corpId}
-        and   stat_time between #{beginTime} AND  #{endTime}
-        GROUP BY  we_group_statistic.chat_id,we_group_statistic.stat_time
+        and stat_time between #{beginTime} AND #{endTime}
+        GROUP BY we_group_statistic.chat_id,we_group_statistic.stat_time
         ) AS wgsc
 
     </select>
@@ -68,8 +56,8 @@
         SELECT *
         FROM we_group_statistic
         WHERE corp_id = #{corpId}
-        and   stat_time between #{startTime} AND  #{endTime}
-        GROUP BY  we_group_statistic.chat_id,we_group_statistic.stat_time
+        and stat_time between #{startTime} AND #{endTime}
+        GROUP BY we_group_statistic.chat_id,we_group_statistic.stat_time
         ) as wgs
 
         GROUP BY finish_date
@@ -82,10 +70,10 @@
     <select id="getWeekCountData" resultType="com.easyink.wecom.domain.dto.WePageCountDTO">
         select CONCAT(left(tbl._date,4),'年',right(tbl._date,2),'周') as x_time,
         IFNULL(sum(new_chat_cnt), 0) as new_chat_cnt,
-        IFNULL(sum(chat_total), 0) as chat_total,
+        IFNULL(max(chat_total), 0) as chat_total,
         IFNULL(sum(chat_has_msg), 0) as chat_has_msg,
         IFNULL(sum(new_member_cnt), 0) as new_member_cnt,
-        IFNULL(sum(member_total), 0) as member_total,
+        IFNULL(max(member_total), 0) as member_total,
         IFNULL(sum(member_has_msg), 0) as member_has_msg,
         IFNULL(sum(msg_total), 0) as msg_total
         from (select (@s := @s + 1) as _index,
@@ -110,8 +98,8 @@
         SELECT *
         FROM we_group_statistic
         WHERE corp_id = #{corpId}
-        and   stat_time between #{startTime} and #{endTime}
-        GROUP BY  we_group_statistic.chat_id,we_group_statistic.stat_time
+        and stat_time between #{startTime} and #{endTime}
+        GROUP BY we_group_statistic.chat_id,we_group_statistic.stat_time
         ) as wgs
 
         group by finish_date
@@ -123,12 +111,12 @@
     <select id="getMonthCountData" resultType="com.easyink.wecom.domain.dto.WePageCountDTO">
         select tbl._date as x_time,
         IFNULL(sum(new_chat_cnt), 0) as new_chat_cnt,
-        IFNULL(sum(chat_total), 0) as chat_total,
+        IFNULL(max(chat_total), 0) as chat_total,
         IFNULL(sum(chat_has_msg), 0) as chat_has_msg,
         IFNULL(sum(new_member_cnt), 0) as new_member_cnt,
         IFNULL(sum(member_total), 0) as member_total,
         IFNULL(sum(member_has_msg), 0) as member_has_msg,
-        IFNULL(sum(msg_total), 0) as msg_total
+        IFNULL(max(msg_total), 0) as msg_total
         from (select (@s := @s + 1) as _index, date_format(date_sub(current_date, interval @s month), '%Y-%m') as _date
         from information_schema.character_sets,
         (select @s := -1) as init
@@ -136,10 +124,10 @@
         order by _date) as tbl
         left join(select
         sum(ifnull(wgs.new_chat_cnt, 0)) new_chat_cnt,
-        sum(ifnull(wgs.chat_total, 0)) chat_total,
+        max(ifnull(wgs.chat_total, 0)) chat_total,
         sum(ifnull(wgs.chat_has_msg, 0)) chat_has_msg,
         sum(ifnull(wgs.new_member_cnt, 0)) new_member_cnt,
-        sum(ifnull(wgs.member_total, 0)) member_total,
+        max(ifnull(wgs.member_total, 0)) member_total,
         sum(ifnull(wgs.member_has_msg, 0)) member_has_msg,
         sum(ifnull(wgs.msg_total, 0)) msg_total,
         date_format(wgs.stat_time, '%Y-%m') as finish_date
@@ -147,11 +135,71 @@
         SELECT *
         FROM we_group_statistic
         WHERE corp_id = #{corpId}
-        GROUP BY  we_group_statistic.chat_id,we_group_statistic.stat_time
+        GROUP BY we_group_statistic.chat_id,we_group_statistic.stat_time
         ) as wgs
         group by finish_date
         order by finish_date
         ) as tbr on tbl._date = tbr.finish_date
         group by tbl._date;
+    </select>
+    <!--    获取群成员统计总数-->
+    <select id="getGroupMemberCnt" resultType="java.lang.Integer">
+        SELECT
+        ifnull(sum(member_total), 0 )
+        FROM
+        we_group_statistic
+        WHERE
+        corp_id = #{corpId}
+        AND stat_time >=  #{beginTime}
+        AND stat_time &lt;= #{endTime}
+    </select>
+
+    <!--    获取群聊总数和 群成员总数的每周数据统计-->
+    <select id="getGroupCntWeekDate" resultType="com.easyink.wecom.domain.dto.WePageCountDTO">
+        SELECT
+        CONCAT(left(YEARWEEK(stat_time),4),'年',right(YEARWEEK(stat_time),2),'周') as x_time ,ifnull (  sum(chat_total) , 0 ) as chat_total , ifnull(sum(member_total)  , 0 ) as member_total FROM we_group_statistic
+        WHERE corp_id = #{corpId} AND stat_time = date_format( date_sub( #{endTime}, INTERVAL 6 WEEK ), '%Y-%m-%d 00:00:00' )
+        UNION
+        SELECT
+        CONCAT(left(YEARWEEK(stat_time),4),'年',right(YEARWEEK(stat_time),2),'周') as x_time ,ifnull (  sum(chat_total) , 0 ) as chat_total , ifnull(sum(member_total)  , 0 ) as member_total FROM we_group_statistic
+        WHERE corp_id = #{corpId} AND stat_time = date_format( date_sub( #{endTime}, INTERVAL 5 WEEK ), '%Y-%m-%d 00:00:00' )
+        UNION
+        SELECT
+        CONCAT(left(YEARWEEK(stat_time),4),'年',right(YEARWEEK(stat_time),2),'周') as x_time ,  ifnull (  sum(chat_total) , 0 ) as chat_total , ifnull(sum(member_total)  , 0 ) as member_total FROM we_group_statistic
+        WHERE corp_id = #{corpId} AND stat_time = date_format( date_sub( #{endTime}, INTERVAL 4 WEEK ), '%Y-%m-%d 00:00:00' )
+        UNION
+        SELECT
+        CONCAT(left(YEARWEEK(stat_time),4),'年',right(YEARWEEK(stat_time),2),'周') as x_time , ifnull (  sum(chat_total) , 0 ) as chat_total , ifnull(sum(member_total)  , 0 ) as member_total  FROM we_group_statistic
+        WHERE corp_id = #{corpId} AND stat_time = date_format( date_sub( #{endTime}, INTERVAL 3 WEEK ), '%Y-%m-%d 00:00:00' )
+        UNION
+        SELECT
+        CONCAT(left(YEARWEEK(stat_time),4),'年',right(YEARWEEK(stat_time),2),'周') as x_time ,ifnull (  sum(chat_total) , 0 ) as chat_total , ifnull(sum(member_total)  , 0 ) as member_total FROM we_group_statistic
+        WHERE corp_id = #{corpId} AND stat_time = date_format( date_sub( #{endTime}, INTERVAL 2 WEEK ), '%Y-%m-%d 00:00:00' )
+        UNION
+        SELECT
+        CONCAT(left(YEARWEEK(stat_time),4),'年',right(YEARWEEK(stat_time),2),'周') as x_time , ifnull (  sum(chat_total) , 0 ) as chat_total , ifnull(sum(member_total)  , 0 ) as member_total  FROM we_group_statistic
+        WHERE corp_id = #{corpId} AND stat_time = date_format( date_sub( #{endTime}, INTERVAL 1 WEEK ), '%Y-%m-%d 00:00:00' )
+    </select>
+<!--    获取群聊总数和群成员的每月数据统计 （当月的截止至 date )-->
+    <select id="getMonthChatCntDate" resultType="com.easyink.wecom.domain.dto.WePageCountDTO">
+
+
+        select  date_format(stat_time, '%Y-%m')  as x_time ,ifnull(sum(chat_total),0) as chat_total , ifnull(sum(member_total) , 0 ) as member_total
+        from we_group_statistic where corp_id =  #{corpId} and stat_time =  #{date}
+        union
+        select  date_format(stat_time, '%Y-%m')  as x_time ,ifnull(sum(chat_total),0) as chat_total , ifnull(sum(member_total) , 0 ) as member_total
+        from  we_group_statistic where corp_id =  #{corpId} and stat_time = DATE_FORMAT( LAST_DAY(DATE_SUB(CURDATE(), INTERVAL 1 MONTH)), '%Y-%m-%d')
+        union
+        select  date_format(stat_time, '%Y-%m')  as x_time ,ifnull(sum(chat_total),0) as chat_total , ifnull(sum(member_total) , 0 ) as member_total
+        from  we_group_statistic where corp_id =  #{corpId} and stat_time = DATE_FORMAT( LAST_DAY(DATE_SUB(CURDATE(), INTERVAL 2 MONTH)), '%Y-%m-%d')
+        union
+        select  date_format(stat_time, '%Y-%m')  as x_time ,ifnull(sum(chat_total),0) as chat_total , ifnull(sum(member_total) , 0 ) as member_total
+        from  we_group_statistic where corp_id =  #{corpId} and stat_time = DATE_FORMAT( LAST_DAY(DATE_SUB(CURDATE(), INTERVAL 3 MONTH)), '%Y-%m-%d')
+        union
+        select  date_format(stat_time, '%Y-%m')  as x_time ,ifnull(sum(chat_total),0) as chat_total , ifnull(sum(member_total) , 0 ) as member_total
+        from  we_group_statistic where corp_id =  #{corpId} and stat_time = DATE_FORMAT( LAST_DAY(DATE_SUB(CURDATE(), INTERVAL 4 MONTH)), '%Y-%m-%d')
+        union
+        select  date_format(stat_time, '%Y-%m')  as x_time ,ifnull(sum(chat_total),0) as chat_total , ifnull(sum(member_total) , 0 ) as member_total
+        from  we_group_statistic where corp_id =  #{corpId} and stat_time = DATE_FORMAT( LAST_DAY(DATE_SUB(CURDATE(), INTERVAL 5 MONTH)), '%Y-%m-%d')
     </select>
 </mapper>

@@ -19,6 +19,7 @@ import com.easyink.common.utils.SecurityUtils;
 import com.easyink.common.utils.ServletUtils;
 import com.easyink.common.utils.StringUtils;
 import com.easyink.common.utils.poi.ExcelUtil;
+import com.easyink.common.utils.sign.Md5Utils;
 import com.easyink.wecom.login.util.LoginTokenService;
 import com.easyink.wecom.mapper.WeUserMapper;
 import com.easyink.wecom.service.WeUserService;
@@ -256,7 +257,5 @@ public class SysUserController extends BaseController {
         LoginTokenService.refreshDataScope();
         return AjaxResult.success();
     }
-
-
 
 }

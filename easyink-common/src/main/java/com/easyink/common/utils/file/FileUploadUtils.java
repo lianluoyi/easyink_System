@@ -4,6 +4,8 @@ import com.easyink.common.config.CosConfig;
 import com.easyink.common.config.RuoYiConfig;
 import com.easyink.common.constant.Constants;
 import com.easyink.common.constant.WeConstans;
+import com.easyink.common.enums.ResultTip;
+import com.easyink.common.exception.CustomException;
 import com.easyink.common.exception.file.FileNameLengthLimitExceededException;
 import com.easyink.common.exception.file.FileSizeLimitExceededException;
 import com.easyink.common.exception.file.InvalidExtensionException;
@@ -368,6 +370,23 @@ public class FileUploadUtils {
             }
         }
 
+    }
+
+
+    /**
+     * 文件大小校验，扩展名校验
+     *
+     * @param fileName          上传的文件
+     * @param allowedExtension  允许上传的文件类型
+     */
+    public static void fileSuffixVerify(String fileName, String[] allowedExtension){
+        if (StringUtils.isBlank(fileName)) {
+            throw new CustomException(ResultTip.TIP_FILE_NAME_IS_NULL);
+        }
+        String extension = FilenameUtils.getExtension(fileName);
+        if (!isAllowedExtension(extension, allowedExtension)) {
+            throw new CustomException(ResultTip.TIP_NOT_ALLOW_UPLOAD_FILE_TYPE);
+        }
     }
 
     /**

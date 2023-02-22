@@ -105,6 +105,16 @@ public class DateUtils extends org.apache.commons.lang3.time.DateUtils {
         }
     }
 
+    /**
+     * 时间由 YYYY_MM_DD_HH_MM_SS to YYYY_MM_DD
+     *
+     * @param dataStr   YYYY_MM_DD_HH_MM_SS格式的时间
+     * @return
+     */
+    public static String time2Date(String dataStr) {
+        return timeFormatTrans(dataStr, YYYY_MM_DD_HH_MM_SS, YYYY_MM_DD);
+    }
+
     /***
      * 转换日期格式
      * @param dateStr 日期
@@ -189,6 +199,16 @@ public class DateUtils extends org.apache.commons.lang3.time.DateUtils {
      */
     public static long diffTime(Date endDate, Date nowDate) {
         return endDate.getTime() - nowDate.getTime();
+    }
+
+    /**
+     * 计算两个时间差 返回分钟
+     *
+     * @param endDate     结束时间
+     * @param startDate   开始时间
+     */
+    public static long diffTimeReturnMin(Date endDate, Date startDate) {
+        return diffTime(endDate, startDate) / 60 / 1000;
     }
 
     /**
@@ -430,6 +450,16 @@ public class DateUtils extends org.apache.commons.lang3.time.DateUtils {
     }
 
     /**
+     * 获取昨天的日期
+     *
+     * @param date  Date
+     * @return
+     */
+    public static Date getYesterday(Date date) {
+        return dateSubDay(date, 1);
+    }
+
+    /**
      * 日期减几小时
      */
     public static Date dateSubHour(Date date, Integer subHour) {
@@ -564,5 +594,18 @@ public class DateUtils extends org.apache.commons.lang3.time.DateUtils {
         LocalDateTime localDateTime = date.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime().withHour(hour).withMinute(minute).withSecond(59);
         Date end = Date.from(localDateTime.atZone(ZoneId.systemDefault()).toInstant());
         return end;
+    }
+
+    /**
+     * 输入时间是否大于当前时间
+     *
+     * @param inputTime     输入时间
+     * @return boolean
+     */
+    public static Boolean isGreaterThanCurrentTime(Date inputTime) {
+        if (inputTime == null) {
+            return false;
+        }
+        return inputTime.compareTo(getNowDate()) > 0;
     }
 }

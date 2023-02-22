@@ -20,6 +20,12 @@ public class AppIdVO {
      * appid
      */
     private String appId;
+
+    /**
+     * componentAppid (待开发需要返回)
+     */
+    private String componentAppId;
+
     /**
      * 企业id
      */

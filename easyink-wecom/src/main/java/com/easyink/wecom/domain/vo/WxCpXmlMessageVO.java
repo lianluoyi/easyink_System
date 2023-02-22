@@ -103,7 +103,6 @@ public class WxCpXmlMessageVO extends WxCpXmlMessage {
      * 以上字段为三方应用增加字段
      *******************************************************/
 
-
     @Data
     public static class BatchJob implements Serializable {
         private static final long serialVersionUID = -3418685294606228837L;

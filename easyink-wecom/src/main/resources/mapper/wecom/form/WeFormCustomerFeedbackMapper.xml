@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.easyink.wecom.mapper.form.WeFormCustomerFeedbackMapper">
+
+    <resultMap type="com.easyink.wecom.domain.entity.form.WeFormCustomerFeedback" id="WeFormCustomerFeedbackMap">
+        <result property="id" column="id" jdbcType="INTEGER"/>
+        <result property="formId" column="form_id" jdbcType="INTEGER"/>
+        <result property="customerId" column="customer_id" jdbcType="VARCHAR"/>
+        <result property="userId" column="user_id" jdbcType="VARCHAR"/>
+        <result property="score" column="score" jdbcType="INTEGER"/>
+        <result property="corpId" column="corp_id" jdbcType="VARCHAR"/>
+        <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <!-- 批量插入 -->
+    <insert id="insertBatch" keyProperty="id" useGeneratedKeys="true">
+        insert into we_form_customer_feedback(form_id, customer_id, user_id, score, corp_id,
+        create_time)
+        values
+        <foreach collection="entities" item="entity" separator=",">
+            (#{entity.formId}, #{entity.customerId}, #{entity.userId}, #{entity.score}, #{entity.corpId},
+            #{entity.createTime})
+        </foreach>
+    </insert>
+    <!-- 批量插入或按主键更新 -->
+    <insert id="insertOrUpdateBatch" keyProperty="id" useGeneratedKeys="true">
+        insert into we_form_customer_feedback(form_id, customer_id, user_id, score, corp_id,
+        create_time)
+        values
+        <foreach collection="entities" item="entity" separator=",">
+            (#{entity.formId}, #{entity.customerId}, #{entity.userId}, #{entity.score}, #{entity.corpId},
+            #{entity.createTime})
+        </foreach>
+        on duplicate key update
+        form_id = values(form_id) , customer_id = values(customer_id) , user_id = values(user_id) , score =
+        values(score) , corp_id = values(corp_id) , create_time = values(create_time)
+    </insert>
+
+    <!--查询员工好评-->
+    <select id="selectGoodReviews" resultType="com.easyink.wecom.domain.dto.statistics.UserGoodReviewDTO">
+        SELECT wfcf.user_id,
+               IFNULL(SUM(wfcf.score), 0) AS score,
+               <if test="customerPositiveCommentsRateSort != null and customerPositiveCommentsRateSort != ''">
+                   IF(IFNULL(COUNT(wfcf.customer_id), 0)=0, 0, CAST(IFNULL(SUM(wfcf.score), 0) *1./COUNT(wfcf.customer_id) AS DECIMAL(8,2))) AS customerPositiveCommentsRate
+               </if>
+               IFNULL(COUNT(wfcf.customer_id), 0) AS num
+        FROM we_form_customer_feedback wfcf
+        LEFT JOIN we_user wu ON wu.corp_id = wfcf.corp_id
+        WHERE wfcf.corp_id = #{corpId}
+        ${params.dataScope}
+        <if test="userIds != null and userIds.size() > 0">
+            AND wfcf.user_id IN
+            <foreach collection="userIds" item="userId" open="(" separator="," close=")">
+                #{userId}
+            </foreach>
+        </if>
+        <if test="beginTime !=null">
+            AND wfcf.create_time &gt;= #{beginTime}
+        </if>
+        <if test="endTime !=null">
+            AND wfcf.create_time &lt;= #{endTime}
+        </if>
+        GROUP BY wfcf.user_id
+        <if test="customerPositiveCommentsRateSort != null and customerPositiveCommentsRateSort != ''">
+            ORDER BY customerPositiveCommentsRate #{customerPositiveCommentsRateSort}
+        </if>
+    </select>
+
+</mapper>
+

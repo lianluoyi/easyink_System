@@ -12,9 +12,11 @@ import com.easyink.wecom.domain.dto.tag.WeCropGroupTagDTO;
 import com.easyink.wecom.domain.dto.tag.WeCropGroupTagListDTO;
 import com.easyink.wecom.domain.dto.tag.WeCropTagDTO;
 import com.easyink.wecom.domain.dto.tag.WeFindCropTagParam;
+import com.easyink.wecom.domain.vo.autotag.TagInfoVO;
 import com.easyink.wecom.mapper.WeTagMapper;
 import com.easyink.wecom.service.WeTagService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 企业微信标签Service业务层处理
@@ -160,5 +163,18 @@ public class WeTagServiceImpl extends ServiceImpl<WeTagMapper, WeTag> implements
                 });
             }
         }
+    }
+
+    @Override
+    public List<TagInfoVO> selectTagByIds(List<String> idList) {
+        if (CollectionUtils.isEmpty(idList)) {
+            return new ArrayList<>();
+        }
+        List<WeTag> weTags = weTagMapper.selectList(new LambdaQueryWrapper<WeTag>()
+                .select(WeTag::getTagId, WeTag::getName)
+                .in(WeTag::getTagId, idList)
+        );
+
+        return weTags.stream().map(it -> new TagInfoVO(it.getTagId(), it.getName())).collect(Collectors.toList());
     }
 }

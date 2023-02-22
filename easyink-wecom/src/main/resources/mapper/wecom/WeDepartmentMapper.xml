@@ -110,6 +110,11 @@
           and FIND_IN_SET(T3.id, T2._ids)
         ORDER BY level_, id
     </select>
+    <select id="selectDepartmentIdByUserId" resultType="java.lang.String">
+        SELECT
+            department
+        FROM we_user WHERE user_id = #{userId} AND corp_id = #{corpId}
+    </select>
 
 
     <insert id="insertWeDepartment" parameterType="WeDepartment">

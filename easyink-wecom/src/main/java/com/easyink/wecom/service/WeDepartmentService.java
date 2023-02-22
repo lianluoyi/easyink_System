@@ -5,6 +5,7 @@ import com.easyink.common.core.domain.model.LoginUser;
 import com.easyink.common.core.domain.wecom.WeDepartment;
 import com.easyink.wecom.domain.vo.sop.DepartmentVO;
 
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -99,4 +100,21 @@ public interface WeDepartmentService extends IService<WeDepartment> {
      * @return
      */
     List<DepartmentVO> getDeparmentDetailByIds(String corp_id, List<String> departmentIdList);
+
+    /**
+     * 查询员工所属部门
+     * @param userId 员工id
+     * @param corpId 企业id
+     * @return
+     */
+    Long selectDepartmentIdByUserId(String userId, String corpId);
+
+
+    /**
+     * 获取当前部门以及子部门id列表
+     * @param departmentId 部门id
+     * @param corpId 企业id
+     * @return 部门id列表
+     */
+    List<Long> getDepartmentAndChildList(Integer departmentId, String corpId);
 }

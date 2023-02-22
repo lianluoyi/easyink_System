@@ -109,7 +109,9 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                         "/*.html",
                         "/**/*.html",
                         "/**/*.css",
-                        "/**/*.js"
+                        "/**/*.js",
+                        "/**/*.txt",
+                        "/*.txt"
                 ).permitAll()
 
                 // 除上面外的所有请求全部需要鉴权认证

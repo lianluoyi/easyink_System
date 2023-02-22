@@ -1,25 +1,22 @@
 package com.easyink.common.shorturl;
 
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 /**
- * 类名: 短链附加信息
+ * 类名: 雷达短链附加信息
  *
  * @author : silver_chariot
  * @date : 2022/7/21 11:40
  **/
 @Data
-@Builder
+@SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ShortUrlAppendInfo {
-    /**
-     * 使用雷达的员工id
-     */
-    private String userId;
+public class RadarShortUrlAppendInfo extends BaseShortUrlAppendInfo{
+
     /**
      * 雷达id
      */

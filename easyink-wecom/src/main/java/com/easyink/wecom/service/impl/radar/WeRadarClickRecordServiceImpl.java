@@ -6,7 +6,7 @@ import com.easyink.common.core.domain.wecom.WeUser;
 import com.easyink.common.enums.ResultTip;
 import com.easyink.common.enums.radar.RadarChannelEnum;
 import com.easyink.common.exception.CustomException;
-import com.easyink.common.shorturl.ShortUrlAppendInfo;
+import com.easyink.common.shorturl.RadarShortUrlAppendInfo;
 import com.easyink.common.utils.DateUtils;
 import com.easyink.wecom.domain.WeCustomer;
 import com.easyink.wecom.domain.dto.radar.*;
@@ -167,7 +167,7 @@ public class WeRadarClickRecordServiceImpl extends ServiceImpl<WeRadarClickRecor
     }
 
     @Override
-    public void createRecord(ShortUrlAppendInfo appendInfo, WeCustomer customer, String openId, WeUser user) {
+    public void createRecord(RadarShortUrlAppendInfo appendInfo, WeCustomer customer, String openId, WeUser user) {
         if (appendInfo == null || appendInfo.getRadarId() == null || customer == null || StringUtils.isAnyBlank(customer.getUnionid())) {
             log.info("[保存雷达记录]参数缺失,append:{},customer:{},openId:{},user:{}", appendInfo, customer, openId, user);
             return;

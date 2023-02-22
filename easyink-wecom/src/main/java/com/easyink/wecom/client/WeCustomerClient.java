@@ -123,4 +123,24 @@ public interface WeCustomerClient {
 
     @Post("/externalcontact/unionid_to_external_userid")
     UnionId2ExternalUserIdResp unionId2ExternalUserId (@Body("unionid")String unionid ,@Body("openid")String openid) ;
+
+
+    /**
+     * unionid转换为第三方external_userid
+     * 当微信用户进入服务商的小程序或公众号时，服务商可通过此接口，
+     * 将微信客户的unionid转为第三方主体的external_userid，若该微信用户尚未成为企业的客户，则返回pending_id
+     * https://developer.work.weixin.qq.com/document/path/95926
+     *
+     * @param unionId   	微信客户的unionid
+     * @param openId        微信客户的openid
+     * @param subjectType   {@link com.easyink.common.enums.customer.SubjectTypeEnum} （当前使用该接口默认传1）
+     * @param corpId        企业id 用来获取accessToken
+     *
+     * @return ExternalUserDetail#external_userid
+     */
+    @Post(url = "/idconvert/unionid_to_external_userid")
+    ExternalUserDetail getExternalUserIdByUnionIdAndOpenId(@Body("unionid") String unionId,
+                                                           @Body("openid") String openId,
+                                                           @Body("subject_type") Integer subjectType,
+                                                           @Header("corpid") String corpId);
 }

@@ -2,10 +2,12 @@ package com.easyink.wecom.service.impl;
 
 import com.easyink.common.constant.Constants;
 import com.easyink.wecom.service.*;
+import com.easyink.wecom.service.form.WeFormGroupService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 /**
@@ -25,20 +27,21 @@ public class WeInitServiceImpl implements WeInitService {
     private final WeCorpAccountService weCorpAccountService;
     private final WeCustomerExtendPropertyService weCustomerExtendPropertyService;
     private final WeCustomerTransferConfigService weCustomerTransferConfigService;
+    private final WeFormGroupService weFormGroupService;
 
     @Autowired
-    public WeInitServiceImpl(WeSensitiveActService weSensitiveActService, WeCategoryService weCategoryService,
-                             WeUserRoleService weUserRoleService,
-                             WeCorpAccountService weCorpAccountService,
-                             WeCustomerExtendPropertyService weCustomerExtendPropertyService,
-                             WeCustomerTransferConfigService weCustomerTransferConfigService) {
+    @Lazy
+    public WeInitServiceImpl(WeSensitiveActService weSensitiveActService, WeCategoryService weCategoryService, WeUserRoleService weUserRoleService, WeCorpAccountService weCorpAccountService, WeCustomerExtendPropertyService weCustomerExtendPropertyService, WeCustomerTransferConfigService weCustomerTransferConfigService, WeFormGroupService weFormGroupService) {
         this.weSensitiveActService = weSensitiveActService;
         this.weCategoryService = weCategoryService;
         this.weUserRoleService = weUserRoleService;
         this.weCorpAccountService = weCorpAccountService;
         this.weCustomerExtendPropertyService = weCustomerExtendPropertyService;
         this.weCustomerTransferConfigService = weCustomerTransferConfigService;
+        this.weFormGroupService = weFormGroupService;
     }
+
+
 
     /**
      * 初始化企业配置
@@ -111,6 +114,12 @@ public class WeInitServiceImpl implements WeInitService {
             log.info("初始化成功系统继承设置,({})", corpId);
         } else {
             log.info("初始化失败系统继承设置,({})", corpId);
+        }
+        initResult = weFormGroupService.initCorpFormDefaultGroup(corpId);
+        if (initResult) {
+            log.info("初始化企业类型表单默认分组成功,({})", corpId);
+        } else {
+            log.info("初始化企业类型表单默认分组失败,({})", corpId);
         }
     }
 

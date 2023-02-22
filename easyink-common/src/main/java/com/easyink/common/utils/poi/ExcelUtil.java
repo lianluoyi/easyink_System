@@ -5,12 +5,14 @@ import com.easyink.common.annotation.Excel.ColumnType;
 import com.easyink.common.annotation.Excel.Type;
 import com.easyink.common.annotation.Excels;
 import com.easyink.common.config.RuoYiConfig;
+import com.easyink.common.constant.Constants;
 import com.easyink.common.core.domain.AjaxResult;
 import com.easyink.common.core.text.Convert;
 import com.easyink.common.exception.CustomException;
 import com.easyink.common.utils.DateUtils;
 import com.easyink.common.utils.DictUtils;
 import com.easyink.common.utils.StringUtils;
+import com.easyink.common.utils.file.FileUtils;
 import com.easyink.common.utils.reflect.ReflectUtils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -103,7 +105,7 @@ public class ExcelUtil<T> {
             list = new ArrayList<>();
         }
         this.list = list;
-        this.sheetName = sheetName;
+        this.sheetName = FileUtils.replaceFileNameUnValidChar(sheetName);
         this.type = type;
         createExcelField();
         createWorkbook();
@@ -122,7 +124,7 @@ public class ExcelUtil<T> {
             list = new ArrayList<>();
         }
         this.list = list;
-        this.sheetName = sheetName;
+        this.sheetName = FileUtils.replaceFileNameUnValidChar(sheetName);
         this.type = type;
         this.isCustom = CollectionUtils.isNotEmpty(selectProperties);
         this.selectedProperties = selectProperties;
@@ -279,6 +281,20 @@ public class ExcelUtil<T> {
     }
 
     /**
+     * 导出excel 可导出引入注解的字段和拓展字段
+     * list中需要有扩展字段且命名为 Map<String, String> extendPropMapper K:列名,V值
+     *
+     * @param list               导出的列表 示例 List<FormCustomerOperRecordExportVO> {@link com.easyink.wecom.domain.vo.form.FormCustomerOperRecordExportVO}
+     * @param sheetName          表单名
+     * @param extendProperties   拓展的字段名集合 extendPropMapper K:列名组成的集合
+     * @return excel文件名
+     */
+    public AjaxResult exportExcelDefinedAndExtProp(List<T> list, String sheetName, List<String> extendProperties) {
+        this.initV2(list, sheetName, Type.EXPORT, extendProperties);
+        return exportExcelDefinedAndExtProp();
+    }
+
+    /**
      * 对list数据源将其里面的数据导入到excel表单
      *
      * @param sheetName 工作表的名称
@@ -396,6 +412,61 @@ public class ExcelUtil<T> {
     }
 
     /**
+     * 写入各个字段的列头名称（包括引入注解的属性和扩展属性）
+     *
+     * @return
+     */
+    public AjaxResult exportExcelDefinedAndExtProp(){
+        OutputStream out = null;
+        try {
+            // 取出一共有多少个sheet.
+            double sheetNo = Math.ceil((double) list.size() / SHEET_SIZE);
+            for (int index = 0; index < sheetNo; index++) {
+                createSheet(sheetNo, index);
+
+                // 产生一行
+                Row row = sheet.createRow(0);
+                int column = 0;
+                // 写入各个字段的列头名称
+                for (Object[] os : fields) {
+                    Excel excel = (Excel) os[1];
+                    this.createCell(excel, row, column++);
+                }
+                if (isCustom) {
+                    for (String colName : selectedProperties) {
+                        this.createCell(colName, row, column++);
+                    }
+                }
+                if (Type.EXPORT.equals(type)) {
+                    fillExcelDefinedAndExtProp(index);
+                }
+            }
+            String filename = encodingFilename(sheetName);
+            out = new FileOutputStream(getAbsoluteFile(filename));
+            wb.write(out);
+            return AjaxResult.success(filename);
+        } catch (Exception e) {
+            log.error("导出Excel异常{}", ExceptionUtils.getStackTrace(e));
+            throw new CustomException("导出Excel失败，请联系网站管理员！");
+        } finally {
+            if (wb != null) {
+                try {
+                    wb.close();
+                } catch (IOException e1) {
+                    log.error("异常信息:{}", e1.getMessage());
+                }
+            }
+            if (out != null) {
+                try {
+                    out.close();
+                } catch (IOException e1) {
+                    log.error("异常信息:{}", e1.getMessage());
+                }
+            }
+        }
+    }
+
+    /**
      * 填充excel数据
      *
      * @param index 序号
@@ -451,6 +522,49 @@ public class ExcelUtil<T> {
                 Field mapperField = vo.getClass().getDeclaredField("extendPropMapper");
                 mapperField.setAccessible(true);
                 Map<String, String> map = (Map<String, String>) mapperField.get(vo);
+                if (map == null) {
+                    continue;
+                }
+                for (Map.Entry<String, String> entry : map.entrySet()) {
+                    // 当前列的字段
+                    this.addCell(row, entry.getValue(), column++);
+                }
+            }
+        }
+    }
+
+    /**
+     * 填充表单数据 引入注解的字段和拓展字段
+     *
+     * @param index 索引
+     * @throws IllegalAccessException
+     * @throws NoSuchFieldException
+     */
+    public void fillExcelDefinedAndExtProp(int index) throws IllegalAccessException, NoSuchFieldException {
+        int startNo = index * SHEET_SIZE;
+        int endNo = Math.min(startNo + SHEET_SIZE, list.size());
+        Row row;
+        for (int i = startNo; i < endNo; i++) {
+            row = sheet.createRow(i + 1 - startNo);
+            // 得到导出对象.
+            T vo = list.get(i);
+            int column = 0;
+            for (Object[] os : fields) {
+                Field field = (Field) os[0];
+                field.setAccessible(true);
+                // 设置实体类私有属性可访问
+                Excel excel = (Excel) os[1];
+                this.addCell(excel, row, vo, field, column++);
+            }
+            // 自定义导出:填充自定义字段
+            if (isCustom) {
+                //通过反射获取扩展字段映射
+                Field mapperField = vo.getClass().getDeclaredField("extendPropMapper");
+                mapperField.setAccessible(true);
+                Map<String, String> map = (Map<String, String>) mapperField.get(vo);
+                if (map == null) {
+                    continue;
+                }
                 for (Map.Entry<String, String> entry : map.entrySet()) {
                     // 当前列的字段
                     this.addCell(row, entry.getValue(), column++);
@@ -544,11 +658,44 @@ public class ExcelUtil<T> {
     public void setCellVo(Object value, Excel attr, Cell cell) {
         if (ColumnType.STRING == attr.cellType()) {
             cell.setCellType(CellType.STRING);
-            cell.setCellValue(StringUtils.isNull(value) ? attr.defaultValue() : value + attr.suffix());
+            cell.setCellValue(getStringCellValue(value));
         } else if (ColumnType.NUMERIC == attr.cellType()) {
             cell.setCellType(CellType.NUMERIC);
             cell.setCellValue(Integer.parseInt(value + ""));
         }
+    }
+
+    /**
+     * 获得String类型的单元格内的值
+     *
+     * @param value 单元格的值
+     * @return
+     */
+    String getStringCellValue(Object value) {
+        if (value == null) {
+            return StringUtils.EMPTY;
+        }
+        String cellValue = String.valueOf(value);
+        if (isContainCSVInjectChar(cellValue)) {
+            return Constants.TAB + cellValue;
+        }
+        return String.valueOf(value);
+    }
+
+    /**
+     * 是否包含可能会引起CSV注入 的特殊字符序列
+     *
+     * @param cellValue 单元格的值
+     * @return
+     */
+    boolean isContainCSVInjectChar(String cellValue) {
+        String[] specialStr = Constants.getCsvInjectCharList();
+        for (String str : specialStr) {
+            if (cellValue.contains(str)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -642,7 +789,7 @@ public class ExcelUtil<T> {
             cell.setCellStyle(styles.get("data"));
             // 用于读取对象中的属性
             cell.setCellType(CellType.STRING);
-            cell.setCellValue(value == null ? StringUtils.EMPTY : value);
+            cell.setCellValue(getStringCellValue(value));
 
         } catch (Exception e) {
             log.error("导出Excel失败 e:{}", ExceptionUtils.getStackTrace(e));

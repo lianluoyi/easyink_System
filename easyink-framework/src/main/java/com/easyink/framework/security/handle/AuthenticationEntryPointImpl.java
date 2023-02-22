@@ -28,7 +28,7 @@ public class AuthenticationEntryPointImpl implements AuthenticationEntryPoint, S
 
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException e) {
-        RedisCache redisCache = SpringUtils.getBean(RedisCache.class);
+        RedisCache redisCache = SpringUtils.getBean("redisCache", RedisCache.class);
         // 1.根据userKey获取登出的原因
         String userKey = SpringUtils.getBean(TokenService.class).getTokenId(ServletUtils.getRequest());
         Integer reasonCode = redisCache.getCacheObject(RedisKeyConstants.ACCOUNT_LOGOUT_REASON_KEY + userKey);

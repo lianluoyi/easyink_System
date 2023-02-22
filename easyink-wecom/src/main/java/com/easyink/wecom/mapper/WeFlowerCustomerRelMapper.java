@@ -2,9 +2,11 @@ package com.easyink.wecom.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.easyink.wecom.domain.WeFlowerCustomerRel;
+import com.easyink.wecom.domain.WeUserBehaviorData;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -81,4 +83,18 @@ public interface WeFlowerCustomerRelMapper extends BaseMapper<WeFlowerCustomerRe
      * @param relList {@link List<WeFlowerCustomerRel>}
      */
     void batchUpdateStatus(@Param("list") List<WeFlowerCustomerRel> relList);
+
+    /**
+     * 查询员工当天的客户总数和流失客户数
+     *
+     * @param userId    员工id
+     * @param corpId    企业id
+     * @param beginTime 时间范围开始时间
+     * @param endTime   时间范围结束时间
+     * @return
+     */
+    WeUserBehaviorData getTotalContactAndLossCnt(@Param("userId") String userId,
+                                                 @Param("corpId") String corpId,
+                                                 @Param("beginTime") String beginTime,
+                                                 @Param("endTime") String endTime);
 }

@@ -22,6 +22,10 @@ public class WechatOpenConfig {
      * 公众号配置
      */
     private OfficialAccount officialAccount;
+    /**
+     * 第三方平台设置
+     */
+    private Platform3rdAccount platform3rdAccount;
 
     @Data
     public static class MiniApp {
@@ -68,4 +72,47 @@ public class WechatOpenConfig {
          */
         private String[] needTokenUrl;
     }
+
+    /**
+     * 微信开放平台-第三方平台配置信息
+     */
+    @Data
+    public static class Platform3rdAccount {
+        /**
+         * appid
+         */
+        private String appId;
+
+        /**
+         * appSecret
+         */
+        private String appSecret;
+
+        /**
+         * 公众号开发域名，中间页域名
+         */
+        private String domain;
+
+        /**
+         * 消息加解密Key
+         */
+        private String aesKey;
+
+        /**
+         *消息校验Token
+         */
+        private String componentToken;
+
+        /**
+         * 需要token的接口
+         */
+        private String[] needTokenUrl;
+
+        /**
+         * 授权发起页域名
+         */
+        private String authInitPageDomain;
+    }
+
+
 }

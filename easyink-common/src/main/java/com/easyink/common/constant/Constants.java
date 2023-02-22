@@ -273,4 +273,22 @@ public class Constants {
      */
     public static final int ONE_NUM = 1;
 
+    /**
+     * CSV漏洞指攻击者利用特殊字符(“+、-、@、=”)
+     */
+    protected static final String[] CSV_INJECT_CHAR_LIST = {"+", "-", "@", "="};
+
+    /**
+     * 获得可能会引起CSV注入 的特殊字符序列
+     * 
+     * @return
+     */
+    public static String [] getCsvInjectCharList(){
+        return CSV_INJECT_CHAR_LIST;
+    }
+
+    /**
+     * TAB 空格字符
+     */
+    public static final String TAB = " ";
 }

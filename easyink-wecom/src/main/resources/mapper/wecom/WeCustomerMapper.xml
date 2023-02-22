@@ -253,7 +253,8 @@
                corp_name,
                corp_full_name,
                position,
-               is_open_chat
+               is_open_chat,
+               create_time
         from we_customer
     </sql>
     <sql id="selectWeCustomerByTagVo">
@@ -704,19 +705,18 @@
         WHERE corp_id = #{corpId}
           and wc.external_userid = #{externalUserid}
     </select>
+    <sql id="countCustomer">
+        SELECT COUNT(DISTINCT external_userid)
+        FROM we_flower_customer_rel
+        WHERE corp_id = #{corpId}
+        AND status IN (
+        ${@com.easyink.common.enums.CustomerStatusEnum@NORMAL.code},
+        ${@com.easyink.common.enums.CustomerStatusEnum@TO_BE_TRANSFERRED.code},
+        ${@com.easyink.common.enums.CustomerStatusEnum@TRANSFERRING.code}
+        )
+    </sql>
     <select id="countCustomerNum" resultType="java.lang.Integer">
-        SELECT COUNT(DISTINCT wecustomers.external_userid)
-        from (
-                 SELECT wfcr.external_userid
-                 FROM we_flower_customer_rel wfcr
-                          INNER JOIN we_customer wc ON wfcr.external_userid = wc.external_userid
-                 WHERE wfcr.corp_id = #{corpId}
-                   and wfcr.status IN (
-                                       ${@com.easyink.common.enums.CustomerStatusEnum@NORMAL.code},
-                                       ${@com.easyink.common.enums.CustomerStatusEnum@TO_BE_TRANSFERRED.code},
-                                       ${@com.easyink.common.enums.CustomerStatusEnum@TRANSFERRING.code}
-                     )
-             ) AS wecustomers
+        <include refid="countCustomer"/>
     </select>
     <!--查询客户并对客户去重-->
     <select id="selectWeCustomerListDistinct" resultMap="WeCustomerResultV2">

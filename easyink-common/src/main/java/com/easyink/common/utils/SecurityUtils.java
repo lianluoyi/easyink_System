@@ -47,7 +47,7 @@ public class SecurityUtils {
      * @param userId 用户ID
      * @return 结果
      */
-    public static boolean isAdmin(Long userId) {
-        return userId != null && 1L == userId;
+    public static boolean isAdmin(String userId) {
+        return "admin".equals(userId);
     }
 }

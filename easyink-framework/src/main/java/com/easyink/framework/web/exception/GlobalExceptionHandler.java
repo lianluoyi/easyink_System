@@ -9,6 +9,7 @@ import com.easyink.common.enums.WeExceptionTip;
 import com.easyink.common.exception.BaseException;
 import com.easyink.common.exception.CustomException;
 import com.easyink.common.utils.StringUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.poi.ss.formula.functions.T;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -91,7 +92,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public AjaxResult<T> handleException(Exception e) {
-        log.error(e.getMessage(), e);
+        log.error("全局捕获异常:{}", ExceptionUtils.getStackTrace(e));
         return AjaxResult.exception(e.getMessage());
     }
 

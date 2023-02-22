@@ -109,7 +109,7 @@ public class LoginTokenService {
      * @param userKey 登录用户的REDIS KEY
      */
     public static void refreshDataScope(String userKey) {
-        RedisCache redisCache = SpringUtils.getBean(RedisCache.class);
+        RedisCache redisCache = SpringUtils.getBean("redisCache", RedisCache.class);
         TokenService tokenService = SpringUtils.getBean(TokenService.class);
         LoginUser loginUser = tokenService.getLoginUserByUserKey(userKey);
         if (null != loginUser) {
@@ -132,7 +132,7 @@ public class LoginTokenService {
         // 获取当前登录用户的redisKey
         TokenService tokenService = SpringUtils.getBean(TokenService.class);
         String currentUserKey = tokenService.getUserKey(ServletUtils.getRequest());
-        RedisCache redisCache = SpringUtils.getBean(RedisCache.class);
+        RedisCache redisCache = SpringUtils.getBean("redisCache", RedisCache.class);
         // 获取缓存中所有登录用户
         Collection<String> keys = redisCache.keys(Constants.LOGIN_TOKEN_KEY + "*");
         for (String key : keys) {
@@ -168,7 +168,7 @@ public class LoginTokenService {
         // 1. 修改当前用户的corpId 并保存
         LoginUser loginUser = getLoginUser();
         loginUser.setCorpId(corpId);
-        RedisCache redisCache = SpringUtils.getBean(RedisCache.class);
+        RedisCache redisCache = SpringUtils.getBean("redisCache", RedisCache.class);
         String currentUserKey = SpringUtils.getBean(TokenService.class).getUserKey(ServletUtils.getRequest());
         redisCache.setCacheObject(currentUserKey, loginUser);
         // 2. 修改后刷新当前的部门范围和菜单权限
@@ -189,7 +189,7 @@ public class LoginTokenService {
         String currentUserKey = tokenService.getUserKey(loginUser.getToken());
         loginUser.setExpireTime(loginUser.getLoginTime() + tokenService.getExpireTime() * TokenService.MILLIS_MINUTE);
         // 获取当前登录用户
-        RedisCache redisCache = SpringUtils.getBean(RedisCache.class);
+        RedisCache redisCache = SpringUtils.getBean("redisCache", RedisCache.class);
         redisCache.setCacheObject(currentUserKey, loginUser, tokenService.getExpireTime(), TimeUnit.MINUTES);
     }
 

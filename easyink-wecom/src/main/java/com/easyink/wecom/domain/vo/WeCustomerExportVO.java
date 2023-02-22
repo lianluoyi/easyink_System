@@ -60,7 +60,7 @@ public class WeCustomerExportVO extends WeCustomer {
     private String tags;
 
     @TableField(exist = false)
-    @Excel(name = "客户状态" , sort = 8 ,readConverterExp = "0=正常,1=已流失,2=已流失" , defaultValue = "待继承")
+    @Excel(name = "客户状态" , sort = 8 ,readConverterExp = "0=正常,1=已流失,2=已流失,3=待继承,4=转接中" , defaultValue = "待继承")
     private String customerStatus;
 
     @TableField(exist = false)

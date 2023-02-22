@@ -5,6 +5,7 @@ import com.easyink.wecom.domain.WeGroupStatistic;
 import com.easyink.wecom.domain.dto.WePageCountDTO;
 import com.easyink.wecom.domain.query.WePageStateQuery;
 
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -55,4 +56,12 @@ public interface WeGroupStatisticService extends IService<WeGroupStatistic> {
      */
     List<WePageCountDTO> getMonthCountData(WePageStateQuery wePageStateQuery);
 
+    /**
+     * 获取群成员总数
+     *
+     * @param corpId 企业id
+     * @param date   日期
+     * @return 群成员总数
+     */
+    Integer getGroupMemberCnt(String corpId, Date date);
 }

@@ -1,6 +1,8 @@
 package com.easyink.common.core.domain.system;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.List;
 
@@ -50,6 +52,18 @@ public class RouterVo {
      * 子路由
      */
     private List<RouterVo> children;
+    /**
+     * 是否是页面
+     */
+    @Getter
+    @Setter
+    private Boolean isPage ;
+    /**
+     * 是否是横栏上的菜单选项,比如运营中心，客户中心
+     */
+    @Getter
+    @Setter
+    private Boolean isFrameMenu;
 
     public String getName() {
         return name;

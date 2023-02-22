@@ -4,6 +4,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+
 /**
  * @author admin
  * @description
@@ -14,7 +17,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class WePageCountDTO {
     /**
-     * 日期
+     * 日期 , 格式 ：  '%Y-%m-%d'
      */
     private String xTime;
 
@@ -51,7 +54,7 @@ public class WePageCountDTO {
     /**
      * 删除/拉黑成员的客户数，即将成员删除或加入黑名单的客户数
      */
-    private Long negativeFeedbackCnt;
+    private Integer negativeFeedbackCnt;
 
     /**
      * 新增客户群数量
@@ -87,13 +90,52 @@ public class WePageCountDTO {
      * 截至当天客户群消息总数
      */
     private Integer msgTotal;
+    /**
+     * 新客留存率
+     */
+    private String newContactRetentionRate;
 
+    /**
+     * 总客户人数
+     */
+    private Integer totalContactCnt;
+    /**
+     * 当天加入的新客流失数量 , 因为官方没有返回由系统自行统计,
+     */
+    private Integer newContactLossCnt ;
+
+    /**
+     * 获取新客留存率   流失客户数/ 新增客户数
+     *
+     * @return 新客留存率
+     */
+    public String getNewContactRetentionRate() {
+        if (newContactCnt == null || newContactLossCnt == null) {
+            return BigDecimal.ZERO.toPlainString();
+        }
+        BigDecimal percent = new BigDecimal(100);
+        if(newContactCnt == 0) {
+            return percent.toPlainString();
+        }
+        // 百分比
+        BigDecimal newCntDecimal = new BigDecimal(newContactCnt);
+        BigDecimal lossCntDecimal = new BigDecimal(newContactLossCnt);
+        int scale = 2;
+        // 计算留存率  新客数-流失数/新客数
+        return  percent.subtract(lossCntDecimal
+                               .multiply(percent)
+                               .divide(newCntDecimal, scale, RoundingMode.HALF_UP)
+                               .stripTrailingZeros()
+                       )
+                       .toPlainString();
+    }
 
     /**
      * 设置群数据
+     *
      * @param groupChatData 群数据
      */
-    public void setGroupChatData(WePageCountDTO groupChatData){
+    public void setGroupChatData(WePageCountDTO groupChatData) {
         this.setChatCnt(groupChatData.getChatCnt());
         this.setChatTotal(groupChatData.getChatTotal());
         this.setChatHasMsg(groupChatData.getChatHasMsg());

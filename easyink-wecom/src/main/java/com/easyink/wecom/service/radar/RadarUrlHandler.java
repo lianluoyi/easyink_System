@@ -1,13 +1,15 @@
 package com.easyink.wecom.service.radar;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.easyink.common.config.RuoYiConfig;
+import com.easyink.common.config.WechatOpenConfig;
 import com.easyink.common.constant.GenConstants;
 import com.easyink.common.core.domain.entity.WeCorpAccount;
 import com.easyink.common.core.domain.wecom.WeUser;
 import com.easyink.common.enums.MessageType;
 import com.easyink.common.enums.ResultTip;
+import com.easyink.common.enums.ShortCodeType;
 import com.easyink.common.exception.CustomException;
-import com.easyink.common.shorturl.ShortUrlAppendInfo;
+import com.easyink.common.shorturl.RadarShortUrlAppendInfo;
 import com.easyink.common.shorturl.SysShortUrlMapping;
 import com.easyink.common.shorturl.service.ShortUrlAdaptor;
 import com.easyink.wecom.client.WeMessagePushClient;
@@ -16,7 +18,6 @@ import com.easyink.wecom.domain.WeTag;
 import com.easyink.wecom.domain.dto.WeMessagePushDTO;
 import com.easyink.wecom.domain.dto.message.TextMessageDTO;
 import com.easyink.wecom.domain.entity.radar.WeRadar;
-import com.easyink.wecom.domain.entity.wechatopen.WeOpenConfig;
 import com.easyink.wecom.domain.vo.WeMakeCustomerTagVO;
 import com.easyink.wecom.service.WeCorpAccountService;
 import com.easyink.wecom.service.WeCustomerService;
@@ -57,9 +58,12 @@ public class RadarUrlHandler extends ShortUrlAdaptor {
     private final WeMessagePushClient weMessagePushClient;
     private final WeCorpAccountService weCorpAccountService;
     private final WeCustomerTrajectoryService weCustomerTrajectoryService;
+    private final RuoYiConfig ruoYiConfig;
+    private final WechatOpenConfig wechatOpenConfig;
+    private final WeRadarOfficialAccountConfigService weRadarOfficialAccountConfigService;
 
     @Lazy
-    public RadarUrlHandler( WeCustomerService weCustomerService, WechatOpenService wechatOpenService, WeRadarClickRecordService weRadarClickRecordService, WeRadarService weRadarService, WeUserService weUserService, WeMessagePushClient weMessagePushClient, WeCorpAccountService weCorpAccountService, WeCustomerTrajectoryService weCustomerTrajectoryService) {
+    public RadarUrlHandler(WeCustomerService weCustomerService, WechatOpenService wechatOpenService, WeRadarClickRecordService weRadarClickRecordService, WeRadarService weRadarService, WeUserService weUserService, WeMessagePushClient weMessagePushClient, WeCorpAccountService weCorpAccountService, WeCustomerTrajectoryService weCustomerTrajectoryService, RuoYiConfig ruoYiConfig, WechatOpenConfig wechatOpenConfig, WeRadarOfficialAccountConfigService weRadarOfficialAccountConfigService) {
         this.weCustomerService = weCustomerService;
         this.wechatOpenService = wechatOpenService;
         this.weRadarClickRecordService = weRadarClickRecordService;
@@ -68,6 +72,9 @@ public class RadarUrlHandler extends ShortUrlAdaptor {
         this.weMessagePushClient = weMessagePushClient;
         this.weCorpAccountService = weCorpAccountService;
         this.weCustomerTrajectoryService = weCustomerTrajectoryService;
+        this.ruoYiConfig = ruoYiConfig;
+        this.wechatOpenConfig = wechatOpenConfig;
+        this.weRadarOfficialAccountConfigService = weRadarOfficialAccountConfigService;
     }
 
     /**
@@ -80,10 +87,10 @@ public class RadarUrlHandler extends ShortUrlAdaptor {
      *                    如果是新客进群则为新客进群的活码名称,
      *                    如果是SOP则为SOP名称，如果是群日历，则为日历名称，
      *                    如果是自定义渠道则为自定义渠道的渠道名)
-     * @return {@link ShortUrlAppendInfo }
+     * @return {@link RadarShortUrlAppendInfo }
      */
-    public ShortUrlAppendInfo buildAppendInfo(Long radarId, String userId, Integer channelType, String detail) {
-        return ShortUrlAppendInfo.builder().radarId(radarId).userId(userId).channelType(channelType).detail(detail).build();
+    public RadarShortUrlAppendInfo buildAppendInfo(Long radarId, String userId, Integer channelType, String detail) {
+        return RadarShortUrlAppendInfo.builder().type(ShortCodeType.RADAR.getCode()).radarId(radarId).userId(userId).channelType(channelType).detail(detail).build();
     }
 
     /**
@@ -92,10 +99,10 @@ public class RadarUrlHandler extends ShortUrlAdaptor {
      * @param corpId     企业id
      * @param url        长链接url
      * @param createBy   创建人
-     * @param appendInfo 附件信息{@link ShortUrlAppendInfo }
+     * @param appendInfo 附件信息{@link RadarShortUrlAppendInfo }
      * @return 雷达短链
      */
-    public String createRadarUrl(String corpId, String url, String createBy, ShortUrlAppendInfo appendInfo) {
+    public String createRadarUrl(String corpId, String url, String createBy, RadarShortUrlAppendInfo appendInfo) {
         if (StringUtils.isAnyBlank(url, corpId)) {
             log.info("[创建雷达链接]缺失长链接或者corpId,by:{},append:{},corpId:{}", createBy, appendInfo, corpId);
             throw new CustomException(ResultTip.TIP_MISSING_LONG_URL);
@@ -107,11 +114,11 @@ public class RadarUrlHandler extends ShortUrlAdaptor {
         if (StringUtils.isBlank(code)) {
             throw new CustomException(ResultTip.TIP_ERROR_CREATE_SHORT_URL);
         }
-        WeOpenConfig config = wechatOpenService.getConfig(corpId);
-        if (config == null || StringUtils.isBlank(config.getOfficialAccountDomain())) {
+        String officeDomain = wechatOpenService.getDomain(corpId);
+        if(StringUtils.isBlank(officeDomain)) {
             throw new CustomException(ResultTip.TIP_WECHAT_OPEN_OFFICIAL_NO_DOMAIN);
         }
-        return genShortUrl(config.getOfficialAccountDomain(), code);
+        return genShortUrl(officeDomain, code);
     }
 
     /**
@@ -131,13 +138,15 @@ public class RadarUrlHandler extends ShortUrlAdaptor {
         if (StringUtils.isBlank(mapping.getLongUrl())) {
             throw new CustomException(ResultTip.TIP_CANNOT_FIND_LONG_URL);
         }
-        // 2. 异步处理 (记录点击详情)
-        try {
-            asyncRadarHandle(mapping, openId);
-        } catch (CustomException e) {
-            log.error("[雷达异步处理]出现业务异常.code:{},openId:{},errmsg:{}", shortCode, openId, e.getMessage());
-        } catch (Exception e) {
-            log.error("[雷达异步处理]出现未知异常.code:{},openId:{},errmsg:{}", shortCode, openId, ExceptionUtils.getStackTrace(e));
+        if (ShortCodeType.RADAR.getCode().equals(mapping.getType())) {
+            // 2. 异步处理 (记录点击详情)
+            try {
+                asyncRadarHandle(mapping, openId);
+            } catch (CustomException e) {
+                log.error("[雷达异步处理]出现业务异常.code:{},openId:{},errmsg:{}", shortCode, openId, e.getMessage());
+            } catch (Exception e) {
+                log.error("[雷达异步处理]出现未知异常.code:{},openId:{},errmsg:{}", shortCode, openId, ExceptionUtils.getStackTrace(e));
+            }
         }
         // 3. 返回给前端
         return mapping.getLongUrl();
@@ -146,22 +155,22 @@ public class RadarUrlHandler extends ShortUrlAdaptor {
     @Async
     public void asyncRadarHandle(SysShortUrlMapping mapping, String openId) {
         if (mapping == null || StringUtils.isBlank(openId)
-                || mapping.getAppend() == null || mapping.getAppend().getRadarId() == null || mapping.getAppend().getChannelType() == null || StringUtils.isBlank(mapping.getAppend().getUserId())) {
+                || mapping.getRadarAppendInfo() == null || mapping.getRadarAppendInfo().getRadarId() == null || mapping.getRadarAppendInfo().getChannelType() == null || StringUtils.isBlank(mapping.getRadarAppendInfo().getUserId())) {
             log.error("[异步雷达触发记录处理]参数确实,无法记录点击记录,mapping:{},openid:{}", mapping, openId);
             return;
         }
-        ShortUrlAppendInfo appendInfo = mapping.getAppend();
+        RadarShortUrlAppendInfo appendInfo = mapping.getRadarAppendInfo();
+        // 1. 获取雷达详情
+        WeRadar radar = weRadarService.getById(appendInfo.getRadarId());
+        if (radar == null || StringUtils.isBlank(radar.getCorpId())) {
+            log.error("[异步雷达触发记录处理]找不到对应的雷达详情,无法记录点击记录,mapping:{}", mapping);
+            return;
+        }
         //  1.根据openid获取客户详情
-        WeCustomer customer = getCustomerInfoByOpenId(openId);
+        WeCustomer customer = getCustomerInfoByOpenId(openId, radar.getCorpId());
         if (customer == null) {
             log.error("[异步雷达触发记录处理]获取客户详情,查询不到客户信息,openid:{}", openId);
             throw new CustomException(ResultTip.TIP_FAIL_TO_GET_CUSTOMER_INFO);
-        }
-        // 2. 获取雷达详情
-        WeRadar radar = weRadarService.getById(appendInfo.getRadarId());
-        if (radar == null || StringUtils.isBlank(radar.getCorpId())) {
-            log.error("[异步雷达触发记录处理]找不到对应的雷达详情,无法记录点击记录,mapping:{}, customer:{}", mapping, customer);
-            return;
         }
         // 3. 获取员工详情
         WeUser user = weUserService.getUserDetail(radar.getCorpId(), appendInfo.getUserId());
@@ -180,9 +189,9 @@ public class RadarUrlHandler extends ShortUrlAdaptor {
      * @param radar      雷达 {@link WeRadar}
      * @param user       员工信息 {@link WeUser}
      * @param customer   客户信息 {@link WeCustomer }
-     * @param appendInfo 附件信息{@link ShortUrlAppendInfo }
+     * @param appendInfo 附件信息{@link RadarShortUrlAppendInfo }
      */
-    private void doExtraSetting(WeRadar radar, WeUser user, WeCustomer customer, ShortUrlAppendInfo appendInfo) {
+    private void doExtraSetting(WeRadar radar, WeUser user, WeCustomer customer, RadarShortUrlAppendInfo appendInfo) {
         // 获取企业应用信息
         WeCorpAccount corpAccount = weCorpAccountService.findValidWeCorpAccount(radar.getCorpId());
         if (corpAccount == null) {
@@ -279,21 +288,14 @@ public class RadarUrlHandler extends ShortUrlAdaptor {
      * 根据openId获取客户详情
      *
      * @param openId 公众号openid
+     * @param corpId 企业id
      * @return 客户详情 {@link WeCustomer}
      */
-    public WeCustomer getCustomerInfoByOpenId(String openId) {
-        if (StringUtils.isBlank(openId)) {
+    public WeCustomer getCustomerInfoByOpenId(String openId, String corpId) {
+        if (StringUtils.isAnyBlank(openId, corpId)) {
             return null;
         }
-        // 1. 根据openid获取unionId
-        String unionId = wechatOpenService.getUnionIdByOpenId(openId);
-        //  2. 先根据union_id去客户表查询是否有数据
-        WeCustomer customer = weCustomerService.getOne(new LambdaQueryWrapper<WeCustomer>().eq(WeCustomer::getUnionid, unionId).last(GenConstants.LIMIT_1));
-        if (customer == null) {
-            log.info("[获取雷达原链接] 获取客户详情,根据union_id在数据库中未匹配到客户,openId:{},unionId:{}", openId, unionId);
-            throw new CustomException(ResultTip.TIP_CANNOT_FIND_USER_BY_UNION_ID);
-        }
-        return customer;
+        return weCustomerService.getCustomerInfoByOpenId(openId, corpId);
     }
 
 
