@@ -1,5 +1,7 @@
 blank_issues_enabled: false
 contact_links:
   - name: 新建一个 Issue
-    url: https://easywecom.github.io/?repo=easywecom/easyWeCom_System
+    url: https://github.com/lianluoyi/easyink.github.io/?repo=easywecom/easyWeCom_System
     about: 请点击 「Open」 按钮打开新链接创建 Issue
+    
+    
