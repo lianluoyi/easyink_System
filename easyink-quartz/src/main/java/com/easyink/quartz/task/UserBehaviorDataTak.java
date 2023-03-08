@@ -30,7 +30,7 @@ public class UserBehaviorDataTak {
     }
 
     public void getUserBehaviorData() {
-        log.info("定时任务开始执行------>");
+        log.info("联系客户统计数据拉取-定时任务开始执行------>");
         List<WeCorpAccount> weCorpAccountList = weCorpAccountService.listOfAuthCorpInternalWeCorpAccount();
         weCorpAccountList.forEach(weCorpAccount -> {
             try {

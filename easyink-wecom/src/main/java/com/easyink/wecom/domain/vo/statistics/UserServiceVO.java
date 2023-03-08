@@ -44,11 +44,11 @@ public class UserServiceVO extends UserBaseVO {
 
     @ApiModelProperty("有效沟通率")
     @Excel(name = "有效沟通率", sort = 9)
-    private Integer effectiveCommunicationRate;
+    private String effectiveCommunicationRate;
 
     @ApiModelProperty("客户好评率")
     @Excel(name = "客户好评率", sort = 10)
-    private Integer customerPositiveCommentsRate;
+    private String customerPositiveCommentsRate;
 
     /**
      * 客户主动发起聊天数
@@ -169,6 +169,18 @@ public class UserServiceVO extends UserBaseVO {
                 .divide(chatTotalDecimal, scale, RoundingMode.HALF_UP)
                 .stripTrailingZeros()
                 .toPlainString();
+    }
+
+    /**
+     * 绑定导出数据
+     * 导出框架不能直接使用get方法获取属性值
+     */
+    public void bindExportData(){
+        effectiveCommunicationRate = getEffectiveCommunicationRate() + "%";
+        replyRate = getReplyRate() + "%";
+        customerPositiveCommentsRate = getCustomerPositiveCommentsRate() + "%";
+        averageChatTotal = getAverageChatTotal();
+        averageFirstReplyDuration += "分钟";
     }
 
 }

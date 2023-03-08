@@ -1,8 +1,11 @@
 package com.easyink.wecom.domain.dto.statistics;
 
 
+import com.easyink.common.utils.DateUtils;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
+
+import java.util.List;
 
 /**
  * 员工服务查询DTO
@@ -12,6 +15,23 @@ import lombok.Data;
  **/
 @Data
 public class UserServiceDTO extends StatisticsDTO{
+
+    @ApiModelProperty("开始时间/添加时间的开始时间")
+    private String beginTime;
+
+    @ApiModelProperty("结束时间/添加时间的结束时间")
+    private String endTime;
+
+    @Override
+    public String getBeginTime() {
+        return DateUtils.parseBeginDay(beginTime);
+    }
+
+    @Override
+    public String getEndTime() {
+        return DateUtils.parseEndDay(endTime);
+    }
+
     @ApiModelProperty("聊天总数排序 正序 ASC 倒叙 DESC 不需要排序 null")
     private String chatTotalSort;
 
@@ -36,5 +56,64 @@ public class UserServiceDTO extends StatisticsDTO{
     @ApiModelProperty("客户好评率排序 正序 ASC 倒叙 DESC 不需要排序 null")
     private String customerPositiveCommentsRateSort;
 
+    public String getChatTotalSort() {
+        if (chatTotalSort == null) {
+            return null;
+        }
+        return "asc".equalsIgnoreCase(chatTotalSort) ? "ASC" : "DESC";
+    }
 
+    public String getSendContactCntSort() {
+        if (sendContactCntSort == null) {
+            return null;
+        }
+        return "asc".equalsIgnoreCase(sendContactCntSort) ? "ASC" : "DESC";
+    }
+
+    public String getAverageChatTotalSort() {
+        if (averageChatTotalSort == null) {
+            return null;
+        }
+        return "asc".equalsIgnoreCase(averageChatTotalSort) ? "ASC" : "DESC";
+    }
+
+    public String getAverageFirstReplyDurationSort() {
+        if (averageFirstReplyDurationSort == null) {
+            return null;
+        }
+        return "asc".equalsIgnoreCase(averageFirstReplyDurationSort) ? "ASC" : "DESC";
+    }
+
+    public String getReplyRateSort() {
+        if (replyRateSort == null) {
+            return null;
+        }
+        return "asc".equalsIgnoreCase(replyRateSort) ? "ASC" : "DESC";
+    }
+
+    public String getEffectiveCommunicationCustomerCntSort() {
+        if (effectiveCommunicationCustomerCntSort == null) {
+            return null;
+        }
+        return "asc".equalsIgnoreCase(effectiveCommunicationCustomerCntSort) ? "ASC" : "DESC";
+    }
+
+    public String getEffectiveCommunicationRateSort() {
+        if (effectiveCommunicationRateSort == null) {
+            return null;
+        }
+        return "asc".equalsIgnoreCase(effectiveCommunicationRateSort) ? "ASC" : "DESC";
+    }
+
+    public String getCustomerPositiveCommentsRateSort() {
+        if (customerPositiveCommentsRateSort == null) {
+            return null;
+        }
+        return "asc".equalsIgnoreCase(customerPositiveCommentsRateSort) ? "ASC" : "DESC";
+    }
+
+    /**
+     * 排除员工List 客服好评表使用 如果客服好评表中查询员工不足分页的数量，则查询好评率为0的用户来补充
+     */
+    private List<String> exceptUserIds;
 }

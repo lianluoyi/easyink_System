@@ -39,63 +39,87 @@
                 <include refid="searchTime"/>
                     ), 0) AS chatTotal,
             IFNULL(SUM(ucms.user_send_message_cnt), 0) AS sendContactCnt,
-            IF(IFNULL(COUNT(ucms.external_userid), 0) = 0, 0, CAST(IFNULL(SUM(ucms.user_send_message_cnt), 0) *1./ COUNT(ucms.external_userid) as decimal(8,2))) AS averageChatTotal,
+            IF(IFNULL((SELECT COUNT(wucms.external_userid)
+                        FROM we_user_customer_message_statistics wucms
+                        WHERE wucms.corp_id = ucms.corp_id
+                        AND wucms.user_id = ucms.user_id
+                        <include refid="searchTime"/>), 0) = 0, 0, CAST(SUM(ucms.user_send_message_cnt) *1./ (SELECT COUNT(wucms.external_userid)
+                                                                                                                    FROM we_user_customer_message_statistics wucms
+                                                                                                                    WHERE wucms.corp_id = ucms.corp_id
+                                                                                                                    AND wucms.user_id = ucms.user_id
+                                                                                                                    <include refid="searchTime"/>) as decimal(8,2))) AS averageChatTotal,
             IFNULL((SELECT
                         IF(IFNULL(COUNT(wucms.external_userid), 0)=0,0,CAST(IFNULL(SUM(wucms.first_reply_time_interval_alter_receive), 0) *1./ COUNT(wucms.external_userid) as decimal(8,2)))
                     FROM we_user_customer_message_statistics wucms
                     WHERE wucms.corp_id = ucms.corp_id
                       AND wucms.user_id = ucms.user_id
-                      AND wucms.user_active_dialogue = 0
+                      AND wucms.user_active_dialogue = '${@com.easyink.common.enums.ContactSpeakEnum@CUSTOMER.code}'
                     <include refid="searchTime"/>
                     ), 0) AS averageFirstReplyDuration,
             IFNULL((SELECT COUNT(wucms.id)
                     FROM we_user_customer_message_statistics wucms
                     WHERE wucms.corp_id = ucms.corp_id
                       AND wucms.user_id = ucms.user_id
-                      AND wucms.user_active_dialogue = 0
+                      AND wucms.user_active_dialogue = '${@com.easyink.common.enums.ContactSpeakEnum@CUSTOMER.code}'
                     <include refid="searchTime"/>
                     ),0) AS customerActiveStartContactCnt,
             IFNULL((SELECT COUNT(wucms.id)
                     FROM we_user_customer_message_statistics wucms
                     WHERE wucms.corp_id = ucms.corp_id
                       AND wucms.user_id = ucms.user_id
-                      AND wucms.user_send_message_cnt != 0
-                      AND wucms.user_active_dialogue = 0
+                      AND wucms.user_send_message_cnt != '${@com.easyink.common.constant.WeConstans@ZERO}'
+                      AND wucms.user_active_dialogue = '${@com.easyink.common.enums.ContactSpeakEnum@CUSTOMER.code}'
                     <include refid="searchTime"/>
                     ), 0) AS userReplyContactCnt,
             <if test="replyRateSort != null and replyRateSort != ''">
-                IF(IFNULL((SELECT COUNT(wucms.external_userid)
+                IF(IFNULL((SELECT COUNT(wucms.id)
                            FROM we_user_customer_message_statistics wucms
                            WHERE wucms.corp_id = ucms.corp_id
                              AND wucms.user_id = ucms.user_id
-                             AND wucms.user_active_dialogue = 1
-                    <include refid="searchTime"/>
+                             AND wucms.user_active_dialogue = '${@com.easyink.common.enums.ContactSpeakEnum@CUSTOMER.code}'
+                        <include refid="searchTime"/>
                     ),0) = 0, 0,
-                CAST(IFNULL((SELECT COUNT(wucms.external_userid)
+                CAST(IFNULL((SELECT COUNT(wucms.id)
                              FROM we_user_customer_message_statistics wucms
                              WHERE wucms.corp_id = ucms.corp_id
                                AND wucms.user_id = ucms.user_id
-                               AND wucms.user_active_dialogue = 1
+                               AND wucms.user_send_message_cnt != '${@com.easyink.common.constant.WeConstans@ZERO}'
+                               AND wucms.user_active_dialogue = '${@com.easyink.common.enums.ContactSpeakEnum@CUSTOMER.code}'
                     <include refid="searchTime"/>
                     ),0) * 1./
-                (SELECT COUNT(wucms.external_userid)
+                (SELECT COUNT(wucms.id)
                  FROM we_user_customer_message_statistics wucms
                  WHERE wucms.corp_id = ucms.corp_id
                    AND wucms.user_id = ucms.user_id
-                   AND wucms.user_active_dialogue = 1
+                   AND wucms.user_active_dialogue = '${@com.easyink.common.enums.ContactSpeakEnum@CUSTOMER.code}'
                 <include refid="searchTime"/>
                 ) as decimal(8,2))) AS replyRate,
             </if>
             <if test="effectiveCommunicationRateSort != null and effectiveCommunicationRateSort != ''">
-                IF(IFNULL(COUNT(ucms.external_userid), 0) = 0, 0, CAST(IFNULL(SUM(three_rounds_dialogue_flag),0) *1./ COUNT(ucms.external_userid) as decimal(8,2))) AS effectiveCommunicationRate,
+                IF(IFNULL((SELECT COUNT(wucms.external_userid)
+                            FROM we_user_customer_message_statistics wucms
+                            WHERE wucms.corp_id = ucms.corp_id
+                            AND wucms.user_id = ucms.user_id
+                            <include refid="searchTime"/>), 0) = 0, 0, CAST(IFNULL(SUM(three_rounds_dialogue_flag),0) *1./ (SELECT COUNT(wucms.external_userid)
+                                                                                    FROM we_user_customer_message_statistics wucms
+                                                                                    WHERE wucms.corp_id = ucms.corp_id
+                                                                                    AND wucms.user_id = ucms.user_id
+                                                                                    <include refid="searchTime"/>) as decimal(8,2))) AS effectiveCommunicationRate,
             </if>
-            IFNULL(SUM(ucms.three_rounds_dialogue_flag),0) AS effectiveCommunicationCustomerCnt
+            IFNULL(SUM(ucms.three_rounds_dialogue_flag),0) AS effectiveCommunicationCustomerCnt,
+            IFNULL(SUM(wfcf.score), 0) AS score,
+            <if test="customerPositiveCommentsRateSort != null and customerPositiveCommentsRateSort != ''">
+                IF(IFNULL(COUNT(wfcf.customer_id), 0)=0, 0, CAST(IFNULL(SUM(wfcf.score), 0) *1./COUNT(wfcf.customer_id) AS DECIMAL(8,2))) AS customerPositiveCommentsRate,
+            </if>
+            IFNULL(COUNT(wfcf.customer_id), 0) AS num
         FROM we_user_customer_message_statistics ucms
+                 LEFT JOIN we_form_customer_feedback wfcf ON wfcf.corp_id = ucms.corp_id AND wfcf.user_id = ucms.user_id AND wfcf.create_time BETWEEN date_format(#{beginTime},'%Y-%m-%d 00:00:00' ) AND date_format(#{endTime},'%Y-%m-%d 23:59:59' )
                  LEFT JOIN we_user wu ON wu.user_id = ucms.user_id AND wu.corp_id = ucms.corp_id
                  LEFT JOIN we_department wd ON wd.id = wu.main_department AND wd.corp_id = wu.corp_id
         WHERE
             ucms.corp_id = #{corpId}
             ${params.dataScope}
+            AND wu.is_activate = ${@com.easyink.common.constant.WeConstans@WE_USER_IS_ACTIVATE}
             AND wu.`user_name` IS NOT NULL
             <if test="beginTime !=null">
                 AND ucms.send_time &gt;= #{beginTime}
@@ -109,27 +133,36 @@
                     #{userId}
                 </foreach>
             </if>
+            <if test="exceptUserIds != null and exceptUserIds.size() > 0">
+                AND ucms.user_id NOT IN
+                <foreach collection="exceptUserIds" item="userId" open="(" separator="," close=")">
+                    #{userId}
+                </foreach>
+            </if>
         GROUP BY ucms.user_id
         <if test="chatTotalSort != null and chatTotalSort != ''">
-            ORDER BY chatTotal #{chatTotalSort}
+            ORDER BY chatTotal ${chatTotalSort}
         </if>
         <if test="sendContactCntSort != null and sendContactCntSort != ''">
-            ORDER BY sendContactCnt #{sendContactCntSort}
+            ORDER BY sendContactCnt ${sendContactCntSort}
         </if>
         <if test="averageChatTotalSort != null and averageChatTotalSort != ''">
-            ORDER BY averageChatTotal #{averageChatTotalSort}
+            ORDER BY averageChatTotal ${averageChatTotalSort}
         </if>
         <if test="averageFirstReplyDurationSort != null and averageFirstReplyDurationSort != ''">
-            ORDER BY averageFirstReplyDuration #{averageFirstReplyDurationSort}
+            ORDER BY averageFirstReplyDuration ${averageFirstReplyDurationSort}
         </if>
         <if test="replyRateSort != null and replyRateSort != ''">
-            ORDER BY replyRate #{replyRateSort}
+            ORDER BY replyRate ${replyRateSort}
         </if>
         <if test="effectiveCommunicationCustomerCntSort != null and effectiveCommunicationCustomerCntSort != ''">
-            ORDER BY effectiveCommunicationCustomerCnt #{effectiveCommunicationCustomerCntSort}
+            ORDER BY effectiveCommunicationCustomerCnt ${effectiveCommunicationCustomerCntSort}
         </if>
         <if test="effectiveCommunicationRateSort != null and effectiveCommunicationRateSort != ''">
-            ORDER BY effectiveCommunicationRate #{effectiveCommunicationRateSort}
+            ORDER BY effectiveCommunicationRate ${effectiveCommunicationRateSort}
+        </if>
+        <if test="customerPositiveCommentsRateSort != null and customerPositiveCommentsRateSort != ''">
+            ORDER BY customerPositiveCommentsRate ${customerPositiveCommentsRateSort}
         </if>
     </select>
 
@@ -157,6 +190,7 @@
             LEFT JOIN we_user wu ON wu.corp_id = wucms.corp_id AND wu.user_id = wucms.user_id
             WHERE wucms.corp_id = #{corpId}
             ${params.dataScope}
+            AND wu.is_activate = ${@com.easyink.common.constant.WeConstans@WE_USER_IS_ACTIVATE}
             <include refid="getUserServiceOfTotalCondition"/>
             ), 0) AS chatTotal,
             IFNULL(SUM(ucms.user_send_message_cnt), 0) AS sendContactCnt,
@@ -165,8 +199,9 @@
                         IF(IFNULL(COUNT(wucms.external_userid), 0)=0,0, CAST(IFNULL(SUM(wucms.first_reply_time_interval_alter_receive), 0) *1./ COUNT(wucms.external_userid) as decimal(8,2)))
                     FROM we_user_customer_message_statistics wucms
                     LEFT JOIN we_user wu ON wu.corp_id = wucms.corp_id AND wu.user_id = wucms.user_id
-                    WHERE wucms.corp_id = #{corpId} AND wucms.user_active_dialogue = 0
+                    WHERE wucms.corp_id = #{corpId} AND wucms.user_active_dialogue = '${@com.easyink.common.enums.ContactSpeakEnum@CUSTOMER.code}'
                     ${params.dataScope}
+                    AND wu.is_activate = ${@com.easyink.common.constant.WeConstans@WE_USER_IS_ACTIVATE}
                     <include refid="getUserServiceOfTotalCondition"/>
                     ), 0) AS averageFirstReplyDuration,
             IFNULL((SELECT COUNT(wucms.id)
@@ -174,16 +209,18 @@
                     LEFT JOIN we_user wu ON wu.corp_id = wucms.corp_id AND wu.user_id = wucms.user_id
                     WHERE wucms.corp_id = #{corpId}
                     ${params.dataScope}
-                      AND wucms.user_active_dialogue = 0
+                    AND wu.is_activate = ${@com.easyink.common.constant.WeConstans@WE_USER_IS_ACTIVATE}
+                      AND wucms.user_active_dialogue = '${@com.easyink.common.enums.ContactSpeakEnum@CUSTOMER.code}'
                     <include refid="getUserServiceOfTotalCondition"/>
                     ),0) AS customerActiveStartContactCnt,
             IFNULL((SELECT COUNT(wucms.id)
                     FROM we_user_customer_message_statistics wucms
                     LEFT JOIN we_user wu ON wu.corp_id = wucms.corp_id AND wu.user_id = wucms.user_id
                     WHERE wucms.corp_id = #{corpId}
-                      AND wucms.user_active_dialogue = 0
+                      AND wucms.user_active_dialogue = '${@com.easyink.common.enums.ContactSpeakEnum@CUSTOMER.code}'
                       AND wucms.user_send_message_cnt != 0
                     ${params.dataScope}
+                    AND wu.is_activate = ${@com.easyink.common.constant.WeConstans@WE_USER_IS_ACTIVATE}
                     <include refid="getUserServiceOfTotalCondition"/>
                     ), 0) AS userReplyContactCnt,
             IFNULL(SUM(ucms.three_rounds_dialogue_flag),0) AS effectiveCommunicationCustomerCnt
@@ -191,7 +228,8 @@
         LEFT JOIN we_user wu ON wu.corp_id = ucms.corp_id AND wu.user_id = ucms.user_id
         WHERE
             ucms.corp_id = #{corpId}
-        ${params.dataScope}
+            ${params.dataScope}
+            AND wu.is_activate = ${@com.easyink.common.constant.WeConstans@WE_USER_IS_ACTIVATE}
             <if test="beginTime !=null">
                 AND ucms.send_time &gt;= #{beginTime}
             </if>
@@ -234,31 +272,57 @@
     <select id="getCustomerActivityOfDate"
             resultType="com.easyink.wecom.domain.vo.statistics.CustomerActivityOfDateVO">
         SELECT
-            ucms.send_time AS time,
-            IFNULL(SUM(ucms.user_send_message_cnt), 0) AS userSendMessageCnt,
-            IFNULL(SUM(ucms.external_user_send_message_cnt), 0) AS customerSendMessageCnt,
-            IFNULL(COUNT(DISTINCT ucms.external_userid), 0) AS chatCustomerCnt
-        FROM we_user_customer_message_statistics ucms
-            LEFT JOIN we_user wu ON wu.corp_id = ucms.corp_id AND wu.user_id = ucms.user_id
-        WHERE
-            <include refid="searchCondition"/>
-        ${params.dataScope}
-        GROUP BY ucms.send_time
+            a.send_time AS `time`,
+            IFNULL(b.userSendMessageCnt, 0) userSendMessageCnt,
+            IFNULL(b.customerSendMessageCnt, 0) customerSendMessageCnt,
+            IFNULL(b.chatCustomerCnt, 0) chatCustomerCnt
+        FROM
+            ( SELECT DISTINCT send_time FROM we_user_customer_message_statistics WHERE corp_id =  #{corpId} AND send_time BETWEEN #{sendStartTime} AND #{sendEndTime}) a
+        LEFT JOIN (
+            SELECT
+                IFNULL( SUM( ucms.user_send_message_cnt ), 0 ) AS userSendMessageCnt,
+                IFNULL( SUM( ucms.external_user_send_message_cnt ), 0 ) AS customerSendMessageCnt,
+                ucms.send_time,
+                IFNULL(COUNT(DISTINCT ucms.external_userid), 0) AS chatCustomerCnt
+            FROM
+                we_user_customer_message_statistics ucms
+            LEFT JOIN we_user wu ON wu.corp_id = ucms.corp_id
+                AND wu.user_id = ucms.user_id AND wu.is_activate = ${@com.easyink.common.constant.WeConstans@WE_USER_IS_ACTIVATE}
+            WHERE
+                <include refid="searchCondition"/>
+                ${params.dataScope}
+            GROUP BY
+            ucms.send_time
+        ) b ON a.send_time = b.send_time
+        ORDER BY a.send_time
     </select>
 
     <!--获取客户活跃度-趋势图-->
     <select id="getCustomerActivityOfDateTrend"
             resultType="com.easyink.wecom.domain.vo.statistics.SendMessageCntVO">
         SELECT
-            ucms.send_time AS time,
-            IFNULL(SUM(ucms.user_send_message_cnt), 0) AS userSendMessageCnt,
-            IFNULL(SUM(ucms.external_user_send_message_cnt), 0) AS customerSendMessageCnt
-        FROM we_user_customer_message_statistics ucms
-            LEFT JOIN we_user wu ON wu.corp_id = ucms.corp_id AND wu.user_id = ucms.user_id
-        WHERE
-            <include refid="searchCondition"/>
-        ${params.dataScope}
-        GROUP BY ucms.send_time
+            a.send_time AS `time`,
+            IFNULL(b.userSendMessageCnt, 0) userSendMessageCnt,
+            IFNULL(b.customerSendMessageCnt, 0) customerSendMessageCnt
+        FROM
+        ( SELECT DISTINCT send_time FROM we_user_customer_message_statistics WHERE corp_id =  #{corpId} AND send_time BETWEEN #{sendStartTime} AND #{sendEndTime}) a
+        LEFT JOIN (
+            SELECT
+            IFNULL( SUM( ucms.user_send_message_cnt ), 0 ) AS userSendMessageCnt,
+            IFNULL( SUM( ucms.external_user_send_message_cnt ), 0 ) AS customerSendMessageCnt,
+            ucms.send_time
+            FROM
+            we_user_customer_message_statistics ucms
+            LEFT JOIN we_user wu ON wu.corp_id = ucms.corp_id
+            AND wu.user_id = ucms.user_id
+            WHERE
+                <include refid="searchCondition"/>
+                ${params.dataScope}
+                AND wu.is_activate = ${@com.easyink.common.constant.WeConstans@WE_USER_IS_ACTIVATE}
+        GROUP BY
+            ucms.send_time
+        ) b ON a.send_time = b.send_time
+        ORDER BY a.send_time
     </select>
 
     <!--获取客户活跃度-员工维度-->
@@ -278,8 +342,9 @@
         WHERE
             <include refid="searchCondition"/>
         ${params.dataScope}
+        AND wu.is_activate = ${@com.easyink.common.constant.WeConstans@WE_USER_IS_ACTIVATE}
         GROUP BY ucms.user_id
-        ORDER BY customerSendMessageCnt
+        ORDER BY customerSendMessageCnt DESC
     </select>
 
     <!--获取客户活跃度-客户维度-->
@@ -301,7 +366,9 @@
         WHERE
             <include refid="searchCondition"/>
         ${params.dataScope}
+        AND wu.is_activate = ${@com.easyink.common.constant.WeConstans@WE_USER_IS_ACTIVATE}
         GROUP BY ucms.external_userid
+        ORDER BY customerSendMessageCnt DESC
     </select>
 
     <!--获取客户活跃度-员工维度-详情-->
@@ -323,6 +390,7 @@
                 AND wc.`name` LIKE #{likeCustomerName}
             </if>
         ${params.dataScope}
+        AND wu.is_activate = ${@com.easyink.common.constant.WeConstans@WE_USER_IS_ACTIVATE}
         GROUP BY ucms.external_userid
     </select>
 

@@ -38,16 +38,14 @@
 
     <!--查询员工好评-->
     <select id="selectGoodReviews" resultType="com.easyink.wecom.domain.dto.statistics.UserGoodReviewDTO">
-        SELECT wfcf.user_id,
+        SELECT
                IFNULL(SUM(wfcf.score), 0) AS score,
-               <if test="customerPositiveCommentsRateSort != null and customerPositiveCommentsRateSort != ''">
-                   IF(IFNULL(COUNT(wfcf.customer_id), 0)=0, 0, CAST(IFNULL(SUM(wfcf.score), 0) *1./COUNT(wfcf.customer_id) AS DECIMAL(8,2))) AS customerPositiveCommentsRate
-               </if>
                IFNULL(COUNT(wfcf.customer_id), 0) AS num
         FROM we_form_customer_feedback wfcf
-        LEFT JOIN we_user wu ON wu.corp_id = wfcf.corp_id
+        LEFT JOIN we_user wu ON wu.corp_id = wfcf.corp_id AND wu.user_id = wfcf.user_id
         WHERE wfcf.corp_id = #{corpId}
         ${params.dataScope}
+        AND wu.is_activate = ${@com.easyink.common.constant.WeConstans@WE_USER_IS_ACTIVATE}
         <if test="userIds != null and userIds.size() > 0">
             AND wfcf.user_id IN
             <foreach collection="userIds" item="userId" open="(" separator="," close=")">
@@ -59,10 +57,6 @@
         </if>
         <if test="endTime !=null">
             AND wfcf.create_time &lt;= #{endTime}
-        </if>
-        GROUP BY wfcf.user_id
-        <if test="customerPositiveCommentsRateSort != null and customerPositiveCommentsRateSort != ''">
-            ORDER BY customerPositiveCommentsRate #{customerPositiveCommentsRateSort}
         </if>
     </select>
 

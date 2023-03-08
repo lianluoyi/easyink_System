@@ -23,13 +23,13 @@
         SUM(IFNULL(ubd.replied_within_thirty_min_customer_cnt, 0)) as replied_within_thirty_min_customer_cnt,
         SUM(IFNULL(ubd.all_chat_cnt, 0)) as all_chat_cnt,
         <if test="newContactRetentionRateSort != null and newContactRetentionRateSort != ''">
-            IF(IFNULL(ubd.new_contact_cnt, 0) = 0, 100, CAST((ubd.new_contact_cnt - IFNULL(ubd.new_customer_loss_cnt, 0)) *1./ ubd.new_contact_cnt as decimal(8,2))) as newContactRetentionRateSort,
+            IF(IFNULL(SUM(ubd.new_contact_cnt), 0) = 0, 100, CAST((SUM(ubd.new_contact_cnt) - IFNULL(SUM(ubd.new_customer_loss_cnt), 0)) *1./ SUM(ubd.new_contact_cnt) as decimal(8,2))) as newContactRetentionRate,
         </if>
         <if test="newContactStartTalkRateSort != null and newContactStartTalkRateSort != ''">
-            IF(IFNULL(ubd.new_contact_cnt, 0) = 0, 0, CAST(IFNULL(ubd.new_contact_speak_cnt, 0) *1./ ubd.new_contact_cnt as decimal(8,2))) as newContactStartTalkRateSort,
+            IF(IFNULL(SUM(ubd.new_contact_cnt), 0) = 0, 0, CAST(IFNULL(SUM(ubd.new_contact_speak_cnt), 0) *1./ SUM(ubd.new_contact_cnt) as decimal(8,2))) as newContactStartTalkRate,
         </if>
         <if test="serviceResponseRateSort != null and serviceResponseRateSort != ''">
-            IF(IFNULL(ubd.all_chat_cnt, 0) = 0, 0, CAST(IFNULL(ubd.replied_within_thirty_min_customer_cnt, 0) *1./ ubd.all_chat_cnt as decimal(8,2))) as serviceResponseRateSort,
+            IF(IFNULL(SUM(ubd.all_chat_cnt), 0) = 0, 0, CAST(IFNULL(SUM(ubd.replied_within_thirty_min_customer_cnt), 0) *1./ SUM(ubd.all_chat_cnt) as decimal(8,2))) as serviceResponseRate,
         </if>
         wu.`user_name`,
         wd.`name` departmentName,
@@ -40,6 +40,7 @@
         <where>
             ubd.corp_id = #{corpId}
             ${params.dataScope}
+            AND wu.is_activate = ${@com.easyink.common.constant.WeConstans@WE_USER_IS_ACTIVATE}
             AND wu.`user_name` IS NOT NULL
             <if test="beginTime !=null">
                 AND ubd.stat_time &gt;= #{beginTime}
@@ -58,20 +59,20 @@
         <if test="totalContactCntSort != null and totalContactCntSort != ''">
             ORDER BY totalContactCnt ${totalContactCntSort}
         </if>
-        <if test="newContactLossCntSort != null and newContactLossCntSort != ''">
-            ORDER BY newContactLossCnt ${newContactLossCntSort}
+        <if test="contactLossCntSort != null and contactLossCntSort != ''">
+            ORDER BY contactLossCnt ${contactLossCntSort}
         </if>
         <if test="newContactCntSort != null and newContactCntSort != ''">
             ORDER BY newContactCnt ${newContactCntSort}
         </if>
         <if test="newContactRetentionRateSort != null and newContactRetentionRateSort != ''">
-            ORDER BY newContactRetentionRateSort ${newContactRetentionRateSort}
+            ORDER BY newContactRetentionRate ${newContactRetentionRateSort}
         </if>
         <if test="newContactStartTalkRateSort != null and newContactStartTalkRateSort != ''">
-            ORDER BY newContactStartTalkRateSort ${newContactStartTalkRateSort}
+            ORDER BY newContactStartTalkRate ${newContactStartTalkRateSort}
         </if>
         <if test="serviceResponseRateSort != null and serviceResponseRateSort != ''">
-            ORDER BY serviceResponseRateSort ${serviceResponseRateSort}
+            ORDER BY serviceResponseRate ${serviceResponseRateSort}
         </if>
     </select>
 
@@ -117,6 +118,7 @@
                         </foreach>
                     </if>
                     ${params.dataScope}
+                    AND wu.is_activate = ${@com.easyink.common.constant.WeConstans@WE_USER_IS_ACTIVATE}
                     ) ,0) as totalContactCnt,
             IFNULL(sum(wube.new_apply_cnt),0) as newContactCnt,
             IFNULL(sum(wube.negative_feedback_cnt),0) as contactLossCnt,
@@ -130,6 +132,7 @@
         <where>
             wube.corp_id = #{corpId}
             ${params.dataScope}
+            AND wu.is_activate = ${@com.easyink.common.constant.WeConstans@WE_USER_IS_ACTIVATE}
             <if test="beginTime !=null">
                 AND wube.stat_time &gt;= #{beginTime}
             </if>

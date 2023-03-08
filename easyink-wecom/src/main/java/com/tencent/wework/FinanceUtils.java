@@ -30,6 +30,7 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
 import java.io.*;
+import java.nio.file.Files;
 import java.security.PrivateKey;
 import java.util.ArrayList;
 import java.util.List;
@@ -482,7 +483,7 @@ public class FinanceUtils {
             CosConfig cosConfig = ruoyiConfig.getFile().getCos();
             String suffix = fileName.substring(fileName.lastIndexOf(".") + 1);
             StringBuilder cosUrl = new StringBuilder(cosConfig.getCosImgUrlPrefix());
-            String cosFilePath = FileUploadUtils.upload2Cos(new FileInputStream(new File(filePath, fileName)), fileName, suffix, cosConfig);
+            String cosFilePath = FileUploadUtils.upload2Cos(Files.newInputStream(new File(filePath, fileName).toPath()), fileName, suffix, cosConfig);
             cosUrl.append(cosFilePath);
             data.setAttachment(cosUrl.toString());
         } catch (Exception e) {
@@ -510,7 +511,7 @@ public class FinanceUtils {
                     f.mkdirs();
                 }
                 File file = new File(filePath, fileName);
-                if (!file.isDirectory() && !file.createNewFile()) {
+                if (!f.isDirectory() && !file.createNewFile()) {
                     throw new CustomException("getMediaData 文件不存在，创建文件失败");
                 }
                 outputStream = new FileOutputStream(file, true);
