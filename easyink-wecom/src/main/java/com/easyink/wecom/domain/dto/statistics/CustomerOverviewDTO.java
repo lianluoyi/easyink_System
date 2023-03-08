@@ -22,11 +22,11 @@ public class CustomerOverviewDTO extends StatisticsDTO{
         }
     }
 
-    public String getNewContactLossCntSort() {
-        if(newContactLossCntSort == null) {
+    public String getContactLossCntSort() {
+        if(contactLossCntSort == null) {
             return null;
         }
-        if ("asc".equalsIgnoreCase(newContactLossCntSort)) {
+        if ("asc".equalsIgnoreCase(contactLossCntSort)) {
             return "asc";
         }else {
             return "DESC";
@@ -85,7 +85,7 @@ public class CustomerOverviewDTO extends StatisticsDTO{
     /**
      * 流失客户数排序 正序asc 倒叙desc
      */
-    private String newContactLossCntSort;
+    private String contactLossCntSort;
 
     /**
      * 新增客户数排序 正序asc 倒叙desc

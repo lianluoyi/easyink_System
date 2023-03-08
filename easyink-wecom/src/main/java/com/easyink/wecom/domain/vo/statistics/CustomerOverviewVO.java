@@ -153,5 +153,15 @@ public class CustomerOverviewVO extends UserBaseVO {
                 .toPlainString();
     }
 
+    /**
+     * 绑定导出数据
+     * 导出框架不能直接使用get方法获取属性值
+     */
+    public void bindExportData() {
+        newContactRetentionRate = getNewContactRetentionRate() + "%";
+        newContactStartTalkRate = getNewContactStartTalkRate() + "%";
+        serviceResponseRate = getServiceResponseRate() + "%";
+    }
+
 
 }

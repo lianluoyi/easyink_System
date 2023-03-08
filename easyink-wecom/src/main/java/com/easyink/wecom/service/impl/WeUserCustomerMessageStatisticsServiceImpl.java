@@ -7,8 +7,8 @@ import com.easyink.common.constant.GenConstants;
 import com.easyink.common.core.domain.AjaxResult;
 import com.easyink.common.core.domain.ConversationArchiveQuery;
 import com.easyink.common.core.domain.wecom.WeUser;
+import com.easyink.common.enums.StaffActivateEnum;
 import com.easyink.common.utils.DateUtils;
-import com.easyink.common.utils.bean.BeanUtils;
 import com.easyink.common.utils.poi.ExcelUtil;
 import com.easyink.wecom.domain.WeUserBehaviorData;
 import com.easyink.wecom.domain.dto.statistics.*;
@@ -55,7 +55,10 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
     private final WeUserBehaviorDataMapper weUserBehaviorDataMapper;
     private final WeFormCustomerFeedbackMapper weFormCustomerFeedbackMapper;
     private final WeFlowerCustomerRelMapper weFlowerCustomerRelMapper;
-
+    /**
+     * 导出客户活跃度报表名称
+     */
+    protected static final String CUSTOMER_ACTIVITY_REPORT_FORMS = "客户活跃度报表";
     @Override
     public void getMessageStatistics(String corpId) {
         if (StringUtils.isBlank(corpId)) {
@@ -64,6 +67,7 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
         }
         // 获取根员工
         List<WeUser> visibleUser = weUserService.getVisibleUser(corpId);
+        visibleUser = visibleUser.stream().filter(it -> StaffActivateEnum.ACTIVE.getCode().equals(it.getIsActivate())).collect(Collectors.toList());
         if (CollectionUtils.isEmpty(visibleUser)) {
             log.info("[DataStatisticsTask] 该企业不存在可见的部门和员工,停止执行,corpId:{}", corpId);
             return;
@@ -100,7 +104,7 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
                 }
                 WeUserBehaviorData totalContactAndLossCnt = weFlowerCustomerRelMapper.getTotalContactAndLossCnt(userBehaviorData.getUserId(), userBehaviorData.getCorpId(),DateUtils.parseBeginDay(yesterday), DateUtils.parseEndDay(yesterday));
                 userBehaviorData.setContactTotalCnt(totalContactAndLossCnt.getContactTotalCnt());
-                userBehaviorData.setNewContactLossCnt(totalContactAndLossCnt.getNewCustomerLossCnt());
+                userBehaviorData.setNewCustomerLossCnt(totalContactAndLossCnt.getNewCustomerLossCnt());
                 weUserBehaviorDataService.updateById(userBehaviorData);
                 statistics(userMessages, weUser, userBehaviorData);
             } catch (Exception e) {
@@ -347,125 +351,57 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
         if (!isHaveDataScope(dto)) {
             return new ArrayList<>();
         }
-        List<UserGoodReviewDTO> userGoodReviews = new ArrayList<>();
-        if (StringUtils.isNotBlank(dto.getCustomerPositiveCommentsRateSort())) {
-            if (Boolean.TRUE.equals(pageFlag)) {
-                startPage(dto);
-            }
-            // 先去客户好评表
-            GoodCommitDTO goodCommitDTO = new GoodCommitDTO(dto);
-            userGoodReviews = weFormCustomerFeedbackMapper.selectGoodReviews(goodCommitDTO);
-            if (CollectionUtils.isNotEmpty(userGoodReviews)) {
-                dto.setUserIds(userGoodReviews.stream().map(UserGoodReviewDTO::getUserId).collect(Collectors.toList()));
-            }
-        }
         if (Boolean.TRUE.equals(pageFlag)) {
             startPage(dto);
         }
-        List<UserServiceVO> list = weUserCustomerMessageStatisticsMapper.getUserServiceOfUser(dto);
-        bindGoodReview(dto, userGoodReviews, list);
-        return list;
+        return weUserCustomerMessageStatisticsMapper.getUserServiceOfUser(dto);
     }
 
     @Override
     public AjaxResult exportCustomerOverViewOfUser(CustomerOverviewDTO dto) {
-        String sheetName = "客户概况报表" + DateUtils.dateTime();
+        String sheetName = "客户概况报表";
         List<CustomerOverviewVO> list = getCustomerOverViewOfUser(dto, false);
         // 导出
+        list.forEach(CustomerOverviewVO::bindExportData);
         ExcelUtil<CustomerOverviewVO> util = new ExcelUtil<>(CustomerOverviewVO.class);
         return util.exportExcel(list, sheetName);
     }
 
     @Override
     public AjaxResult exportCustomerActivityOfDate(CustomerActivityDTO dto) {
-        String sheetName = "客户活跃度-日期维度报表" + DateUtils.dateTime();
         List<CustomerActivityOfDateVO> list = getCustomerActivityOfDate(dto, false);
         // 导出
         List<CustomerActivityOfDateExportVO> exportList = list.stream().map(CustomerActivityOfDateExportVO::new).collect(Collectors.toList());
         ExcelUtil<CustomerActivityOfDateExportVO> util = new ExcelUtil<>(CustomerActivityOfDateExportVO.class);
-        return util.exportExcel(exportList, sheetName);
+        return util.exportExcel(exportList, CUSTOMER_ACTIVITY_REPORT_FORMS);
     }
 
     @Override
     public AjaxResult exportCustomerActivityOfUser(CustomerActivityDTO dto) {
-        String sheetName = "客户活跃度-员工维度报表" + DateUtils.dateTime();
         List<CustomerActivityOfUserVO> list = getCustomerActivityOfUser(dto, false);
         // 导出
         List<CustomerActivityOfUserExportVO> exportList = list.stream().map(CustomerActivityOfUserExportVO::new).collect(Collectors.toList());
         ExcelUtil<CustomerActivityOfUserExportVO> util = new ExcelUtil<>(CustomerActivityOfUserExportVO.class);
-        return util.exportExcel(exportList, sheetName);
+        return util.exportExcel(exportList, CUSTOMER_ACTIVITY_REPORT_FORMS);
     }
 
     @Override
     public AjaxResult exportCustomerActivityOfCustomer(CustomerActivityDTO dto) {
-        String sheetName = "客户活跃度-客户维度报表" + DateUtils.dateTime();
         List<CustomerActivityOfCustomerVO> list = getCustomerActivityOfCustomer(dto, false);
         // 导出
         ExcelUtil<CustomerActivityOfCustomerVO> util = new ExcelUtil<>(CustomerActivityOfCustomerVO.class);
-        return util.exportExcel(list, sheetName);
+        return util.exportExcel(list, CUSTOMER_ACTIVITY_REPORT_FORMS);
     }
 
     @Override
     public AjaxResult exportUserServiceOfUser(UserServiceDTO dto) {
-        String sheetName = "员工服务报表" + DateUtils.dateTime();
+        String sheetName = "员工服务报表";
         List<UserServiceVO> list = getUserServiceOfUser(dto, false);
         // 导出
+        list.forEach(UserServiceVO::bindExportData);
         ExcelUtil<UserServiceVO> util = new ExcelUtil<>(UserServiceVO.class);
         return util.exportExcel(list, sheetName);
     }
-
-    /**
-     * 绑定客户好评率
-     *
-     * @param dto            {@link UserServiceDTO}
-     * @param goodReviewList {@link UserGoodReviewDTO} 好评率list
-     * @param list           {@link UserServiceDTO}
-     */
-    private void bindGoodReview(UserServiceDTO dto, List<UserGoodReviewDTO> goodReviewList, List<UserServiceVO> list) {
-        if (dto == null || CollectionUtils.isEmpty(list)) {
-            return;
-        }
-        // 为空说明 没有对好评率进行排序
-        if (CollectionUtils.isEmpty(goodReviewList)) {
-            dto.setUserIds(list.stream().map(UserServiceVO::getUserId).collect(Collectors.toList()));
-            GoodCommitDTO goodCommitDTO = new GoodCommitDTO(dto);
-            Map<String, UserGoodReviewDTO> userGoodReviewMap = weFormCustomerFeedbackMapper.selectGoodReviews(goodCommitDTO).stream().collect(Collectors.toMap(UserGoodReviewDTO::getUserId, it -> it));
-            // 按照主表数据排序
-            list.forEach(it->{
-                it.setScore(userGoodReviewMap.getOrDefault(it.getUserId(), new UserGoodReviewDTO()).getScore());
-                it.setNum(userGoodReviewMap.getOrDefault(it.getUserId(), new UserGoodReviewDTO()).getNum());
-            });
-        }else {
-            // 不为空说明 需要根据好评率进行排序
-            Map<String,Integer> userIdIndexMap = new HashMap<>();
-            for (int i = 0; i < list.size(); i++) {
-                userIdIndexMap.put(list.get(i).getUserId(), i);
-            }
-            // 按照好评率排序
-            for (int i = 0; i < goodReviewList.size(); i++) {
-                Integer index = userIdIndexMap.getOrDefault(goodReviewList.get(i).getUserId(), null);
-                if (index == null) {
-                    // 说明list没有该员工则不设置
-                    continue;
-                }
-                Collections.swap(list, i, index);
-            }
-            // 未查询出好评率的结果移动到最后
-            int currentIndex = 0;
-            for (ListIterator<UserServiceVO> sL = list.listIterator();sL.hasNext();) {
-                if (sL.next().getScore() == null) {
-                    // 移动到最后
-                    list.add(list.get(currentIndex));
-                    list.remove(currentIndex);
-                }
-                currentIndex++;
-                if (currentIndex >= list.size()) {
-                    break;
-                }
-            }
-        }
-    }
-
 
     /**
      * 是否有数据权限

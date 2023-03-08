@@ -146,7 +146,7 @@ public class SysMenuServiceImpl implements ISysMenuService {
         for (SysMenu menu : menus) {
             // 如果是三方应用需要屏蔽一些菜单
             if (ruoYiConfig.isThirdServer()){
-                if (isBanMenu(menu) || needFilterMenu(menu)) {
+                if (isBanMenu(menu)) {
                     continue;
                 }
             }

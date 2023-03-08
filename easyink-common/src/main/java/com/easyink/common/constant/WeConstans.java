@@ -893,4 +893,9 @@ public class WeConstans {
      */
     public static final String USER_ID_PREFIX = "woI_";
 
+    /**
+     * 数字0
+     */
+    public static final String ZERO = "0";
+
 }

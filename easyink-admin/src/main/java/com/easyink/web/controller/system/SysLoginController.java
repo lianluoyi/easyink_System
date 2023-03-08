@@ -126,7 +126,7 @@ public class SysLoginController {
         // 用户信息
         List<SysMenu> menus = menuService.selectMenuTreeByLoginUser(loginUser);
         List<RouterVo> routerVos = menuService.buildMenus(menus);
-        delMenuWithNoChild(routerVos);
+        // delMenuWithNoChild(routerVos);
         return AjaxResult.success(routerVos);
     }
 

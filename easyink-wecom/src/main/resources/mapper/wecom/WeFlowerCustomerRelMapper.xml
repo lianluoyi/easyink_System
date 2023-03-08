@@ -342,10 +342,10 @@
                         AND user_id = #{userId}
                         AND status = '${@com.easyink.common.enums.CustomerStatusEnum@DRAIN.code}'
                         <if test="beginTime != null and beginTime != ''"><!-- 开始时间检索 -->
-                            AND delete_time &gt;= #{beginTime}
+                            AND create_time &gt;= #{beginTime}
                         </if>
                         <if test="endTime != null and endTime != ''"><!-- 结束时间检索 -->
-                            AND delete_time &lt;= #{endTime}
+                            AND create_time &lt;= #{endTime}
                         </if>
                         ), 0) AS newCustomerLossCnt,
                 IFNULL((SELECT COUNT(id)
