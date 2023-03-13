@@ -3,6 +3,8 @@ package com.easyink.wecom.client;
 import com.alibaba.fastjson.JSONObject;
 import com.dtflys.forest.annotation.*;
 import com.easyink.wecom.domain.dto.autoconfig.*;
+import com.easyink.wecom.domain.req.GetDepartMemberReq;
+import com.easyink.wecom.domain.resp.GetDepartMemberResp;
 import com.easyink.wecom.interceptor.WeAutoConfigInterceptor;
 import org.springframework.stereotype.Component;
 
@@ -253,7 +255,7 @@ public interface WeAdminClient {
      * @return
      */
     @Get(url = "/customer/getChatMenu")
-    BaseAdminResult<WeGetChatMenuResp> getChatMenu( @Header("qrcodeKey") String qrcodeKey);
+    BaseAdminResult<WeGetChatMenuResp> getChatMenu(@Header("qrcodeKey") String qrcodeKey);
 
     /**
      * 将secert发送到客户端
@@ -321,4 +323,22 @@ public interface WeAdminClient {
      */
     @Get("/login/choose_corp")
     String chooseCorp(@Query("tl_key") String tlKey, @Header("qrcodeKey") String qrcodeKey, @Header("referer") String referer);
+
+    /**
+     * 获取部门下的员工 （分页)
+     * https://work.weixin.qq.com/wework_admin/contacts/getDepartmentMember
+     *
+     * @param qrcodeKey 扫码的key
+     * @param req       请求
+     * @return {@link GetDepartMemberResp}
+     */
+
+    @Get("/contacts/getDepartmentMember")
+    BaseAdminResult<GetDepartMemberResp> getDepartMember(@Header("qrcodeKey") String qrcodeKey,
+                                                         @Query GetDepartMemberReq req);
+
+
+    @Post(value = "/apps/saveIpConfig" , contentType = "contentType = application/x-www-form-urlencoded")
+    void saveIp(@Header("qrcodeKey")String qrcodeKey ,@Body("app_id") String appId ,@Body("ipList[]")String ipList );
+
 }

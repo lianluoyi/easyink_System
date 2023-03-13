@@ -60,7 +60,7 @@ public class GetExternalDetailResp extends WeResultDTO {
             remoteRel = new WeFlowerCustomerRel(externalContact, followInfo, corpId);
             // 保存该跟进人打的标签信息
             if (CollectionUtils.isNotEmpty(followInfo.getTags())) {
-                tagIds = followInfo.getTags().stream().map(FollowInfo.Tags::getTag_id).collect(Collectors.toList());
+                tagIds = followInfo.getTags().stream().map(FollowInfo.Tags::getTag_id).filter(StringUtils::isNotBlank).collect(Collectors.toList());
             }
         }
     }

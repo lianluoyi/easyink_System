@@ -63,6 +63,15 @@ public class WeAdminController extends BaseController {
         return AjaxResult.success();
     }
 
+    @GetMapping("/getDepartMemberInfo")
+    @ApiOperation("获取部门成员信息")
+    public AjaxResult getDepartMemberInfo(String qrcodeKey) {
+        String corpId = LoginTokenService.getLoginUser()
+                                         .getCorpId();
+        weAutoConfigService.getDepartMemberInfo(corpId, qrcodeKey) ;
+        return AjaxResult.success();
+    }
+
     @ApiOperation("获取默认应用域名配置")
     @GetMapping("/getDefaultDomainConfig")
     public AjaxResult<ThirdDefaultDomainConfig> getDefaultDomainConfig() {

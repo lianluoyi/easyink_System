@@ -181,6 +181,12 @@ public class WeUser extends BaseEntity {
     @TableField(exist = false)
     private String externalUserId;
 
+    /**
+     * 查询其他员工（员工在可见范围内但 但所在部门不在可见范围）
+     */
+    @TableField(exist = false)
+    private Boolean otherUserFlag;
+
     public WeUser(String corpId, String userId) {
         this.corpId = corpId;
         this.userId = userId;

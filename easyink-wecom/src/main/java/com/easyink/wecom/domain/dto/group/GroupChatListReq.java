@@ -4,8 +4,10 @@ import com.easyink.common.utils.spring.SpringUtils;
 import com.easyink.wecom.client.WeCustomerGroupClient;
 import com.easyink.wecom.domain.req.WePageBaseReq;
 import com.easyink.wecom.domain.resp.WePageBaseResp;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,7 +37,7 @@ public class GroupChatListReq extends WePageBaseReq<GroupChatListResp.GroupChat>
      */
     private OwnerFilter owner_filter;
 
-    private final Integer limit  = 100;
+    private final Integer limit  = 1000;
 
     @Data
     public static class OwnerFilter {

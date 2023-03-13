@@ -8,19 +8,25 @@ import com.easyink.common.config.ThirdDefaultDomainConfig;
 import com.easyink.common.constant.WeConstans;
 import com.easyink.common.core.domain.entity.WeCorpAccount;
 import com.easyink.common.core.domain.model.LoginUser;
+import com.easyink.common.core.domain.wecom.WeUser;
 import com.easyink.common.core.redis.RedisCache;
 import com.easyink.common.enums.ResultTip;
 import com.easyink.common.exception.CustomException;
 import com.easyink.common.exception.wecom.WeComException;
+import com.easyink.common.utils.sql.BatchInsertUtil;
 import com.easyink.wecom.client.We3rdUserClient;
 import com.easyink.wecom.client.WeAdminClient;
 import com.easyink.wecom.domain.WeAuthCorpInfoExtend;
 import com.easyink.wecom.domain.dto.AutoConfigDTO;
 import com.easyink.wecom.domain.dto.app.ToOpenCorpIdResp;
+import com.easyink.wecom.domain.dto.app.UserIdToOpenUserIdResp;
 import com.easyink.wecom.domain.dto.autoconfig.*;
+import com.easyink.wecom.domain.req.GetDepartMemberReq;
+import com.easyink.wecom.domain.resp.GetDepartMemberResp;
 import com.easyink.wecom.domain.vo.WeAdminQrcodeVO;
 import com.easyink.wecom.domain.vo.WeCheckQrcodeVO;
 import com.easyink.wecom.login.util.LoginTokenService;
+import com.easyink.wecom.mapper.WeUserMapper;
 import com.easyink.wecom.service.WeAuthCorpInfoExtendService;
 import com.easyink.wecom.service.WeAutoConfigService;
 import com.easyink.wecom.service.WeCorpAccountService;
@@ -30,13 +36,18 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * 类名: 企业微信后台自动化配置接口整合
@@ -55,6 +66,7 @@ public class WeAutoConfigServiceImpl implements WeAutoConfigService {
     private final RedisCache redisCache;
     private final WeAuthCorpInfoExtendService weAuthCorpInfoExtendService;
     private final We3rdUserClient we3rdUserClient;
+    private final WeUserMapper weUserMapper;
     /**
      * 检验扫码状态
      */
@@ -71,7 +83,7 @@ public class WeAutoConfigServiceImpl implements WeAutoConfigService {
     private final static String MOBILE_CONFIRM_KEYWORD = "mobileConfirm";
 
     @Autowired
-    public WeAutoConfigServiceImpl(WeAdminClient weAdminClient, WeCorpAccountService weCorpAccountService, WeInitService weInitService, RuoYiConfig ruoYiConfig, RedisCache redisCache, WeAuthCorpInfoExtendService weAuthCorpInfoExtendService, We3rdUserClient we3rdUserClient) {
+    public WeAutoConfigServiceImpl(WeAdminClient weAdminClient, WeCorpAccountService weCorpAccountService, WeInitService weInitService, RuoYiConfig ruoYiConfig, RedisCache redisCache, WeAuthCorpInfoExtendService weAuthCorpInfoExtendService, We3rdUserClient we3rdUserClient, WeUserMapper weUserMapper) {
         this.weAdminClient = weAdminClient;
         this.weCorpAccountService = weCorpAccountService;
         this.weInitService = weInitService;
@@ -79,6 +91,7 @@ public class WeAutoConfigServiceImpl implements WeAutoConfigService {
         this.redisCache = redisCache;
         this.weAuthCorpInfoExtendService = weAuthCorpInfoExtendService;
         this.we3rdUserClient = we3rdUserClient;
+        this.weUserMapper = weUserMapper;
     }
 
     private static final String LOGO_IMAGE = "http://p.qlogo.cn/bizmail/x97MZCe5cW6YFTArfIPz866l1fyhwUb8lzxZDGYEy7l9nZF8v1hxEg/0";
@@ -96,12 +109,15 @@ public class WeAutoConfigServiceImpl implements WeAutoConfigService {
         String callback = "wwqrloginCallback_" + System.currentTimeMillis();
         String redirect = "https://work.weixin.qq.com/wework_admin/loginpage_wx?_r=989&url_hash=";
         BaseAdminResult<WeGetKeyResp> weGetKeyResp = weAdminClient.getKey(LOGIN_TYPE, callback, redirect, 1);
-        if (weGetKeyResp == null || weGetKeyResp.getData() == null || StringUtils.isEmpty(weGetKeyResp.getData().getQrcode_key())) {
+        if (weGetKeyResp == null || weGetKeyResp.getData() == null || StringUtils.isEmpty(weGetKeyResp.getData()
+                                                                                                      .getQrcode_key())) {
             throw new WeComException("获取二维码失败!");
         }
         String qrcodeUrl = "https://work.weixin.qq.com/wework_admin/wwqrlogin/mng/qrcode?qrcode_key=%s&login_type=login_admin";
-        qrcodeUrl = String.format(qrcodeUrl, weGetKeyResp.getData().getQrcode_key());
-        return new WeAdminQrcodeVO(qrcodeUrl, weGetKeyResp.getData().getQrcode_key());
+        qrcodeUrl = String.format(qrcodeUrl, weGetKeyResp.getData()
+                                                         .getQrcode_key());
+        return new WeAdminQrcodeVO(qrcodeUrl, weGetKeyResp.getData()
+                                                          .getQrcode_key());
     }
 
     /**
@@ -149,7 +165,7 @@ public class WeAutoConfigServiceImpl implements WeAutoConfigService {
                 // 先判断是否需要短信验证
                 if (needMobileConfirm(weLoginRespStr)) {
                     WeConfirmMobileRsp mobileRsp = filterConfirmMobile(weLoginRespStr);
-                    if(mobileRsp == null || StringUtils.isBlank(mobileRsp.getTlKey())){
+                    if (mobileRsp == null || StringUtils.isBlank(mobileRsp.getTlKey())) {
                         return new WeCheckQrcodeVO(qrcodeStatus);
                     }
                     log.info("[checkQrCode]需要短信验证,截取到的tlKEy:{}", mobileRsp);
@@ -304,11 +320,10 @@ public class WeAutoConfigServiceImpl implements WeAutoConfigService {
 
             initApplicationHandler(weCorpAccount, autoConfigDTO);
             //更新配置
-            if (ruoYiConfig.isThirdServer()
-                    && loginUser.getWeUser() != null
-                    && StringUtils.isNotBlank(loginUser.getWeUser().getExternalCorpId())
-                    && StringUtils.isBlank(weCorpAccount.getExternalCorpId())) {
-                weCorpAccount.setExternalCorpId(loginUser.getWeUser().getExternalCorpId());
+            if (ruoYiConfig.isThirdServer() && loginUser.getWeUser() != null && StringUtils.isNotBlank(loginUser.getWeUser()
+                                                                                                                .getExternalCorpId()) && StringUtils.isBlank(weCorpAccount.getExternalCorpId())) {
+                weCorpAccount.setExternalCorpId(loginUser.getWeUser()
+                                                         .getExternalCorpId());
             }
             weCorpAccountService.updateWeCorpAccount(weCorpAccount, oldCorpAccountCorpId);
         } catch (CustomException we) {
@@ -389,14 +404,15 @@ public class WeAutoConfigServiceImpl implements WeAutoConfigService {
      */
     private void initApplicationHandler(WeCorpAccount weCorpAccount, AutoConfigDTO autoConfigDTO) {
         if (weAuthCorpInfoExtendService.isCustomizedApp(weCorpAccount.getCorpId())) {
-            WeAuthCorpInfoExtend weAuthCorpInfoExtend = weAuthCorpInfoExtendService.getOne(weCorpAccount.getCorpId(), ruoYiConfig.getProvider().getDkSuite().getDkId());
+            WeAuthCorpInfoExtend weAuthCorpInfoExtend = weAuthCorpInfoExtendService.getOne(weCorpAccount.getCorpId(), ruoYiConfig.getProvider()
+                                                                                                                                 .getDkSuite()
+                                                                                                                                 .getDkId());
             if (weAuthCorpInfoExtend != null && StringUtils.isNotBlank(weAuthCorpInfoExtend.getAgentid())) {
                 //1.获取应用数据
                 InitApplicationModel initApplicationModel = getDkApplication(autoConfigDTO.getQrcodeKey(), weAuthCorpInfoExtend.getAgentid());
                 //2.配置聊天工具栏
                 log.info("企业ID({}):{}，代开发应用配置侧边栏", weCorpAccount.getCorpId(), weCorpAccount.getCompanyName());
-                String verifyUrl = replaceDomain(autoConfigDTO.getSidebarDomain());
-                setSidebarConfig(verifyUrl, initApplicationModel.getCustomAgentApp().getApp_id(), weCorpAccount.getCorpId(), autoConfigDTO.getQrcodeKey());
+                setSidebarConfig(autoConfigDTO.getSidebarDomain(), initApplicationModel.getCustomAgentApp().getApp_id(), weCorpAccount.getCorpId(), autoConfigDTO.getQrcodeKey());
 
                 //3.配置客户权限
                 configCustomerPermission(autoConfigDTO.getQrcodeKey(), initApplicationModel.getRootDeptId());
@@ -684,7 +700,7 @@ public class WeAutoConfigServiceImpl implements WeAutoConfigService {
         }
         //4.配置聊天工具栏
         log.info("开始配置侧边栏");
-        setSidebarConfig(verifyUrl, appId, weCorpAccount.getCorpId(), autoConfigDTO.getQrcodeKey());
+        setSidebarConfig(autoConfigDTO.getSidebarDomain(), appId, weCorpAccount.getCorpId(), autoConfigDTO.getQrcodeKey());
     }
 
     /**
@@ -695,6 +711,20 @@ public class WeAutoConfigServiceImpl implements WeAutoConfigService {
      */
     private String replaceDomain(String domain) {
         String str = domain.replace("http://", "").replace("https://", "").replace("/", "");
+        if (StringUtils.isBlank(str)) {
+            throw new WeComException("domain不合法");
+        }
+        return str;
+    }
+
+    /**
+     * 替换域名
+     *
+     * @param domain 域名
+     * @return 去除协议后面'/'域名
+     */
+    private String replaceDomainSign(String domain) {
+        String str = domain.replace("/", "");
         if (StringUtils.isBlank(str)) {
             throw new WeComException("domain不合法");
         }
@@ -741,22 +771,24 @@ public class WeAutoConfigServiceImpl implements WeAutoConfigService {
             //这边的判断不影响下面的增加，主要是上面都把旧应用删除，每次都相当于一个新应用去配置
             log.error("获取应用侧边栏菜单异常:{}", ExceptionUtils.getStackTrace(e));
         }
-
         String corpIdSign = "${corpId}";
+        String protocolSign = "${protocol}";
         String portSign = "${port}";
         String hostSign = "${host}";
         String stateSign = "${state}";
+        // 去掉url协议后的"//"
+        verifyUrl = replaceDomainSign(verifyUrl);
         String[] array = verifyUrl.split(":");
-        //域名切分完成后应该是一个host + 一个port
-        int arrayLength = 2;
+        //域名切分完成后应该是一个protocol 一个host + 一个port
+        int arrayLength = 3;
         if (array.length != arrayLength) {
             throw new WeComException("侧边栏域名填写不正确");
         }
         if (needChat) {
             ThreadUtil.sleep(300);
             log.info("配置侧边栏素材库");
-            String chatUrl = "https://open.weixin.qq.com/connect/oauth2/authorize?appid=${corpId}&redirect_uri=http%3A%2F%2F${host}%3A${port}%2F%23%2Fchat&response_type=code&scope=snsapi_base&state=${state}#wechat_redirect";
-            chatUrl = chatUrl.replace(corpIdSign, corpId).replace(hostSign, array[0]).replace(portSign, array[1]).replace(stateSign, corpId);
+            String chatUrl = "https://open.weixin.qq.com/connect/oauth2/authorize?appid=${corpId}&redirect_uri=${protocol}%3A%2F%2F${host}%3A${port}%2F%23%2Fchat&response_type=code&scope=snsapi_base&state=${state}#wechat_redirect";
+            chatUrl = chatUrl.replace(corpIdSign, corpId).replace(protocolSign, array[0]).replace(hostSign, array[1]).replace(portSign, array[2]).replace(stateSign, corpId);
 
             weAdminClient.addChatMenu(appId, 1, 0, 0, false, appId, LOGO_IMAGE, ruoYiConfig.getDefaultAppName(), LOGO_IMAGE, 1, chatName, chatName, chatUrl, qrCodeKey);
         } else {
@@ -766,9 +798,9 @@ public class WeAutoConfigServiceImpl implements WeAutoConfigService {
         if (needPortrait) {
             ThreadUtil.sleep(300);
             log.info("配置侧边栏画像");
-            String portraitUrl = "https://open.weixin.qq.com/connect/oauth2/authorize?appid=${corpId}&redirect_uri=http%3A%2F%2F${host}%3A${port}%2F%23%2Fportrait&response_type=code&scope=snsapi_base&state=${state}#wechat_redirect";
+            String portraitUrl = "https://open.weixin.qq.com/connect/oauth2/authorize?appid=${corpId}&redirect_uri=${protocol}%3A%2F%2F${host}%3A${port}%2F%23%2Fportrait&response_type=code&scope=snsapi_base&state=${state}#wechat_redirect";
             //替换appid=%s(corpId) redirect_uri=http%3A%2F%2F%s(host)%3A%d(port)%2F%23%2F
-            portraitUrl = portraitUrl.replace(corpIdSign, corpId).replace(hostSign, array[0]).replace(portSign, array[1]).replace(stateSign, corpId);
+            portraitUrl = portraitUrl.replace(corpIdSign, corpId).replace(protocolSign, array[0]).replace(hostSign, array[1]).replace(portSign, array[2]).replace(stateSign, corpId);
             weAdminClient.addChatMenu(appId, 1, 0, 0, false, appId, LOGO_IMAGE, ruoYiConfig.getDefaultAppName(), LOGO_IMAGE, 1, portraitName, portraitName, portraitUrl, qrCodeKey);
         } else {
             log.info("已配置过侧边栏画像");
@@ -777,9 +809,9 @@ public class WeAutoConfigServiceImpl implements WeAutoConfigService {
         if (needApplication) {
             ThreadUtil.sleep(300);
             log.info("配置侧边栏应用工具");
-            String applicationUrl = "https://open.weixin.qq.com/connect/oauth2/authorize?appid=${corpId}&redirect_uri=http%3A%2F%2F${host}%3A${port}%2F%23%2FapplicationSet&response_type=code&scope=snsapi_base&state=${state}#wechat_redirect";
+            String applicationUrl = "https://open.weixin.qq.com/connect/oauth2/authorize?appid=${corpId}&redirect_uri=${protocol}%3A%2F%2F${host}%3A${port}%2F%23%2FapplicationSet&response_type=code&scope=snsapi_base&state=${state}#wechat_redirect";
             //替换appid=%s(corpId) redirect_uri=http%3A%2F%2F%s(host)%3A%d(port)%2F%23%2F
-            applicationUrl = applicationUrl.replace(corpIdSign, corpId).replace(hostSign, array[0]).replace(portSign, array[1]).replace(stateSign, corpId);
+            applicationUrl = applicationUrl.replace(corpIdSign, corpId).replace(protocolSign, array[0]).replace(hostSign, array[1]).replace(portSign, array[2]).replace(stateSign, corpId);
             weAdminClient.addChatMenu(appId, 1, 0, 0, false, appId, LOGO_IMAGE, ruoYiConfig.getDefaultAppName(), LOGO_IMAGE, 1, applicationName, applicationName, applicationUrl, qrCodeKey);
         } else {
             log.info("已配置过侧边栏应用工具");
@@ -943,6 +975,177 @@ public class WeAutoConfigServiceImpl implements WeAutoConfigService {
                 }
             }
         }
+    }
+
+    @Override
+    @Async
+    public void getDepartMemberInfo(String corpId, String qrcodeKey) {
+        if (StringUtils.isBlank(qrcodeKey)) {
+            throw new CustomException(ResultTip.TIP_PARAM_MISSING);
+        }
+        // 获取缓存的企微后台登录信息
+        String qrcodeRedisKey = "QRCODE_KEY:" + qrcodeKey;
+        WeLoginResp loginResp = redisCache.getCacheObject(qrcodeRedisKey);
+        if(loginResp == null || StringUtils.isBlank(loginResp.getRoot_depart_id())) {
+            throw new CustomException(ResultTip.TIP_NO_SCAN);
+        }
+        // 1.  进入企微后台拉取所有员工的隐私信息
+        List<GetDepartMemberResp.MemberInfo> memberInfos = GetDepartMemberReq.getAllMember(qrcodeKey, loginResp.getRoot_depart_id());
+        if (CollectionUtils.isEmpty(memberInfos)) {
+            log.info("[获取部门成员详情]没有拉取到部门成员, qrcodeKey :{}", qrcodeKey);
+            return;
+        }
+        log.info("[获取部门成员详情]本次拉取到{}个部门成员详情", memberInfos.size());
+        //  2. 获取该企业员工列表，数据转换
+        List<WeUser> weUserList = weUserMapper.selectWeUserList(WeUser.builder()
+                                                                      .corpId(corpId)
+                                                                      .build());
+        if (CollectionUtils.isEmpty(weUserList)) {
+            return;
+        }
+        List<WeUser> updateUserList;
+        if (ruoYiConfig.isThirdServer()) {
+            // 代开发应用处理
+            updateUserList = matchUserId4DkApp(corpId, memberInfos, weUserList);
+        } else {
+            // 自建应用处理
+            updateUserList = matchUserId4SelfBuild(memberInfos, weUserList);
+        }
+        log.info("[获取部门成员详情]本次更新{}个部门成员隐私信息", updateUserList.size());
+        //  3.  更新数据库里的员工隐私信息
+       if(CollectionUtils.isNotEmpty(updateUserList) ) {
+           BatchInsertUtil.doInsert(updateUserList, weUserMapper::batchUpdateUserPrivacy);
+       }
+    }
+
+    /**
+     * 为自建应用员工信息匹配企微后台RPA拉取到的隐私信息
+     * (如果是自建应用，直接使用接口的acctid匹配员工userid )
+     *
+     * @param memberInfos 企微后台拉取rpa拉取到的信息
+     * @param weUserList  db中的员工信息
+     * @return
+     */
+    private List<WeUser> matchUserId4SelfBuild(List<GetDepartMemberResp.MemberInfo> memberInfos, List<WeUser> weUserList) {
+        // 生成 accid(userid) -> 成员隐私信息  映射
+        Map<String, GetDepartMemberResp.MemberInfo> userIdMap = memberInfos.stream()
+                                                                           .collect(Collectors.toMap(GetDepartMemberResp.MemberInfo::getAcctid, a -> a));
+        for (WeUser user : weUserList) {
+            if (StringUtils.isBlank(user.getUserId())) {
+                continue;
+            }
+            if (userIdMap.containsKey(user.getUserId())) {
+                // 设置隐私信息
+                setPrivateInfo(user, userIdMap.get(user.getUserId()));
+            }
+        }
+        return weUserList;
+    }
+
+
+    /**
+     * 为代开发应用匹配 从企微后台获取到信息
+     * （如果是代开发应用，优先使用username匹配员工姓名，若没有匹配到或匹配到多个，则使用企微接口提供的明文转密文接口匹配员工userid）
+     *
+     * @param corpId      企业id
+     * @param memberInfos 企微后台拉取rpa拉取到的信息
+     * @param weUserList  db中的员工信息
+     * @return
+     */
+    private List<WeUser> matchUserId4DkApp(String corpId, List<GetDepartMemberResp.MemberInfo> memberInfos, List<WeUser> weUserList) {
+        // 生成 name(username) -> 成员隐私信息列表  映射
+        Map<String, List<GetDepartMemberResp.MemberInfo>> privacyUserNameMap = memberInfos.stream()
+                                                                                          .collect(Collectors.groupingBy(GetDepartMemberResp.MemberInfo::getName));
+        // 生成 name - > 员工实体列表的映射, 如果list<weUser> 超过两个元素,则表名有重名的员工,需要特殊处理
+        Map<String, List<WeUser>> weUserNameMap = weUserList.stream()
+                                                            .collect(Collectors.groupingBy(WeUser::getName));
+        // 需要通过userid明文转密文的隐私信息（企业姓名重复的时候需要，大多时候不需要）
+        List<GetDepartMemberResp.MemberInfo> needTransferUserIdList = new ArrayList<>();
+        List<WeUser> updateUserList = new ArrayList<>();
+        // 优先使用
+        for (Map.Entry<String, List<WeUser>> entry : weUserNameMap.entrySet()) {
+            String name = entry.getKey();
+            List<WeUser> list = entry.getValue();
+            if (CollectionUtils.isEmpty(list)) {
+                continue;
+            }
+            List<GetDepartMemberResp.MemberInfo> memberInfoList = privacyUserNameMap.get(name);
+            if (CollectionUtils.isEmpty(memberInfoList)) {
+                continue;
+            }
+            if (list.size() > 1) {
+                // 以名字分组后 list大小大于1 ,表示存在同名的员工,存储起来后续特殊处理,调用
+                needTransferUserIdList.addAll(memberInfoList);
+                continue;
+            }
+            // 获取不重名的员工
+            WeUser user = list.get(0);
+            if (privacyUserNameMap.containsKey(user.getName())) {
+                // 设置隐私信息
+                setPrivateInfo(user, memberInfoList.get(0));
+                updateUserList.add(user);
+            }
+        }
+        // 增加重复姓名的用户隐私数据
+        updateUserList.addAll(dealRepeatNamePrivacyInfo(corpId, needTransferUserIdList, weUserList));
+        return updateUserList;
+
+    }
+
+    /**
+     * 处理、获取代开发重名用户的隐私信息
+     *
+     * @param corpId                 企业id
+     * @param needTransferUserIdList 需要代开发转换 userid 明文-》 密文的 隐私信息
+     * @param weUserList             db成员实体列表
+     */
+    private List<WeUser> dealRepeatNamePrivacyInfo(String corpId, List<GetDepartMemberResp.MemberInfo> needTransferUserIdList, List<WeUser> weUserList) {
+        if (CollectionUtils.isEmpty(needTransferUserIdList) || CollectionUtils.isEmpty(weUserList)) {
+            return Collections.emptyList();
+        }
+        List<String> userIds = needTransferUserIdList.stream()
+                                                     .map(GetDepartMemberResp.MemberInfo::getAcctid)
+                                                     .collect(Collectors.toList());
+        // userId 明文转密文
+        UserIdToOpenUserIdResp userIdToOpenUserIdResp = we3rdUserClient.useridToOpenuserid(userIds, corpId);
+        if(userIdToOpenUserIdResp == null || CollectionUtils.isEmpty(userIdToOpenUserIdResp.getOpenUserIdList())) {
+            return Collections.emptyList();
+        }
+        List<WeUser> updateUserList = new ArrayList<>();
+        // userid 明文- 》密文的映射
+        Map<String,String> userIdMap = userIdToOpenUserIdResp.getOpenUserIdList().stream().collect(Collectors.toMap(
+                UserIdToOpenUserIdResp.OpenUserId::getUserId , UserIdToOpenUserIdResp.OpenUserId :: getOpenUserId)) ;
+        // 密文userid - > 员工实体映射
+        Map<String,WeUser> weUserMap = weUserList.stream().collect(Collectors.toMap(
+                WeUser::getUserId, a->a));
+        needTransferUserIdList.forEach(a -> {
+            if(userIdMap.containsKey(a.getAcctid())) {
+                //设置成密文
+                String openUserid =  userIdMap.get(a.getAcctid());
+                a.setAcctid(openUserid);
+                if(weUserMap.containsKey(openUserid)) {
+                    WeUser user = weUserMap.get(openUserid);
+                    setPrivateInfo(user, a);
+                    updateUserList.add(user);
+                }
+            }
+        });
+        return updateUserList;
+    }
+
+
+    /**
+     * 为user实体设置隐私信息
+     *
+     * @param user       员工实体
+     * @param memberInfo 隐私信息{@link com.easyink.wecom.domain.resp.GetDepartMemberResp.MemberInfo}
+     */
+    private void setPrivateInfo(WeUser user, GetDepartMemberResp.MemberInfo memberInfo) {
+        String defaultValue = StringUtils.EMPTY;
+        user.setAvatarMediaid(StringUtils.isNotBlank(memberInfo.getImgid()) ? memberInfo.getImgid() : defaultValue);
+        user.setAddress(StringUtils.isNotBlank(memberInfo.getXcx_corp_address()) ?memberInfo.getXcx_corp_address() : defaultValue);
+        user.setEmail(StringUtils.isNotBlank(memberInfo.getEmail()) ? memberInfo.getEmail() : defaultValue);
+        user.setMobile(StringUtils.isNotBlank(memberInfo.getMobile()) ? memberInfo.getMobile() :defaultValue);
     }
 
 }

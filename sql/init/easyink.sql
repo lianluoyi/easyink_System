@@ -996,8 +996,8 @@ INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`
 INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`, `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES (2315, '员工服务', 2313, 2, 'employeeService', 'dataStatistics/employeeService/index', 1, 'C', '0', '0', NULL, '#', 'admin', '2023-02-15 09:57:17', '', NULL, '');
 INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`, `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES (2316, '导出报表', 2314, 1, '', NULL, 1, 'F', '0', '0', 'statistic:customerContact:export', '#', 'admin', '2023-02-15 16:53:30', '', NULL, '');
 INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`, `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES (2317, '导出报表', 2315, 1, '', NULL, 1, 'F', '0', '0', 'statistic:employeeService:export', '#', 'admin', '2023-02-15 16:54:01', 'admin', '2023-02-15 16:54:24', '');
-
-
+-- 员工活码详情数据统计导出菜单 Tower 任务: 员工活码详情数据导出 ( https://tower.im/teams/636204/todos/63010 )
+INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`, `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES (2318, '导出报表', 2053, 8, '', NULL, 1, 'F', '0', '0', 'wecom:codeAnalyse:export', '#', 'admin', '2023-02-28 10:09:09', 'admin', '2023-02-28 10:09:39', '');
 -- ----------------------------
 -- Table structure for sys_role
 -- ----------------------------
@@ -1731,7 +1731,7 @@ CREATE TABLE `we_group_member`
     `chat_id`    varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '群id',
     `corp_id`    varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '企业id',
     `union_id`   varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '外部联系人在微信开放平台的唯一身份标识',
-    `join_time`  timestamp(0)                                                 NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '加群时间',
+    `join_time`  datetime NOT NULL DEFAULT '0000-00-00 00:00:00'  COMMENT '加群时间',
     `join_scene` tinyint(4) NOT NULL DEFAULT 0 COMMENT '加入方式',
     `type`       tinyint(4) NOT NULL DEFAULT 0 COMMENT '成员类型:1 - 企业成员;2 - 外部联系人',
     `name`       varchar(32)                                                  NOT NULL DEFAULT '' COMMENT '成员名称',

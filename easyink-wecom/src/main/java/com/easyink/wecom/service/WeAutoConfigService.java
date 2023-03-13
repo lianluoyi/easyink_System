@@ -27,7 +27,7 @@ public interface WeAutoConfigService {
      *
      * @param qrcodeKey 二维码key
      * @param status    二维码状态
-     * @param loginUser    当前登录人的企业ID
+     * @param loginUser 当前登录人的企业ID
      * @return {@link WeCheckQrcodeVO}
      */
     WeCheckQrcodeVO check(String qrcodeKey, String status, LoginUser loginUser);
@@ -36,7 +36,7 @@ public interface WeAutoConfigService {
      * 启动自动配置
      *
      * @param autoConfigDTO autoConfigDTO
-     * @param corpId 企业ID
+     * @param corpId        企业ID
      */
     void autoConfig(AutoConfigDTO autoConfigDTO, LoginUser loginUser);
 
@@ -63,4 +63,12 @@ public interface WeAutoConfigService {
      * @param qrcodeKey
      */
     void sendCaptcha(String tlKey, String qrcodeKey);
+
+    /**
+     * 获取部门成员隐私信息 （需要管理员扫码授权获取qrcodeKey后)
+     *
+     * @param corpId    企业corpId
+     * @param qrcodeKey 扫码后的qrcodeKey
+     */
+    void getDepartMemberInfo(String corpId, String qrcodeKey);
 }

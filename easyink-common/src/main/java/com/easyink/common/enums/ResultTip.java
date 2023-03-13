@@ -77,6 +77,7 @@ public enum ResultTip {
     TIP_NO_CAPTCHA_OR_TLKEY(1020, "短信验证码或者tlKey为空"),
     TIP_ERROR_CAPTCHA(1021, "短信验证码错误"),
     TIP_CONFIRM_CAPTCHA(1022, "验证短信失败"),
+    TIP_NO_SCAN(1023,"请扫二维码"),
 
 
     //运营模块返回码

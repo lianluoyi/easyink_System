@@ -281,7 +281,7 @@ public class WeMsgTlpServiceImpl extends ServiceImpl<WeMsgTlpMapper, WeMsgTlp> i
             return null;
         }
         // 2.判断是否存在特殊欢迎语，存在则判断特殊欢迎语是否处于可用范围内
-        if (weMsgTlp.getExistSpecialFlag()) {
+        if (Boolean.TRUE.equals(weMsgTlp.getExistSpecialFlag())) {
             HitSpecialWelcomeMsgMaterialVO hitRuleMaterialVO = returnHitRuleMaterial(weMsgTlp.getId());
             if (hitRuleMaterialVO != null) {
                 // 存在且命中特殊时段欢迎语，返回对应附件

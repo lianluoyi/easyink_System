@@ -143,6 +143,7 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
      */
     private void otherHandle(String welcomeCode, String userId, String externalUserId, String corpId) {
         log.info("执行发送非活码欢迎语欢迎语otherHandle>>>>>>>>>>>>>>>");
+        log.info("[非活码欢迎语] welcomeCode:{}, userId:{}, externalUserId:{}, corpId:{}", welcomeCode, userId, externalUserId, corpId);
         WeWelcomeMsg.WeWelcomeMsgBuilder weWelcomeMsgBuilder = WeWelcomeMsg.builder().welcome_code(welcomeCode);
         //查询外部联系人与通讯录关系数据
         WeFlowerCustomerRel weFlowerCustomerRel = weFlowerCustomerRelService
@@ -163,7 +164,7 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
                     log.info("好友欢迎语发送成功>>>>>>>>>>>>>>>");
                 }
             } catch (Exception e) {
-                log.error("异步发送欢迎语消息异常：ex:{}", ExceptionUtil.getExceptionMessage(e));
+                log.error("异步发送欢迎语消息异常：ex:{}", ExceptionUtils.getStackTrace(e));
             }
         });
     }
@@ -215,7 +216,7 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
                         try {
                             sendMessageToNewExternalUserId(weWelcomeMsgBuilder, messageMap, weFlowerCustomerRel.getRemark(), corpId, userId, externalUserId, state);
                         } catch (Exception e) {
-                            log.error("异步发送欢迎语消息异常：ex:{}", ExceptionUtil.getExceptionMessage(e));
+                            log.error("异步发送欢迎语消息异常：ex:{}", ExceptionUtils.getStackTrace(e));
                         }
                     });
                 } else if (WelcomeMsgTypeEnum.REDEEM_CODE_WELCOME_MSG_TYPE.getType().equals(messageMap.getWelcomeMsgType())) {

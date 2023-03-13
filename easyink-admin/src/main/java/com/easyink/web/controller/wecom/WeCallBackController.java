@@ -77,7 +77,7 @@ public class WeCallBackController {
             if (factory != null) {
                 Threads.SINGLE_THREAD_POOL.submit(() -> factory.eventHandle(wxCpXmlMessage));
             } else {
-                throw new CustomException(ResultTip.TIP_STRATEGY_IS_EMPTY);
+               log.info("[企微回调通知接口]该回调事件不存在对应的处理,{}",wxCpXmlMessage.getEvent());
             }
         } catch (Exception e) {
             log.error("企微回调异常:{}", ExceptionUtils.getStackTrace(e));

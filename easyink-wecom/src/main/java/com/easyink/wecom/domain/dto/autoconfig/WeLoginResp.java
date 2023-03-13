@@ -57,5 +57,9 @@ public class WeLoginResp {
      * 登录人昵称
      */
     private String name;
+    /**
+     * 根部门id
+     */
+    private String root_depart_id ;
 
 }

@@ -22,6 +22,7 @@ import java.util.List;
 public interface WeUserMapper extends BaseMapper<WeUser> {
     /**
      * 查询员工信息
+     *
      * @param queryUserDTO 条件
      * @return vo
      */
@@ -29,11 +30,12 @@ public interface WeUserMapper extends BaseMapper<WeUser> {
 
     /**
      * 查询员工信息
-     * @param corpId 企业ID
+     *
+     * @param corpId     企业ID
      * @param userIdList 查询指定的员工ID
      * @return {@link List<WeUserVO>}
      */
-    List<WeUserVO> listOfUser1(@Param("corpId")String corpId,@Param("userIdList")List<String> userIdList);
+    List<WeUserVO> listOfUser1(@Param("corpId") String corpId, @Param("userIdList") List<String> userIdList);
 
     /**
      * 查出员工信息（包含离职员工）
@@ -94,15 +96,8 @@ public interface WeUserMapper extends BaseMapper<WeUser> {
 
 
     /**
-     * 批量插入员工
-     *
-     * @param weUsers
-     * @return
-     */
-    int batchInsertWeUser(@Param("weUsers") List<WeUser> weUsers);
-
-    /**
      * 批量修改员工
+     *
      * @param weUsers 条件
      * @return 受影响行
      */
@@ -110,7 +105,6 @@ public interface WeUserMapper extends BaseMapper<WeUser> {
 
     /**
      * 根据客户id获取客户添加人
-     *
      *
      * @param corpId
      * @param externalUserid
@@ -120,7 +114,8 @@ public interface WeUserMapper extends BaseMapper<WeUser> {
 
     /**
      * 获取数据权限下员工id
-     * @param corpId 公司id
+     *
+     * @param corpId      公司id
      * @param departments 权限下部门
      * @return 员工id
      */
@@ -169,4 +164,12 @@ public interface WeUserMapper extends BaseMapper<WeUser> {
      * @param updateUserList {@link List<WeUser>}
      */
     Integer batchInsertUpdateUserStatus(@Param("list") List<WeUser> updateUserList);
+
+    /**
+     * 批量更新员工的隐私信息
+     *
+     * @param list 待更新列表
+     * @return affected rows
+     */
+    Integer batchUpdateUserPrivacy(@Param("list") List<WeUser> list);
 }

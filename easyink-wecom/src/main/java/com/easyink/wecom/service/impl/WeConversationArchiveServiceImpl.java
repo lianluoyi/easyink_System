@@ -224,8 +224,8 @@ public class WeConversationArchiveServiceImpl implements WeConversationArchiveSe
         }
         //权限下的员工
         List<String> userIds = weUserService.listOfUserId(loginUser.getCorpId(), loginUser.getDepartmentDataScope().split(WeConstans.COMMA));
-        //若为空则只能看本人的数据
-        if (CollectionUtils.isEmpty(userIds)) {
+        //若为空则只能看本人的数据 (admin不存在会话存档)
+        if (CollectionUtils.isEmpty(userIds) && !loginUser.isSuperAdmin()) {
             userIds.add(loginUser.getWeUser().getUserId());
         }
         String[] userArray = userIds.toArray(new String[0]);

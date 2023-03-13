@@ -727,14 +727,14 @@ public class WeConstans {
             "\n" +
             "发送对象：【替换内容】\n" +
             "\n" +
-            "请及时前往【客户群】中确认发送";
+            "请及时前往【群发助手】中确认发送";
     public static final String CUSTOMER_MESSAGE_INFO = "【任务提醒】\n" +
             "\n" +
             "任务类型：群发任务\n" +
             "\n" +
             "发送对象：【替换内容】\n" +
             "\n" +
-            "请及时前往【客户联系】中确认发送";
+            "请及时前往【群发助手】中确认发送";
     public static final String REPLACE_MSG = "【替换内容】";
     /**
      * mediaId 缓存key
@@ -897,5 +897,10 @@ public class WeConstans {
      * 数字0
      */
     public static final String ZERO = "0";
+
+    /**
+     * 若员工在可见范围内，其部门不在可见范围则将其department设置为-1 Tower 任务: 兼容不同的可见范围 ( https://tower.im/teams/636204/todos/61467 )
+     */
+    public static final String OTHER_USER_DEPARTMENT = "-1";
 
 }
