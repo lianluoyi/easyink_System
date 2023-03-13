@@ -13,7 +13,6 @@ import com.dtflys.forest.exceptions.ForestRuntimeException;
 import com.easyink.common.annotation.DataScope;
 import com.easyink.common.config.RuoYiConfig;
 import com.easyink.common.constant.*;
-import com.easyink.common.core.domain.ConversationArchiveQuery;
 import com.easyink.common.core.domain.entity.SysRole;
 import com.easyink.common.core.domain.entity.WeCorpAccount;
 import com.easyink.common.core.domain.model.LoginUser;
@@ -22,7 +21,6 @@ import com.easyink.common.core.domain.wecom.WeUser;
 import com.easyink.common.core.redis.RedisCache;
 import com.easyink.common.enums.*;
 import com.easyink.common.exception.CustomException;
-import com.easyink.common.utils.DateUtils;
 import com.easyink.common.utils.MyDateUtil;
 import com.easyink.common.utils.bean.BeanUtils;
 import com.easyink.common.utils.file.FileUploadUtils;
@@ -44,7 +42,7 @@ import com.easyink.wecom.login.util.LoginTokenService;
 import com.easyink.wecom.mapper.WeUserMapper;
 import com.easyink.wecom.mapper.WeUserRoleMapper;
 import com.easyink.wecom.service.*;
-import com.github.pagehelper.PageInfo;
+import com.easyink.wecom.utils.DepartmentCacheUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ObjectUtils;
@@ -59,7 +57,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -347,6 +344,7 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
     @Transactional(rollbackFor = Exception.class)
     public int insertWeUserNoToWeCom(WeUser weUser) {
         WeUser weUserInfo = weUserMapper.selectWeUserById(weUser.getCorpId(), weUser.getUserId());
+        handleUserDepartment(weUser);
         initRoleByDepartmentAndLeader(weUser);
         if (weUserInfo != null) {
             Date dimissionTime = weUserInfo.getDimissionTime();
@@ -363,6 +361,27 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
         }
         return weUserMapper.insertWeUser(weUser);
 
+    }
+
+    /**
+     * 处理员工部门
+     *
+     * @param weUser    {@link WeUser}
+     */
+    private void handleUserDepartment(WeUser weUser) {
+        if (weUser == null) {
+            return;
+        }
+        if (weUser.getDepartment() == null || weUser.getDepartment().length == 0) {
+            weUser.setDepartment(new String[]{WeConstans.OTHER_USER_DEPARTMENT});
+        }
+        if (weUser.getMainDepartment() == null) {
+            weUser.setMainDepartment(Long.parseLong(WeConstans.OTHER_USER_DEPARTMENT));
+        }
+        if (DepartmentCacheUtils.isMember(weUser.getCorpId(), weUser.getDepartment()) && !DepartmentCacheUtils.isMember(weUser.getCorpId(), weUser.getMainDepartment())) {
+            // 主部门不在可见范围 子部门在可见范围则临时设置子部门为主部门
+            weUser.setMainDepartment(Long.parseLong(weUser.getDepartment()[0]));
+        }
     }
 
     /**

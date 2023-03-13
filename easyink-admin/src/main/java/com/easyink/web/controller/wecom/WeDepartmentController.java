@@ -5,8 +5,10 @@ import com.easyink.common.core.controller.BaseController;
 import com.easyink.common.core.domain.AjaxResult;
 import com.easyink.common.core.domain.model.LoginUser;
 import com.easyink.common.core.domain.wecom.WeDepartment;
+import com.easyink.common.core.domain.wecom.WeUser;
 import com.easyink.common.enums.BusinessType;
 import com.easyink.common.service.ISysDeptService;
+import com.easyink.wecom.domain.vo.OrganizationVO;
 import com.easyink.wecom.login.util.LoginTokenService;
 import com.easyink.wecom.service.WeDepartmentService;
 import io.swagger.annotations.Api;
@@ -31,8 +33,6 @@ public class WeDepartmentController extends BaseController {
     private WeDepartmentService weDepartmentService;
     @Autowired
     private ISysDeptService sysDeptService;
-
-
     /**
      * 查询企业微信组织架构相关列表
      */
@@ -45,6 +45,15 @@ public class WeDepartmentController extends BaseController {
         return AjaxResult.success(list);
     }
 
+    /**
+     * 查询企业微信组织架构相关列表
+     */
+    //  @PreAuthorize("@ss.hasPermi('contacts:organization:list')")
+    @GetMapping("/organization")
+    @ApiOperation("获取组织架构-部门员工列表")
+    public AjaxResult<OrganizationVO> organization(WeUser weUser) {
+        return AjaxResult.success(weDepartmentService.getOrganization(weUser));
+    }
 
     /**
      * 新增企业微信组织架构相关

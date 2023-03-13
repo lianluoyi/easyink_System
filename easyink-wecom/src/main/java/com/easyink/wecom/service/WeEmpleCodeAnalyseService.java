@@ -1,6 +1,7 @@
 package com.easyink.wecom.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.easyink.common.core.domain.AjaxResult;
 import com.easyink.wecom.domain.WeEmpleCodeAnalyse;
 import com.easyink.wecom.domain.dto.emplecode.FindWeEmpleCodeAnalyseDTO;
 import com.easyink.wecom.domain.vo.WeEmplyCodeAnalyseVO;
@@ -20,6 +21,15 @@ public interface WeEmpleCodeAnalyseService extends IService<WeEmpleCodeAnalyse> 
      * @return List<WeEmpleCodeAnalyse>
      */
     WeEmplyCodeAnalyseVO getTimeRangeAnalyseCount(FindWeEmpleCodeAnalyseDTO findWeEmpleCodeAnalyseDTO);
+
+
+    /**
+     * 导出时间段内新增和流失客户数据
+     *
+     * @param findWeEmpleCodeAnalyseDTO {@link FindWeEmpleCodeAnalyseDTO}
+     * @return
+     */
+    AjaxResult exportTimeRangeAnalyseCount(FindWeEmpleCodeAnalyseDTO findWeEmpleCodeAnalyseDTO);
 
     /**
      * 新增

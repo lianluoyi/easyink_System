@@ -391,7 +391,7 @@ public class WeMsgTlpMaterialServiceImpl extends ServiceImpl<WeMsgTlpMaterialMap
                     replyText = replyText.replaceAll(customerNickName, remark);
                 } else {
                     WeCustomer weCustomer = weCustomerService.selectWeCustomerById(externalUserId, corpId);
-                    replyText = replyText.replaceAll(customerNickName, weCustomer.getName());
+                    replyText = replyText.replaceAll(customerNickName, weCustomer == null ? StringUtils.EMPTY : StringUtils.defaultString(weCustomer.getName()));
                 }
             }
             //替换#员工姓名#

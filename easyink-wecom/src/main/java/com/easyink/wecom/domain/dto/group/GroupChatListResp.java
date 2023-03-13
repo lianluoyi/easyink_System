@@ -38,7 +38,7 @@ public class GroupChatListResp extends WePageBaseResp<GroupChatListResp.GroupCha
     }
 
     @Override
-    public List getPageList() {
+    public List<GroupChat> getPageList() {
         if (CollectionUtils.isEmpty(group_chat_list)) {
             return Collections.emptyList();
         }

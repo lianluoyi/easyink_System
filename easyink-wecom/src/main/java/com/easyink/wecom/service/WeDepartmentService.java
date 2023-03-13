@@ -3,9 +3,10 @@ package com.easyink.wecom.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.easyink.common.core.domain.model.LoginUser;
 import com.easyink.common.core.domain.wecom.WeDepartment;
+import com.easyink.common.core.domain.wecom.WeUser;
+import com.easyink.wecom.domain.vo.OrganizationVO;
 import com.easyink.wecom.domain.vo.sop.DepartmentVO;
 
-import java.util.Collection;
 import java.util.List;
 
 /**
@@ -117,4 +118,13 @@ public interface WeDepartmentService extends IService<WeDepartment> {
      * @return 部门id列表
      */
     List<Long> getDepartmentAndChildList(Integer departmentId, String corpId);
+
+    /**
+     * 获取组织架构-部门+可见范围内没有部门的员工
+     *
+     * @param weUser    {@link WeUser}
+     * @return {@link OrganizationVO}
+     */
+
+    OrganizationVO getOrganization(WeUser weUser);
 }

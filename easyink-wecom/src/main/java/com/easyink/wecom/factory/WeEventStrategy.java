@@ -1,5 +1,6 @@
 package com.easyink.wecom.factory;
 
+import com.easyink.common.constant.WeConstans;
 import com.easyink.common.core.domain.wecom.WeDepartment;
 import com.easyink.common.core.domain.wecom.WeUser;
 import com.easyink.common.utils.StringUtils;
@@ -48,6 +49,8 @@ public abstract class WeEventStrategy {
         }
         if (message.getMainDepartment() != null) {
             weUser.setMainDepartment(Long.valueOf(message.getMainDepartment()));
+        } else {
+            weUser.setMainDepartment(Long.parseLong(WeConstans.OTHER_USER_DEPARTMENT));
         }
         return weUser;
     }
