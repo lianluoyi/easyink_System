@@ -183,6 +183,17 @@ public class WeEmpleCodeController extends BaseController {
         return AjaxResult.success(weEmpleCodeAnalyseService.getTimeRangeAnalyseCount(findWeEmpleCodeAnalyseDTO));
     }
 
+
+    @Log(title = "导出时间段内新增和流失客户数据", businessType = BusinessType.EXPORT)
+    @PreAuthorize("@ss.hasPermi('wecom:codeAnalyse:export')")
+    @GetMapping("/exportTimeRangeAnalyseCount")
+    @ApiOperation("导出时间段内新增和流失客户数据")
+    public <T> AjaxResult<T> exportTimeRangeAnalyseCount(@Validated FindWeEmpleCodeAnalyseDTO findWeEmpleCodeAnalyseDTO) {
+        findWeEmpleCodeAnalyseDTO.setCorpId(LoginTokenService.getLoginUser().getCorpId());
+        return AjaxResult.success(weEmpleCodeAnalyseService.exportTimeRangeAnalyseCount(findWeEmpleCodeAnalyseDTO));
+    }
+
+
     @Log(title = "获取员工活码的使用员工数据", businessType = BusinessType.OTHER)
     @GetMapping("/getUserByEmplyCode/{id}")
     @ApiOperation("获取员工活码的使用员工数据")

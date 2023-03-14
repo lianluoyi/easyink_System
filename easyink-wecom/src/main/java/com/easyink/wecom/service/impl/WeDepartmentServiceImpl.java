@@ -10,20 +10,26 @@ import com.easyink.common.constant.WeConstans;
 import com.easyink.common.core.domain.model.LoginUser;
 import com.easyink.common.core.domain.wecom.WeDepartment;
 import com.easyink.common.core.domain.wecom.WeUser;
+import com.easyink.common.core.page.PageDomain;
+import com.easyink.common.core.page.TableSupport;
 import com.easyink.common.enums.DataScopeEnum;
 import com.easyink.common.enums.ResultTip;
 import com.easyink.common.enums.WeExceptionTip;
 import com.easyink.common.exception.CustomException;
 import com.easyink.common.service.ISysDeptService;
 import com.easyink.common.utils.StringUtils;
+import com.easyink.common.utils.sql.SqlUtil;
 import com.easyink.wecom.client.WeDepartMentClient;
 import com.easyink.wecom.domain.dto.WeDepartMentDTO;
 import com.easyink.wecom.domain.dto.WeResultDTO;
+import com.easyink.wecom.domain.vo.OrganizationVO;
 import com.easyink.wecom.domain.vo.sop.DepartmentVO;
 import com.easyink.wecom.login.util.LoginTokenService;
 import com.easyink.wecom.mapper.WeDepartmentMapper;
 import com.easyink.wecom.service.WeDepartmentService;
 import com.easyink.wecom.service.WeUserService;
+import com.easyink.wecom.utils.DepartmentCacheUtils;
+import com.github.pagehelper.PageHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -189,6 +195,7 @@ public class WeDepartmentServiceImpl extends ServiceImpl<WeDepartmentMapper, WeD
             return Collections.emptyList();
         }
         List<WeDepartment> weDepartments = weDepartMentClient.weAllDepartMents(corpId).findWeDepartments(corpId);
+        DepartmentCacheUtils.clearAndSet(corpId, weDepartments);
         List<WeDepartment> localDepartments = baseMapper.selectDepartmentByCorpId(corpId);
         //删除不存在的部门
         if (CollUtil.isNotEmpty(localDepartments)) {
@@ -294,6 +301,82 @@ public class WeDepartmentServiceImpl extends ServiceImpl<WeDepartmentMapper, WeD
         );
         List<WeDepartment> weDepartments = baseMapper.selectDepartmentAndChildList(weDepartment);
         return weDepartments.stream().map(WeDepartment::getId).collect(Collectors.toList());
+    }
+
+    @Override
+    public OrganizationVO getOrganization(WeUser weUser) {
+        LoginUser loginUser = LoginTokenService.getLoginUser();
+        List<WeDepartment> departments = new ArrayList<>();
+        // 该员工的数据权限为个人
+        if (loginUser.isSelfDataScope()) {
+            // 当前登录的账号为部门不在可见范围内的员工
+            if (isOtherUser(loginUser)) {
+                return new OrganizationVO(departments, getOtherUsers(weUser, loginUser));
+            }
+            return new OrganizationVO(departments, getUsers(weUser, loginUser));
+        }
+        departments = this.selectWeDepartmentList(loginUser.getCorpId(), weUser.getIsActivate(), loginUser);
+        return new OrganizationVO(departments, getOtherUsers(weUser, loginUser));
+    }
+
+    /**
+     * 当前登录员工是部门不在可见范围的员工
+     *
+     * @param loginUser {@link LoginUser} 当前登录员工
+     * @return
+     */
+    private boolean isOtherUser(LoginUser loginUser) {
+        if (loginUser == null || loginUser.getWeUser() == null) {
+            return false;
+        }
+        return !loginUser.isSuperAdmin() && WeConstans.OTHER_USER_DEPARTMENT.equals(StringUtils.join(loginUser.getWeUser().getDepartment()));
+    }
+
+    /**
+     * 获取员工list 员工部门在可见范围内
+     *
+     * @param weUser    {@link WeUser}
+     * @param loginUser {@link LoginUser}
+     * @return
+     */
+    private List<WeUser> getUsers(WeUser weUser, LoginUser loginUser) {
+        if (weUser == null || loginUser == null) {
+            return new ArrayList<>();
+        }
+        weUser.setCorpId(loginUser.getCorpId());
+        startPage();
+        return weUserService.selectWeUserList(weUser);
+    }
+
+    /**
+     * 获取部门不在可见范围的员工
+     *
+     * @param weUser    {@link WeUser}
+     * @param loginUser {@link LoginUser}
+     * @return
+     */
+    private List<WeUser> getOtherUsers(WeUser weUser, LoginUser loginUser) {
+        if (weUser == null || loginUser == null) {
+            return new ArrayList<>();
+        }
+        weUser.setCorpId(loginUser.getCorpId());
+        weUser.setOtherUserFlag(true);
+        startPage();
+        return weUserService.selectWeUserList(weUser);
+    }
+
+
+    /**
+     * 设置请求分页数据
+     */
+    protected void startPage() {
+        PageDomain pageDomain = TableSupport.buildPageRequest();
+        Integer pageNum = pageDomain.getPageNum();
+        Integer pageSize = pageDomain.getPageSize();
+        if (StringUtils.isNotNull(pageNum) && StringUtils.isNotNull(pageSize)) {
+            String orderBy = SqlUtil.escapeOrderBySql(pageDomain.getOrderBy());
+            PageHelper.startPage(pageNum, pageSize, orderBy);
+        }
     }
 
 

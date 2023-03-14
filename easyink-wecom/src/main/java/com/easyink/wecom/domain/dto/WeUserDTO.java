@@ -1,5 +1,6 @@
 package com.easyink.wecom.domain.dto;
 
+import com.easyink.common.constant.WeConstans;
 import com.easyink.common.core.domain.wecom.WeUser;
 import com.easyink.common.utils.bean.BeanUtils;
 import lombok.Data;
@@ -97,6 +98,8 @@ public class WeUserDTO extends WeResultDTO {
         }
         if (this.main_department != null) {
             weUser.setMainDepartment(this.main_department);
+        } else {
+            weUser.setMainDepartment(Long.parseLong(WeConstans.OTHER_USER_DEPARTMENT));
         }
         return weUser;
     }

@@ -5,6 +5,7 @@ import com.easyink.common.constant.Constants;
 import com.easyink.common.core.domain.entity.SysRole;
 import com.easyink.common.core.domain.entity.SysUser;
 import com.easyink.common.core.domain.wecom.WeUser;
+import com.easyink.common.enums.DataScopeEnum;
 import com.easyink.common.enums.ResultTip;
 import com.easyink.common.exception.CustomException;
 import com.easyink.common.exception.user.UserNoCorpException;
@@ -71,6 +72,15 @@ public class LoginUser implements UserDetails {
      * 是否是超级管理员
      */
     private boolean isSuperAdmin;
+
+    /**
+     * 登录用户是否为个人数据权限
+     *
+     * @return
+     */
+    public boolean isSelfDataScope() {
+        return !isSuperAdmin && DataScopeEnum.SELF.getCode().equals(getRole().getDataScope());
+    }
 
     /**
      * 用户信息

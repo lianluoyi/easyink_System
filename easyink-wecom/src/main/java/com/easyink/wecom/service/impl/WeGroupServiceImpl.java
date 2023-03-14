@@ -10,6 +10,7 @@ import com.easyink.common.annotation.DataScope;
 import com.easyink.common.constant.GroupConstants;
 import com.easyink.common.constant.WeConstans;
 import com.easyink.common.core.domain.AjaxResult;
+import com.easyink.common.core.domain.wecom.WeUser;
 import com.easyink.common.enums.CustomerTrajectoryEnums;
 import com.easyink.common.enums.ResultTip;
 import com.easyink.common.exception.BaseException;
@@ -32,7 +33,10 @@ import com.easyink.wecom.domain.dto.WeGroupMemberDTO;
 import com.easyink.wecom.domain.dto.customer.CustomerGroupDetail;
 import com.easyink.wecom.domain.dto.customer.CustomerGroupList;
 import com.easyink.wecom.domain.dto.customer.CustomerGroupMember;
+import com.easyink.wecom.domain.dto.group.GroupChatListReq;
+import com.easyink.wecom.domain.dto.group.GroupChatListResp;
 import com.easyink.wecom.domain.query.GroupChatStatisticQuery;
+import com.easyink.wecom.domain.resp.WePageBaseResp;
 import com.easyink.wecom.domain.vo.WeGroupExportVO;
 import com.easyink.wecom.domain.vo.sop.GroupSopVO;
 import com.easyink.wecom.domain.vo.wegrouptag.WeGroupTagRelDetail;
@@ -41,6 +45,7 @@ import com.easyink.wecom.mapper.WeGroupMapper;
 import com.easyink.wecom.service.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.aop.framework.AopContext;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -73,10 +78,11 @@ public class WeGroupServiceImpl extends ServiceImpl<WeGroupMapper, WeGroup> impl
     private final WeCustomerTrajectoryService weCustomerTrajectoryService;
     private final WeGroupStatisticService weGroupStatisticService;
     private final WeCustomerClient weCustomerClient;
+    private final WeUserService weUserService;
 
     @Autowired
     @Lazy
-    public WeGroupServiceImpl(WeCustomerGroupClient weCustomerGroupClient, WeGroupMemberService weGroupMemberService, PageHomeService pageHomeService, WeGroupTagRelService weGroupTagRelService, WeCustomerTrajectoryService weCustomerTrajectoryService, WeGroupStatisticService weGroupStatisticService, WeCustomerClient weCustomerClient) {
+    public WeGroupServiceImpl(WeCustomerGroupClient weCustomerGroupClient, WeGroupMemberService weGroupMemberService, PageHomeService pageHomeService, WeGroupTagRelService weGroupTagRelService, WeCustomerTrajectoryService weCustomerTrajectoryService, WeGroupStatisticService weGroupStatisticService, WeCustomerClient weCustomerClient, WeUserService weUserService) {
         this.weCustomerGroupClient = weCustomerGroupClient;
         this.weGroupMemberService = weGroupMemberService;
         this.pageHomeService = pageHomeService;
@@ -84,6 +90,7 @@ public class WeGroupServiceImpl extends ServiceImpl<WeGroupMapper, WeGroup> impl
         this.weCustomerTrajectoryService = weCustomerTrajectoryService;
         this.weGroupStatisticService = weGroupStatisticService;
         this.weCustomerClient = weCustomerClient;
+        this.weUserService = weUserService;
     }
 
     private static final int LENGTH = 3;
@@ -196,11 +203,11 @@ public class WeGroupServiceImpl extends ServiceImpl<WeGroupMapper, WeGroup> impl
             log.error("企业id不能不空");
             throw new BaseException("客户群同步失败");
         }
-        //调用企微新接口
-        CustomerGroupList customerGroupList = weCustomerGroupClient.groupChatLists(new CustomerGroupList().new Params(), corpId);
-        if (WeConstans.WE_SUCCESS_CODE.equals(customerGroupList.getErrcode())
-                && CollUtil.isNotEmpty(customerGroupList.getGroup_chat_list())) {
-            List<String> charIds = customerGroupList.getGroup_chat_list().stream().map(CustomerGroupList.GroupChat::getChat_id).collect(Collectors.toList());
+        // 获取可见范围下员工
+        List<String> userIdList = weUserService.getVisibleUser(corpId).stream().map(WeUser::getUserId).collect(Collectors.toList());
+        List<GroupChatListResp.GroupChat> groupChatList = getGroupChatList(userIdList, corpId);
+        if (CollUtil.isNotEmpty(groupChatList)) {
+            List<String> charIds = groupChatList.stream().map(GroupChatListResp.GroupChat::getChat_id).collect(Collectors.toList());
             //删除所有不存在的数据
             if (CollUtil.isEmpty(charIds)) {
                 //删除所有群聊数据
@@ -233,7 +240,7 @@ public class WeGroupServiceImpl extends ServiceImpl<WeGroupMapper, WeGroup> impl
             List<WeGroup> weGroups = new ArrayList<>();
             List<WeGroupMember> weGroupMembers = new ArrayList<>();
 
-            for (CustomerGroupList.GroupChat chat : customerGroupList.getGroup_chat_list()) {
+            for (GroupChatListResp.GroupChat chat : groupChatList) {
                 if (org.apache.commons.lang3.StringUtils.isBlank(chat.getChat_id())) {
                     //跳过本次循环
                     continue;
@@ -257,13 +264,15 @@ public class WeGroupServiceImpl extends ServiceImpl<WeGroupMapper, WeGroup> impl
                                 String invitorUserId = member.getInvitor() != null && member.getInvitor().getUserid() != null ? member.getInvitor().getUserid() : "";
 
                                 //由于群聊列表已删除，则id由雪花算法生成一个
+                                // 若企微后台加群时间为空,join_time返回0
+                                Long nullJoinTime = 0L;
                                 weGroupMembers.add(
                                         WeGroupMember.builder()
                                                 .id(SnowFlakeUtil.nextId())
                                                 .chatId(groupChat.getChat_id())
                                                 .userId(member.getUserid())
                                                 .corpId(corpId)
-                                                .joinTime(DateUtil.date(member.getJoin_time() * TIME_TERM))
+                                                .joinTime(nullJoinTime.equals(member.getJoin_time()) ? null : DateUtil.date(member.getJoin_time() * TIME_TERM))
                                                 .joinScene(member.getJoin_scene())
                                                 .joinType(member.getType())
                                                 .unionId(member.getUnionid())
@@ -305,6 +314,32 @@ public class WeGroupServiceImpl extends ServiceImpl<WeGroupMapper, WeGroup> impl
         }
         //同步客户群后刷新数据概览页数据
         pageHomeService.getGroupData(corpId);
+    }
+
+    /**
+     * 获取客户群
+     *
+     * @param userIdList    可见范围下员工List
+     * @param corpId        企业id
+     * @return {@link GroupChatListResp#getGroup_chat_list()}}
+     */
+    private List<GroupChatListResp.GroupChat> getGroupChatList(List<String> userIdList, String corpId) {
+        // 批次 每次最多查询100个员工为群主的客户群信息
+        int batchSize = 100;
+        List<List<String>> partition = ListUtils.partition(userIdList, batchSize);
+        List<GroupChatListResp.GroupChat> groupChatList = new ArrayList<>();
+        GroupChatListReq.OwnerFilter ownerFilter = new GroupChatListReq.OwnerFilter();
+        for (List<String> userIds : partition) {
+            // 将员工设置为群主，通过群主寻找
+            ownerFilter.setUserid_list(userIds);
+            GroupChatListReq groupChatListReq = GroupChatListReq.builder().owner_filter(ownerFilter).build();
+            GroupChatListResp groupChatWePageBaseResp = (GroupChatListResp) groupChatListReq.executeTillNoNextPage(corpId);
+            List<GroupChatListResp.GroupChat> groupChats = groupChatWePageBaseResp.getTotalList();
+            if (CollUtil.isNotEmpty(groupChats)) {
+                groupChatList.addAll(groupChats);
+            }
+        }
+        return groupChatList;
     }
 
     /**

@@ -2,16 +2,22 @@ package com.easyink.wecom.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.easyink.common.core.domain.AjaxResult;
+import com.easyink.common.core.domain.entity.SysDictData;
 import com.easyink.common.enums.ResultTip;
 import com.easyink.common.enums.WeEmpleCodeAnalyseTypeEnum;
 import com.easyink.common.exception.CustomException;
 import com.easyink.common.utils.DateUtils;
+import com.easyink.common.utils.poi.ExcelUtil;
+import com.easyink.wecom.domain.WeEmpleCode;
 import com.easyink.wecom.domain.WeEmpleCodeAnalyse;
 import com.easyink.wecom.domain.dto.emplecode.FindWeEmpleCodeAnalyseDTO;
 import com.easyink.wecom.domain.vo.WeEmplyCodeAnalyseCountVO;
 import com.easyink.wecom.domain.vo.WeEmplyCodeAnalyseVO;
 import com.easyink.wecom.mapper.WeEmpleCodeAnalyseMapper;
+import com.easyink.wecom.mapper.WeEmpleCodeMapper;
 import com.easyink.wecom.service.WeEmpleCodeAnalyseService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -28,8 +34,10 @@ import java.util.*;
  */
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class WeEmpleCodeAnalyseServiceImpl extends ServiceImpl<WeEmpleCodeAnalyseMapper, WeEmpleCodeAnalyse> implements WeEmpleCodeAnalyseService {
 
+    private final WeEmpleCodeMapper weEmpleCodeMapper;
 
     @Override
     public WeEmplyCodeAnalyseVO getTimeRangeAnalyseCount(FindWeEmpleCodeAnalyseDTO analyseDTO) {
@@ -37,7 +45,7 @@ public class WeEmpleCodeAnalyseServiceImpl extends ServiceImpl<WeEmpleCodeAnalys
             throw new CustomException(ResultTip.TIP_GENERAL_BAD_REQUEST);
         }
         //校验开始时间和结束时间格式
-        if (!DateUtils.isMatchFormat(analyseDTO.getBeginTime(), DateUtils.YYYY_MM_DD) || !DateUtils.isMatchFormat(analyseDTO.getEndTime(), DateUtils.YYYY_MM_DD)) {
+        if (Boolean.TRUE.equals(!DateUtils.isMatchFormat(analyseDTO.getBeginTime(), DateUtils.YYYY_MM_DD)) || Boolean.TRUE.equals(!DateUtils.isMatchFormat(analyseDTO.getEndTime(), DateUtils.YYYY_MM_DD))) {
             throw new CustomException(ResultTip.TIP_TIME_FORMAT_ERROR);
         }
         //查询两个时间内的所有日期
@@ -49,7 +57,7 @@ public class WeEmpleCodeAnalyseServiceImpl extends ServiceImpl<WeEmpleCodeAnalys
         List<WeEmplyCodeAnalyseCountVO> weEmpleCodeAnalyses = baseMapper.selectCountList(analyseDTO);
 
         //dataMap <time,WeEmplyCodeAnalyseCountVO>
-        Map<String, WeEmplyCodeAnalyseCountVO> dataMap = new HashMap<>(weEmpleCodeAnalyses.size());
+        Map<Date, WeEmplyCodeAnalyseCountVO> dataMap = new HashMap<>(weEmpleCodeAnalyses.size());
         if (CollectionUtils.isNotEmpty(weEmpleCodeAnalyses)) {
             for (WeEmplyCodeAnalyseCountVO weEmplyCodeAnalyseCountVO : weEmpleCodeAnalyses) {
                 dataMap.put(weEmplyCodeAnalyseCountVO.getTime(), weEmplyCodeAnalyseCountVO);
@@ -58,18 +66,32 @@ public class WeEmpleCodeAnalyseServiceImpl extends ServiceImpl<WeEmpleCodeAnalys
         List<WeEmplyCodeAnalyseCountVO> resultList = new ArrayList<>();
         WeEmplyCodeAnalyseCountVO analyseCountVO;
         for (Date date : dates) {
-            String time = DateUtils.dateTime(date);
-            analyseCountVO = dataMap.get(time);
-
+            analyseCountVO = dataMap.get(date);
             //初始化addCount=0、loseCount=0的数据
             if (analyseCountVO == null) {
                 analyseCountVO = new WeEmplyCodeAnalyseCountVO();
-                analyseCountVO.setTime(time);
+                analyseCountVO.setTime(date);
             }
             resultList.add(analyseCountVO);
         }
         int total = getAddCountByState(analyseDTO.getState());
         return new WeEmplyCodeAnalyseVO(resultList,total);
+    }
+
+    @Override
+    public AjaxResult exportTimeRangeAnalyseCount(FindWeEmpleCodeAnalyseDTO findWeEmpleCodeAnalyseDTO) {
+        WeEmpleCode weEmpleCode = weEmpleCodeMapper.selectById(findWeEmpleCodeAnalyseDTO.getState());
+        if (weEmpleCode == null || StringUtils.isBlank(weEmpleCode.getScenario())) {
+            throw new CustomException(ResultTip.TIP_EMPLY_CODE_NOT_FOUND);
+        }
+        WeEmplyCodeAnalyseVO timeRangeAnalyseCount = getTimeRangeAnalyseCount(findWeEmpleCodeAnalyseDTO);
+        if (timeRangeAnalyseCount == null || CollectionUtils.isEmpty(timeRangeAnalyseCount.getList())) {
+            throw new CustomException(ResultTip.TIP_NO_DATA_TO_EXPORT);
+        }
+        String sheetName = weEmpleCode.getScenario() + "的数据详情";
+        List<WeEmplyCodeAnalyseCountVO> list = timeRangeAnalyseCount.getList();
+        ExcelUtil<WeEmplyCodeAnalyseCountVO> util = new ExcelUtil<>(WeEmplyCodeAnalyseCountVO.class);
+        return util.exportExcel(list, sheetName);
     }
 
     @Override

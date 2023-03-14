@@ -64,7 +64,10 @@ public class WeAutoConfigInterceptor implements Interceptor<Object> {
         } else {
             //登陆后
             setCommonReq(request);
-            request.addBody("_d2st", getD2ct(request));
+            String d2st = getD2ct(request);
+            request.addBody("_d2st", d2st);
+            // 目前看好像就只有获取企业部门成员的接口需要的queryString
+            request.addQuery("_d2st", d2st) ;
         }
         return true;
     }
