@@ -72,6 +72,14 @@ public class WeCorpAccount extends BaseEntity {
     @TableField("agent_id")
     private String agentId;
 
+    public String getAgentId() {
+        if (agentId == null) {
+            return agentId;
+        }
+        // 清除空格
+        return agentId.replace(" ", "");
+    }
+
     @ApiModelProperty("应用密钥")
     @TableField("agent_secret")
     private String agentSecret;
@@ -92,6 +100,10 @@ public class WeCorpAccount extends BaseEntity {
     @ApiModelProperty("客户流失通知开关 0:关闭 1:开启")
     @TableField("customer_churn_notice_switch")
     private String customerChurnNoticeSwitch = Constants.NORMAL_CODE;
+
+    @ApiModelProperty("客户流失标签开关 0:关闭 1:开启")
+    @TableField("customer_loss_tag_switch")
+    private String customerLossTagSwitch = Constants.NORMAL_CODE;
 
 
     @ApiModelProperty("企业管理员账号")

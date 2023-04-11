@@ -1,5 +1,6 @@
 package com.easyink.web.controller.wecom;
 
+import com.dtflys.forest.annotation.Get;
 import com.easyink.common.annotation.Log;
 import com.easyink.common.constant.WeConstans;
 import com.easyink.common.core.controller.BaseController;
@@ -7,6 +8,9 @@ import com.easyink.common.core.domain.AjaxResult;
 import com.easyink.common.core.domain.model.LoginUser;
 import com.easyink.common.core.page.TableDataInfo;
 import com.easyink.common.enums.BusinessType;
+import com.easyink.common.utils.StringUtils;
+import com.easyink.common.utils.sql.SqlUtil;
+import com.easyink.wecom.domain.dto.WeCustomerSearchDTO;
 import com.easyink.wecom.domain.vo.AllocateWeCustomerResp;
 import com.easyink.wecom.domain.WeCustomer;
 import com.easyink.wecom.domain.dto.customer.EditCustomerDTO;
@@ -19,6 +23,7 @@ import com.easyink.wecom.domain.vo.customer.WeCustomerUserListVO;
 import com.easyink.wecom.domain.vo.customer.WeCustomerVO;
 import com.easyink.wecom.login.util.LoginTokenService;
 import com.easyink.wecom.service.WeCustomerService;
+import com.github.pagehelper.PageHelper;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -62,11 +67,15 @@ public class WeCustomerController extends BaseController {
      * @description: 由于之前离职客户和在职客户是分两个表存储, 本期将会把离职客户和在职客户存在同一张表（we_flower_customer_rel）中,用状态做区分
      * @since V1.7
      */
-    @GetMapping("/listV2")
+    @PostMapping("/listV2")
     @ApiOperation("查询企业微信客户列表第二版")
-    public TableDataInfo<WeCustomerVO> listV2(WeCustomer weCustomer) {
-        startPage();
-        weCustomer.setCorpId(LoginTokenService.getLoginUser().getCorpId());
+    public TableDataInfo<WeCustomerVO> listV2(@RequestBody WeCustomerSearchDTO weCustomerSearchDTO) {
+        Integer pageNum = weCustomerSearchDTO.getPageNum();
+        Integer pageSize = weCustomerSearchDTO.getPageSize();
+        if (StringUtils.isNotNull(pageNum) && StringUtils.isNotNull(pageSize)) {
+            PageHelper.startPage(pageNum, pageSize);
+        }
+        WeCustomer weCustomer=weCustomerService.changeWecustomer(weCustomerSearchDTO);
         List<WeCustomerVO> list = weCustomerService.selectWeCustomerListV2(weCustomer);
         return getDataTable(list);
     }
@@ -75,7 +84,7 @@ public class WeCustomerController extends BaseController {
      * 会话存档客户检索客户列表
      *
      * @description: 因为会话存档模块的客户检索列表需要对客户去重，
-     * 因此使用该接口代替原本{@link com.easyink.web.controller.wecom.WeCustomerController#listV2(com.easyink.wecom.domain.WeCustomer)} 接口
+     * 因此使用该接口代替原本{@link com.easyink.web.controller.wecom.WeCustomerController# listV2(com.easyink.wecom.domain.WeCustomer)} 接口
      */
     @GetMapping("/listDistinct")
     @ApiOperation("会话存档客户检索客户列表")
@@ -86,10 +95,11 @@ public class WeCustomerController extends BaseController {
         return getDataTable(list);
     }
 
-    @GetMapping("/sum")
+    @PostMapping("/sum")
     @ApiOperation("查询企业客户统计数据")
-    public AjaxResult<WeCustomerSumVO> sum(WeCustomer weCustomer) {
-        weCustomer.setCorpId(LoginTokenService.getLoginUser().getCorpId());
+    public AjaxResult<WeCustomerSumVO> sum(@RequestBody WeCustomerSearchDTO weCustomerSearchDTO) {
+        WeCustomer weCustomer=weCustomerService.changeWecustomer(weCustomerSearchDTO);
+        //weCustomer.setCorpId(LoginTokenService.getLoginUser().getCorpId());
         return AjaxResult.success(weCustomerService.weCustomerCount(weCustomer));
     }
 
@@ -105,9 +115,9 @@ public class WeCustomerController extends BaseController {
      */
     @PreAuthorize("@ss.hasPermi('customerManage:customer:export') || @ss.hasPermi('customerManage:lossRemind:export')")
     @Log(title = "企业微信客户", businessType = BusinessType.EXPORT)
-    @GetMapping("/export")
+    @PostMapping("/export")
     @ApiOperation("导出企业微信客户列表")
-    public <T> AjaxResult<T> export(WeCustomerExportDTO dto) {
+    public <T> AjaxResult<T> export(@RequestBody WeCustomerExportDTO dto) {
         dto.setCorpId(LoginTokenService.getLoginUser().getCorpId());
         return weCustomerService.export(dto);
     }
@@ -153,25 +163,6 @@ public class WeCustomerController extends BaseController {
         weCustomerService.syncWeCustomerV2(LoginTokenService.getLoginUser().getCorpId());
 
         return AjaxResult.success(WeConstans.SYNCH_TIP);
-    }
-
-    /**
-     * 客户打标签
-     *
-     * @param weMakeCustomerTag
-     * @return
-     */
-    @Log(title = "客户打标签", businessType = BusinessType.UPDATE)
-    @PostMapping("/makeLabel")
-    @PreAuthorize("@ss.hasPermi('customerManage:customer:makeTag')")
-    @ApiOperation("客户打标签")
-    public <T> AjaxResult<T> makeLabel(@Validated @RequestBody WeMakeCustomerTagVO weMakeCustomerTag) {
-        LoginUser loginUser = LoginTokenService.getLoginUser();
-        weMakeCustomerTag.setCorpId(loginUser.getCorpId());
-        weMakeCustomerTag.setUpdateBy(loginUser.getUsername());
-        weCustomerService.makeLabel(weMakeCustomerTag);
-
-        return AjaxResult.success();
     }
 
     /**

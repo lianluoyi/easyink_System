@@ -5,6 +5,7 @@ import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
 import javax.validation.constraints.NotBlank;
+import java.util.List;
 
 /**
  * 类名：FindWeEmpleCodeAnalyseDTO
@@ -30,6 +31,12 @@ public class FindWeEmpleCodeAnalyseDTO {
 
     @ApiModelProperty(value = "员工ID")
     private String userId;
+
+    @ApiModelProperty(value = "部门ID")
+    private String departmentId;
+
+    @ApiModelProperty(value = "userId列表")
+    private List<String> userIdList;
 
     @ApiModelProperty(hidden = true)
     private String corpId;

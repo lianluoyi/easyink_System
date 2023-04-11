@@ -16,7 +16,15 @@ import java.util.Arrays;
 @AllArgsConstructor
 public enum FormChannelEnum {
     UNKNOWN(0, "未知渠道"),
-    SIDE_BAR(4, "侧边栏"),
+    EMPLE_CODE(RadarChannelEnum.EMPLE_CODE.getTYPE(), RadarChannelEnum.EMPLE_CODE.getNAME()),
+    NEW_IN_GROUP(RadarChannelEnum.NEW_IN_GROUP.getTYPE(), RadarChannelEnum.NEW_IN_GROUP.getNAME()),
+    GROUP_TASK(RadarChannelEnum.GROUP_TASK.getTYPE(), "群发"),
+    SIDE_BAR(RadarChannelEnum.SIDE_BAR.getTYPE(), "侧边栏"),
+    WELCOME_MSG(RadarChannelEnum.WELCOME_MSG.getTYPE(), "欢迎语"),
+    CUSTOMER_SOP(RadarChannelEnum.CUSTOMER_SOP.getTYPE(), RadarChannelEnum.CUSTOMER_SOP.getNAME()),
+    GROUP_SOP(RadarChannelEnum.GROUP_SOP.getTYPE(), RadarChannelEnum.GROUP_TASK.getNAME()),
+    GROUP_CALENDAR(RadarChannelEnum.GROUP_CALENDAR.getTYPE(), RadarChannelEnum.GROUP_CALENDAR.getNAME()),
+
     PROMOTION(11, "推广"),
     ;
     @Getter

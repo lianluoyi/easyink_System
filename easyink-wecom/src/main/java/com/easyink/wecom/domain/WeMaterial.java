@@ -55,6 +55,16 @@ public class WeMaterial extends BaseEntity {
     @Size(max = 64, message = "摘要长度已超出限制")
     private String digest;
 
+    @ApiModelProperty(value = "小程序账号原始id，小程序专用")
+    @TableField("account_original_id")
+    @Size(max = 64, message = "小程序账号原始id长度已超出限制")
+    private String accountOriginalId;
+
+    @ApiModelProperty(value = "小程序appId，小程序专用")
+    @TableField("appid")
+    @Size(max = 64, message = "小程序appId已超出限制")
+    private String appid;
+
     @ApiModelProperty(value = "封面本地资源文件")
     @TableField("cover_url")
     private String coverUrl;
@@ -83,7 +93,7 @@ public class WeMaterial extends BaseEntity {
     @TableField("enable_convert_radar")
     private Boolean enableConvertRadar;
 
-    @ApiModelProperty(value = "保存雷达时使用，使用员工活码，新客进群时")
-    @TableField("radar_id")
-    private Long radarId;
+    @ApiModelProperty(value = "其他id, 素材类型为雷达时存储雷达id，为智能表单时为存储表单id")
+    @TableField("extra_id")
+    private Long extraId;
 }

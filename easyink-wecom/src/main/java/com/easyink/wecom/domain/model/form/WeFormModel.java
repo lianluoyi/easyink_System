@@ -17,7 +17,7 @@ public class WeFormModel {
     /**
      * 主键id
      */
-    private Integer id;
+    private Long id;
     /**
      * 表单头图
      */

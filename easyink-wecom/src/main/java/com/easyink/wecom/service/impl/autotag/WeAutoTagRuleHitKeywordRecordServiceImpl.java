@@ -181,10 +181,9 @@ public class WeAutoTagRuleHitKeywordRecordServiceImpl extends ServiceImpl<WeAuto
                 String[] split = userCustomerTagEntry.getKey().split(StrUtil.COLON);
                 String userId = split[0];
                 String customerId = split[1];
-                List<WeTag> weTagList = new ArrayList<>(userCustomerTagEntry.getValue());
-                log.info("关键词打标签: 员工: {}, 客户: {}, 标签列表: {}", userId, customerId, weTagList.stream()
-                        .map(WeTag::getName).collect(Collectors.toList()));
-                weCustomerService.batchMakeLabel(Collections.singletonList(new WeMakeCustomerTagVO(customerId, userId, weTagList, corpId)), userId);
+                List<String> weTagIdList = new ArrayList<>(userCustomerTagEntry.getValue()).stream().map(WeTag::getTagId).collect(Collectors.toList());
+                log.info("关键词打标签: 员工: {}, 客户: {}, 标签列表: {}", userId, customerId,weTagIdList);
+                weCustomerService.singleMarkLabel(corpId, userId, customerId, weTagIdList, userId);
             }
         }
     }

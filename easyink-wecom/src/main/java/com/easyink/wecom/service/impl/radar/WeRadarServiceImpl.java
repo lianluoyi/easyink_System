@@ -4,8 +4,10 @@ import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.easyink.common.constant.Constants;
+import com.easyink.common.constant.GenConstants;
 import com.easyink.common.constant.radar.RadarConstants;
 import com.easyink.common.core.domain.entity.WeCorpAccount;
+import com.easyink.common.core.domain.wecom.WeUser;
 import com.easyink.common.core.page.PageDomain;
 import com.easyink.common.core.page.TableSupport;
 import com.easyink.common.enums.AttachmentTypeEnum;
@@ -13,9 +15,14 @@ import com.easyink.common.enums.MessageType;
 import com.easyink.common.enums.ResultTip;
 import com.easyink.common.enums.radar.*;
 import com.easyink.common.exception.CustomException;
+import com.easyink.common.shorturl.enums.ShortUrlTypeEnum;
+import com.easyink.common.shorturl.model.RadarShortUrlAppendInfo;
+import com.easyink.common.shorturl.model.SysShortUrlMapping;
 import com.easyink.common.utils.DateUtils;
 import com.easyink.common.utils.sql.SqlUtil;
+import com.easyink.wecom.annotation.Convert2Cipher;
 import com.easyink.wecom.client.WeMessagePushClient;
+import com.easyink.wecom.domain.WeCustomer;
 import com.easyink.wecom.domain.WeTag;
 import com.easyink.wecom.domain.dto.WeMessagePushDTO;
 import com.easyink.wecom.domain.dto.common.AttachmentParam;
@@ -27,20 +34,27 @@ import com.easyink.wecom.domain.entity.radar.WeRadar;
 import com.easyink.wecom.domain.entity.radar.WeRadarChannel;
 import com.easyink.wecom.domain.entity.radar.WeRadarTag;
 import com.easyink.wecom.domain.entity.radar.WeRadarUrl;
+import com.easyink.wecom.domain.vo.WeMakeCustomerTagVO;
 import com.easyink.wecom.domain.vo.radar.WeRadarVO;
+import com.easyink.wecom.handler.shorturl.RadarShortUrlHandler;
 import com.easyink.wecom.login.util.LoginTokenService;
 import com.easyink.wecom.mapper.radar.WeRadarMapper;
 import com.easyink.wecom.service.WeCorpAccountService;
+import com.easyink.wecom.service.WeCustomerService;
+import com.easyink.wecom.service.WeCustomerTrajectoryService;
 import com.easyink.wecom.service.WeUserService;
 import com.easyink.wecom.service.radar.WeRadarChannelService;
+import com.easyink.wecom.service.radar.WeRadarClickRecordService;
 import com.easyink.wecom.service.radar.WeRadarService;
 import com.github.pagehelper.PageHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -58,18 +72,36 @@ import java.util.List;
 @Service
 public class WeRadarServiceImpl extends ServiceImpl<WeRadarMapper, WeRadar> implements WeRadarService {
 
+    /**
+     * 行为通知模板
+     */
+    private final static String RADAR_BEHAVIOR_NOTICE = "${customer}打开了您发布的${radarTitle}雷达链接";
     private final WeRadarChannelService radarChannelService;
     private final WeCorpAccountService corpAccountService;
     private final WeMessagePushClient messagePushClient;
     private final WeUserService weUserService;
+    private final WeMessagePushClient weMessagePushClient;
+    private final WeRadarClickRecordService weRadarClickRecordService;
+    private final WeCorpAccountService weCorpAccountService;
+    private final WeCustomerTrajectoryService weCustomerTrajectoryService;
+    private final WeCustomerService weCustomerService;
+
+    private final RadarShortUrlHandler radarUrlHandler;
+
 
     @Autowired
     @Lazy
-    public WeRadarServiceImpl(WeRadarChannelService radarChannelService, WeCorpAccountService corpAccountService, WeMessagePushClient messagePushClient, WeUserService weUserService) {
+    public WeRadarServiceImpl(WeRadarChannelService radarChannelService, WeCorpAccountService corpAccountService, WeMessagePushClient messagePushClient, WeUserService weUserService, WeMessagePushClient weMessagePushClient, WeRadarClickRecordService weRadarClickRecordService, WeCorpAccountService weCorpAccountService, WeCustomerTrajectoryService weCustomerTrajectoryService, WeCustomerService weCustomerService, RadarShortUrlHandler radarUrlHandler) {
         this.radarChannelService = radarChannelService;
         this.corpAccountService = corpAccountService;
         this.messagePushClient = messagePushClient;
         this.weUserService = weUserService;
+        this.weMessagePushClient = weMessagePushClient;
+        this.weRadarClickRecordService = weRadarClickRecordService;
+        this.weCorpAccountService = weCorpAccountService;
+        this.weCustomerTrajectoryService = weCustomerTrajectoryService;
+        this.weCustomerService = weCustomerService;
+        this.radarUrlHandler = radarUrlHandler;
     }
 
     /**
@@ -246,7 +278,7 @@ public class WeRadarServiceImpl extends ServiceImpl<WeRadarMapper, WeRadar> impl
     }
 
     @Override
-    public List<WeTag> getTagListByRadarId(Long id) {
+    public List<String> getTagListByRadarId(Long id) {
         if (id == null) {
             return Collections.emptyList();
         }
@@ -254,6 +286,7 @@ public class WeRadarServiceImpl extends ServiceImpl<WeRadarMapper, WeRadar> impl
     }
 
     @Override
+    @Convert2Cipher
     public AttachmentParam getRadarShortUrl(Long radarId, Integer channelType, String userId, String corpId, String scenario) {
         if (com.easyink.common.utils.StringUtils.isBlank(corpId) && !ObjectUtils.allNotNull(radarId, channelType)) {
             log.info("【发送雷达短链】生成雷达短链参数错误，radarId:{},channelType:{}, userId:{}, corpId:{},scenario:{}", radarId, channelType, userId, corpId, scenario);
@@ -288,5 +321,174 @@ public class WeRadarServiceImpl extends ServiceImpl<WeRadarMapper, WeRadar> impl
             throw new CustomException(RadarConstants.PromptCus.NOT_USE_TAG);
         }
     }
+
+
+    /**
+     * 客户点击表单 记录客户点击操作
+     *
+     * @param shortCode 短链code
+     * @param openId    公众号openid
+     * @return 原链接
+     */
+    public String recordRadar(String shortCode, String openId) {
+        if (StringUtils.isBlank(shortCode)) {
+            log.info("[获取雷达原链接] 短链code为空,shortCode:{},openId:{}", shortCode, openId);
+            throw new CustomException(ResultTip.TIP_NEED_SHORT_CODE);
+        }
+        // 1. 获取长短链映射
+        SysShortUrlMapping mapping = radarUrlHandler.getUrlByMapping(shortCode);
+        if (StringUtils.isBlank(mapping.getLongUrl())) {
+            throw new CustomException(ResultTip.TIP_CANNOT_FIND_LONG_URL);
+        }
+        if (ShortUrlTypeEnum.RADAR.getType().equals(mapping.getType())) {
+            // 2. 异步处理 (记录点击详情)
+            try {
+                asyncRadarHandle(mapping, openId);
+            } catch (CustomException e) {
+                log.error("[雷达异步处理]出现业务异常.code:{},openId:{},errmsg:{}", shortCode, openId, e.getMessage());
+            } catch (Exception e) {
+                log.error("[雷达异步处理]出现未知异常.code:{},openId:{},errmsg:{}", shortCode, openId, ExceptionUtils.getStackTrace(e));
+            }
+        }
+        return radarUrlHandler.handleAndGetRedirectUrl(mapping);
+    }
+
+    @Async
+    public void asyncRadarHandle(SysShortUrlMapping mapping, String openId) {
+        if (mapping == null || StringUtils.isBlank(openId)
+                || mapping.getRadarAppendInfo() == null || mapping.getRadarAppendInfo().getRadarId() == null || mapping.getRadarAppendInfo().getChannelType() == null || StringUtils.isBlank(mapping.getRadarAppendInfo().getUserId())) {
+            log.error("[异步雷达触发记录处理]参数确实,无法记录点击记录,mapping:{},openid:{}", mapping, openId);
+            return;
+        }
+        RadarShortUrlAppendInfo appendInfo = mapping.getRadarAppendInfo();
+        // 1. 获取雷达详情
+        WeRadar radar = getById(appendInfo.getRadarId());
+        if (radar == null || StringUtils.isBlank(radar.getCorpId())) {
+            log.error("[异步雷达触发记录处理]找不到对应的雷达详情,无法记录点击记录,mapping:{}", mapping);
+            return;
+        }
+        //  1.根据openid获取客户详情
+        WeCustomer customer = getCustomerInfoByOpenId(openId, radar.getCorpId());
+        if (customer == null) {
+            log.error("[异步雷达触发记录处理]获取客户详情,查询不到客户信息,openid:{}", openId);
+            throw new CustomException(ResultTip.TIP_FAIL_TO_GET_CUSTOMER_INFO);
+        }
+        // 3. 获取员工详情
+        WeUser user = weUserService.getUserDetail(radar.getCorpId(), appendInfo.getUserId());
+        if (user == null) {
+            log.error("[异步雷达触发记录处理]找不到使用雷达的员工详情,radar:{},mapping:{},customer:{},appendInfo:{}", radar, mapping, customer, appendInfo);
+        }
+        // 4.  保存雷达点击记录
+        weRadarClickRecordService.createRecord(appendInfo, customer, openId, user);
+        // 5. 执行高级设置 (行为通知、轨迹记录、客户标签)
+        doExtraSetting(radar, user, customer, appendInfo);
+    }
+
+    /**
+     * 执行高级操作
+     *
+     * @param radar      雷达 {@link WeRadar}
+     * @param user       员工信息 {@link WeUser}
+     * @param customer   客户信息 {@link WeCustomer }
+     * @param appendInfo 附件信息{@link RadarShortUrlAppendInfo }
+     */
+    private void doExtraSetting(WeRadar radar, WeUser user, WeCustomer customer, RadarShortUrlAppendInfo appendInfo) {
+        // 获取企业应用信息
+        WeCorpAccount corpAccount = weCorpAccountService.findValidWeCorpAccount(radar.getCorpId());
+        if (corpAccount == null) {
+            log.error("[雷达高级设置处理]获取企业信息失败,radar:{}", radar);
+            return;
+        }
+        // 轨迹记录
+        if (radar.getEnableBehaviorRecord()) {
+            weCustomerTrajectoryService.recordRadarClickOperation(radar, user, customer);
+        }
+        // 打上客户标签
+        if (radar.getEnableCustomerTag()) {
+            setTagForRadarClick(radar.getId(), user, customer);
+        }
+        // 行为通知
+        if (radar.getEnableClickNotice()) {
+            String content = genClickNoticeContent(customer.getName(), radar.getRadarTitle());
+            sendNotice(content, user, corpAccount.getAgentId());
+        }
+    }
+
+
+    /**
+     * 为点击雷达的客户打上标签
+     *
+     * @param id       雷达id
+     * @param user   员工
+     * @param customer 客户 {@link WeCustomer}
+     */
+    private void setTagForRadarClick(Long id, WeUser user, WeCustomer customer) {
+        if (id == null || user == null || StringUtils.isBlank(user.getUserId())) {
+            log.info("[雷达高级设置处理]打标签,参数缺失,id:{},user:{},customer:{}", id, user, customer);
+            return;
+        }
+        // 根据雷达id 获取其标签
+        List<String> tagIdList = getTagListByRadarId(id);
+        if (org.apache.commons.collections.CollectionUtils.isEmpty(tagIdList)) {
+            log.info("[雷达高级设置处理]没有需要打上的标签,radar:{},customer:{}", id, customer);
+            return;
+        }
+        weCustomerService.singleMarkLabel(customer.getCorpId(), user.getUserId(), customer.getExternalUserid(), tagIdList, user.getUserId());
+
+    }
+
+    /**
+     * 触发雷达的行为通知
+     *
+     * @param name       客户名称
+     * @param radarTitle 雷达标题
+     * @return 通知内容
+     */
+    private String genClickNoticeContent(String name, String radarTitle) {
+        if (StringUtils.isAnyBlank(name, radarTitle)) {
+            return StringUtils.EMPTY;
+        }
+        return RADAR_BEHAVIOR_NOTICE.replace(GenConstants.CUSTOMER, name)
+                .replace(GenConstants.RADAR_TITLE, radarTitle);
+    }
+
+    /**
+     * 发送企业通知
+     *
+     * @param content 消息
+     * @param user    员工
+     * @param agentId 应用id
+     */
+    private void sendNotice(String content, WeUser user, String agentId) {
+        if (user == null || StringUtils.isAnyBlank(content, user.getUserId(), user.getCorpId(), agentId)) {
+            log.info("[雷达高级设置处理]发送通知,参数缺失,content:{},user:{}", content, user);
+            return;
+        }
+        TextMessageDTO contentInfo = TextMessageDTO.builder()
+                .content(content)
+                .build();
+        WeMessagePushDTO request = WeMessagePushDTO.builder()
+                .msgtype(MessageType.TEXT.getMessageType())
+                .touser(user.getUserId())
+                .text(contentInfo)
+                .agentid(Integer.valueOf(agentId))
+                .build();
+        weMessagePushClient.sendMessageToUser(request, agentId, user.getCorpId());
+    }
+
+    /**
+     * 根据openId获取客户详情
+     *
+     * @param openId 公众号openid
+     * @param corpId 企业id
+     * @return 客户详情 {@link WeCustomer}
+     */
+    public WeCustomer getCustomerInfoByOpenId(String openId, String corpId) {
+        if (StringUtils.isAnyBlank(openId, corpId)) {
+            return null;
+        }
+        return weCustomerService.getCustomerInfoByOpenId(openId, corpId);
+    }
+
 
 }

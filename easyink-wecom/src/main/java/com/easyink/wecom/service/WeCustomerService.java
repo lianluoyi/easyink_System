@@ -1,12 +1,15 @@
 package com.easyink.wecom.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.easyink.common.annotation.DataScope;
 import com.easyink.common.core.domain.AjaxResult;
 import com.easyink.wecom.domain.WeCustomer;
 import com.easyink.wecom.domain.WeCustomerPortrait;
 import com.easyink.wecom.domain.WeOperationsCenterCustomerSopFilterEntity;
+import com.easyink.wecom.domain.WeTag;
 import com.easyink.wecom.domain.dto.LeaveWeUserListsDTO;
 import com.easyink.wecom.domain.dto.WeCustomerPushMessageDTO;
+import com.easyink.wecom.domain.dto.WeCustomerSearchDTO;
 import com.easyink.wecom.domain.dto.WeWelcomeMsg;
 import com.easyink.wecom.domain.dto.customer.EditCustomerDTO;
 import com.easyink.wecom.domain.dto.pro.EditCustomerFromPlusDTO;
@@ -94,13 +97,6 @@ public interface WeCustomerService extends IService<WeCustomer> {
     Map<String, List<String>> replaceCustomerListToMap(List<LeaveWeUserListsDTO.LeaveWeUser> leaveWeUsers);
 
     /**
-     * 客户打标签
-     *
-     * @param weMakeCustomerTag
-     */
-    void makeLabel(WeMakeCustomerTagVO weMakeCustomerTag);
-
-    /**
      * 客户批量打标签
      *
      * @param weMakeCustomerTagVOS
@@ -109,21 +105,15 @@ public interface WeCustomerService extends IService<WeCustomer> {
     void batchMakeLabel(List<WeMakeCustomerTagVO> weMakeCustomerTagVOS, String updateBy);
 
     /**
-     * 客户批量打标签
+     * 单独打标签
      *
-     * @param weMakeCustomerTagVOS
+     * @param corpId            企业id
+     * @param userId            员工id
+     * @param externalUserId    外部联系人id
+     * @param addTagIds         增加的标签
+     * @param oprUserId         操作人userId 用于记录员工操作
      */
-    void batchMakeLabel(List<WeMakeCustomerTagVO> weMakeCustomerTagVOS);
-
-    /**
-     * 移除客户标签(单个客户)
-     *
-     * @param corpId         企业id
-     * @param externalUserid 客户id
-     * @param userid         成员id
-     * @param delIdList      需要删除的标签id
-     */
-    void removeLabel(String corpId, String externalUserid, String userid, List<String> delIdList);
+    void singleMarkLabel(String corpId, String userId, String externalUserId, List<String> addTagIds, String oprUserId);
 
     /**
      * 移除客户标签
@@ -254,12 +244,41 @@ public interface WeCustomerService extends IService<WeCustomer> {
     void editCustomer(EditCustomerDTO dto);
 
     /**
+     * 使用tagIds批量打标签
+     *
+     * @param corpId            企业id
+     * @param userId            员工id
+     * @param externalUserId    外部联系人id
+     * @param addTagIds         新增的tags
+     * @param removeTagIds      移除的tags
+     */
+    void batchMarkCustomTagWithTagIds(String corpId, String userId, String externalUserId, List<String> addTagIds, List<String> removeTagIds);
+
+    /**
+     * 批量打标签
+     *
+     * @param corpId            企业id
+     * @param userId            员工id
+     * @param externalUserId    外部联系人id
+     * @param addTags           新增的tags
+     * @param removeTags        移除的tags
+     */
+    void batchMarkCustomTag(String corpId, String userId, String externalUserId, List<WeTag> addTags, List<WeTag> removeTags);
+    /**
      * 查询企业微信客户列表
      *
      * @param weCustomer {@link WeCustomer}
      * @return 客户列表
      */
     List<WeCustomerVO> selectWeCustomerListV2(WeCustomer weCustomer);
+
+    /**
+     * 将用户DTO转化为实体类
+     *
+     * @param weCustomerSearchDTO
+     * @return 客户实体类
+     */
+    WeCustomer changeWecustomer(WeCustomerSearchDTO weCustomerSearchDTO);
 
     /**
      * 查询客户sop使用客户
@@ -323,4 +342,13 @@ public interface WeCustomerService extends IService<WeCustomer> {
      * @return
      */
     WeCustomer getCustomerByUnionId(String unionId, String openId, String corpId);
+
+    /**
+     * 通过明文获取密文外部联系人exUserId
+     *
+     * @param corpId            企业id
+     * @param externalUserId    外部联系人exUserId
+     * @return
+     */
+    String getOpenExUserId(String corpId, String externalUserId);
 }

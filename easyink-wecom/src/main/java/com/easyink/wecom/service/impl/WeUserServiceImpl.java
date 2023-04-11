@@ -24,8 +24,10 @@ import com.easyink.common.exception.CustomException;
 import com.easyink.common.utils.MyDateUtil;
 import com.easyink.common.utils.bean.BeanUtils;
 import com.easyink.common.utils.file.FileUploadUtils;
+import com.easyink.wecom.annotation.Convert2Cipher;
 import com.easyink.wecom.client.WeAgentClient;
 import com.easyink.wecom.client.WeCustomerClient;
+import com.easyink.wecom.client.WeUpdateIDClient;
 import com.easyink.wecom.client.WeUserClient;
 import com.easyink.wecom.domain.*;
 import com.easyink.wecom.domain.dto.*;
@@ -34,11 +36,13 @@ import com.easyink.wecom.domain.dto.group.GroupChatListResp;
 import com.easyink.wecom.domain.dto.transfer.GetUnassignedListReq;
 import com.easyink.wecom.domain.dto.transfer.GetUnassignedListResp;
 import com.easyink.wecom.domain.dto.transfer.TransferResignedUserListDTO;
+import com.easyink.wecom.domain.entity.WeUserIdMapping;
 import com.easyink.wecom.domain.query.UserBehaviorDataQuery;
 import com.easyink.wecom.domain.resp.GetAgentResp;
 import com.easyink.wecom.domain.vo.*;
 import com.easyink.wecom.domain.vo.transfer.TransferResignedUserVO;
 import com.easyink.wecom.login.util.LoginTokenService;
+import com.easyink.wecom.mapper.WeUserIdMappingMapper;
 import com.easyink.wecom.mapper.WeUserMapper;
 import com.easyink.wecom.mapper.WeUserRoleMapper;
 import com.easyink.wecom.service.*;
@@ -90,6 +94,9 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
     private final WeCustomerClient weCustomerClient;
     private final WeConversationArchiveService weConversationArchiveService;
     private final WeUserCustomerMessageStatisticsService weUserCustomerMessageStatisticsService;
+    private final WeUserIdMappingMapper weUserIdMappingMapper;
+
+    private final WeUpdateIDClient convertIDClient;
     @Lazy
     @Autowired
     private WeUserService weUserService;
@@ -100,7 +107,7 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
 
     @Lazy
     @Autowired
-    public WeUserServiceImpl(WeDepartmentService weDepartmentService, WeUserMapper weUserMapper, RedisCache redisCache, We3rdAppService we3rdAppService, WeUserClient weUserClient, WeCustomerService weCustomerService, WeUserRoleMapper weUserRoleMapper, WeFlowerCustomerRelService weFlowerCustomerRelService, WeUserRoleService weUserRoleService, PageHomeService pageHomeService, WeGroupService weGroupService, WeMaterialService weMaterialService, WeExternalUserMappingUserService weExternalUserMappingUserService, RuoYiConfig ruoYiConfig, WeCorpAccountService weCorpAccountService, WeAgentClient weAgentClient, WeUserBehaviorDataService weUserBehaviorDataService, WeCustomerClient weCustomerClient, WeConversationArchiveService weConversationArchiveService, WeUserCustomerMessageStatisticsService weUserCustomerMessageStatisticsService) {
+    public WeUserServiceImpl(WeDepartmentService weDepartmentService, WeUserMapper weUserMapper, RedisCache redisCache, We3rdAppService we3rdAppService, WeUserClient weUserClient, WeCustomerService weCustomerService, WeUserRoleMapper weUserRoleMapper, WeFlowerCustomerRelService weFlowerCustomerRelService, WeUserRoleService weUserRoleService, PageHomeService pageHomeService, WeGroupService weGroupService, WeMaterialService weMaterialService, WeExternalUserMappingUserService weExternalUserMappingUserService, RuoYiConfig ruoYiConfig, WeCorpAccountService weCorpAccountService, WeAgentClient weAgentClient, WeUserBehaviorDataService weUserBehaviorDataService, WeCustomerClient weCustomerClient, WeConversationArchiveService weConversationArchiveService, WeUserCustomerMessageStatisticsService weUserCustomerMessageStatisticsService, WeUserIdMappingMapper weUserIdMappingMapper, WeUpdateIDClient convertIDClient) {
         this.weDepartmentService = weDepartmentService;
         this.weUserMapper = weUserMapper;
         this.redisCache = redisCache;
@@ -120,6 +127,8 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
         this.weCustomerClient = weCustomerClient;
         this.weConversationArchiveService = weConversationArchiveService;
         this.weUserCustomerMessageStatisticsService = weUserCustomerMessageStatisticsService;
+        this.weUserIdMappingMapper = weUserIdMappingMapper;
+        this.convertIDClient = convertIDClient;
     }
 
     /**
@@ -486,9 +495,12 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
             log.info("corpId为空,无法同步企业成员");
             return;
         }
+        // 查询数据库中的员工
+        List<WeUser> weUsersInDb = weUserMapper.selectList(new LambdaQueryWrapper<WeUser>().select(WeUser::getUserId, WeUser::getIsActivate).eq(WeUser::getCorpId, corpId));
+        Map<String, String> userIdInDbMap = weUsersInDb.stream().collect(Collectors.toMap(WeUser::getUserId, WeUser::getUserId));
         // 先同步离职成员(由于如果成员离职后再进入企业,并且存在待分配的离职客户时,拉取离职员工的时候会拉取到该成员并修改状态为离职,所以此处先同步离职员工后,再同步在职成员)
         try {
-            weUserService.syncWeLeaveUserV2(corpId);
+            weUserService.syncWeLeaveUserV2(corpId, userIdInDbMap);
         } catch (Exception e) {
             log.error("同步离职员工异常corpId:{},E:{}", corpId, ExceptionUtils.getStackTrace(e));
         }
@@ -498,7 +510,7 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
             log.info("[同步员工]该企业没有可见的部门和员工,corpId:{}", corpId);
             return;
         }
-        List<WeUser> exitsUsers = weUserMapper.selectList(new LambdaQueryWrapper<WeUser>().eq(WeUser::getCorpId, corpId).ne(WeUser::getIsActivate, WeConstans.WE_USER_IS_LEAVE));
+        List<WeUser> exitsUsers = weUsersInDb.stream().filter(it -> !WeConstans.WE_USER_IS_LEAVE.equals(it.getIsActivate())).collect(Collectors.toList());
         //删除已离职的员工
         Map<String, String> userMap = visibleUser.stream().collect(Collectors.toMap(WeUser::getUserId, WeUser::getUserId));
         //提前创建映射关系创建内外部应用员工映射关系
@@ -561,7 +573,7 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
 
 
     @Override
-    public void syncWeLeaveUserV2(String corpId) {
+    public void syncWeLeaveUserV2(String corpId, Map<String, String> userIdInDbMap) {
         if (StringUtils.isBlank(corpId)) {
             log.info("[同步离职员工]缺失企业ID,corpId:{}", corpId);
             return;
@@ -570,12 +582,11 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
         // 1. 通过企微API获取待分配客户群 (过滤条件：状态为待继承)
         GroupChatListReq groupReq = GroupChatListReq.builder().status_filter(GroupConstants.OWNER_LEAVE).build();
         GroupChatListResp groupResp = (GroupChatListResp) groupReq.executeTillNoNextPage(corpId);
-        List<String> chatIdList = groupResp.getChatIdList();
         // 2.更新客户群状态为:离职待分配
-        if (CollectionUtils.isNotEmpty(chatIdList)) {
+        if (groupResp != null && CollectionUtils.isNotEmpty(groupResp.getChatIdList())) {
             WeGroup entity = new WeGroup();
             entity.setStatus(GroupConstants.OWNER_LEAVE);
-            weGroupService.update(entity, new LambdaUpdateWrapper<WeGroup>().eq(WeGroup::getCorpId, corpId).in(WeGroup::getChatId, chatIdList));
+            weGroupService.update(entity, new LambdaUpdateWrapper<WeGroup>().eq(WeGroup::getCorpId, corpId).in(WeGroup::getChatId, groupResp.getChatIdList()));
         }
         // 3. 获取所有离职员工的待分配客户和员工详情
         GetUnassignedListReq req = new GetUnassignedListReq();
@@ -584,7 +595,7 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
             log.info("[同步离职员工]本次没有同步到离职待分配员工 corpId:{}", corpId);
             return;
         }
-        resp.handleData(corpId);
+        resp.handleData(corpId, userIdInDbMap);
         if (CollectionUtils.isEmpty(resp.getTotalList())) {
             log.info("[同步离职员工]本次没有同步到离职待分配员工corpId:{},resp:{}", corpId, resp);
             return;
@@ -676,6 +687,7 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
     }
 
     @Override
+    @Convert2Cipher
     public List<WeCustomerAddUser> findWeUserByCutomerId(String corpId, String externalUserid) {
         return this.baseMapper.findWeUserByCutomerId(corpId, externalUserid);
     }
@@ -1094,6 +1106,35 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
         weUserBehaviorDataService.saveBatch(dataList);
 
 
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public String getOpenUserId(String corpId, String userId) {
+        if (StringUtils.isAnyBlank(corpId, userId)) {
+            return StringUtils.EMPTY;
+        }
+        WeUserIdMapping weUserIdMapping = weUserIdMappingMapper.selectOne(new LambdaUpdateWrapper<WeUserIdMapping>().eq(WeUserIdMapping::getCorpId, corpId).eq(WeUserIdMapping::getUserId, userId).last(GenConstants.LIMIT_1));
+        if (weUserIdMapping == null) {
+            String openUserId = getOpenUserIdByClient(corpId, userId);
+            weUserIdMapping = new WeUserIdMapping(corpId, userId, openUserId);
+            weUserIdMappingMapper.insert(weUserIdMapping);
+        }
+        return weUserIdMapping.getOpenUserId();
+    }
+
+    /**
+     * 通过接口将userId转化为密文
+     *
+     * @param corpId    企业id
+     * @param userId    员工userId
+     * @return
+     */
+    protected String getOpenUserIdByClient(String corpId, String userId) {
+        List<String> users = new ArrayList<>();
+        users.add(userId);
+        Map<String,String> openUserIdMap = convertIDClient.getNewUserId(corpId, users).getOpen_userid_list().stream().collect(Collectors.toMap(CorpIdToOpenCorpIdResp.UserIdMapping::getUserid, CorpIdToOpenCorpIdResp.UserIdMapping::getOpen_userid));
+        return openUserIdMap.getOrDefault(userId, StringUtils.EMPTY);
     }
 
 }

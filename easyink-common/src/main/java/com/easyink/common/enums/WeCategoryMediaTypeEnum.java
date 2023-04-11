@@ -20,7 +20,8 @@ public enum WeCategoryMediaTypeEnum {
     FILE(3, "文件"),
     LINK(5, "链接"),
     MINI_APP(6, "小程序"),
-    RADAR(7, "雷达")
+    RADAR(7, "雷达"),
+    FORM(8, "智能表单"),
     ;
     /**
      * 素材类型

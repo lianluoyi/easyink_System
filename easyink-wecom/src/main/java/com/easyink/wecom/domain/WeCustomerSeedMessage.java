@@ -62,7 +62,7 @@ public class WeCustomerSeedMessage extends BaseEntity {
     @TableField("file_url")
     private String fileUrl;
 
-    @ApiModelProperty(value = "链接消息：图文消息标题")
+    @ApiModelProperty(value = "链接消息：图文消息标题, 存储雷达，表单标题 用于群发详情显示")
     @TableField("link_title")
     private String linkTitle;
 
@@ -94,6 +94,10 @@ public class WeCustomerSeedMessage extends BaseEntity {
     @TableField("appid")
     private String appid;
 
+    @ApiModelProperty(value = "小程序账号原始id，必须是关联到企业的小程序应用")
+    @TableField("account_original_id")
+    private String accountOriginalId;
+
     @ApiModelProperty(value = "消息类型 0 图片消息 2视频 3文件 4 文本消息   5 链接消息   6 小程序消息")
     @TableField("message_type")
     private String messageType;
@@ -112,7 +116,7 @@ public class WeCustomerSeedMessage extends BaseEntity {
     private Long seedMessageId;
 
     @ApiModelProperty(value = "雷达id")
-    @TableField("radar_id")
-    private Long radarId;
+    @TableField("extra_id")
+    private Long extraId;
 
 }

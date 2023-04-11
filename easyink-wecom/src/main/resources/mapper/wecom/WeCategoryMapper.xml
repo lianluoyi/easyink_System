@@ -87,7 +87,8 @@
         AND del_flag = ${@com.easyink.common.constant.WeConstans@WE_CUSTOMER_MSG_RESULT_NO_DEFALE}
         <if test="using!=null">
             AND `using` = #{using}
-            AND media_type != ${@com.easyink.common.enums.WeCategoryMediaTypeEnum@RADAR.getMediaType()}
+            AND media_type NOT IN ( ${@com.easyink.common.enums.WeCategoryMediaTypeEnum@RADAR.getMediaType()},
+            ${@com.easyink.common.enums.WeCategoryMediaTypeEnum@FORM.getMediaType()})
         </if>
         ORDER BY FIELD(`media_type`,${@com.easyink.common.constant.WeConstans@SIDE_SEQ})
     </select>

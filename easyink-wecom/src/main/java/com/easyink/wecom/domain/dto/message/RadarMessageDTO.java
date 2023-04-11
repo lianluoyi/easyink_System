@@ -23,6 +23,10 @@ public class RadarMessageDTO {
     @ApiModelProperty("雷达VO")
     private WeRadarVO radar;
 
+    @ApiModelProperty("雷达标题")
+    private String linkTitle;
+
+
     public RadarMessageDTO(Long radarId) {
         this.radarId = radarId;
 

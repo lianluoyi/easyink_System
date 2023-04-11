@@ -2,6 +2,7 @@ package com.easyink.wecom.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
+import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.easyink.common.config.RuoYiConfig;
@@ -12,6 +13,8 @@ import com.easyink.common.enums.ResultTip;
 import com.easyink.common.enums.code.GroupCodeTypeEnum;
 import com.easyink.common.enums.wecom.ServerTypeEnum;
 import com.easyink.common.exception.CustomException;
+import com.easyink.common.shorturl.model.EmpleCodeShortUrlAppendInfo;
+import com.easyink.common.shorturl.model.GroupCodeShortUrlAppendInfo;
 import com.easyink.common.utils.DateUtils;
 import com.easyink.common.utils.QREncode;
 import com.easyink.common.utils.StringUtils;
@@ -24,11 +27,15 @@ import com.easyink.wecom.domain.query.groupcode.GroupCodeDetailQuery;
 import com.easyink.wecom.domain.vo.WeGroupCodeActualExistVO;
 import com.easyink.wecom.domain.vo.groupcode.GroupCodeActivityFirstVO;
 import com.easyink.wecom.domain.vo.groupcode.GroupCodeDetailVO;
+import com.easyink.wecom.handler.shorturl.GroupCodeShortUrlHandler;
 import com.easyink.wecom.login.util.LoginTokenService;
 import com.easyink.wecom.mapper.WeGroupCodeActualMapper;
 import com.easyink.wecom.mapper.WeGroupCodeMapper;
 import com.easyink.wecom.mapper.WeGroupMapper;
-import com.easyink.wecom.service.*;
+import com.easyink.wecom.service.We3rdAppService;
+import com.easyink.wecom.service.WeCorpAccountService;
+import com.easyink.wecom.service.WeGroupCodeActualService;
+import com.easyink.wecom.service.WeGroupCodeService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -38,7 +45,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -57,11 +67,11 @@ public class WeGroupCodeServiceImpl extends ServiceImpl<WeGroupCodeMapper, WeGro
     private final WeGroupCodeMapper weGroupCodeMapper;
     private final We3rdAppService we3rdAppService;
     private final WeGroupMapper weGroupMapper;
-
+    private final GroupCodeShortUrlHandler groupCodeShortUrlHandler;
 
     @Lazy
     @Autowired
-    public WeGroupCodeServiceImpl(WeGroupCodeActualService weGroupCodeActualService, WeGroupCodeActualMapper actualCodeMapper, WeCorpAccountService weCorpAccountService, RuoYiConfig ruoYiConfig, WeGroupCodeMapper weGroupCodeMapper, We3rdAppService we3rdAppService, WeGroupMapper weGroupMapper) {
+    public WeGroupCodeServiceImpl(WeGroupCodeActualService weGroupCodeActualService, WeGroupCodeActualMapper actualCodeMapper, WeCorpAccountService weCorpAccountService, RuoYiConfig ruoYiConfig, WeGroupCodeMapper weGroupCodeMapper, We3rdAppService we3rdAppService, WeGroupMapper weGroupMapper, GroupCodeShortUrlHandler groupCodeShortUrlHandler) {
         this.weGroupCodeActualService = weGroupCodeActualService;
         this.actualCodeMapper = actualCodeMapper;
         this.weCorpAccountService = weCorpAccountService;
@@ -69,6 +79,7 @@ public class WeGroupCodeServiceImpl extends ServiceImpl<WeGroupCodeMapper, WeGro
         this.weGroupCodeMapper = weGroupCodeMapper;
         this.we3rdAppService = we3rdAppService;
         this.weGroupMapper = weGroupMapper;
+        this.groupCodeShortUrlHandler = groupCodeShortUrlHandler;
     }
 
     /**
@@ -96,6 +107,26 @@ public class WeGroupCodeServiceImpl extends ServiceImpl<WeGroupCodeMapper, WeGro
         buildQrUrl(weGroupCode);
         //插入群活码
         insertWeGroupCode(weGroupCode);
+    }
+
+    /**
+     * 设置群活码的短链链接
+     *
+     * @param weGroupCode 群活码实体
+     */
+    private void setAppLink(WeGroupCode weGroupCode) {
+        if (weGroupCode == null) {
+            return;
+        }
+        //生成短链
+        GroupCodeShortUrlAppendInfo appendInfo = GroupCodeShortUrlAppendInfo.builder()
+                                                                            .corpId(weGroupCode.getCorpId())
+                                                                            .groupCodeId(weGroupCode.getId())
+                                                                            .build();
+        String appLink = groupCodeShortUrlHandler.createShortUrl(weGroupCode.getCorpId(), weGroupCode.getCodeUrl(), LoginTokenService.getUsername(),appendInfo);
+        if (StringUtils.isNotBlank(appLink)) {
+            weGroupCode.setAppLink(appLink);
+        }
     }
 
     /**
@@ -425,6 +456,8 @@ public class WeGroupCodeServiceImpl extends ServiceImpl<WeGroupCodeMapper, WeGro
         }
         // 二维码内容，即该二维码扫码后跳转的页面URL
         buildQrUrl(weGroupCode);
+        // 生成活码短链
+        setAppLink(weGroupCode);
         // 修改客户群活码
         return updateWeGroupCode(weGroupCode);
     }
@@ -489,8 +522,37 @@ public class WeGroupCodeServiceImpl extends ServiceImpl<WeGroupCodeMapper, WeGro
             activityFirstVO.setServiceQrCode(groupCode.getCustomerServerQrCode());
             activityFirstVO.setGroupName(groupCodeActual.getChatGroupName());
             return activityFirstVO;
-        }
+    }
         return activityFirstVO;
+    }
+
+    @Override
+    public String getCodeAppLink(Long id) {
+        if (id == null) {
+            throw new CustomException(ResultTip.TIP_PARAM_MISSING);
+        }
+        // 获取活码信息
+        WeGroupCode weGroupCode = getById(id);
+        if (weGroupCode == null) {
+            throw new CustomException(ResultTip.TIP_NO_AVAILABLE_GROUP_CODE);
+        }
+        // 如果已经生成过则直接返回
+        if (org.apache.commons.lang3.StringUtils.isNotBlank(weGroupCode.getAppLink())) {
+            return weGroupCode.getAppLink();
+        }
+        // 没有则 生成一个群活码小程序短链
+        GroupCodeShortUrlAppendInfo appendInfo = GroupCodeShortUrlAppendInfo.builder()
+                                                                            .groupCodeId(weGroupCode.getId())
+                                                                            .corpId(weGroupCode.getCorpId())
+                                                                            .build();
+        String shortUrl = groupCodeShortUrlHandler.createShortUrl(weGroupCode.getCorpId(), weGroupCode.getCodeUrl(), LoginTokenService.getUsername(), appendInfo);
+        if (org.apache.commons.lang3.StringUtils.isBlank(shortUrl)) {
+            throw new CustomException(ResultTip.TIP_ERROR_CREATING_APP_lINK);
+        }
+        //保存到活码
+        weGroupCode.setAppLink(shortUrl);
+        updateById(weGroupCode);
+        return shortUrl;
     }
 
     /**

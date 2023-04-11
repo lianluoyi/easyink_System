@@ -8,6 +8,7 @@ import com.easyink.common.constant.Constants;
 import com.easyink.common.constant.GenConstants;
 import com.easyink.common.enums.AddWayEnum;
 import com.easyink.common.enums.CustomerStatusEnum;
+import com.easyink.common.enums.ResultTip;
 import com.easyink.common.exception.BaseException;
 import com.easyink.common.exception.CustomException;
 import com.easyink.common.utils.DateUtils;
@@ -300,5 +301,21 @@ public class WeFlowerCustomerRelServiceImpl extends ServiceImpl<WeFlowerCustomer
                 .eq(WeFlowerCustomerRel::getCorpId, corpId)
                 .eq(WeFlowerCustomerRel::getExternalUserid, customerId));
         return weFlowerCustomerRelList.stream().map(WeFlowerCustomerRel::getUserId).collect(Collectors.toList());
+    }
+
+    /**
+     * 更新已流失重新添加回来的客户状态
+     *
+     * @param corpId 企业ID
+     * @param userId 员工ID
+     * @param external_userid 外部联系人ID
+     * @return 结果
+     */
+    @Override
+    public Integer updateLossExternalUser(String corpId, String userId, String external_userid) {
+        if (StringUtils.isBlank(corpId) || StringUtils.isBlank(userId) || StringUtils.isBlank(external_userid)) {
+            throw new CustomException(ResultTip.TIP_PARAM_MISSING);
+        }
+        return weFlowerCustomerRelMapper.updateLossExternalUser(corpId, userId, external_userid);
     }
 }

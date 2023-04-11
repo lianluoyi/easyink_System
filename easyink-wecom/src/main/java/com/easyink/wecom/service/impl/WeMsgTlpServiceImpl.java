@@ -22,6 +22,7 @@ import com.easyink.wecom.domain.vo.welcomemsg.WelcomeMsgGroupMaterialCountVO;
 import com.easyink.wecom.mapper.WeMsgTlpMapper;
 import com.easyink.wecom.service.*;
 import com.easyink.wecom.service.radar.WeRadarService;
+import com.easyink.wecom.utils.ExtraMaterialUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -75,9 +76,9 @@ public class WeMsgTlpServiceImpl extends ServiceImpl<WeMsgTlpMapper, WeMsgTlp> i
         }
         List<WeMsgTlpListVO> list = weMsgTlpMapper.selectWeMsgTlpList(weMsgTlp);
         list.forEach(item -> {
-            buildRadarDate(item.getDefaultMaterialList(), weMsgTlp.getCorpId());
+            buildExtraMaterial(item.getDefaultMaterialList(), weMsgTlp.getCorpId());
             //特殊规则附件
-            item.getWeMsgTlpSpecialRules().forEach(specialRule -> buildRadarDate(specialRule.getSpecialMaterialList(), weMsgTlp.getCorpId()));
+            item.getWeMsgTlpSpecialRules().forEach(specialRule -> buildExtraMaterial(specialRule.getSpecialMaterialList(), weMsgTlp.getCorpId()));
         });
 
         return list;
@@ -197,10 +198,10 @@ public class WeMsgTlpServiceImpl extends ServiceImpl<WeMsgTlpMapper, WeMsgTlp> i
             throw new CustomException(ResultTip.TIP_GENERAL_BAD_REQUEST);
         }
         final WeMsgTlpListVO weMsgTlpListVO = weMsgTlpMapper.selectWeMsgTlpList(weMsgTlp).get(0);
-        buildRadarDate(weMsgTlpListVO.getDefaultMaterialList(), weMsgTlp.getCorpId());
+        buildExtraMaterial(weMsgTlpListVO.getDefaultMaterialList(), weMsgTlp.getCorpId());
         //特殊规则附件
         weMsgTlpListVO.getWeMsgTlpSpecialRules().forEach(item -> {
-            buildRadarDate(item.getSpecialMaterialList(), weMsgTlp.getCorpId());
+            buildExtraMaterial(item.getSpecialMaterialList(), weMsgTlp.getCorpId());
         });
         return weMsgTlpListVO;
     }
@@ -211,13 +212,15 @@ public class WeMsgTlpServiceImpl extends ServiceImpl<WeMsgTlpMapper, WeMsgTlp> i
      * @param materialList
      * @param corpId
      */
-    private void buildRadarDate(List<WeMsgTlpMaterial> materialList, String corpId) {
+    private void buildExtraMaterial(List<WeMsgTlpMaterial> materialList, String corpId) {
         if (CollectionUtils.isEmpty(materialList)) {
             return;
         }
         materialList.forEach(item -> {
             if (AttachmentTypeEnum.RADAR.getMessageType().equals(item.getType())) {
-                item.setRadar(SpringUtils.getBean(WeRadarService.class).getRadar(corpId, item.getRadarId()));
+                item.setRadar(SpringUtils.getBean(WeRadarService.class).getRadar(corpId, item.getExtraId()));
+            } else if (AttachmentTypeEnum.FORM.getMessageType().equals(item.getType())) {
+                item.setForm(ExtraMaterialUtils.getForm(item.getExtraId()));
             }
         });
     }

@@ -8,6 +8,7 @@ import com.easyink.common.constant.WeConstans;
 import com.easyink.common.enums.AttachmentTypeEnum;
 import com.easyink.common.enums.ResultTip;
 import com.easyink.common.exception.CustomException;
+import com.easyink.wecom.domain.entity.form.WeFormMaterial;
 import com.easyink.wecom.domain.vo.radar.WeRadarVO;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -69,14 +70,18 @@ public class WeMsgTlpMaterial {
     @TableField("sort_no")
     private Integer sortNo;
 
-    @ApiModelProperty(value = "雷达id，存储雷达时使用")
-    @TableField("radar_id")
-    private Long radarId;
+    @ApiModelProperty(value = "其他id, 素材类型为雷达时存储雷达id，为智能表单时为存储表单id")
+    @TableField("extra_id")
+    private Long extraId;
 
     @ApiModelProperty(value = "雷达VO")
     @TableField(exist = false)
     private WeRadarVO radar;
 
+    @ApiModelProperty(value = "表单素材")
+    @TableField(exist = false)
+    private WeFormMaterial form;
+    
     public WeMsgTlpMaterial(Integer type, String content) {
         this.type = type;
         this.content = content;
@@ -107,8 +112,9 @@ public class WeMsgTlpMaterial {
                 if (checkNotEmpty(this.content, this.picUrl, this.description, this.url)) {
                     break;
                 }
+            case FORM:
             case RADAR:
-                if (!ObjectUtils.isEmpty(this.radarId)) {
+                if (!ObjectUtils.isEmpty(this.extraId)) {
                     break;
                 }
             case MINIPROGRAM:

@@ -26,7 +26,7 @@
     <select id="selectWeCustomerListNoRel" parameterType="com.easyink.wecom.domain.dto.WeCustomerPushMessageDTO"
             resultMap="WeCustomerResultNoRel">
         SELECT
-        DISTINCT wc.external_userid,
+        wc.external_userid,
         wc.`name`,
         wc.avatar,
         wc.type,
@@ -106,7 +106,9 @@
             <if test="customerStartTime != null and customerEndTime != null">
                 AND wfcr.create_time between #{customerStartTime} and #{customerEndTime}
             </if>
+            AND wu.is_activate = '${@com.easyink.common.constant.WeConstans@WE_USER_IS_ACTIVATE}'
         </where>
+        GROUP BY wfcr.external_userid
         ORDER BY wfcr.create_time DESC
     </select>
 
@@ -327,6 +329,12 @@
         <where>
             wc.corp_id = #{corpId}
             ${params.dataScope}
+            <if test="extendList != null and extendList.size()>0" >
+                AND
+                <foreach collection="extendList" index="index" item="item" separator="OR" open="("  close=")">
+                    wfcr.external_userid=#{item.externalUserid} AND wfcr.user_id=#{item.userId}
+                </foreach>
+            </if>
             <if test="tagIds != null and tagIds !=''">
                 <if test="tagIds.indexOf(',') != -1">
                     AND wfcrf.tag_id in
@@ -376,11 +384,111 @@
                 AND wfcr.create_time &lt;= #{endTime}
             </if>
             <if test="name != null and name !=''">
-                AND wc.name like concat('%', #{name}, '%')
+                AND (wc.name like concat('%', #{name}, '%') OR wfcr.remark like concat('%', #{remark}, '%') )
             </if>
+            <if test="birthdayStr!= null and birthdayStr !='' ">
+                <bind name="startTime" value="birthdayStr.split(',')[0]"/> <!-- 开始时间检索 -->
+                <bind name="endTime" value="birthdayStr.split(',')[1]"/> <!-- 结束时间检索 -->
+                AND wc.birthday &gt;=#{startTime} AND  wc.birthday &lt;=#{endTime}
+            </if>
+            <if test="corpFullName!= null and corpFullName !=''">
+                AND wc.corp_full_name like concat('%', #{corpFullName}, '%')
+            </if>
+            <if test="phone!= null and phone !=''">
+                AND wfcr.remark_mobiles=#{phone}
+            </if>
+            <if test="desc!= null and desc !=''">
+                AND wfcr.description like concat('%', #{desc}, '%')
+            </if>
+            <if test="gender != null and gender !=''">
+                <if test="gender.indexOf(',') != -1">
+                    AND wc.gender in
+                    <foreach item="item" index="index" collection="gender.split(',')" open="(" separator="," close=")">
+                        #{item}
+                    </foreach>
+                </if>
+                <if test="gender.indexOf(',') == -1">
+                    AND wc.gender=#{gender}
+                </if>
+            </if>
+            <if test="weFlowerCustomerRels!= null and  weFlowerCustomerRels.size()>0">
+                <foreach item="item" index="index" collection="weFlowerCustomerRels"  separator="," >
+                    <if test="item.addWay != null and item.addWay !=''">
+                        <if test="item.addWay.indexOf(',') != -1">
+                            AND
+                            <foreach item="items" index="index" collection="item.addWay.split(',')" open="(" separator="OR" close=")">
+                                wfcr.add_way= #{items}
+                            </foreach>
+                        </if>
+                        <if test="item.addWay.indexOf(',') == -1">
+                            AND wfcr.add_way=#{item.addWay}
+                        </if>
+                    </if>
+                    <if test="item.email!= null and item.email !=''">
+                        AND wfcr.email=#{item.email}
+                    </if>
+                    <if test="item.address!= null and item.address !=''">
+                        AND wfcr.address like concat('%', #{item.address}, '%')
+                    </if>
+                </foreach>
+            </if>
+
         </where>
         GROUP BY wfcr.external_userid,wfcr.user_id
         ORDER BY wfcr.create_time DESC
+    </select>
+
+    <select id="selectTypeOneLine" resultType="com.easyink.common.core.domain.wecom.BaseExtendPropertyRel">
+        SELECT user_id,external_userid FROM we_customer_extend_property_rel
+        <where>
+
+            <foreach collection="list" index="index" item="item"  separator="AND" >
+                (user_id,external_userid ) IN
+            ( SELECT user_id ,external_userid
+                FROM we_customer_extend_property_rel WHERE
+                (corp_id=#{item.corpId} AND extend_property_id=#{item.extendPropertyId} AND
+                property_value like concat('%', #{item.propertyValue}, '%'))
+             )
+            </foreach>
+
+        </where>
+        GROUP BY user_id,external_Userid
+    </select>
+
+    <select id="selectTypeMultiple" resultType="com.easyink.common.core.domain.wecom.BaseExtendPropertyRel">
+        SELECT user_id,external_userid FROM we_customer_extend_property_rel
+        <where>
+            <foreach collection="list" index="index" item="item"  separator="AND" >
+                (user_id,external_userid ) IN
+                (SELECT user_id ,external_userid
+                FROM we_customer_extend_property_rel WHERE
+                corp_id=#{item.corpId} AND extend_property_id=#{item.extendPropertyId}
+                <if test="item.propertyValue.indexOf(',') != -1">
+                    AND property_value in
+                    <foreach item="items" index="index" collection="item.propertyValue.split(',')" open="(" separator="," close=")">
+                        #{items}
+                    </foreach>
+                </if>
+                <if test="item.propertyValue.indexOf(',') == -1">
+                    AND property_value=#{item.propertyValue}
+                </if>
+                )
+            </foreach>
+        </where>
+        GROUP BY user_id,external_Userid
+    </select>
+
+    <select id="selectTypeTime" resultType="com.easyink.common.core.domain.wecom.BaseExtendPropertyRel">
+        SELECT user_id,external_userid FROM we_customer_extend_property_rel wcepr
+        <where>
+            <foreach collection="list" index="index" item="item" open="(" separator="AND" close=")">
+                <!-- 检索条件为时间时 格式为[开始时间,结束时间] -->
+                <bind name="startTime" value="item.propertyValue.split(',')[0]"/> <!-- 开始时间检索 -->
+                <bind name="endTime" value="item.propertyValue.split(',')[1]"/> <!-- 结束时间检索 -->
+                wcepr.corp_id=#{item.corpId} AND wcepr.extend_property_id=#{item.extendPropertyId} AND wcepr.property_value &gt;=#{startTime}
+                AND wcepr.property_value &lt;=#{endTime}
+            </foreach>
+        </where>
     </select>
 
     <select id="listOfCustomerIdAndUserId" resultType="com.easyink.wecom.domain.vo.sop.CustomerSopVO">

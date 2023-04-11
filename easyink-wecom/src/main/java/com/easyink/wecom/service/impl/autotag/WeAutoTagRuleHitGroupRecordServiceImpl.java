@@ -100,7 +100,7 @@ public class WeAutoTagRuleHitGroupRecordServiceImpl extends ServiceImpl<WeAutoTa
         // 1.查询包含该群id的场景id列表(SceneIdList),并按规则分组
         List<WeAutoTagRuleHitGroupRecord> batchAddRecordList = new ArrayList<>();
         List<WeAutoTagRuleHitGroupRecordTagRel> batchAddTagRelList = new ArrayList<>();
-        List<WeTag> allTagList = new ArrayList<>();
+        List<String> allTagIdList = new ArrayList<>();
         // 获取命中的规则对应的标签列表
         Map<Long, List<WeTag>> tagListGroupByRuleIdMap = weAutoTagGroupSceneGroupRelService.getTagListGroupByRuleIdByChatId(chatId);
         if (ObjectUtils.isEmpty(tagListGroupByRuleIdMap)) {
@@ -110,7 +110,7 @@ public class WeAutoTagRuleHitGroupRecordServiceImpl extends ServiceImpl<WeAutoTa
         tagListGroupByRuleIdMap.forEach((ruleId, tagList) -> {
             List<WeAutoTagRuleHitGroupRecord> recordList = this.buildRecord(ruleId, newJoinCustomerIdList, chatId, groupName, corpId);
             List<WeAutoTagRuleHitGroupRecordTagRel> tagRelList = weAutoTagRuleHitGroupRecordTagRelService.buildTagRel(ruleId, newJoinCustomerIdList, chatId, tagList);
-            allTagList.addAll(tagList);
+            allTagIdList.addAll(tagList.stream().map(WeTag::getTagId).collect(Collectors.toList()));
             batchAddRecordList.addAll(recordList);
             batchAddTagRelList.addAll(tagRelList);
         });
@@ -122,14 +122,14 @@ public class WeAutoTagRuleHitGroupRecordServiceImpl extends ServiceImpl<WeAutoTa
             weAutoTagRuleHitGroupRecordTagRelMapper.insertBatch(batchAddTagRelList);
         }
         // 3.调用企业微信接口打标签
-        if (CollectionUtils.isNotEmpty(allTagList)) {
-            log.info("群打标签标签列表: {}", allTagList.stream().map(WeTag::getTagId).collect(Collectors.toList()));
+        if (CollectionUtils.isNotEmpty(allTagIdList)) {
+            log.info("群打标签标签列表: {}", allTagIdList);
             for (String customerId : newJoinCustomerIdList) {
                 // 查询客户所属的员工列表,loop:打标签
                 List<String> userIdList = weFlowerCustomerRelService.listUpUserIdListByCustomerId(customerId, corpId);
                 for (String userId : userIdList) {
                     log.info("入群打标签: 员工: {}, 客户: {}", userId, customerId);
-                    weCustomerService.batchMakeLabel(Collections.singletonList(new WeMakeCustomerTagVO(customerId, userId, allTagList, corpId)), userId);
+                    weCustomerService.singleMarkLabel(corpId, userId, customerId, allTagIdList, userId);
                 }
             }
         }

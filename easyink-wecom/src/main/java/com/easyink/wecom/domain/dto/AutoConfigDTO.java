@@ -29,6 +29,9 @@ public class AutoConfigDTO {
     @ApiModelProperty(value = "后端域名+端口", required = true)
     private String weComSystemDomain;
 
+    @ApiModelProperty(value = "可信IP列表,当配置多个可信IP时,使用英文\";\"分隔,最多120个", required = true)
+    private String ipList;
+
     @ApiModelProperty(value = "二维码Key", required = true)
     @NotBlank(message = "二维码Key不能为空")
     private String qrcodeKey;

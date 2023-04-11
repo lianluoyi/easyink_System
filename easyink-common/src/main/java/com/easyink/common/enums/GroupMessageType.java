@@ -45,7 +45,12 @@ public enum GroupMessageType {
     /**
      * 雷达消息
      */
-    RADAR("7", "radar");
+    RADAR("7", "radar"),
+
+    /**
+     * 表单消息
+     */
+    FORM("8", "form");
     /**
      * 媒体类型
      */

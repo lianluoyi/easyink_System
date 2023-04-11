@@ -20,7 +20,7 @@ public class WeForm extends BaseEntity {
      * 主键id
      */
     @TableId(type = IdType.AUTO)
-    private Integer id;
+    private Long id;
     /**
      * 表单头图
      */

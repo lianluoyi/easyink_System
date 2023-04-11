@@ -5,6 +5,7 @@ import com.easyink.common.annotation.SysProperty;
 import com.easyink.common.core.domain.wecom.BaseExtendPropertyRel;
 import com.easyink.common.utils.DateUtils;
 import com.easyink.common.utils.StringUtils;
+import com.easyink.wecom.annotation.Cipher;
 import com.easyink.wecom.domain.WeCustomer;
 import com.easyink.wecom.domain.WeFlowerCustomerRel;
 import com.easyink.wecom.domain.WeTag;
@@ -29,10 +30,12 @@ public class EditCustomerDTO {
     private String corpId;
     @ApiModelProperty(value = "外部联系人的userid", required = true)
     @NotBlank(message = "外部联系人的id不可为空")
+    @Cipher(isExUserId = true)
     private String externalUserid;
 
     @ApiModelProperty(value = "跟进人id", required = true)
     @NotBlank(message = "跟进人userId不能为空")
+    @Cipher(isUserId = true)
     private String userId;
 
     @ApiModelProperty(value = "生日")
@@ -70,8 +73,11 @@ public class EditCustomerDTO {
 
     // *** 跟进人对客户所打的标签
 
-    @ApiModelProperty(value = "要给客户编辑的标签,列表内传参格式与‘批量打标签'一样")
-    private List<WeTag> editTag;
+    @ApiModelProperty(value = "要给客户新增的标签,列表内传参格式与‘批量打标签'一样")
+    private List<WeTag> addTags;
+
+    @ApiModelProperty(value = "要给客户删除的标签,列表内传参格式与‘批量打标签'一样")
+    private List<WeTag> removeTags;
 
     @ApiModelProperty(value = "操作人,不必传")
     private String updateBy;
@@ -82,7 +88,7 @@ public class EditCustomerDTO {
      *
      * @return {@link WeCustomer}
      */
-    public WeCustomer transferToCustomer() {
+    public WeCustomer transferToCustomer()  {
         WeCustomer weCustomer = new WeCustomer();
         if (StringUtils.isBlank(birthday)) {
             weCustomer.setBirthday(null);

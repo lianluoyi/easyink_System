@@ -22,5 +22,5 @@ public class DeleteFormDTO {
      * 删除的表单id列表
      */
     @NotEmpty(message = "请选择要删除的表单id")
-    private List<Integer> idList;
+    private List<Long> idList;
 }

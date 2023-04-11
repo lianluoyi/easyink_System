@@ -14,7 +14,7 @@
                description,
                url,
                sort_no,
-               radar_id
+               extra_id
     </sql>
 
     <select id="selectWeMsgTlpMaterialListByDefaultMsgId"

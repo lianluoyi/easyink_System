@@ -41,11 +41,11 @@ public class WeFormUseRecordController extends BaseController {
     @ApiOperation("新增侧边栏表单使用记录")
     @GetMapping("/add")
     public AjaxResult add(
-            @ApiParam("表单id") @RequestParam(value = "formId") Integer formId,
+            @ApiParam("表单id") @RequestParam(value = "formId") Long formId,
             @ApiParam("员工id") @RequestParam(value = "userId") String userId,
             @ApiParam("客户id") @RequestParam(value = "externalUserId") String externalUserId,
             @ApiParam("企业id") @RequestParam(value = "corpId") String corpId) {
-        this.weFormUseRecordService.saveRecord(formId, userId, externalUserId, corpId);
+        weFormUseRecordService.saveRecord(formId, userId, externalUserId, corpId);
         return AjaxResult.success();
     }
 }

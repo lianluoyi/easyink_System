@@ -24,7 +24,7 @@ public interface WeFormCustomerFeedbackService extends IService<WeFormCustomerFe
      * @param componentValue 组件值
      * @return 推广详情VO
      */
-    void saveFeedback(Integer formId, String customerId, String userId, FormComponentType componentType, Integer componentValue);
+    void saveFeedback(Long formId, String customerId, String userId, FormComponentType componentType, Integer componentValue);
 
 
     /**
@@ -38,7 +38,7 @@ public interface WeFormCustomerFeedbackService extends IService<WeFormCustomerFe
      * @param corId          企业id
      * @return 推广详情VO
      */
-    void saveFeedback(Integer formId, String customerId, String userId, FormComponentType componentType, Integer componentValue, String corId);
+    void saveFeedback(Long formId, String customerId, String userId, FormComponentType componentType, Integer componentValue, String corId);
 
     /**
      * 批量保存客户评分
@@ -50,7 +50,7 @@ public interface WeFormCustomerFeedbackService extends IService<WeFormCustomerFe
      * @param npsValueList   {@link FormComponentType#NPS_COMPONENT} value
      * @param corpId         企业id
      */
-    void batchAddFeedback(Integer formId, String customerId, String userId, List<Integer> scoreValueList, List<Integer> npsValueList, String corpId);
+    void batchAddFeedback(Long formId, String customerId, String userId, List<Integer> scoreValueList, List<Integer> npsValueList, String corpId);
 
 }
 

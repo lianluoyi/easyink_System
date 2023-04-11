@@ -24,6 +24,7 @@ import com.easyink.wecom.service.WeEmpleCodeService;
 import com.easyink.wecom.service.WeEmpleCodeUseScopService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -201,4 +202,10 @@ public class WeEmpleCodeController extends BaseController {
         return AjaxResult.success(weEmpleCodeService.getUserByEmplyCode(LoginTokenService.getLoginUser().getCorpId(), id));
     }
 
+
+    @GetMapping("/appLink")
+    @ApiOperation("获取活码小程序短链")
+    public AjaxResult getCodeAppLink(@ApiParam("活码id")Long id ) {
+        return AjaxResult.success("success",weEmpleCodeService.getCodeAppLink(id));
+    }
 }

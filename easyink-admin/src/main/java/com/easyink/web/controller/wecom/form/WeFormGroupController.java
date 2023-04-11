@@ -7,6 +7,7 @@ import com.easyink.wecom.domain.dto.form.ChangeFormGroupSortDTO;
 import com.easyink.wecom.domain.dto.form.FormGroupAddDTO;
 import com.easyink.wecom.domain.dto.form.FormGroupUpdateDTO;
 import com.easyink.wecom.domain.vo.form.FormGroupTreeVO;
+import com.easyink.wecom.domain.vo.form.FormGroupTrees;
 import com.easyink.wecom.login.util.LoginTokenService;
 import com.easyink.wecom.service.form.WeFormGroupService;
 import io.swagger.annotations.ApiOperation;
@@ -37,6 +38,12 @@ public class WeFormGroupController extends BaseController {
             ) {
 
         return AjaxResult.success(this.weFormGroupService.selectTree(sourceType,departmentId,
+                LoginTokenService.getLoginUser().getCorpId()));
+    }
+
+    @GetMapping("/trees")
+    public AjaxResult<FormGroupTrees> selectTrees(@RequestParam(value = "departmentId",required = false) Integer departmentId) {
+        return AjaxResult.success(this.weFormGroupService.selectTrees(departmentId,
                 LoginTokenService.getLoginUser().getCorpId()));
     }
 

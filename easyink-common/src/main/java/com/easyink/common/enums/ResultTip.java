@@ -78,6 +78,9 @@ public enum ResultTip {
     TIP_ERROR_CAPTCHA(1021, "短信验证码错误"),
     TIP_CONFIRM_CAPTCHA(1022, "验证短信失败"),
     TIP_NO_SCAN(1023,"请扫二维码"),
+    NO_OFFICIAL_ACCOUNT_CONFIG(1024,"未配置公众号，请联系管理员前往【系统设置】配置"),
+    TIP_LOCK_CONFIG_MISSING(1025, "AppID或AppSecret错误，请重新配置"),
+    TIP_ILLEGAL_TRUSTEDIP(1026, "企业可信IP配置失败"),
 
 
     //运营模块返回码
@@ -157,6 +160,8 @@ public enum ResultTip {
     TIP_REDEEM_CODE_ACTIVITY_LIMIT_ADD_USER(2082, "活动已开启参与限制，同一客户不能多次领取"),
     TIP_IMAGE_FORMAT_ERROR(2083, "图片格式异常，请重新保存后上传"),
     TIP_MEDIA_TYPE_ERROR(2084,"媒体类型出错"),
+    TIP_DELETE_QRCODE_NOT_FIND(2085, "未找到需要删除的员工活码"),
+    TIP_ERROR_CREATING_APP_lINK(2086,"生成活码小程序短链失败"),
 
     //员工模块错误码
     TIP_PARAM_NAME_MISSING(3001, "请填写完整的员工信息"),
@@ -196,6 +201,8 @@ public enum ResultTip {
     TIP_AUTO_TAG_MATCH_KEYWORD_NOT_BOTH_NULL(4024, "模糊匹配和精确匹配类型的关键词不能同时为空"),
     TIP_DELETE_TAG_NOT_PERMISSIONS(4025, "无权限操作标签，若标签不是在本系统创建，请前往企微后台操作"),
     TIP_FAIL_TO_GET_CUSTOMER_INFO(4026,"无法获取客户详情"),
+    TIP_FAIL_ADD_LOSS_TAG(4027, "数据不存在，客户打标签失败"),
+    TIP_FAIL_INSERT_LOSS_TAG(4028, "请设置流失标签"),
 
     // 动态表单 5000开始
     TIP_GROUP_FORM_SOURCE_TYPE_ERROR(50001,"表单分组类别错误"),
@@ -242,11 +249,14 @@ public enum ResultTip {
     TIP_NO_APP_SECRET(9003,"没有配置公众号秘钥"),
     TIP_WECHAT_OPEN_GET_AUTH_ERROR(9004,"获取用户授权信息异常"),
     TIP_WECHAT_OPEN_OFFICIAL_NO_DOMAIN(9005,"未配置公众号域名"),
+    TIP_WECHAT_OPEN_IS_SNAP_SHOT_USER(9006, "当前用户授权来自快照页"),
     TIP_ERROR_GET_UNION_ID(9007,"获取unionId异常"),
     TIP_OPEN_ID_CANNOT_BE_NULL (9008,"缺失openId"),
     TIP_CANNOT_FIND_USER_BY_UNION_ID(9009,"无法通过union_id匹配到客户,请重新同步客户后再重试"),
-    ;
+    TIP_ERROR_CREATE_MINI_APP_URL_LINK(9010,"创建小程序url_link 失败"),
+    TIP_APPEND_MISSING(9012,"附加信息缺失"),
 
+    ;
     @Getter
     private final Integer code;
 

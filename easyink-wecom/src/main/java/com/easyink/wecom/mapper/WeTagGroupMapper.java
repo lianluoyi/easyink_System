@@ -1,6 +1,7 @@
 package com.easyink.wecom.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.easyink.wecom.domain.WeTag;
 import com.easyink.wecom.domain.WeTagGroup;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
@@ -15,8 +16,6 @@ import java.util.List;
  */
 @Repository
 public interface WeTagGroupMapper extends BaseMapper<WeTagGroup> {
-    ;
-
     /**
      * 查询标签组列表
      *
@@ -32,8 +31,6 @@ public interface WeTagGroupMapper extends BaseMapper<WeTagGroup> {
      * @return
      */
     List<WeTagGroup> selectWetagGroupListBySearchName(@Param("searchName") String searchName, @Param("corpId") String corpId);
-
-
     /**
      * 批量逻辑删除标签组
      *

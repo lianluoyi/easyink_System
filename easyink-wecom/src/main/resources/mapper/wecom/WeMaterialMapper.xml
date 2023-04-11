@@ -11,6 +11,8 @@
         <result property="content" column="content"/>
         <result property="materialName" column="material_name"/>
         <result property="digest" column="digest"/>
+        <result property="accountOriginalId" column="account_original_id"/>
+        <result property="appid" column="appid"/>
         <result property="createBy" column="create_by"/>
         <result property="createTime" column="create_time"/>
         <result property="updateBy" column="update_by"/>
@@ -21,7 +23,7 @@
         <result property="showMaterial" column="show_material"/>
         <result property="isDefined" column="is_defined"/>
         <result property="enableConvertRadar" column="enable_convert_radar"/>
-        <result property="radarId" column="radar_id"/>
+        <result property="extraId" column="extra_id"/>
     </resultMap>
 
     <resultMap id="materialMap1" type="com.easyink.wecom.domain.WeMaterial">
@@ -31,6 +33,8 @@
         <result property="content" column="content"/>
         <result property="materialName" column="material_name"/>
         <result property="digest" column="digest"/>
+        <result property="accountOriginalId" column="account_original_id"/>
+        <result property="appid" column="appid"/>
         <result property="coverUrl" column="cover_url"/>
         <result property="createBy" column="create_by"/>
         <result property="createTime" column="create_time"/>
@@ -41,7 +45,7 @@
         <result property="showMaterial" column="show_material"/>
         <result property="isDefined" column="is_defined"/>
         <result property="enableConvertRadar" column="enable_convert_radar"/>
-        <result property="radarId" column="radar_id"/>
+        <result property="extraId" column="extra_id"/>
     </resultMap>
 
     <resultMap id="materialVoMap" type="com.easyink.wecom.domain.vo.WeMaterialVO">
@@ -51,6 +55,8 @@
         <result property="content" column="content"/>
         <result property="materialName" column="material_name"/>
         <result property="digest" column="digest"/>
+        <result property="accountOriginalId" column="account_original_id"/>
+        <result property="appid" column="appid"/>
         <result property="coverUrl" column="cover_url"/>
         <result property="createBy" column="create_by"/>
         <result property="createTime" column="create_time"/>
@@ -61,7 +67,7 @@
         <result property="showMaterial" column="show_material"/>
         <result property="isDefined" column="is_defined"/>
         <result property="enableConvertRadar" column="enable_convert_radar"/>
-        <result property="radarId" column="radar_id"/>
+        <result property="extraId" column="extra_id"/>
         <result property="tagIds" column="tagIds"/>
         <collection property="tagList" column="{materialId=id,tagIds=tagIds}"
                     ofType="com.easyink.wecom.domain.vo.WeMaterialAndTagRel"
@@ -89,6 +95,12 @@
             </if>
             <if test="digest!=null">
                 digest,
+            </if>
+            <if test="accountOriginalId!=null">
+                account_original_id,
+            </if>
+            <if test="appid!=null">
+                appid,
             </if>
             <if test="coverUrl!=null">
                 cover_url,
@@ -123,8 +135,8 @@
             <if test="enableConvertRadar != null">
                 enable_convert_radar,
             </if>
-            <if test="radarId != null">
-                radar_id
+            <if test="extraId != null">
+                extra_id
             </if>
         </trim>
         VALUES
@@ -146,6 +158,12 @@
             </if>
             <if test="digest!=null">
                 #{digest},
+            </if>
+            <if test="accountOriginalId!=null">
+                #{accountOriginalId},
+            </if>
+            <if test="appid!=null">
+                #{appid},
             </if>
             <if test="coverUrl!=null">
                 #{coverUrl},
@@ -180,8 +198,8 @@
             <if test="enableConvertRadar!=null">
                 #{enableConvertRadar},
             </if>
-            <if test="radarId != null">
-                #{radarId}
+            <if test="extraId != null">
+                #{extraId}
             </if>
         </trim>
     </insert>
@@ -245,6 +263,12 @@
         <if test="coverUrl!=null">
             cover_url=#{coverUrl},
         </if>
+        <if test="accountOriginalId!=null">
+            account_original_id = #{accountOriginalId},
+        </if>
+        <if test="appid!=null">
+            appid = #{appid},
+        </if>
         <if test="createBy!=null">
             create_by=#{createBy},
         </if>
@@ -269,8 +293,8 @@
         <if test="enableConvertRadar != null">
             enable_convert_radar = #{enableConvertRadar},
         </if>
-        <if test="radarId != null">
-            radar_id = #{radarId},
+        <if test="extraId != null">
+            extra_id = #{extraId},
         </if>
         update_time = sysdate()
         where id=#{id}
@@ -298,8 +322,8 @@
 
     <select id="findWeMaterials" resultMap="materialVoMap">
         SELECT wm.id,wm.category_id,wm.material_url,wm.content,wm.material_name,
-        wm.digest,wm.cover_url,wm.create_by,wm.create_time,wm.update_by,wm.update_time,
-        wm.audio_time,wm.show_material,wc.media_type,#{tagIds} tagIds,wm.is_defined,wm.enable_convert_radar,wm.radar_id,
+        wm.digest,wm.account_original_id, wm.appid, wm.cover_url,wm.create_by,wm.create_time,wm.update_by,wm.update_time,
+        wm.audio_time,wm.show_material,wc.media_type,#{tagIds} tagIds,wm.is_defined,wm.enable_convert_radar,wm.extra_id,
         IF(wm.expire_time='${@com.easyink.common.constant.WeConstans@DEFAULT_MATERIAL_NOT_EXPIRE}',NULL,wm.expire_time)
         expire_time
         FROM we_material wm
@@ -339,7 +363,7 @@
 
     <select id="findMaterialVoListByIds" resultMap="materialVoMap">
         SELECT wc.media_type, wm.id,
-        wm.material_url,wm.content,wm.material_name,wm.digest,wm.audio_time,wm.cover_url,wm.create_by,wm.create_time,wm.update_by,wm.update_time,wm.is_defined,wm.enable_convert_radar,wm.radar_id
+        wm.material_url,wm.content,wm.material_name,wm.digest,wm.account_original_id, wm.appid, wm.audio_time,wm.cover_url,wm.create_by,wm.create_time,wm.update_by,wm.update_time,wm.is_defined,wm.enable_convert_radar,wm.extra_id
         from we_material wm
         left join we_category wc on wc.id = wm.category_id
         where
@@ -351,7 +375,7 @@
 
     <sql id="material">
         id
-        ,category_id,material_url,content,material_name,digest,cover_url,create_by,create_time,update_by,update_time,audio_time,is_defined,enable_convert_radar,radar_id
+        ,category_id,material_url,content,material_name,digest,account_original_id,appid,cover_url,create_by,create_time,update_by,update_time,audio_time,is_defined,enable_convert_radar,extra_id
     </sql>
 
     <update id="restore">
@@ -448,8 +472,8 @@
 
     <select id="getListByMaterialSort" resultType="com.easyink.wecom.domain.dto.AddWeMaterialDTO">
         SELECT
-            wc.media_type, wm.id, wm.material_url,wm.content,wm.material_name,wm.digest,wm.audio_time,wm.cover_url,
-        wm.create_by,wm.create_time,wm.update_by,wm.update_time,wm.is_defined,wm.enable_convert_radar,wm.radar_id
+            wc.media_type, wm.id, wm.material_url,wm.content,wm.material_name,wm.digest,wm.account_original_id, wm.appid, wm.audio_time,wm.cover_url,
+        wm.create_by,wm.create_time,wm.update_by,wm.update_time,wm.is_defined,wm.enable_convert_radar,wm.extra_id
         FROM we_material wm
         LEFT JOIN we_category wc ON wc.id = wm.category_id AND wc.corp_id = #{corpId}
         WHERE wm.id IN

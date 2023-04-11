@@ -206,5 +206,15 @@
         WHERE id = #{formId}
     </select>
 
+    <!--获取素材库表单-->
+    <select id="getFormMaterial" resultType="com.easyink.wecom.domain.entity.form.WeFormMaterial">
+        SELECT id formId,
+               head_image_url,
+               form_name,
+               description
+        FROM we_form
+        WHERE id = #{formId}
+    </select>
+
 </mapper>
 

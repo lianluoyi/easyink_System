@@ -1,5 +1,6 @@
 package com.easyink.wecom.domain.vo.sop;
 
+import com.easyink.wecom.domain.entity.form.WeFormMaterial;
 import com.easyink.wecom.domain.vo.radar.WeRadarVO;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -37,15 +38,32 @@ public class SopAttachmentVO {
      */
     @ApiModelProperty(value = "封面")
     private String coverUrl;
+
+    /**
+     * 小程序账号原始id，小程序专用
+     */
+    @ApiModelProperty(value = "小程序账号原始id，小程序专用")
+    private String accountOriginalId;
+
+    /**
+     * 小程序appId，小程序专用
+     */
+    @ApiModelProperty(value = "小程序appId，小程序专用")
+    private String appid;
+
     /**
      * 链接时使用：0 默认，1 自定义
      */
     @ApiModelProperty(value = "链接时使用：0 默认，1 自定义")
     private Boolean isDefined;
 
-    @ApiModelProperty(value = "雷达id")
-    private Long radarId;
+    @ApiModelProperty(value = "其他id, 素材类型为雷达时存储雷达id，为智能表单时为存储表单id")
+    private Long extraId;
 
     @ApiModelProperty(value = "雷达VO")
     private WeRadarVO radar;
+
+    @ApiModelProperty(value = "表单素材")
+    private WeFormMaterial form;
+
 }

@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.easyink.common.utils.SnowFlakeUtil;
+import com.easyink.wecom.annotation.Cipher;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.annotations.ApiModel;
@@ -42,6 +43,7 @@ public class WeGroupMember {
     @ApiModelProperty(value = "群id")
     @TableField("chat_id")
     @NotBlank(message = "groupId")
+    @Cipher(isExUserId = true)
     private String chatId;
 
     @TableField("corp_id")

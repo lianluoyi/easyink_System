@@ -8,20 +8,26 @@ import com.easyink.common.constant.WeConstans;
 import com.easyink.common.core.domain.entity.WeCorpAccount;
 import com.easyink.common.enums.CustomerTrajectoryEnums;
 import com.easyink.common.enums.MessageType;
+import com.easyink.common.enums.ResultTip;
+import com.easyink.common.exception.CustomException;
 import com.easyink.wecom.client.WeMessagePushClient;
 import com.easyink.wecom.domain.WeCustomer;
 import com.easyink.wecom.domain.WeFlowerCustomerRel;
 import com.easyink.wecom.domain.dto.WeMessagePushDTO;
 import com.easyink.wecom.domain.dto.message.TextMessageDTO;
 import com.easyink.wecom.domain.vo.WxCpXmlMessageVO;
+import com.easyink.wecom.domain.vo.customerloss.CustomerLossTagVO;
 import com.easyink.wecom.factory.WeEventStrategy;
 import com.easyink.wecom.service.*;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -46,6 +52,8 @@ public class WeCallBackDelFollowUserImpl extends WeEventStrategy {
     private WeEmpleCodeAnalyseService weEmpleCodeAnalyseService;
     @Autowired
     private WeCustomerTrajectoryService weCustomerTrajectoryService;
+    @Autowired
+    private WeLossTagService weLossTagService;
 
     @Override
     public void eventHandle(WxCpXmlMessageVO message) {
@@ -63,6 +71,8 @@ public class WeCallBackDelFollowUserImpl extends WeEventStrategy {
             WeCorpAccount validWeCorpAccount = weCorpAccountService.findValidWeCorpAccount(corpId);
             Optional.ofNullable(validWeCorpAccount).ifPresent(weCorpAccount -> {
                 String customerChurnNoticeSwitch = weCorpAccount.getCustomerChurnNoticeSwitch();
+                String customerLossTagSwitch = weCorpAccount.getCustomerLossTagSwitch();
+                // 流失提醒
                 if (WeConstans.DEL_FOLLOW_USER_SWITCH_OPEN.equals(customerChurnNoticeSwitch)) {
                     WeCustomer weCustomer = weCustomerService.selectWeCustomerById(message.getExternalUserId(), corpId);
                     if (weCustomer == null) {
@@ -78,6 +88,10 @@ public class WeCallBackDelFollowUserImpl extends WeEventStrategy {
                     Optional.ofNullable(validWeCorpAccount).map(WeCorpAccount::getAgentId).ifPresent(agentId -> weMessagePushDto.setAgentid(Integer.valueOf(agentId)));
                     weMessagePushClient.sendMessageToUser(weMessagePushDto, weMessagePushDto.getAgentid().toString(), corpId);
 
+                }
+                // 打客户流失标签
+                if (WeConstans.DEL_FOLLOW_USER_SWITCH_OPEN.equals(customerLossTagSwitch)) {
+                    addLossTag(message,corpId);
                 }
             });
             // 更新活码统计
@@ -97,5 +111,21 @@ public class WeCallBackDelFollowUserImpl extends WeEventStrategy {
         } catch (Exception e) {
             log.error("del_follow_user>>>>>>>>>>>>>param:{},ex:{}", JSON.toJSONString(message), ExceptionUtils.getStackTrace(e));
         }
+    }
+
+    /**
+     * 为流失客户打标签
+     *
+     * @param message 回调信息
+     * @param corpId  企业ID
+     */
+    private void addLossTag(WxCpXmlMessageVO message, String corpId) {
+        CustomerLossTagVO customerLossTagVO = weLossTagService.selectLossWeTag(corpId);
+        if (customerLossTagVO == null) {
+            throw new CustomException(ResultTip.TIP_FAIL_ADD_LOSS_TAG);
+        }
+        List<String> lossTagIdList = new ArrayList<>();
+        customerLossTagVO.getWeTags().forEach(item -> lossTagIdList.add(item.getTagId()));
+        weCustomerService.singleMarkLabel(corpId, message.getUserId(), message.getExternalUserId(), lossTagIdList, null);
     }
 }

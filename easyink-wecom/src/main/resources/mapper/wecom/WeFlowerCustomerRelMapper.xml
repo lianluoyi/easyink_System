@@ -140,20 +140,20 @@
     <insert id="batchInsert" parameterType="com.easyink.wecom.domain.WeFlowerCustomerRel">
         INSERT INTO we_flower_customer_rel
         (id, user_id, external_userid, corp_id, oper_userid, remark, description, remark_corp_name, remark_mobiles,
-        add_way, state,status,wechat_channel,create_time)
+        add_way, state,wechat_channel,create_time)
         VALUES
         <foreach collection="list" item="item" separator=",">
             (
             #{item.id}, #{item.userId}, #{item.externalUserid}, #{item.corpId},
             #{item.operUserid}, #{item.remark}, #{item.description}, #{item.remarkCorpName},
             #{item.remarkMobiles},
-            #{item.addWay}, #{item.state},#{item.status},#{item.wechatChannel},#{item.createTime}
+            #{item.addWay}, #{item.state},#{item.wechatChannel},#{item.createTime}
             )
         </foreach>
         ON DUPLICATE KEY UPDATE
         remark = VALUES(remark),description = VALUES(description),remark_corp_name = VALUES(remark_corp_name),
         remark_mobiles = VALUES(remark_mobiles),add_way = VALUES(add_way),`state` =
-        VALUES(`state`),`status`=VALUES(`status`),wechat_channel = VALUES(wechat_channel),create_time = VALUES(create_time)
+        VALUES(`state`),wechat_channel = VALUES(wechat_channel),create_time = VALUES(create_time)
     </insert>
     <!--    保存/更新-->
     <insert id="saveOrUpdate" parameterType="com.easyink.wecom.domain.WeFlowerCustomerRel">
@@ -308,6 +308,15 @@
             create_time = now()
         WHERE corp_id = #{corpId}
           AND id = #{handoverRelId}
+    </update>
+
+    <!--更新已流失重新添加回来的客户状态-->
+    <update id="updateLossExternalUser">
+        UPDATE we_flower_customer_rel
+        SET status = '${@com.easyink.common.enums.CustomerStatusEnum@NORMAL.code}'
+        WHERE corp_id = #{corpId}
+          AND user_id = #{userId}
+          AND external_userid = #{external_userid}
     </update>
 
     <select id="getUserAddCustomerStat" parameterType="com.easyink.wecom.domain.WeFlowerCustomerRel"

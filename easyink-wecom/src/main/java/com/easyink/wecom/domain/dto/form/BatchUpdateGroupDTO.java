@@ -32,7 +32,7 @@ public class BatchUpdateGroupDTO {
      * 表单id列表
      */
     @NotEmpty(message = "请选择要修改的表单")
-    private List<Integer> formIdList;
+    private List<Long> formIdList;
 
     /**
      * 校验

@@ -139,4 +139,12 @@ public interface WeEmpleCodeService extends IService<WeEmpleCode> {
      * @param externalUserId
      */
     void buildRedeemCodeActivityWelcomeMsg(SelectWeEmplyCodeWelcomeMsgVO messageMap, String corpId, String externalUserId);
+
+    /**
+     * 获取活码小程序短链接
+     *
+     * @param id 活码id
+     * @return short mini app link
+     */
+    String getCodeAppLink(Long id);
 }

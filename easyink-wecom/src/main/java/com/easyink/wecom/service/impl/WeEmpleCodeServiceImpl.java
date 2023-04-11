@@ -10,6 +10,7 @@ import com.easyink.common.core.redis.RedisCache;
 import com.easyink.common.enums.*;
 import com.easyink.common.enums.code.WelcomeMsgTypeEnum;
 import com.easyink.common.exception.CustomException;
+import com.easyink.common.shorturl.model.EmpleCodeShortUrlAppendInfo;
 import com.easyink.common.utils.DateUtils;
 import com.easyink.common.utils.spring.SpringUtils;
 import com.easyink.wecom.client.WeExternalContactClient;
@@ -25,13 +26,14 @@ import com.easyink.wecom.domain.vo.WeEmpleCodeVO;
 import com.easyink.wecom.domain.vo.WeEmplyCodeDownloadVO;
 import com.easyink.wecom.domain.vo.WeEmplyCodeScopeUserVO;
 import com.easyink.wecom.domain.vo.redeemcode.WeRedeemCodeActivityVO;
+import com.easyink.wecom.handler.shorturl.EmpleCodeShortUrlHandler;
 import com.easyink.wecom.login.util.LoginTokenService;
 import com.easyink.wecom.mapper.WeEmpleCodeMapper;
 import com.easyink.wecom.mapper.redeemcode.WeRedeemCodeMapper;
 import com.easyink.wecom.service.*;
-import com.easyink.wecom.service.radar.MiniAppQrCodeUrlHandler;
 import com.easyink.wecom.service.radar.WeRadarService;
 import com.easyink.wecom.service.redeemcode.WeRedeemCodeActivityService;
+import com.easyink.wecom.utils.ExtraMaterialUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang.ArrayUtils;
@@ -67,11 +69,11 @@ public class WeEmpleCodeServiceImpl extends ServiceImpl<WeEmpleCodeMapper, WeEmp
     private final WeRedeemCodeMapper weRedeemCodeMapper;
     private final WeRedeemCodeActivityService weRedeemCodeActivityService;
     private final WeUserService weUserService;
-    private final MiniAppQrCodeUrlHandler miniAppQrCodeUrlHandler;
     private final WeRadarService weRadarService;
+    private final EmpleCodeShortUrlHandler empleCodeShortUrlHandler;
 
     @Autowired
-    public WeEmpleCodeServiceImpl(WeEmpleCodeTagService weEmpleCodeTagService, WeEmpleCodeUseScopService weEmpleCodeUseScopService, WeExternalContactClient weExternalContactClient, RedisCache redisCache, WeEmpleCodeMaterialService weEmpleCodeMaterialService, WeMaterialService weMaterialService, WeGroupCodeService weGroupCodeService, WeEmpleCodeAnalyseService weEmpleCodeAnalyseService, WeGroupCodeActualService weGroupCodeActualService, WeRedeemCodeMapper weRedeemCodeMapper, WeRedeemCodeActivityService weRedeemCodeActivityService, WeUserService weUserService, MiniAppQrCodeUrlHandler miniAppQrCodeUrlHandler, WeRadarService weRadarService) {
+    public WeEmpleCodeServiceImpl(WeEmpleCodeTagService weEmpleCodeTagService, WeEmpleCodeUseScopService weEmpleCodeUseScopService, WeExternalContactClient weExternalContactClient, RedisCache redisCache, WeEmpleCodeMaterialService weEmpleCodeMaterialService, WeMaterialService weMaterialService, WeGroupCodeService weGroupCodeService, WeEmpleCodeAnalyseService weEmpleCodeAnalyseService, WeGroupCodeActualService weGroupCodeActualService, WeRedeemCodeMapper weRedeemCodeMapper, WeRedeemCodeActivityService weRedeemCodeActivityService, WeUserService weUserService, WeRadarService weRadarService, EmpleCodeShortUrlHandler empleCodeShortUrlHandler) {
         this.weEmpleCodeTagService = weEmpleCodeTagService;
         this.weEmpleCodeUseScopService = weEmpleCodeUseScopService;
         this.weExternalContactClient = weExternalContactClient;
@@ -84,8 +86,8 @@ public class WeEmpleCodeServiceImpl extends ServiceImpl<WeEmpleCodeMapper, WeEmp
         this.weRedeemCodeMapper = weRedeemCodeMapper;
         this.weRedeemCodeActivityService = weRedeemCodeActivityService;
         this.weUserService = weUserService;
-        this.miniAppQrCodeUrlHandler = miniAppQrCodeUrlHandler;
         this.weRadarService = weRadarService;
+        this.empleCodeShortUrlHandler = empleCodeShortUrlHandler;
     }
 
     @Override
@@ -166,10 +168,12 @@ public class WeEmpleCodeServiceImpl extends ServiceImpl<WeEmpleCodeMapper, WeEmp
         }
     }
 
-    private void buildRadarDate(List<AddWeMaterialDTO> materialList, String corpId) {
+    private void buildExtraMaterial(List<AddWeMaterialDTO> materialList, String corpId) {
         materialList.forEach(item -> {
             if (AttachmentTypeEnum.RADAR.getMessageType().equals(item.getMediaType())) {
-                item.setRadar(SpringUtils.getBean(WeRadarService.class).getRadar(corpId, item.getRadarId()));
+                item.setRadar(SpringUtils.getBean(WeRadarService.class).getRadar(corpId, item.getExtraId()));
+            } else if (AttachmentTypeEnum.FORM.getMessageType().equals(item.getMediaType())) {
+                item.setForm(ExtraMaterialUtils.getForm(item.getExtraId()));
             }
         });
     }
@@ -184,7 +188,7 @@ public class WeEmpleCodeServiceImpl extends ServiceImpl<WeEmpleCodeMapper, WeEmp
         if (WelcomeMsgTypeEnum.COMMON_WELCOME_MSG_TYPE.getType().equals(employCode.getWelcomeMsgType())) {
             if (!ArrayUtils.isEmpty(employCode.getMaterialSort())) {
                 List<AddWeMaterialDTO> materialList = weMaterialService.getListByMaterialSort(employCode.getMaterialSort(), corpId);
-                buildRadarDate(materialList, corpId);
+                buildExtraMaterial(materialList, corpId);
                 employCode.setMaterialList(materialList);
             } else {
                 employCode.setMaterialList(Collections.emptyList());
@@ -194,15 +198,15 @@ public class WeEmpleCodeServiceImpl extends ServiceImpl<WeEmpleCodeMapper, WeEmp
             employCode.setCodeActivity(Optional.ofNullable(redeemCodeActivity).orElseGet(WeRedeemCodeActivityVO::new));
 
             List<AddWeMaterialDTO> successMaterialList = weMaterialService.getRedeemCodeListByMaterialSort(employCode.getCodeSuccessMaterialSort(), corpId);
-            buildRadarDate(successMaterialList, corpId);
+            buildExtraMaterial(successMaterialList, corpId);
             employCode.setCodeSuccessMaterialList(successMaterialList);
 
             List<AddWeMaterialDTO> failMaterialList = weMaterialService.getRedeemCodeListByMaterialSort(employCode.getCodeFailMaterialSort(), corpId);
-            buildRadarDate(failMaterialList, corpId);
+            buildExtraMaterial(failMaterialList, corpId);
             employCode.setCodeFailMaterialList(failMaterialList);
 
             List<AddWeMaterialDTO> repeatMaterialList = weMaterialService.getRedeemCodeListByMaterialSort(employCode.getCodeRepeatMaterialSort(), corpId);
-            buildRadarDate(repeatMaterialList, corpId);
+            buildExtraMaterial(repeatMaterialList, corpId);
             employCode.setCodeRepeatMaterialList(repeatMaterialList);
         }
     }
@@ -258,10 +262,6 @@ public class WeEmpleCodeServiceImpl extends ServiceImpl<WeEmpleCodeMapper, WeEmp
             WeExternalContactDTO contactDTO = getQrCodeFromClient(weContactWay, weEmpleCode.getCorpId());
             weEmpleCode.setConfigId(contactDTO.getConfig_id());
             weEmpleCode.setQrCode(contactDTO.getQr_code());
-            String shortUrl = miniAppQrCodeUrlHandler.createShortCode(contactDTO.getQr_code());
-            if (StringUtils.isNotBlank(shortUrl)) {
-                weEmpleCode.setAppLink(shortUrl);
-            }
             isNotCreate = false;
         }
 
@@ -299,11 +299,21 @@ public class WeEmpleCodeServiceImpl extends ServiceImpl<WeEmpleCodeMapper, WeEmp
     }
 
 
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int batchRemoveWeEmpleCodeIds(String corpId, List<Long> ids) {
         if (StringUtils.isBlank(corpId) || CollectionUtils.isEmpty(ids)) {
             throw new CustomException(ResultTip.TIP_GENERAL_BAD_REQUEST);
+        }
+        List<String> configIdList = this.baseMapper.batchGetWeEmpleCodeConfigId(corpId, ids);
+        if (CollectionUtils.isEmpty(configIdList)) {
+            throw new CustomException(ResultTip.TIP_DELETE_QRCODE_NOT_FIND);
+        }
+        WeExternalContactDTO.WeContactWay weContactWay = new WeExternalContactDTO.WeContactWay();
+        for (String configId : configIdList) {
+            weContactWay.setConfig_id(configId);
+            weExternalContactClient.delContactWay(weContactWay, corpId);
         }
         //删除附件表
         weEmpleCodeMaterialService.removeByEmpleCodeId(ids);
@@ -396,7 +406,6 @@ public class WeEmpleCodeServiceImpl extends ServiceImpl<WeEmpleCodeMapper, WeEmp
         WeExternalContactDTO contactDTO = getQrCodeFromClient(weContactWay, weEmpleCode.getCorpId());
         weEmpleCode.setConfigId(contactDTO.getConfig_id());
         weEmpleCode.setQrCode(contactDTO.getQr_code());
-
         //保存使用人及部门
         weEmpleCode.getWeEmpleCodeUseScops().forEach(item -> item.setEmpleCodeId(weEmpleCode.getId()));
         weEmpleCodeUseScopService.saveBatch(weEmpleCode.getWeEmpleCodeUseScops());
@@ -413,12 +422,6 @@ public class WeEmpleCodeServiceImpl extends ServiceImpl<WeEmpleCodeMapper, WeEmp
             saveGroupCodeMaterial(weEmpleCode.getId(), weEmpleCode.getGroupCodeId());
             buildMaterialSort(weEmpleCode);
         }
-        // 生成小程序短链活码
-        String shortUrl = miniAppQrCodeUrlHandler.createShortCode(contactDTO.getQr_code());
-        if (StringUtils.isNotBlank(shortUrl)) {
-            weEmpleCode.setAppLink(shortUrl);
-        }
-        // 生成小程序活码
         baseMapper.insertWeEmpleCode(weEmpleCode);
     }
 
@@ -657,6 +660,35 @@ public class WeEmpleCodeServiceImpl extends ServiceImpl<WeEmpleCodeMapper, WeEmp
             welcomeMsgVO.setMaterialList(weMaterialService.getRedeemCodeListByMaterialSort(welcomeMsgVO.getCodeFailMaterialSort(), corpId));
             welcomeMsgVO.setWelcomeMsg(welcomeMsgVO.getCodeFailMsg());
         }
+    }
+
+    @Override
+    public String getCodeAppLink(Long id) {
+        if(id == null) {
+            throw new CustomException(ResultTip.TIP_PARAM_MISSING) ;
+        }
+        // 获取活码信息
+        WeEmpleCode weEmpleCode = getById(id);
+        if(weEmpleCode == null) {
+            throw new CustomException(ResultTip.TIP_EMPLY_CODE_NOT_FOUND);
+        }
+        // 如果已经生成过则直接返回
+        if(StringUtils.isNotBlank(weEmpleCode.getAppLink())) {
+            return weEmpleCode.getAppLink();
+        }
+        // 没有则 生成一个活码小程序短链
+        EmpleCodeShortUrlAppendInfo appendInfo = EmpleCodeShortUrlAppendInfo.builder()
+                                                                            .id(id)
+                                                                            .corpId(weEmpleCode.getCorpId())
+                                                                            .build();
+        String shortUrl = empleCodeShortUrlHandler.createShortUrl(weEmpleCode.getCorpId(), weEmpleCode.getQrCode(), LoginTokenService.getUsername(), appendInfo);
+        if(StringUtils.isBlank(shortUrl)) {
+            throw new CustomException(ResultTip.TIP_ERROR_CREATING_APP_lINK);
+        }
+        //保存到活码
+        weEmpleCode.setAppLink(shortUrl);
+        updateById(weEmpleCode);
+        return shortUrl;
     }
 
     /**

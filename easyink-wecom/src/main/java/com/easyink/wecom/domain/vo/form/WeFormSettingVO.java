@@ -24,7 +24,7 @@ public class WeFormSettingVO extends WeFormAdvanceSetting {
      * 关联表单id
      */
     @JsonIgnore
-    private Integer formId;
+    private Long formId;
     /**
      * 标签设置
      */

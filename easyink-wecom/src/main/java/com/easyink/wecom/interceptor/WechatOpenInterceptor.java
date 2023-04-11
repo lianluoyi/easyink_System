@@ -36,7 +36,7 @@ public class WechatOpenInterceptor implements Interceptor<Object> {
     @Override
     public boolean beforeExecute(ForestRequest request) {
         String uri = request.getUrl().replace(API_PREFIX, "");
-        if (PatternMatchUtils.simpleMatch(wechatOpenConfig.getOfficialAccount().getNeedTokenUrl(), uri)) {
+        if (PatternMatchUtils.simpleMatch(wechatOpenConfig.getMiniApp().getNeedTokenUrl(), uri)) {
             // 为请求设置access_token
             wechatOpenService.setAccessToken(request);
         }
@@ -45,11 +45,11 @@ public class WechatOpenInterceptor implements Interceptor<Object> {
 
     @Override
     public void onSuccess(Object data, ForestRequest request, ForestResponse response) {
-        log.info("url:【{}】,result:【{}】", request.getUrl(), response.getContent());
+        log.info("url:【{}】,result:【{}】body:【{}】", request.getUrl(), response.getContent(),request.getBody());
     }
 
     @Override
     public void onError(ForestRuntimeException ex, ForestRequest request, ForestResponse response) {
-        log.error("请求失败url:【{}】,result:【{}】", request.getUrl(), response.getContent());
+        log.error("请求失败url:【{}】,result:【{}】,body:【{}】", request.getUrl(), response.getContent(), request.getBody());
     }
 }

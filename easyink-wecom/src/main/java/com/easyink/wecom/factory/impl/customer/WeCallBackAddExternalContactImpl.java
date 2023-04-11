@@ -14,7 +14,6 @@ import com.easyink.common.enums.*;
 import com.easyink.common.enums.code.WelcomeMsgTypeEnum;
 import com.easyink.common.exception.CustomException;
 import com.easyink.common.lock.LockUtil;
-import com.easyink.common.utils.ExceptionUtil;
 import com.easyink.wecom.domain.*;
 import com.easyink.wecom.domain.dto.AddWeMaterialDTO;
 import com.easyink.wecom.domain.dto.WeMediaDTO;
@@ -41,6 +40,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -99,7 +99,18 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
 
         // 添加客户回调处理
         try {
-            weCustomerService.updateExternalContactV2(corpId, message.getUserId(), message.getExternalUserId());
+            // 先查询数据库中是否已经存在此客户
+            List<String>  lossExternalUserId = new ArrayList<>();
+            LambdaQueryWrapper<WeFlowerCustomerRel> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.eq(WeFlowerCustomerRel::getCorpId, corpId);
+            queryWrapper.eq(WeFlowerCustomerRel::getUserId, message.getUserId());
+            weFlowerCustomerRelService.list(queryWrapper).forEach(item -> lossExternalUserId.add(item.getExternalUserid()));
+            // 若存在，则直接更新状态，不从远端获取信息
+            if (lossExternalUserId.contains(message.getExternalUserId())) {
+                weFlowerCustomerRelService.updateLossExternalUser(corpId, message.getUserId(), message.getExternalUserId());
+            } else {
+                weCustomerService.updateExternalContactV2(corpId, message.getUserId(), message.getExternalUserId());
+            }
         } catch (Exception e) {
             log.error("[{}]:回调处理,更新客户信息异常,message:{},e:{}", message.getChangeType(), message, ExceptionUtils.getStackTrace(e));
         }
@@ -338,22 +349,8 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
             if (CollectionUtils.isNotEmpty(tagList)) {
                 log.info("setEmplyCodeTag 员工活码 开始批量打标签！");
                 //查询这个tagId对应的groupId
-                List<String> tagIdList = tagList.stream().map(WeEmpleCodeTag::getTagId).collect(Collectors.toList());
-                List<WeTag> weTagList = weTagService.list(new LambdaQueryWrapper<WeTag>().in(WeTag::getTagId, tagIdList));
-                if (CollectionUtils.isEmpty(weTagList)) {
-                    log.warn("找不带tagId对应的groupId!! tagIdList={}", JSONObject.toJSONString(tagIdList));
-                    return;
-                }
-
-                WeMakeCustomerTagVO weMakeCustomerTag = new WeMakeCustomerTagVO();
-                weMakeCustomerTag.setUserId(weFlowerCustomerRel.getUserId());
-                weMakeCustomerTag.setExternalUserid(weFlowerCustomerRel.getExternalUserid());
-                weMakeCustomerTag.setAddTag(weTagList);
-                weMakeCustomerTag.setCorpId(weFlowerCustomerRel.getCorpId());
-
-                List<WeMakeCustomerTagVO> weMakeCustomerTagList = new ArrayList<>();
-                weMakeCustomerTagList.add(weMakeCustomerTag);
-                weCustomerService.batchMakeLabel(weMakeCustomerTagList);
+                List<String> tagIdList = tagList.stream().map(WeEmpleCodeTag::getTagId).filter(Objects::nonNull).collect(Collectors.toList());
+                weCustomerService.singleMarkLabel(weFlowerCustomerRel.getCorpId(), weFlowerCustomerRel.getUserId(), weFlowerCustomerRel.getExternalUserid(), tagIdList, null);
             }
         } catch (Exception e) {
             log.error("setEmplyCodeTag error!! empleCodeId={},e={}", empleCodeId, ExceptionUtils.getStackTrace(e));
@@ -389,7 +386,7 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
             if (messageMap.getMaterialList().size() > WeConstans.MAX_ATTACHMENT_NUM) {
                 throw new CustomException(ResultTip.TIP_ATTACHMENT_OVER);
             }
-            buildWeEmplyWelcomeMsg(messageMap.getScenario(), userId, state, corpId, weWelcomeMsgBuilder, messageMap.getMaterialList(), attachmentList);
+            buildWeEmplyWelcomeMsg(messageMap.getSource(), messageMap.getScenario(), userId, state, corpId, weWelcomeMsgBuilder, messageMap.getMaterialList(), attachmentList);
         }
 
         // 3.调用企业微信接口发送欢迎语
@@ -429,7 +426,7 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
     }
 
 
-    private void buildWeEmplyWelcomeMsg(String scenario, String userId, String state, String corpId, WeWelcomeMsg.WeWelcomeMsgBuilder builder, List<AddWeMaterialDTO> weMaterialList, List<Attachment> attachmentList) {
+    private void buildWeEmplyWelcomeMsg(Integer source, String scenario, String userId, String state, String corpId, WeWelcomeMsg.WeWelcomeMsgBuilder builder, List<AddWeMaterialDTO> weMaterialList, List<Attachment> attachmentList) {
         if (StringUtils.isBlank(corpId) || CollectionUtils.isEmpty(weMaterialList) || builder == null) {
             throw new CustomException(ResultTip.TIP_MISS_CORP_ID);
         }
@@ -440,7 +437,7 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
                 log.error("type is error!!!, type: {}", weMaterialVO.getMediaType());
                 continue;
             }
-            AttachmentParam param = AttachmentParam.costFromWeMaterialByType(scenario, userId, corpId, weMaterialVO, typeEnum);
+            AttachmentParam param = AttachmentParam.costFromWeMaterialByType(source, scenario, userId, corpId, weMaterialVO, typeEnum);
             attachments = attachmentService.buildAttachment(param, corpId);
 //            attachments = weMsgTlpMaterialService.buildByWelcomeMsgType(param.getContent(), param.getPicUrl(), param.getDescription(), param.getUrl(), typeEnum, corpId);
             if (attachments != null) {

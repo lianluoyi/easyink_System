@@ -41,7 +41,7 @@ public class FormOperRecordDetailVO {
      * {@link com.easyink.wecom.domain.enums.form.FormChannelEnum}
      */
     @ApiModelProperty("点击渠道")
-    @Excel(name = "点击渠道", sort = 3, readConverterExp="4=侧边栏,11=推广")
+    @Excel(name = "点击渠道", sort = 3, readConverterExp="1=员工活码,3=群发,4=侧边栏,5=欢迎语,6=客户SOP,7=群SOP,8=新客进群,9=群日历,11=推广")
     private Integer channelType;
 
     @ApiModelProperty("提交时间")

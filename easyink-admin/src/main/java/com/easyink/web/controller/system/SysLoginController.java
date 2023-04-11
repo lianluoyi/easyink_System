@@ -64,6 +64,12 @@ public class SysLoginController {
         return AjaxResult.success(new LoginResult(token));
     }
 
+    @ApiOperation("络客SRCM获取token")
+    @GetMapping("/lockToken")
+    public AjaxResult<LoginResult> lockToken(@RequestParam("corpId") String corpId, @RequestParam("userId") String userId) {
+        return AjaxResult.success(loginService.getLoginToken(corpId, userId));
+    }
+
     @ApiOperation("内部扫码登录")
     @GetMapping("/qrCodeLogin")
     public AjaxResult<LoginResult> qrCodeLogin(@ApiParam("扫码登录返回的授权码") @RequestParam("code") String code) {

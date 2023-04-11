@@ -18,7 +18,7 @@ public class FormSimpleInfoVO {
     /**
      * 表单id
      */
-    private Integer formId;
+    private String formId;
     /**
      * 表单头图
      */

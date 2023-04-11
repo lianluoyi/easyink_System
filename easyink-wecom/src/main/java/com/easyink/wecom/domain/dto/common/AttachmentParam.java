@@ -2,13 +2,17 @@ package com.easyink.wecom.domain.dto.common;
 
 import com.easyink.common.constant.radar.RadarConstants;
 import com.easyink.common.enums.AttachmentTypeEnum;
+import com.easyink.common.enums.EmployCodeSourceEnum;
+import com.easyink.common.enums.code.WelcomeMsgTypeEnum;
 import com.easyink.common.enums.radar.RadarChannelEnum;
 import com.easyink.common.utils.StringUtils;
 import com.easyink.common.utils.spring.SpringUtils;
 import com.easyink.wecom.domain.WeMaterial;
 import com.easyink.wecom.domain.WeMsgTlpMaterial;
 import com.easyink.wecom.domain.dto.message.Attachment;
+import com.easyink.wecom.domain.enums.form.FormChannelEnum;
 import com.easyink.wecom.service.radar.WeRadarService;
+import com.easyink.wecom.utils.ExtraMaterialUtils;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -49,7 +53,7 @@ public class AttachmentParam {
     /**
      * 将WeMsgTlpMaterial对象转化为该对象
      */
-    public static AttachmentParam costFromWeMsgTlpMaterial(Long radarId, String userId, String corpId, WeMsgTlpMaterial weMsgTlpMaterial, AttachmentTypeEnum typeEnum) {
+    public static AttachmentParam costFromWeMsgTlpMaterial(Long extraId, String userId, String corpId, WeMsgTlpMaterial weMsgTlpMaterial, AttachmentTypeEnum typeEnum) {
         if (weMsgTlpMaterial == null) {
             return null;
         }
@@ -57,7 +61,9 @@ public class AttachmentParam {
         BeanUtils.copyProperties(weMsgTlpMaterial, attachmentParam);
         attachmentParam.setTypeEnum(typeEnum);
         if (AttachmentTypeEnum.RADAR.equals(attachmentParam.getTypeEnum())) {
-            return buildRadarAttachment(radarId, RadarChannelEnum.WELCOME_MSG.getTYPE(), userId, corpId, RadarConstants.RadarCustomerClickRecord.COMMON_MSG);
+            return buildRadarAttachment(extraId, RadarChannelEnum.WELCOME_MSG.getTYPE(), userId, corpId, RadarConstants.RadarCustomerClickRecord.COMMON_MSG);
+        } else if(AttachmentTypeEnum.FORM.equals(attachmentParam.getTypeEnum())) {
+            return ExtraMaterialUtils.getFormAttachment(extraId, FormChannelEnum.WELCOME_MSG.getCode(), corpId, userId);
         }
         return attachmentParam;
     }
@@ -80,8 +86,8 @@ public class AttachmentParam {
     /**
      * 将WeMaterial对象转化为该对象
      */
-    public static AttachmentParam costFromWeMaterialByType(String scenario, String userId, String corpId, WeMaterial weMaterial, AttachmentTypeEnum typeEnum) {
-        if (weMaterial == null || typeEnum == null) {
+    public static AttachmentParam costFromWeMaterialByType(Integer source, String scenario, String userId, String corpId, WeMaterial weMaterial, AttachmentTypeEnum typeEnum) {
+        if (source == null || weMaterial == null || typeEnum == null) {
             return null;
         }
         AttachmentParam.AttachmentParamBuilder builder = AttachmentParam.builder();
@@ -95,7 +101,11 @@ public class AttachmentParam {
                         .description(weMaterial.getDigest())
                         .url(weMaterial.getMaterialUrl()).typeEnum(typeEnum).build();
             case RADAR:
-                return buildRadarAttachment(weMaterial.getRadarId(), RadarChannelEnum.EMPLE_CODE.getTYPE(), userId, corpId, scenario);
+                Integer radarChannelType = EmployCodeSourceEnum.NEW_GROUP.getSource().equals(source) ? RadarChannelEnum.NEW_IN_GROUP.getTYPE() : RadarChannelEnum.EMPLE_CODE.getTYPE();
+                return buildRadarAttachment(weMaterial.getExtraId(), radarChannelType, userId, corpId, scenario);
+            case FORM:
+                Integer formChannelType = EmployCodeSourceEnum.NEW_GROUP.getSource().equals(source) ? FormChannelEnum.NEW_IN_GROUP.getCode() : FormChannelEnum.EMPLE_CODE.getCode();
+                return ExtraMaterialUtils.getFormAttachment(weMaterial.getExtraId(), formChannelType, corpId, userId);
             case MINIPROGRAM:
                 return builder.content(weMaterial.getMaterialName())
                         .picUrl(weMaterial.getCoverUrl())
@@ -138,6 +148,8 @@ public class AttachmentParam {
                         .url(attachment.getLinkMessage().getUrl()).typeEnum(typeEnum).build();
             case RADAR:
                 return buildRadarAttachment(attachment.getRadarMessage().getRadarId(), RadarChannelEnum.GROUP_TASK.getTYPE(), sender, corpId, taskName);
+            case FORM:
+                return ExtraMaterialUtils.getFormAttachment(attachment.getFormMessage().getFormId(), FormChannelEnum.GROUP_TASK.getCode(), corpId, sender);
             case MINIPROGRAM:
                 return builder.picUrl(attachment.getMiniprogramMessage().getPicUrl())
                         .content(attachment.getMiniprogramMessage().getTitle())

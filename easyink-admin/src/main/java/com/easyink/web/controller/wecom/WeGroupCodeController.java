@@ -21,6 +21,7 @@ import com.easyink.wecom.service.WeCorpAccountService;
 import com.easyink.wecom.service.WeGroupCodeService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -192,6 +193,13 @@ public class WeGroupCodeController extends BaseController {
         }
         // 找不到可用的实际群活码也不要抛出错误，否则前端H5页面不好处理。
         return AjaxResult.success(ResultTip.TIP_NO_AVAILABLE_GROUP_CODE.getTipMsg());
+    }
+
+    @GetMapping("/appLink")
+    @ApiOperation("获取群活码小程序短链")
+    public AjaxResult getAppLink(@ApiParam("群活码id") Long id ){
+        return AjaxResult.success("success",groupCodeService.getCodeAppLink(id));
+
     }
 
 

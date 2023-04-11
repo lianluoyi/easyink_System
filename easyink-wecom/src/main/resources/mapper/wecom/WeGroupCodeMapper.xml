@@ -130,6 +130,7 @@
         w.`update_time`,
         w.`remark`,
         w.`create_type`,
+        w.`app_link`,
         IFNULL((SELECT count(1) FROM we_group_code_actual WHERE (SELECT IFNULL(scan_code_times, 0)) &lt;
         scan_code_times_limit AND group_code_id = w.`id` AND del_flag = 0), 0) AS available_codes,
         IFNULL((SELECT SUM( scan_code_times ) AS scan_times FROM we_group_code_actual WHERE group_code_id = w.`id` AND
@@ -231,6 +232,7 @@
             <if test="updateTime != null">update_time,</if>
             <if test="remark != null">remark,</if>
             <if test="createType != null">create_type,</if>
+            <if test="appLink !=null" >app_link,</if>
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             #{corpId},
@@ -251,6 +253,7 @@
             <if test="updateTime != null">#{updateTime},</if>
             <if test="remark != null">#{remark},</if>
             <if test="createType != null">#{createType},</if>
+            <if test="appLink !=null" >#{appLink},</if>
         </trim>
     </insert>
 
@@ -271,6 +274,7 @@
             <if test="updateTime != null">update_time = #{updateTime},</if>
             <if test="remark != null">remark = #{remark},</if>
             <if test="seq != null and seq != ''">seq = #{seq},</if>
+            <if test="appLink != null and appLink != ''" > app_link = #{appLink} ,</if>
         </trim>
         where id = #{id}
     </update>

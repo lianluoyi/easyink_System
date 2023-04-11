@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.easyink.wecom.mapper.WeLossTagMapper">
+
+    <!--  删除原有的流失标签  -->
+    <delete id="deleteWeLossTag">
+        DELETE FROM we_customer_loss_tag WHERE corp_id = #{corpId}
+    </delete>
+
+    <!--  新增流失标签  -->
+    <insert id="insertWeLossTag">
+        INSERT INTO we_customer_loss_tag (loss_tag_id, corp_id) VALUES
+        <foreach collection="lossTagIdList" item="lossTagId" separator="," >
+            (#{lossTagId},#{corpId})
+        </foreach>
+    </insert>
+
+    <!--  查询添加的流失标签  -->
+    <select id="selectLossWeTag" resultType="com.easyink.wecom.domain.WeTag">
+        SELECT wt.group_id, wt.tag_id, wt.name FROM we_tag wt LEFT JOIN we_customer_loss_tag wclt ON wclt.loss_tag_id = wt.tag_id WHERE wclt.corp_id = #{corpId} ORDER BY wt.seq_id
+    </select>
+
+</mapper>

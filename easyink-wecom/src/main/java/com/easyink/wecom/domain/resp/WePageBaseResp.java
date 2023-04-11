@@ -4,6 +4,7 @@ import com.easyink.wecom.domain.dto.WeResultDTO;
 import lombok.Data;
 
 import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -33,9 +34,10 @@ public abstract class WePageBaseResp<T> extends WeResultDTO {
     /**
      * 对返回的数据进行处理
      *
-     * @param corpId 企业ID
+     * @param corpId        企业ID
+     * @param userIdInDbMap 数据库中存在的员工userId
      */
-    public abstract void handleData(String corpId);
+    public abstract void handleData(String corpId, Map<String, String> userIdInDbMap);
 
 
 

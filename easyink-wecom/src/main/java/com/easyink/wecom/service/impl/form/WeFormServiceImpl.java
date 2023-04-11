@@ -5,17 +5,21 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.easyink.common.constant.GenConstants;
+import com.easyink.common.constant.WeConstans;
 import com.easyink.common.constant.form.FormConstants;
 import com.easyink.common.core.domain.model.LoginUser;
 import com.easyink.common.core.page.PageDomain;
 import com.easyink.common.core.page.TableSupport;
+import com.easyink.common.enums.AttachmentTypeEnum;
 import com.easyink.common.enums.DelFlag;
 import com.easyink.common.enums.ResultTip;
 import com.easyink.common.exception.CustomException;
 import com.easyink.common.service.QRCodeHandler;
-import com.easyink.common.shorturl.FormShortUrlAppendInfo;
+import com.easyink.common.shorturl.model.FormShortUrlAppendInfo;
 import com.easyink.common.utils.DateUtils;
 import com.easyink.common.utils.SnowFlakeUtil;
+import com.easyink.wecom.annotation.Convert2Cipher;
+import com.easyink.wecom.domain.dto.common.AttachmentParam;
 import com.easyink.wecom.domain.dto.form.*;
 import com.easyink.wecom.domain.entity.form.*;
 import com.easyink.wecom.domain.enums.form.DeadLineType;
@@ -27,9 +31,10 @@ import com.easyink.wecom.domain.model.form.WeFormModel;
 import com.easyink.wecom.domain.query.form.FormQuery;
 import com.easyink.wecom.domain.vo.autotag.TagInfoVO;
 import com.easyink.wecom.domain.vo.form.*;
+import com.easyink.wecom.handler.shorturl.FormShortUrlHandler;
+import com.easyink.wecom.handler.shorturl.RadarShortUrlHandler;
 import com.easyink.wecom.login.util.LoginTokenService;
 import com.easyink.wecom.mapper.form.WeFormMapper;
-import com.easyink.wecom.service.WeCustomerService;
 import com.easyink.wecom.service.WeTagService;
 import com.easyink.wecom.service.form.*;
 import com.easyink.wecom.service.wechatopen.WechatOpenService;
@@ -69,27 +74,25 @@ public class WeFormServiceImpl extends ServiceImpl<WeFormMapper, WeForm> impleme
     private final WeTagService tagService;
     private final WeFormOperRecordService weFormOperRecordService;
     private final WeFormMapper weFormMapper;
-    private final FormUrlHandler formUrlHandler;
+    private final FormShortUrlHandler formShortUrlHandler;
     private final WechatOpenService wechatOpenService;
     private final WeFormShortCodeRelService weFormShortCodeRelService;
     private final QRCodeHandler qrCodeHandler;
-    private final WeCustomerService weCustomerService;
 
     @Resource(name = "formTaskExecutor")
     private ThreadPoolTaskExecutor formTaskExecutor;
 
     @Lazy
-    public WeFormServiceImpl(WeFormAdvanceSettingService settingService, WeFormGroupService weFormGroupService, WeTagService tagService, WeFormOperRecordService weFormOperRecordService, WeFormMapper weFormMapper, FormUrlHandler formUrlHandler, WechatOpenService wechatOpenService, WeFormShortCodeRelService weFormShortCodeRelService, QRCodeHandler qrCodeHandler, WeCustomerService weCustomerService) {
+    public WeFormServiceImpl(WeFormAdvanceSettingService settingService, WeFormGroupService weFormGroupService, WeTagService tagService, WeFormOperRecordService weFormOperRecordService, WeFormMapper weFormMapper, FormShortUrlHandler formShortUrlHandler, WechatOpenService wechatOpenService, WeFormShortCodeRelService weFormShortCodeRelService, QRCodeHandler qrCodeHandler) {
         this.settingService = settingService;
         this.weFormGroupService = weFormGroupService;
         this.tagService = tagService;
         this.weFormOperRecordService = weFormOperRecordService;
         this.weFormMapper = weFormMapper;
-        this.formUrlHandler = formUrlHandler;
+        this.formShortUrlHandler = formShortUrlHandler;
         this.wechatOpenService = wechatOpenService;
         this.weFormShortCodeRelService = weFormShortCodeRelService;
         this.qrCodeHandler = qrCodeHandler;
-        this.weCustomerService = weCustomerService;
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -115,7 +118,7 @@ public class WeFormServiceImpl extends ServiceImpl<WeFormMapper, WeForm> impleme
     }
 
     @Override
-    public void deleteBatchForm(List<Integer> deleteIdList) {
+    public void deleteBatchForm(List<Long> deleteIdList) {
         if (CollectionUtils.isEmpty(deleteIdList)) {
             return;
         }
@@ -136,7 +139,7 @@ public class WeFormServiceImpl extends ServiceImpl<WeFormMapper, WeForm> impleme
 //        validFormNameUnique(null, addDTO.getForm().getFormName(), corpId);
 
         // 2.插入表单
-        Integer formId = this.saveFormReturnId(addDTO.getForm(), corpId);
+        Long formId = this.saveFormReturnId(addDTO.getForm(), corpId);
 
         // 2.插入表单设置
         FormSettingAddDTO formSetting = addDTO.getFormSetting();
@@ -180,7 +183,7 @@ public class WeFormServiceImpl extends ServiceImpl<WeFormMapper, WeForm> impleme
     }
 
     @Override
-    public Integer saveFormReturnId(FormAddDTO formDTO, String corpId) {
+    public Long saveFormReturnId(FormAddDTO formDTO, String corpId) {
         if (formDTO == null || StringUtils.isBlank(corpId)) {
             throw new CustomException(ResultTip.TIP_PARAM_MISSING);
         }
@@ -221,7 +224,7 @@ public class WeFormServiceImpl extends ServiceImpl<WeFormMapper, WeForm> impleme
 
     @Transactional(rollbackFor = Exception.class)
     @Override
-    public void deleteForm(List<Integer> idList, String corpId) {
+    public void deleteForm(List<Long> idList, String corpId) {
         if (StringUtils.isBlank(corpId)) {
             throw new CustomException(ResultTip.TIP_PARAM_MISSING);
         }
@@ -288,7 +291,7 @@ public class WeFormServiceImpl extends ServiceImpl<WeFormMapper, WeForm> impleme
     }
 
     @Override
-    public FormDetailViewVO getDetail(Integer id, String corpId) {
+    public FormDetailViewVO getDetail(Long id, String corpId) {
         try {
             // 响应超时时间
             int timeout = 5;
@@ -326,7 +329,7 @@ public class WeFormServiceImpl extends ServiceImpl<WeFormMapper, WeForm> impleme
 
         // 更新
         List<WeForm> updateList = new ArrayList<>();
-        for (Integer formId : batchDTO.getFormIdList()) {
+        for (Long formId : batchDTO.getFormIdList()) {
             WeForm weForm = new WeForm();
             weForm.setId(formId);
             weForm.setGroupId(batchDTO.getGroupId());
@@ -339,7 +342,7 @@ public class WeFormServiceImpl extends ServiceImpl<WeFormMapper, WeForm> impleme
     }
 
     @Override
-    public void enableForm(Integer id, Boolean enableFlag, String corpId) {
+    public void enableForm(Long id, Boolean enableFlag, String corpId) {
         if (StringUtils.isBlank(corpId)) {
             throw new CustomException(TIP_GENERAL_ERROR);
         }
@@ -367,7 +370,7 @@ public class WeFormServiceImpl extends ServiceImpl<WeFormMapper, WeForm> impleme
     }
 
     @Override
-    public FormTotalView totalView(Integer id, String corpId) {
+    public FormTotalView totalView(Long id, String corpId) {
         if (StringUtils.isBlank(corpId)) {
             throw new CustomException(TIP_GENERAL_ERROR);
         }
@@ -381,7 +384,7 @@ public class WeFormServiceImpl extends ServiceImpl<WeFormMapper, WeForm> impleme
     }
 
     @Override
-    public WeFormEditDetailVO getEditDetail(Integer id, String corpId) {
+    public WeFormEditDetailVO getEditDetail(Long id, String corpId) {
         if (StringUtils.isBlank(corpId)) {
             throw new CustomException(TIP_GENERAL_ERROR);
         }
@@ -431,7 +434,7 @@ public class WeFormServiceImpl extends ServiceImpl<WeFormMapper, WeForm> impleme
     }
 
     @Override
-    public String genFormUrl(Integer formId, String corpId, String userId, Integer channel) {
+    public String genFormUrl(Long formId, String corpId, String userId, Integer channel) {
         if (formId == null || channel == null || StringUtils.isAnyBlank(corpId, userId)) {
             log.info("[表单生成链接] 参数缺失 formId:{}, corpId:{}, userId:{}, channel:{}", formId, corpId, userId, FormChannelEnum.getByCode(channel).getDesc());
             return StringUtils.EMPTY;
@@ -446,7 +449,34 @@ public class WeFormServiceImpl extends ServiceImpl<WeFormMapper, WeForm> impleme
     }
 
     @Override
-    public String genShortUrl(String url, Integer formId, String corpId, String userId, Integer channel) {
+    @Convert2Cipher
+    public String sideBarGenFormUrl(Long formId, String userId, Integer channelType) {
+        return genFormUrl(formId, LoginTokenService.getLoginUser().getCorpId(), userId, channelType);
+    }
+
+
+    @Override
+    public AttachmentParam getFormAttachment(Long formId, String corpId, String userId, Integer channelType) {
+        log.info("【智能表单】 开始生成{}渠道表单附件, formId:{}, userId:{}, corpId:{}", FormChannelEnum.getByCode(channelType), formId, userId, corpId);
+        if (formId == null || StringUtils.isAnyBlank(corpId, userId)
+                || FormChannelEnum.UNKNOWN.equals(FormChannelEnum.getByCode(channelType))) {
+            return null;
+        }
+        WeForm weForm = this.baseMapper.selectById(formId);
+        if (weForm == null) {
+            return null;
+        }
+        AttachmentParam.AttachmentParamBuilder builder = AttachmentParam.builder();
+        final AttachmentParam build = builder.content(weForm.getFormName())
+                .picUrl(WeConstans.FORM_DEFAULT_ICON_URL)
+                .description(weForm.getDescription())
+                .url(genFormUrl(formId, corpId, userId, channelType)).typeEnum(AttachmentTypeEnum.LINK).build();
+        log.info("【智能表单】 {}渠道表单生成成功, formId:{}, userId:{}, corpId:{}", FormChannelEnum.getByCode(channelType), formId, userId, corpId);
+        return build;
+    }
+
+    @Override
+    public String genShortUrl(String url, Long formId, String corpId, String userId, Integer channel) {
         if (formId == null || channel == null || StringUtils.isAnyBlank(url, corpId, userId)) {
             log.info("[表单生成短链] 参数缺失 url:{}, formId:{}, corpId:{}, userId:{}, channel:{}", url, formId, corpId, userId, FormChannelEnum.getByCode(channel).getDesc());
             return null;
@@ -466,8 +496,14 @@ public class WeFormServiceImpl extends ServiceImpl<WeFormMapper, WeForm> impleme
             String domain = wechatOpenService.getDomain(corpId);
             return FormConstants.genShortUrl(domain, weFormShortCodeRel.getShortCode());
         }
-        FormShortUrlAppendInfo formShortUrlAppendInfo = formUrlHandler.buildAppendInfo(formId, userId, channel, setting.getWeChatPublicPlatform(), corpId);
-        return formUrlHandler.createFormUrl(setting.getWeChatPublicPlatform(), corpId, url, userId, formShortUrlAppendInfo);
+        FormShortUrlAppendInfo appendInfo = FormShortUrlAppendInfo.builder()
+                .formId(formId)
+                .userId(userId)
+                .channelType(channel)
+                .appId(setting.getWeChatPublicPlatform())
+                .corpId(corpId).build();
+
+        return formShortUrlHandler.createShortUrl(corpId, url, userId, appendInfo);
     }
 
     /**
@@ -522,7 +558,7 @@ public class WeFormServiceImpl extends ServiceImpl<WeFormMapper, WeForm> impleme
     }
 
     @Override
-    public FormContentVO getContent(Integer formId, String userId, String openId, Integer channelType) {
+    public FormContentVO getContent(Long formId, String userId, String openId, Integer channelType) {
         if (StringUtils.isAnyBlank(userId, openId) || formId == null || channelType == null) {
             log.error("[智能表单-H5获取表单内容] 参数缺失, userFormId：{}, userId:{}, openId:{}", formId, userId, openId);
             throw new CustomException(TIP_PARAM_MISSING);
@@ -609,7 +645,7 @@ public class WeFormServiceImpl extends ServiceImpl<WeFormMapper, WeForm> impleme
     }
 
     @Override
-    public PromotionalVO promotion(Integer formId, HttpServletResponse response) {
+    public PromotionalVO promotion(Long formId, HttpServletResponse response) {
         if (formId == null) {
             throw new CustomException(TIP_GET_FORM_ERROR);
         }

@@ -50,7 +50,7 @@ public interface WechatOpenClient {
      * @param req 请求{@link GenerateUrlLinkReq}
      * @return {@link GenerateUrlLinkResp }
      */
-    @Post("/wxa/generate_urllink")
+    @Post(url = "/wxa/generate_urllink" ,contentType = "application/json")
     GenerateUrlLinkResp generateUrlLink(@Body GenerateUrlLinkReq req);
 
     /**

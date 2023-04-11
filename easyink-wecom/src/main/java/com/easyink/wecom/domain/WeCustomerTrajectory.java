@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.easyink.common.constant.Constants;
+import com.easyink.wecom.annotation.Cipher;
 import com.easyink.wecom.domain.vo.sop.SopAttachmentVO;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.annotations.ApiModel;
@@ -52,6 +53,7 @@ public class WeCustomerTrajectory {
 
     @ApiModelProperty(value = "外部联系人id")
     @TableField("external_userid")
+    @Cipher(isExUserId = true)
     private String externalUserid;
 
     /**
@@ -84,6 +86,7 @@ public class WeCustomerTrajectory {
 
     @ApiModelProperty(value = "当前员工的id")
     @TableField("user_id")
+    @Cipher(isUserId = true)
     private String userId;
 
     @ApiModelProperty(value = "当前应用的id")

@@ -30,6 +30,10 @@
         </collection>
     </resultMap>
 
+    <delete id="deleteWeLossTag">
+        DELETE FROM we_customer_loss_tag WHERE corp_id = #{corpId}
+    </delete>
+
     <select id="listOfGroupId" resultType="com.easyink.wecom.domain.WeTag">
         select
         wt.tag_id ,
@@ -99,6 +103,13 @@
         group_name = VALUES(group_name),`status` = VALUES(`status`)
     </insert>
 
+    <insert id="insertWeLossTag">
+        INSERT INTO we_customer_loss_tag VALUES
+        <foreach collection="lossTagIdList" item="lossTagId" separator="," >
+            (null,#{lossTagId},#{corpId})
+        </foreach>
+    </insert>
+
 
     <select id="findCustomerTagByFlowerCustomerRelId" resultMap="WeTagGroupResult">
         SELECT wt.tag_id,
@@ -112,6 +123,5 @@
           and wtg.`status` = ${@com.easyink.common.constant.Constants@NORMAL_CODE}
           and wfctr.flower_customer_rel_id = #{flowerCustomerRelId}
     </select>
-
 
 </mapper>

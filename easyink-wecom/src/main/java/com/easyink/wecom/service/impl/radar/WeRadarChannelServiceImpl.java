@@ -5,7 +5,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.easyink.common.constant.radar.RadarConstants;
 import com.easyink.common.enums.radar.RadarChannelEnum;
 import com.easyink.common.exception.CustomException;
-import com.easyink.common.shorturl.RadarShortUrlAppendInfo;
+import com.easyink.common.shorturl.model.RadarShortUrlAppendInfo;
 import com.easyink.common.utils.DateUtils;
 import com.easyink.common.utils.bean.BeanUtils;
 import com.easyink.wecom.domain.dto.radar.DeleteRadarChannelDTO;
@@ -16,7 +16,7 @@ import com.easyink.wecom.domain.vo.radar.WeRadarChannelVO;
 import com.easyink.wecom.login.util.LoginTokenService;
 import com.easyink.wecom.mapper.radar.WeRadarChannelMapper;
 import com.easyink.wecom.mapper.radar.WeRadarMapper;
-import com.easyink.wecom.service.radar.RadarUrlHandler;
+import com.easyink.wecom.handler.shorturl.RadarShortUrlHandler;
 import com.easyink.wecom.service.radar.WeRadarChannelService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
@@ -37,12 +37,12 @@ import java.util.List;
 public class WeRadarChannelServiceImpl extends ServiceImpl<WeRadarChannelMapper, WeRadarChannel> implements WeRadarChannelService {
 
 
-    private final RadarUrlHandler radarUrlHandler;
+    private final RadarShortUrlHandler radarUrlHandler;
     private final WeRadarMapper weRadarMapper;
 
     @Autowired
     @Lazy
-    public WeRadarChannelServiceImpl(RadarUrlHandler radarUrlHandler, WeRadarMapper weRadarMapper) {
+    public WeRadarChannelServiceImpl(RadarShortUrlHandler radarUrlHandler, WeRadarMapper weRadarMapper) {
         this.radarUrlHandler = radarUrlHandler;
         this.weRadarMapper = weRadarMapper;
     }
@@ -61,8 +61,14 @@ public class WeRadarChannelServiceImpl extends ServiceImpl<WeRadarChannelMapper,
     public String createShortUrl(String corpId, Long radarId, String userName, Integer channelType, String detail) {
         //长链
         String url = weRadarMapper.getRadarUrl(radarId);
-        final RadarShortUrlAppendInfo shortUrlAppendInfo = radarUrlHandler.buildAppendInfo(radarId, userName, channelType, detail);
-        return radarUrlHandler.createRadarUrl(corpId, url, userName, shortUrlAppendInfo);
+        RadarShortUrlAppendInfo appendInfo = RadarShortUrlAppendInfo.builder()
+                .radarId(radarId)
+                .userId(userName)
+                .channelType(channelType)
+                .corpId(corpId)
+                .detail(detail)
+                .build();
+        return radarUrlHandler.createShortUrl(corpId, url, userName, appendInfo);
     }
 
     /**

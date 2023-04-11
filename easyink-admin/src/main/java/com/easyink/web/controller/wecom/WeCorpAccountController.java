@@ -14,6 +14,7 @@ import com.easyink.common.enums.ResultTip;
 import com.easyink.common.exception.CustomException;
 import com.easyink.common.exception.user.NoLoginTokenException;
 import com.easyink.common.exception.user.UserNoCorpException;
+import com.easyink.wecom.domain.vo.customerloss.CustomerLossSwitchVO;
 import com.easyink.wecom.login.util.LoginTokenService;
 import com.easyink.wecom.service.WeAuthCorpInfoExtendService;
 import com.easyink.wecom.service.WeCorpAccountService;
@@ -119,18 +120,25 @@ public class WeCorpAccountController extends BaseController {
     @Log(title = "客户流失通知开关", businessType = BusinessType.UPDATE)
     @PutMapping("/startCustomerChurnNoticeSwitch/{status}")
     @ApiOperation("客户流失通知开关")
+    @Deprecated
     public AjaxResult<WeCorpAccount> startCustomerChurnNoticeSwitch(@PathVariable String status) {
         weCorpAccountService.startCustomerChurnNoticeSwitch(LoginTokenService.getLoginUser().getCorpId(), status);
         return AjaxResult.success();
     }
-
-
     //   @PreAuthorize("@ss.hasPermi('wechat:corp:getCustomerChurnNoticeSwitch')")
     @Log(title = "客户流失通知开关查询", businessType = BusinessType.OTHER)
     @GetMapping("/getCustomerChurnNoticeSwitch")
     @ApiOperation("客户流失通知开关查询")
+    @Deprecated
     public AjaxResult<String> getCustomerChurnNoticeSwitch() {
         return AjaxResult.success("操作成功", weCorpAccountService.getCustomerChurnNoticeSwitch(LoginTokenService.getLoginUser().getCorpId()));
+    }
+
+    @Log(title = "流失设置开关查询", businessType = BusinessType.OTHER)
+    @GetMapping("/getCustomerLossSwitch")
+    @ApiOperation("流失设置开关查询")
+    public AjaxResult<CustomerLossSwitchVO> getCustomerChurnSwitch() {
+        return AjaxResult.success("操作成功", weCorpAccountService.getCustomerLossSwitch(LoginTokenService.getLoginUser().getCorpId()));
     }
 
     @GetMapping("/getChatPublicKey")

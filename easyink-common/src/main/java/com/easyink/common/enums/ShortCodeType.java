@@ -1,8 +1,8 @@
 package com.easyink.common.enums;
 
 import com.easyink.common.enums.wechatopen.WechatOpenEnum;
-import com.easyink.common.shorturl.FormShortUrlAppendInfo;
-import com.easyink.common.shorturl.RadarShortUrlAppendInfo;
+import com.easyink.common.shorturl.model.FormShortUrlAppendInfo;
+import com.easyink.common.shorturl.model.RadarShortUrlAppendInfo;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 

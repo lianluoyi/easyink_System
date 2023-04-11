@@ -103,7 +103,7 @@ public class WeAutoTagRuleHitCustomerRecordServiceImpl extends ServiceImpl<WeAut
                 getAvailableSceneIdListFromRuleIdListGroupByRuleId(availableRuleIdList);
         List<WeAutoTagRuleHitCustomerRecord> batchAddRecordList = new ArrayList<>();
         List<WeAutoTagRuleHitCustomerRecordTagRel> batchAddTagRelList = new ArrayList<>();
-        List<WeTag> allTagList = new ArrayList<>();
+        List<String> allTagIdList = new ArrayList<>();
         Date date = new Date();
         for (Map.Entry<Long, List<Long>> sceneEntry : availableSceneIdListGroupByRuleIdMap.entrySet()) {
             Long ruleId = sceneEntry.getKey();
@@ -113,7 +113,7 @@ public class WeAutoTagRuleHitCustomerRecordServiceImpl extends ServiceImpl<WeAut
             batchAddRecordList.add(new WeAutoTagRuleHitCustomerRecord(ruleId, corpId, customerId, userId, date));
             // 组装标签记录数据
             List<WeTag> tagList = weAutoTagCustomerSceneTagRelService.getTagListBySceneIdList(sceneIdList);
-            allTagList.addAll(tagList);
+            allTagIdList.addAll(tagList.stream().map(WeTag::getTagId).collect(Collectors.toList()));
             List<WeAutoTagRuleHitCustomerRecordTagRel> tagRelList = weAutoTagRuleHitCustomerRecordTagRelService.buildTagRecord(ruleId, customerId, userId, tagList);
             batchAddTagRelList.addAll(tagRelList);
         }
@@ -127,10 +127,9 @@ public class WeAutoTagRuleHitCustomerRecordServiceImpl extends ServiceImpl<WeAut
         }
 
         // 5.调用接口打标签
-        if (CollectionUtils.isNotEmpty(allTagList)) {
-            log.info(">>>>>>>>>>>>>>>准备进行打标签,标签列表: {}", allTagList.stream().map(WeTag::getTagId).collect(Collectors.toList()));
-            WeMakeCustomerTagVO weMakeCustomerTagVO = new WeMakeCustomerTagVO(customerId, userId, allTagList, corpId);
-            weCustomerService.batchMakeLabel(Collections.singletonList(weMakeCustomerTagVO), userId);
+        if (CollectionUtils.isNotEmpty(allTagIdList)) {
+            log.info(">>>>>>>>>>>>>>>准备进行打标签,标签列表: {}", allTagIdList);
+            weCustomerService.singleMarkLabel(corpId, userId, customerId, allTagIdList, userId);
         }
 
 

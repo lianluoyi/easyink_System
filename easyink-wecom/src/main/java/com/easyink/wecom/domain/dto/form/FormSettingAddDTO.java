@@ -109,7 +109,7 @@ public class FormSettingAddDTO {
      * @param formId 表单id
      * @return WeFormAdvanceSetting
      */
-    public WeFormAdvanceSetting toEntity(Integer formId) {
+    public WeFormAdvanceSetting toEntity(Long formId) {
         WeFormAdvanceSetting setting = new WeFormAdvanceSetting();
 
         setting.setFormId(formId);

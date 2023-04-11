@@ -33,7 +33,7 @@ public interface WeFormOperRecordMapper extends BaseMapper<WeFormOperRecord> {
      * @param channelType   渠道类型 {@link com.easyink.wecom.domain.enums.form.FormChannelEnum}
      * @return {@link FormCustomerOperRecordVO}
      */
-    List<FormCustomerOperRecordVO> getCustomerOperRecord(@Param("formId") Integer formId,
+    List<FormCustomerOperRecordVO> getCustomerOperRecord(@Param("formId") Long formId,
                                                    @Param("clickTimeFlag") Boolean clickTimeFlag,
                                                    @Param("beginTime") Date beginTime,
                                                    @Param("endTime") Date endTime,
@@ -51,7 +51,7 @@ public interface WeFormOperRecordMapper extends BaseMapper<WeFormOperRecord> {
      * @param userName      员工名称
      * @return  {@link FormUserSendRecordVO}
      */
-    List<FormUserSendRecordVO> getUserSendRecord(@Param("formId") Integer formId,
+    List<FormUserSendRecordVO> getUserSendRecord(@Param("formId") Long formId,
                                                  @Param("corpId") String corpId,
                                                  @Param("clickTimeFlag") Boolean clickTimeFlag,
                                                  @Param("beginTime") Date beginTime,
@@ -65,7 +65,7 @@ public interface WeFormOperRecordMapper extends BaseMapper<WeFormOperRecord> {
      * @param corpId 企业id
      * @return
      */
-    List<FormOperRecordDetailVO> getFormResult(@Param("formId") Integer formId, @Param("corpId") String corpId);
+    List<FormOperRecordDetailVO> getFormResult(@Param("formId") Long formId, @Param("corpId") String corpId);
 
 
 
@@ -81,7 +81,7 @@ public interface WeFormOperRecordMapper extends BaseMapper<WeFormOperRecord> {
      * @param customerName  客户名称
      * @return
      */
-    List<FormCustomerOperRecordExportVO> exportCustomerOperRecord(@Param("formId") Integer formId,
+    List<FormCustomerOperRecordExportVO> exportCustomerOperRecord(@Param("formId") Long formId,
                                                                   @Param("corpId") String corpId,
                                                                   @Param("channelType")Integer channelType,
                                                                   @Param("clickTimeFlag") Boolean clickTimeFlag,

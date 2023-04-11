@@ -701,6 +701,25 @@ public class WeAutoConfigServiceImpl implements WeAutoConfigService {
         //4.配置聊天工具栏
         log.info("开始配置侧边栏");
         setSidebarConfig(autoConfigDTO.getSidebarDomain(), appId, weCorpAccount.getCorpId(), autoConfigDTO.getQrcodeKey());
+        // 5.配置可信IP
+        log.info("开始配置可信IP,corpId:{},可信IP:{}",weCorpAccount.getCorpId(),autoConfigDTO.getIpList());
+        setTrustedIp(autoConfigDTO, appId);
+    }
+
+    /**
+     * 企业可信IP配置
+     * @param autoConfigDTO 自动配置DTO
+     * @param appId 应用ID
+     */
+    private void setTrustedIp(AutoConfigDTO autoConfigDTO, String appId) {
+        if (StringUtils.isBlank(autoConfigDTO.getIpList())) {
+            throw new WeComException("可信IP不存在");
+        }
+        BaseAdminResult setIpResult = weAdminClient.saveIp(autoConfigDTO.getQrcodeKey(), appId, autoConfigDTO.getIpList());
+        if (setIpResult.getResult() != null && setIpResult.getResult().getErrCode() < 0) {
+            log.error("可信IP设置失败;{}", setIpResult.getResult());
+            throw new CustomException(ResultTip.TIP_ILLEGAL_TRUSTEDIP);
+        }
     }
 
     /**

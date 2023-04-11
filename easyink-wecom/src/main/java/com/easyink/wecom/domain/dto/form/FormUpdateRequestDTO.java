@@ -24,7 +24,7 @@ public class FormUpdateRequestDTO extends FormAddRequestDTO {
      * 表单id
      */
     @NotNull(message = "请选择需要修改的表单")
-    private Integer id;
+    private Long id;
 
     @Override
     public void valid() {

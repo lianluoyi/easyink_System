@@ -31,6 +31,7 @@ import com.easyink.wecom.domain.vo.sop.DepartmentVO;
 import com.easyink.wecom.mapper.WeCustomerMessageTimeTaskMapper;
 import com.easyink.wecom.service.*;
 import com.easyink.wecom.service.radar.WeRadarService;
+import com.easyink.wecom.utils.ExtraMaterialUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
@@ -433,6 +434,9 @@ public class WeCustomerMessagePushServiceImpl implements WeCustomerMessagePushSe
                 if (GroupMessageType.RADAR.getType().equals(item.getMsgtype())) {
                     item.getRadarMessage().setRadar(SpringUtils.getBean(WeRadarService.class).getRadar(timeTask.getMessageInfo().getCorpId(), item.getRadarMessage().getRadarId()));
                 }
+                if (GroupMessageType.FORM.getType().equals(item.getMsgtype())) {
+                    item.getFormMessage().setForm(ExtraMaterialUtils.getForm(item.getFormMessage().getFormId()));
+                }
             });
         }
         return timeTask;
@@ -457,6 +461,7 @@ public class WeCustomerMessagePushServiceImpl implements WeCustomerMessagePushSe
             //从redis中读取数据
             WeCustomerPushMessageDTO weCustomer = new WeCustomerPushMessageDTO();
             weCustomer.setCorpId(corpId);
+            weCustomer.setUserIds(staffId);
             weCustomer.setPushRange(pushRange);
             return weCustomerService.selectWeCustomerListNoRel(weCustomer);
         } else {
@@ -467,7 +472,7 @@ public class WeCustomerMessagePushServiceImpl implements WeCustomerMessagePushSe
             weCustomer.setCorpId(corpId);
             weCustomer.setTagIds(tag);
             weCustomer.setFilterTags(filterTags);
-            weCustomer.setGender(gender);
+            weCustomer.setGender(String.valueOf(gender));
             weCustomer.setCustomerStartTime(startTime);
             weCustomer.setCustomerEndTime(endTime);
             weCustomer.setPushRange(pushRange);
@@ -515,11 +520,20 @@ public class WeCustomerMessagePushServiceImpl implements WeCustomerMessagePushSe
                 linkMessage.setDesc(customerSeedMessage.getLinDesc());
                 linkMessage.setPicurl(customerSeedMessage.getPicUrl());
                 attachment.setLinkMessage(linkMessage);
-            } else if (GroupMessageType.RADAR.getType().equals(msgtype)) {
+            }
+            // 雷达
+            else if (GroupMessageType.RADAR.getType().equals(msgtype)) {
                 RadarMessageDTO radarMessage = new RadarMessageDTO();
-                radarMessage.setRadarId(customerSeedMessage.getRadarId());
+                radarMessage.setRadarId(customerSeedMessage.getExtraId());
                 radarMessage.setRadar(SpringUtils.getBean(WeRadarService.class).getRadar(customerMessagePushDTO.getCorpId(), radarMessage.getRadarId()));
                 attachment.setRadarMessage(radarMessage);
+            }
+            // 表单
+            else if (GroupMessageType.FORM.getType().equals(msgtype)) {
+                FormMessageDTO formMessage = new FormMessageDTO();
+                formMessage.setFormId(customerSeedMessage.getExtraId());
+                formMessage.setForm(ExtraMaterialUtils.getForm(customerSeedMessage.getExtraId()));
+                attachment.setFormMessage(formMessage);
             }
             //视频
             else if (GroupMessageType.VIDEO.getType().equals(msgtype)) {
