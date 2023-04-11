@@ -45,6 +45,15 @@ public class WeMaterialVO {
     private String digest;
 
     /**
+     * 小程序账号原始id，小程序专用
+     */
+    private String accountOriginalId;
+
+    /**
+     * 小程序appId，小程序专用
+     */
+    private String appid;
+    /**
      * 封面本地资源文件
      */
     private String coverUrl;
@@ -97,8 +106,8 @@ public class WeMaterialVO {
 
     private String tagIds;
 
-    @ApiModelProperty("保存雷达时使用")
-    private Long radarId;
+    @ApiModelProperty("其他id, 素材类型为雷达时存储雷达id，为智能表单时为存储表单id")
+    private Long extraId;
 
     @ApiModelProperty("链接时使用(0,不转化为雷达，1：转化为雷达)")
     private Boolean enableConvertRadar;

@@ -116,14 +116,17 @@ public class WeMaterialServiceImpl implements WeMaterialService {
      * @param weMaterial weMaterial
      */
     private void validWeMaterialParam(WeMaterial weMaterial, Integer mediaType) {
+        // 如果是额外的素材 如雷达、表单 则不需要设置materialUrl 和 materialName
+        boolean isExistMaterialBaseInfo = (WeCategoryMediaTypeEnum.FORM.getMediaType().equals(mediaType) || WeCategoryMediaTypeEnum.RADAR.getMediaType().equals(mediaType))
+                || !StringUtils.isAnyBlank(weMaterial.getMaterialName(), weMaterial.getMaterialUrl());
         if (weMaterial.getCategoryId() == null || mediaType == null
-                || StringUtils.isBlank(weMaterial.getMaterialName()) || StringUtils.isBlank(weMaterial.getMaterialUrl())) {
+                || !isExistMaterialBaseInfo) {
             throw new CustomException(ResultTip.TIP_GENERAL_BAD_REQUEST);
         }
 
         //小程序需增加校验
         if (WeCategoryMediaTypeEnum.MINI_APP.getMediaType().equals(mediaType)
-                && (StringUtils.isBlank(weMaterial.getContent()) || StringUtils.isBlank(weMaterial.getCoverUrl()))) {
+                && (StringUtils.isAnyBlank(weMaterial.getAppid(), weMaterial.getCoverUrl(), weMaterial.getAccountOriginalId()))) {
             throw new CustomException(ResultTip.TIP_GENERAL_BAD_REQUEST);
         }
         //校验过期时间

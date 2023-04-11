@@ -48,9 +48,8 @@ public interface WeCustomerTrajectoryService extends IService<WeCustomerTrajecto
      * @param userId         跟进人userID
      * @param externalUserId 客户id
      * @param updateBy       更新人
-     * @param editTags       {@link List<WeTag>}
      */
-    void recordEditTagOperation(String corpId, String userId, String externalUserId, String updateBy, List<WeTag> editTags);
+    void recordEditTagOperation(String corpId, String userId, String externalUserId, String updateBy);
 
 
     /**

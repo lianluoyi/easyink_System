@@ -46,6 +46,13 @@
         <if test="userId!=null and userId!=''">
             AND user_id = #{userId}
         </if>
+        <if test="userIdList != null and userIdList.size() != 0 ">
+            AND user_id IN(
+            <foreach collection="userIdList" item="item" separator=",">
+                #{item}
+            </foreach>
+            )
+        </if>
         <if test="beginTime!=null and beginTime!=''">
             AND `time` &gt;= #{beginTime}
         </if>

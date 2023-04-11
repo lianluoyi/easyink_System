@@ -13,6 +13,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 类名: 查询客户接替状态响应实体
@@ -53,7 +54,7 @@ public class TransferResultResp extends WePageBaseResp<TransferResultResp.Result
     }
 
     @Override
-    public void handleData(String corpId) {
+    public void handleData(String corpId, Map<String, String> userIdInDbMap) {
 
     }
 

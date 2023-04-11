@@ -2,8 +2,10 @@ package com.easyink.wecom.listener;
 
 
 import cn.hutool.core.util.ArrayUtil;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.easyink.common.constant.RedisKeyConstants;
 import com.easyink.common.constant.WeConstans;
+import com.easyink.common.core.domain.wecom.WeUser;
 import com.easyink.wecom.client.WeExternalContactClient;
 import com.easyink.wecom.domain.dto.WeExternalContactDTO;
 import com.easyink.wecom.service.WeUserService;
@@ -14,6 +16,10 @@ import org.springframework.data.redis.connection.Message;
 import org.springframework.data.redis.listener.KeyExpirationEventMessageListener;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * @author admin
@@ -73,7 +79,9 @@ public class EmpleCodeExpiredListener extends KeyExpirationEventMessageListener 
                 String corpId = arr[corpIdIndex];
                 if (StringUtils.isNotBlank(corpId)) {
                     // 同步对应公司id的离职员工
-                    weUserService.syncWeLeaveUserV2(corpId);
+                    Map<String, String> userIdInDbMap = weUserService.list(new LambdaQueryWrapper<WeUser>().select(WeUser::getUserId).eq(WeUser::getCorpId, corpId))
+                            .stream().collect(Collectors.toMap(WeUser::getUserId, WeUser::getUserId));
+                    weUserService.syncWeLeaveUserV2(corpId, userIdInDbMap);
                 }
             }
         }

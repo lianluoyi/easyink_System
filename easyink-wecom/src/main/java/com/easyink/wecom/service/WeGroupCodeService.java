@@ -110,9 +110,16 @@ public interface WeGroupCodeService extends IService<WeGroupCode> {
     /**
      * 获取可用的企业微信实际码
      *
-     * @param id 客户群id
+     * @param id        客户群id
      * @param groupCode
      */
     GroupCodeActivityFirstVO doGetActual(Long id, WeGroupCode groupCode);
 
+    /**
+     * 获取活码小程序短链
+     *
+     * @param id 群活码id
+     * @return 短链
+     */
+    String getCodeAppLink(Long id);
 }

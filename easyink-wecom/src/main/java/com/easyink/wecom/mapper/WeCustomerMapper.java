@@ -1,10 +1,12 @@
 package com.easyink.wecom.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.easyink.common.core.domain.wecom.BaseExtendPropertyRel;
 import com.easyink.wecom.domain.WeCustomer;
 import com.easyink.wecom.domain.WeCustomerPortrait;
 import com.easyink.wecom.domain.WeCustomerSocialConn;
 import com.easyink.wecom.domain.dto.WeCustomerPushMessageDTO;
+import com.easyink.wecom.domain.dto.WeCustomerSearchDTO;
 import com.easyink.wecom.domain.vo.WeCustomerNameAndUserIdVO;
 import com.easyink.wecom.domain.vo.customer.WeCustomerUserListVO;
 import com.easyink.wecom.domain.vo.customer.WeCustomerVO;
@@ -147,6 +149,30 @@ public interface WeCustomerMapper extends BaseMapper<WeCustomer> {
      * @return 客户列表
      */
     List<WeCustomerVO> selectWeCustomerListV2(WeCustomer weCustomer);
+
+    /**
+     * 筛选获取类型为单行文本与多行文本的用户自定义属性
+     *
+     * @param list
+     * @return
+     */
+    List<BaseExtendPropertyRel> selectTypeOneLine(List<BaseExtendPropertyRel> list);
+
+    /**
+     * 筛选获取类型为单选与多选的用户自定义属性
+     *
+     * @param list
+     * @return
+     */
+    List<BaseExtendPropertyRel> selectTypeMultiple(List<BaseExtendPropertyRel> list);
+
+    /**
+     * 筛选获取类型为时间的用户自定义属性
+     *
+     * @param list
+     * @return
+     */
+    List<BaseExtendPropertyRel> selectTypeTime(List<BaseExtendPropertyRel> list);
 
     /**
      * 查询去重客户去重后企业微信客户列表

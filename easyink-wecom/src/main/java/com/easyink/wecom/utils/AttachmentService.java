@@ -42,6 +42,7 @@ public class AttachmentService {
             case LINK:
                 return buildLink(param.getContent(), param.getPicUrl(), param.getDescription(), param.getUrl(), param.getTypeEnum());
             case RADAR:
+            case FORM:
                 return buildRadar(param.getContent(), param.getPicUrl(), param.getDescription(), param.getUrl(), param.getTypeEnum());
             case MINIPROGRAM:
                 return buildMiniprogram(param.getContent(), param.getPicUrl(), param.getDescription(), param.getUrl(), param.getTypeEnum(), corpId);

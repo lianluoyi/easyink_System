@@ -17,6 +17,7 @@ import com.easyink.wecom.domain.WeTag;
 import com.easyink.wecom.domain.WeTagGroup;
 import com.easyink.wecom.domain.dto.WeResultDTO;
 import com.easyink.wecom.domain.dto.tag.*;
+import com.easyink.wecom.domain.vo.customerloss.CustomerLossTagVO;
 import com.easyink.wecom.mapper.WeTagGroupMapper;
 import com.easyink.wecom.service.WeTagGroupService;
 import com.easyink.wecom.service.WeTagService;

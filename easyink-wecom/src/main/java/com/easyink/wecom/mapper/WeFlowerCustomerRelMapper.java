@@ -97,4 +97,14 @@ public interface WeFlowerCustomerRelMapper extends BaseMapper<WeFlowerCustomerRe
                                                  @Param("corpId") String corpId,
                                                  @Param("beginTime") String beginTime,
                                                  @Param("endTime") String endTime);
+
+    /**
+     * 更新已流失重新添加回来的客户状态
+     *
+     * @param corpId 企业ID
+     * @param userId 员工ID
+     * @param external_userid 外部联系人ID
+     * @return 结果
+     */
+    Integer updateLossExternalUser(@Param("corpId") String corpId, @Param("userId") String userId, @Param("external_userid") String external_userid);
 }

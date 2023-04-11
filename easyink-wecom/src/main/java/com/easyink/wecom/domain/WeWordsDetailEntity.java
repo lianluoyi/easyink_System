@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import com.easyink.common.constant.WeConstans;
 import com.easyink.common.enums.GroupMessageType;
 import com.easyink.common.utils.spring.SpringUtils;
+import com.easyink.wecom.domain.entity.form.WeFormMaterial;
 import com.easyink.wecom.domain.vo.radar.WeRadarVO;
 import com.easyink.wecom.service.WeCustomerMessageService;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -80,6 +81,15 @@ public class WeWordsDetailEntity {
     @ApiModelProperty(value = "封面")
     @TableField("cover_url")
     private String coverUrl;
+
+    @ApiModelProperty(value = "小程序账号原始id，小程序专用")
+    @TableField("account_original_id")
+    private String accountOriginalId;
+
+    @ApiModelProperty(value = "小程序appId，小程序专用")
+    @TableField("appid")
+    private String appid;
+
     /**
      * 链接时使用：0 默认，1 自定义
      */
@@ -95,13 +105,17 @@ public class WeWordsDetailEntity {
     @TableField(exist = false)
     private String mediaid;
 
-    @ApiModelProperty("雷达id")
-    @TableField("radar_id")
-    private Long radarId;
+    @ApiModelProperty("其他id, 素材类型为雷达时存储雷达id，为智能表单时为存储表单id")
+    @TableField("extra_id")
+    private Long extraId;
 
     @ApiModelProperty("雷达VO")
     @TableField(exist = false)
     private WeRadarVO radar;
+
+    @ApiModelProperty("表单素材")
+    @TableField(exist = false)
+    private WeFormMaterial form;
 
     public WeWordsDetailEntity(String corpId, Integer mediaType, String content) {
         this.corpId = corpId;

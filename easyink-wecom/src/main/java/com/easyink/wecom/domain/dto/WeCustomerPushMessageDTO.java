@@ -21,8 +21,7 @@ import java.util.Date;
 @AllArgsConstructor
 @NoArgsConstructor
 public class WeCustomerPushMessageDTO extends WeCustomer {
-    @ApiModelProperty(value = "外部联系人性别 -1全部 0-未知 1-男性 2-女性")
-    private Integer gender;
+
     private String filterTags;
     @ApiModelProperty("开始时间")
     private Date customerStartTime;

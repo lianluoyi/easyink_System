@@ -17,6 +17,9 @@ public class MiniprogramMessageDTO {
     @ApiModelProperty("小程序appid，必须是关联到企业的小程序应用")
     private String appid;
 
+    @ApiModelProperty(value = "小程序账号原始id，必须是关联到企业的小程序应用")
+    private String accountOriginalId;
+
     @ApiModelProperty("小程序page路径")
     private String page;
 

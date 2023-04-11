@@ -28,7 +28,7 @@ public class WeFormUseRecord {
     /**
      * 表单id
      */
-    private Integer formId;
+    private Long formId;
     /**
      * 员工id
      */

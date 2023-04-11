@@ -50,7 +50,8 @@
             create_by,
             create_time,
             update_by,
-            update_time
+            update_time,
+            extra_id
         FROM
             we_customer_seedmessage
         WHERE

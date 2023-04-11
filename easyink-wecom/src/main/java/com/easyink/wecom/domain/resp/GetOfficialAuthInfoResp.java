@@ -23,4 +23,9 @@ public class GetOfficialAuthInfoResp extends WechatOpenBaseResp {
      */
     private String access_token;
 
+    /**
+     * 是否是快照页 1：为快照页
+     */
+    private String is_snapshotuser;
+
 }

@@ -7,6 +7,8 @@ import com.easyink.common.core.domain.AjaxResult;
 import com.easyink.common.core.page.TableDataInfo;
 import com.easyink.common.enums.BusinessType;
 import com.easyink.common.enums.radar.RadarChannelEnum;
+import com.easyink.common.utils.ServletUtils;
+import com.easyink.common.utils.ip.IpUtils;
 import com.easyink.wecom.domain.dto.common.AttachmentParam;
 import com.easyink.wecom.domain.dto.radar.DeleteRadarDTO;
 import com.easyink.wecom.domain.dto.radar.GetRadarShortUrlDTO;
@@ -17,6 +19,9 @@ import com.easyink.wecom.login.util.LoginTokenService;
 import com.easyink.wecom.service.radar.WeRadarService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -33,6 +38,7 @@ import java.util.List;
 @Api(tags = "雷达Controller")
 @RestController
 @RequestMapping("/wecom/radar")
+@Slf4j
 public class WeRadarController extends BaseController {
 
     private final WeRadarService weRadarService;
@@ -93,5 +99,24 @@ public class WeRadarController extends BaseController {
         String corpId = LoginTokenService.getLoginUser().getCorpId();
         return AjaxResult.success(weRadarService.getRadarShortUrl(radarShortUrlDTO.getRadarId(), RadarChannelEnum.SIDE_BAR.getTYPE(), radarShortUrlDTO.getUserId(), corpId, RadarConstants.RadarCustomerClickRecord.EMPTY_SCENARIO));
     }
+
+    @GetMapping("/clickRadar")
+    @ApiOperation("根据短链记录雷达点击记录")
+    public AjaxResult radar(@ApiParam("短链后缀的code") String shortCode, @ApiParam("用户的公众号openid") String openId) {
+        String serverIp = "";
+        try {
+            serverIp = IpUtils.getOutIp();
+        } catch (Exception e) {
+            log.error("[雷达]获取服务器ip异常.e:{}", ExceptionUtils.getStackTrace(e));
+        }
+        String ip = IpUtils.getIpAddr(ServletUtils.getRequest());
+        log.info("[雷达]有人点击了短链,shortCode:{},openId:{},ip:{},serverIp:{}", shortCode, openId, ip, serverIp);
+        if (serverIp.equals(ip)) {
+            log.info("[雷达]ip与服务器ip一样,不处理,ip:{}", ip);
+            return AjaxResult.success();
+        }
+        return AjaxResult.success("success", weRadarService.recordRadar(shortCode, openId));
+    }
+
 
 }

@@ -22,7 +22,7 @@ public class WeFormAdvanceSetting {
      * 关联表单id
      */
     @TableId(type = IdType.INPUT)
-    private Integer formId;
+    private Long formId;
     /**
      * 截止时间类型(1: 永久有效 2:自定义日期)
      */

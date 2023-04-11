@@ -28,6 +28,15 @@ public interface WeRadarService extends IService<WeRadar> {
     void saveRadar(RadarDTO radarDTO);
 
     /**
+     * 根据短链code 记录客户点击操作
+     *
+     * @param shortCode 短链code
+     * @param openId    公众号openid
+     * @return 原链接
+     */
+    String recordRadar(String shortCode, String openId);
+
+    /**
      * 查询雷达列表
      *
      * @param radarDTO
@@ -65,7 +74,7 @@ public interface WeRadarService extends IService<WeRadar> {
      * @param id 雷达id
      * @return 需要打上的标签列表
      */
-    List<WeTag> getTagListByRadarId(Long id);
+    List<String> getTagListByRadarId(Long id);
 
     /**
      * 发送客户时生成雷达短链

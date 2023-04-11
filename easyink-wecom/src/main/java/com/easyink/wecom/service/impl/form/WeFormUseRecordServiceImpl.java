@@ -3,6 +3,7 @@ package com.easyink.wecom.service.impl.form;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.easyink.common.enums.ResultTip;
 import com.easyink.common.exception.CustomException;
+import com.easyink.wecom.annotation.Convert2Cipher;
 import com.easyink.wecom.domain.entity.form.WeFormUseRecord;
 import com.easyink.wecom.domain.query.form.FormQuery;
 import com.easyink.wecom.domain.vo.form.FormSimpleInfoVO;
@@ -71,7 +72,8 @@ public class WeFormUseRecordServiceImpl extends ServiceImpl<WeFormUseRecordMappe
     }
 
     @Override
-    public void saveRecord(Integer formId, String userId, String externalUserId, String corpId) {
+    @Convert2Cipher
+    public void saveRecord(Long formId, String userId, String externalUserId, String corpId) {
         if (formId == null || StringUtils.isAnyBlank(userId, externalUserId, corpId)) {
             throw new CustomException(ResultTip.TIP_PARAM_MISSING);
         }
@@ -84,7 +86,7 @@ public class WeFormUseRecordServiceImpl extends ServiceImpl<WeFormUseRecordMappe
     }
 
     @Override
-    public void saveRecord(Integer formId, String userId, String externalUserId) {
+    public void saveRecord(Long formId, String userId, String externalUserId) {
         this.saveRecord(formId, userId, externalUserId, LoginTokenService.getLoginUser().getCorpId());
     }
 }

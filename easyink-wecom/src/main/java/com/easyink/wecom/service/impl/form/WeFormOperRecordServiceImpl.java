@@ -82,7 +82,7 @@ public class WeFormOperRecordServiceImpl extends ServiceImpl<WeFormOperRecordMap
     @Override
     @Async(value = "formTaskExecutor")
     @Transactional(rollbackFor = Exception.class)
-    public void syncAddClickRecord(Long recordId, Integer formId, String userId, String openId, WeForm weForm, WeFormAdvanceSetting weFormAdvanceSetting, Integer channelType) {
+    public void syncAddClickRecord(Long recordId, Long formId, String userId, String openId, WeForm weForm, WeFormAdvanceSetting weFormAdvanceSetting, Integer channelType) {
         if (recordId == null || StringUtils.isBlank(openId)) {
             log.info("[异步智能表单-点击记录处理] 参数为空, recordId:{}, formId:{}, userId:{}, openId:{}", recordId, formId, userId, openId);
             throw new CustomException(ResultTip.TIP_PARAM_MISSING);
@@ -289,25 +289,11 @@ public class WeFormOperRecordServiceImpl extends ServiceImpl<WeFormOperRecordMap
         if (CollectionUtils.isEmpty(tagIdList)) {
             return;
         }
-        List<WeTag> tagList = tagIdList.stream().map(tagId -> {
-            WeTag weTag = new WeTag();
-            weTag.setTagId(tagId);
-            return weTag;
-        }).collect(Collectors.toList());
-        WeMakeCustomerTagVO makeCustomerTagVO = WeMakeCustomerTagVO.builder()
-                .userId(userId)
-                .corpId(corpId)
-                .externalUserid(externalUserId)
-                .updateBy(userName)
-                .addTag(tagList)
-                .build();
-        List<WeMakeCustomerTagVO > list = new ArrayList<>();
-        list.add(makeCustomerTagVO);
-        weCustomerService.batchMakeLabel(list, userId);
+        weCustomerService.singleMarkLabel(corpId, userId, externalUserId, tagIdList, userId);
     }
 
     @Override
-    public List<FormCustomerOperRecordVO> getCustomerOperRecord(Integer formId, Integer timeType, Date beginTime, Date endTime, String customerName, Integer channelType) {
+    public List<FormCustomerOperRecordVO> getCustomerOperRecord(Long formId, Integer timeType, Date beginTime, Date endTime, String customerName, Integer channelType) {
         if (formId == null) {
             throw new CustomException(ResultTip.TIP_PARAM_MISSING);
         }
@@ -315,7 +301,7 @@ public class WeFormOperRecordServiceImpl extends ServiceImpl<WeFormOperRecordMap
     }
 
     @Override
-    public List<FormUserSendRecordVO> getUserSendRecord(Integer formId, Integer timeType, Date beginTime, Date endTime, String userName) {
+    public List<FormUserSendRecordVO> getUserSendRecord(Long formId, Integer timeType, Date beginTime, Date endTime, String userName) {
         if (formId == null) {
             throw new CustomException(ResultTip.TIP_PARAM_MISSING);
         }
@@ -327,7 +313,7 @@ public class WeFormOperRecordServiceImpl extends ServiceImpl<WeFormOperRecordMap
     }
 
     @Override
-    public List<FormOperRecordDetailVO> getFormResult(Integer formId) {
+    public List<FormOperRecordDetailVO> getFormResult(Long formId) {
         if (formId == null) {
             throw new CustomException(ResultTip.TIP_PARAM_MISSING);
         }
@@ -349,7 +335,7 @@ public class WeFormOperRecordServiceImpl extends ServiceImpl<WeFormOperRecordMap
      * @param formId    表单id
      * @return
      */
-    String getFormName(Integer formId) {
+    String getFormName(Long formId) {
         WeForm weForm = weFormMapper.selectById(formId);
         if (weForm == null) {
             throw new CustomException(ResultTip.TIP_FORM_IS_NOT_EXIST);
@@ -357,7 +343,7 @@ public class WeFormOperRecordServiceImpl extends ServiceImpl<WeFormOperRecordMap
         return weForm.getFormName();
     }
     @Override
-    public AjaxResult exportCustomerOperRecord(Integer formId, Integer timeType, Date beginTime, Date endTime, String customerName, Integer channelType) {
+    public AjaxResult exportCustomerOperRecord(Long formId, Integer timeType, Date beginTime, Date endTime, String customerName, Integer channelType) {
         if (formId == null) {
             throw new CustomException(ResultTip.TIP_PARAM_MISSING);
         }
@@ -389,7 +375,7 @@ public class WeFormOperRecordServiceImpl extends ServiceImpl<WeFormOperRecordMap
     }
 
     @Override
-    public AjaxResult exportUserSendRecord(Integer formId, Integer timeType, Date beginTime, Date endTime, String userName) {
+    public AjaxResult exportUserSendRecord(Long formId, Integer timeType, Date beginTime, Date endTime, String userName) {
         if (formId == null) {
             throw new CustomException(ResultTip.TIP_PARAM_MISSING);
         }

@@ -34,4 +34,6 @@ public class Attachment {
     @ApiModelProperty("雷达")
     private RadarMessageDTO radarMessage;
 
+    @ApiModelProperty("表单")
+    private FormMessageDTO formMessage;
 }

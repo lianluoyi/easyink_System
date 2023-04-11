@@ -22,7 +22,7 @@ public class FormPageVO {
     /**
      * 表单id
      */
-    private Integer id;
+    private String id;
 
     /**
      * 表单头图

@@ -1,6 +1,7 @@
 package com.easyink.wecom.domain.dto;
 
 import com.easyink.common.core.domain.BaseEntity;
+import com.easyink.wecom.annotation.Cipher;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;

@@ -115,6 +115,11 @@ public class WeGroupCode extends BaseEntity {
     @TableField("create_type")
     private Integer createType;
 
+    @ApiModelProperty("活码短链")
+    @TableField("app_link")
+    private String appLink;
+
+
     /**
      * 可用实际码数量
      */

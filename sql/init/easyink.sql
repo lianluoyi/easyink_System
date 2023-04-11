@@ -555,9 +555,10 @@ VALUES ('2084', '新增群发', '2083', '10', 'add', 'groupMessage/add', '1', 'C
 INSERT INTO `sys_menu`
 VALUES ('2085', '群发记录', '2083', '20', 'record', 'groupMessage/record', '1', 'C', '0', '0',
         'customerMessagePush:push:list', '#', 'admin', '2020-12-14 21:44:36', 'admin', '2021-02-21 23:16:52', '');
+-- 2023-03-24 lcy 流失提醒开关权限更改为流失设置 Tower 任务: 为流失客户自动打标签 ( https://tower.im/teams/636204/todos/64183 )
 INSERT INTO `sys_menu`
-VALUES ('2086', '设置通知提醒', '2082', '1', 'wechatCorp', 'wechat:corp:startCustomerChurnNoticeSwitch', '1', 'F', '0', '0',
-        'wechat:corp:startCustomerChurnNoticeSwitch', 'switch', 'admin', '2020-12-15 01:52:19', 'admin',
+VALUES ('2086', '流失设置', '2082', '1', 'wechatCorp', 'wechat:corp:startCustomerChurnNoticeSwitch', '1', 'F', '0', '0',
+        'wechat:corp:loss:setting', 'switch', 'admin', '2020-12-15 01:52:19', 'admin',
         '2020-12-15 01:55:07', '');
 INSERT INTO `sys_menu`
 VALUES ('2100', '社群管理', '2188', '25', 'communityOperating', null, '1', 'M', '0', '1', '', '#', 'admin',
@@ -998,6 +999,8 @@ INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`
 INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`, `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES (2317, '导出报表', 2315, 1, '', NULL, 1, 'F', '0', '0', 'statistic:employeeService:export', '#', 'admin', '2023-02-15 16:54:01', 'admin', '2023-02-15 16:54:24', '');
 -- 员工活码详情数据统计导出菜单 Tower 任务: 员工活码详情数据导出 ( https://tower.im/teams/636204/todos/63010 )
 INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`, `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES (2318, '导出报表', 2053, 8, '', NULL, 1, 'F', '0', '0', 'wecom:codeAnalyse:export', '#', 'admin', '2023-02-28 10:09:09', 'admin', '2023-02-28 10:09:39', '');
+INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`, `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES (2319, 'API配置', 2305, 12, 'apiConfig', 'configCenter/apiConfig', 1, 'C', '0', '0', '', '#', '王孙', '2023-03-20 10:35:14', '王孙', '2023-03-20 10:39:07', '');
+
 -- ----------------------------
 -- Table structure for sys_role
 -- ----------------------------
@@ -1297,6 +1300,7 @@ CREATE TABLE `we_corp_account`
     `update_by`                    varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '更新人',
     `update_time`                  datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '更新时间',
     `customer_churn_notice_switch` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci      NOT NULL DEFAULT '0' COMMENT '客户流失通知开关 0:关闭 1:开启',
+    `customer_loss_tag_switch`     char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci      NOT NULL DEFAULT '0' COMMENT '客户流失标签开关 0:关闭 1:开启',
     `corp_account`                 varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '企业管理员账号',
     `custom_secret`                varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '',
     `encoding_aes_key`             varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '应用回调aesKey',
@@ -1462,6 +1466,7 @@ CREATE TABLE `we_customer_seedmessage`
     `media_id`             varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '图片消息：图片的media_id，可以通过 <a href=\"https://work.weixin.qq.com/api/doc/90000/90135/90253\">素材管理接口</a>获得',
     `miniprogram_media_id` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '小程序消息封面的mediaid，封面图建议尺寸为520*416',
     `appid`                varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '小程序appid，必须是关联到企业的小程序应用',
+    `account_original_id`  varchar(64) NOT NULL DEFAULT '' COMMENT '小程序账号原始id，必须是关联到企业的小程序应用',
     `message_type`         varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci   NOT NULL DEFAULT '' COMMENT '消息类型 0 图片消息 2视频 3文件 4 文本消息   5 链接消息   6 小程序消息 ',
     `content`              text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '消息文本内容，最多4000个字节',
     `video_name`           varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '视频标题',
@@ -1483,7 +1488,7 @@ CREATE TABLE `we_customer_seedmessage`
     `create_time`          datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `update_by`            varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci   NOT NULL DEFAULT '' COMMENT '更新人',
     `update_time`          datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '更新时间',
-    `radar_id`             bigint(20) NOT NULL DEFAULT '0' COMMENT '雷达id，存储雷达时使用',
+    `extra_id`             bigint(20) NOT NULL DEFAULT '0' COMMENT '其他id, 素材类型为雷达时存储雷达id，为智能表单时为存储表单id',
     `del_flag`             int(1) NOT NULL DEFAULT 0 COMMENT '0 未删除 1 已删除',
     PRIMARY KEY (`seed_message_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '群发消息  子消息表(包括 文本消息、图片消息、链接消息、小程序消息) ' ROW_FORMAT = Dynamic;
@@ -1672,7 +1677,7 @@ CREATE TABLE `we_group_code`
     `activity_name`           varchar(60) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '活码名称',
     `activity_desc`           varchar(60) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '活码描述',
     `activity_scene`          varchar(60) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '场景',
-    `guide`                   varchar(60) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '引导语',
+    `guide`                   varchar(2000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '引导语',
     `join_group_is_tip`       tinyint(4) NOT NULL DEFAULT 0 COMMENT '进群是否提示:1:是;0:否;',
     `tip_msg`                 varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '进群提示语',
     `customer_server_qr_code` varchar(150) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '客服二维码',
@@ -1686,6 +1691,7 @@ CREATE TABLE `we_group_code`
     `show_tip`                int(11) NOT NULL DEFAULT 0,
     `seq`                     varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '实际群码顺序',
     `create_type`             tinyint(2) NOT NULL DEFAULT '0' COMMENT '创建类型 1:群二维码 2: 企微活码',
+    `app_link`                varchar(128)                                                  NOT NULL DEFAULT '' COMMENT '活码短链',
     PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '客户群活码' ROW_FORMAT = Dynamic;
 
@@ -1775,6 +1781,8 @@ CREATE TABLE `we_material`
     `content`              text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '文本内容、图片文案',
     `material_name`        varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '图片名称',
     `digest`               varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '摘要',
+    `account_original_id`  varchar(64) NOT NULL DEFAULT '' COMMENT '小程序账号原始id，小程序专用',
+    `appid`               varchar(64) NOT NULL DEFAULT '' COMMENT '小程序appId，小程序专用',
     `create_by`            varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '创建人',
     `create_time`          datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `update_by`            varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '更新人',
@@ -1787,7 +1795,7 @@ CREATE TABLE `we_material`
     `is_defined`           TINYINT(1) NOT NULL DEFAULT '0'
         COMMENT '链接时使用(0:默认,1:自定义)',
     `enable_convert_radar` tinyint(1) NOT NULL DEFAULT '0' COMMENT '链接时使用(0,不转化为雷达，1：转化为雷达)',
-    `radar_id`             bigint(20) NOT NULL DEFAULT '0' COMMENT '雷达id，存储雷达时使用',
+    `extra_id`             bigint(20) NOT NULL DEFAULT '0' COMMENT '其他id, 素材类型为雷达时存储雷达id，为智能表单时为存储表单id',
     PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '素材表' ROW_FORMAT = Dynamic;
 
@@ -2653,9 +2661,11 @@ CREATE TABLE `we_words_detail`
     `title`      varchar(128)  NOT NULL DEFAULT '' COMMENT '标题',
     `url`        varchar(3000) NOT NULL DEFAULT '' COMMENT '链接地址',
     `cover_url`  varchar(255)  NOT NULL DEFAULT '' COMMENT '封面',
+    `account_original_id` varchar(64) NOT NULL DEFAULT '' COMMENT '小程序账号原始id，小程序专用',
+    `appid` varchar(64) NOT NULL DEFAULT '' COMMENT '小程序appId，小程序专用',
     `is_defined` tinyint(1) NOT NULL DEFAULT '0' COMMENT '链接时使用：0 默认，1 自定义',
     `size`       bigint(20) NOT NULL DEFAULT '0' COMMENT '视频大小',
-    `radar_id`   bigint(20) NOT NULL DEFAULT '0' COMMENT '雷达id，存储雷达时使用',
+    `extra_id`   bigint(20) NOT NULL DEFAULT '0' COMMENT '其他id, 素材类型为雷达时存储雷达id，为智能表单时为存储表单id',
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='话术库附件表';
 
@@ -3079,8 +3089,7 @@ CREATE TABLE `we_msg_tlp_material`
     `description`          varchar(255) NOT NULL DEFAULT '' COMMENT '链接消息描述,小程序appid(前端: 文件大小)',
     `url`                  varchar(255) NOT NULL DEFAULT '' COMMENT '链接url,小程序page',
     `sort_no`              tinyint(2) NOT NULL DEFAULT '0' COMMENT '排序字段',
-    `enable_convert_radar` tinyint(1) NOT NULL DEFAULT '0' COMMENT '链接时使用(0,不转化为雷达，1：转化为雷达)',
-    `radar_id`             bigint(20) NOT NULL DEFAULT '0' COMMENT '雷达id，存储雷达时使用',
+    `extra_id`             bigint(20) NOT NULL DEFAULT '0' COMMENT '其他id, 素材类型为雷达时存储雷达id，为智能表单时为存储表单id',
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='欢迎语素材表';
 CREATE TABLE `we_msg_tlp_scope`
@@ -3429,7 +3438,7 @@ CREATE TABLE `sys_short_url_mapping`
      `type` tinyint(1) NOT NULL DEFAULT '1' COMMENT '链接类型，-1：未知，1：雷达，2：表单',
      PRIMARY KEY (`id`),
      UNIQUE KEY `uniq_short_code` (`short_code`) USING BTREE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='长链-短链映射表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='长链-短链映射表';
 -- ----------------------------
 -- Table structure for we_radar_click_record
 -- ----------------------------
@@ -3593,3 +3602,36 @@ CREATE TABLE `we_user_customer_message_statistics` (
                                                        KEY `idx_corp_id_send_add_time` (`corp_id`,`send_time`,`add_time`) USING BTREE COMMENT '企业id和发送和添加时间索引',
                                                        KEY `idx_corp_id_user_id` (`corp_id`,`user_id`) USING BTREE COMMENT '员工id索引'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='员工客户发送消息统计数据（每天统计一次，会话存档ES中统计）';
+
+-- 2022-03-14 wx 络客侧边栏配置 Tower 任务: 对接络客侧边栏 ( https://tower.im/teams/636204/todos/63301 )
+CREATE TABLE `we_lock_sidebar_config` (
+                                          `app_id` varchar(32) NOT NULL COMMENT '络客app_id',
+                                          `corp_id` varchar(64) NOT NULL COMMENT '企业Id',
+                                          `app_secret` varchar(64) NOT NULL DEFAULT '' COMMENT '络客app_secret',
+                                          PRIMARY KEY (`app_id`,`corp_id`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='络客侧边栏配置';
+
+-- 2022-03-14 wx 外部联系人externalUserId明密文映射表（代开发应用使用）Tower 任务: 对接络客侧边栏 ( https://tower.im/teams/636204/todos/63301 )
+CREATE TABLE `we_external_userid_mapping` (
+                                              `corp_id` varchar(64) NOT NULL COMMENT '密文corpId',
+                                              `external_userid` varchar(64) NOT NULL COMMENT '明文externalUserId',
+                                              `open_external_userid` varchar(64) NOT NULL DEFAULT '' COMMENT '密文externalUserId',
+                                              PRIMARY KEY (`corp_id`,`external_userid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='外部联系人externalUserId明密文映射表';
+
+-- 2022-03-14 wx 员工userId明密文映射表（代开发应用使用） Tower 任务: 对接络客侧边栏 ( https://tower.im/teams/636204/todos/63301 )
+CREATE TABLE `we_user_id_mapping` (
+                                      `corp_id` varchar(64) NOT NULL COMMENT '密文企业id',
+                                      `user_id` varchar(64) NOT NULL COMMENT '明文userId',
+                                      `open_user_id` varchar(64) DEFAULT '' COMMENT '密文userId',
+                                      PRIMARY KEY (`corp_id`,`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='员工userId明密文映射表';
+
+-- 2023-03-23 lcy 流失标签记录表 Tower 任务: 为流失客户自动打标签 ( https://tower.im/teams/636204/todos/64183 )
+CREATE TABLE `we_customer_loss_tag` (
+                                        `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键id',
+                                        `loss_tag_id` varchar(64) NOT NULL DEFAULT '' COMMENT '流失标签id',
+                                        `corp_id` varchar(64) NOT NULL DEFAULT '' COMMENT '企业id',
+                                        PRIMARY KEY (`id`),
+                                        KEY `index_corpid_losstagid` (`corp_id`,`loss_tag_id`) USING BTREE COMMENT '普通索引index_corpid_losstagid'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

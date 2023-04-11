@@ -1,6 +1,5 @@
 package com.easyink.wecom.domain.dto.customer.resp;
 
-import com.easyink.common.enums.CustomerStatusEnum;
 import com.easyink.wecom.domain.WeCustomer;
 import com.easyink.wecom.domain.WeFlowerCustomerRel;
 import com.easyink.wecom.domain.WeFlowerCustomerTagRel;
@@ -76,7 +75,7 @@ public class GetByUserResp extends WePageBaseResp<GetByUserResp.ExternalContactD
     }
 
     @Override
-    public void handleData(String corpId) {
+    public void handleData(String corpId, Map<String, String> userIdInDbMap) {
         if (CollectionUtils.isEmpty(getTotalList())) {
             return;
         }

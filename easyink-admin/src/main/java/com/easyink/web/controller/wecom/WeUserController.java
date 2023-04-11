@@ -11,6 +11,7 @@ import com.easyink.common.enums.BusinessType;
 import com.easyink.common.token.TokenService;
 import com.easyink.common.utils.ServletUtils;
 import com.easyink.common.utils.spring.SpringUtils;
+import com.easyink.wecom.annotation.Convert2Cipher;
 import com.easyink.wecom.domain.vo.AllocateLeaveUserResp;
 import com.easyink.wecom.domain.WeUserRole;
 import com.easyink.wecom.domain.dto.BatchUpdateUserInfoDTO;
@@ -117,6 +118,7 @@ public class WeUserController extends BaseController {
      */
     @GetMapping(value = "/{userId}")
     @ApiOperation("获取通讯录相关客户详细信息")
+    @Convert2Cipher
     public AjaxResult getInfo(@PathVariable("userId") String userId) {
         LoginUser loginUser = LoginTokenService.getLoginUser();
         return AjaxResult.success(weUserService.selectWeUserById(loginUser.getCorpId(), userId));

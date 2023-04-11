@@ -2,6 +2,7 @@ package com.easyink.wecom.mapper.form;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.easyink.wecom.domain.entity.form.WeForm;
+import com.easyink.wecom.domain.entity.form.WeFormMaterial;
 import com.easyink.wecom.domain.query.form.FormQuery;
 import com.easyink.wecom.domain.vo.form.FormDetailViewVO;
 import com.easyink.wecom.domain.vo.form.FormPageVO;
@@ -63,7 +64,7 @@ public interface WeFormMapper extends BaseMapper<WeForm> {
      * @param corpId 企业id
      * @return FormDetailViewVO
      */
-    FormDetailViewVO selectFormDetail(@Param("id") Integer id, @Param("corpId") String corpId);
+    FormDetailViewVO selectFormDetail(@Param("id") Long id, @Param("corpId") String corpId);
 
     /**
      * 表单数据总览
@@ -74,13 +75,13 @@ public interface WeFormMapper extends BaseMapper<WeForm> {
      * @param endTime   结束日期
      * @return
      */
-    FormTotalView selectTotalView(@Param("id") Integer id, @Param("corpId") String corpId, @Param("beginTime") LocalDate beginTime, @Param("endTime") LocalDate endTime);
+    FormTotalView selectTotalView(@Param("id") Long id, @Param("corpId") String corpId, @Param("beginTime") LocalDate beginTime, @Param("endTime") LocalDate endTime);
 
     /**
      * 批量删除表单
      * @param deleteIdList 表单id列表
      */
-    void deleteBatch(@Param("deleteIdList") List<Integer> deleteIdList);
+    void deleteBatch(@Param("deleteIdList") List<Long> deleteIdList);
 
     /**
      * 通过id查询表单 忽略逻辑删除
@@ -88,6 +89,14 @@ public interface WeFormMapper extends BaseMapper<WeForm> {
      * @param formId
      * @return
      */
-    WeForm selectByIdIgnoreDelete(@Param("formId") Integer formId);
+    WeForm selectByIdIgnoreDelete(@Param("formId") Long formId);
+
+    /**
+     * 获取素材库表单
+     *
+     * @param formId    表单id
+     * @return
+     */
+    WeFormMaterial getFormMaterial(@Param("formId") Long formId);
 }
 

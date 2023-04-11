@@ -1,6 +1,7 @@
 package com.easyink.wecom.service.form;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.easyink.wecom.domain.dto.common.AttachmentParam;
 import com.easyink.wecom.domain.dto.form.*;
 import com.easyink.wecom.domain.entity.form.WeForm;
 import com.easyink.wecom.domain.query.form.FormQuery;
@@ -35,7 +36,7 @@ public interface WeFormService extends IService<WeForm> {
      *
      * @param deleteIdList 表单列表(全量数据)
      */
-    void deleteBatchForm(List<Integer> deleteIdList);
+    void deleteBatchForm(List<Long> deleteIdList);
 
     /**
      * 新增表单
@@ -52,7 +53,7 @@ public interface WeFormService extends IService<WeForm> {
      * @param corpId 企业id
      * @return 表单主键id
      */
-    Integer saveFormReturnId(FormAddDTO form, String corpId);
+    Long saveFormReturnId(FormAddDTO form, String corpId);
 
     /**
      * 更新表单
@@ -68,7 +69,7 @@ public interface WeFormService extends IService<WeForm> {
      * @param idList 表单id列表
      * @param corpId
      */
-    void deleteForm(List<Integer> idList, String corpId);
+    void deleteForm(List<Long> idList, String corpId);
 
     /**
      * 表单分页
@@ -106,7 +107,7 @@ public interface WeFormService extends IService<WeForm> {
      * @param corpId 企业id
      * @return 详情VO
      */
-    FormDetailViewVO getDetail(Integer id, String corpId);
+    FormDetailViewVO getDetail(Long id, String corpId);
 
     /**
      * 批量修改分组
@@ -123,7 +124,7 @@ public interface WeFormService extends IService<WeForm> {
      * @param enableFlag 启用禁用标识
      * @param corpId     企业id
      */
-    void enableForm(Integer id, Boolean enableFlag, String corpId);
+    void enableForm(Long id, Boolean enableFlag, String corpId);
 
     /**
      * 表单数据总览
@@ -132,7 +133,7 @@ public interface WeFormService extends IService<WeForm> {
      * @param corpId 企业id
      * @return FormTotalView
      */
-    FormTotalView totalView(Integer id, String corpId);
+    FormTotalView totalView(Long id, String corpId);
 
     /**
      * 获取编辑详情
@@ -141,7 +142,7 @@ public interface WeFormService extends IService<WeForm> {
      * @param corpId 企业id
      * @return
      */
-    WeFormEditDetailVO getEditDetail(Integer id, String corpId);
+    WeFormEditDetailVO getEditDetail(Long id, String corpId);
 
 
     /**
@@ -153,7 +154,28 @@ public interface WeFormService extends IService<WeForm> {
      * @param channelType   {@link com.easyink.wecom.domain.enums.form.FormChannelEnum}
      * @return
      */
-    String genFormUrl(Integer formId, String corpId, String userId, Integer channelType);
+    String genFormUrl(Long formId, String corpId, String userId, Integer channelType);
+
+    /**
+     * 侧边栏获取表单链接
+     *
+     * @param formId        表单id
+     * @param userId        员工id
+     * @param channelType   {@link com.easyink.wecom.domain.enums.form.FormChannelEnum}
+     * @return
+     */
+    String sideBarGenFormUrl(Long formId, String userId, Integer channelType);
+
+    /**
+     * 生成表单附件
+     *
+     * @param formId        表单id
+     * @param corpId        企业id
+     * @param userId        员工id
+     * @param channelType   {@link com.easyink.wecom.domain.enums.form.FormChannelEnum}
+     * @return
+     */
+    AttachmentParam getFormAttachment(Long formId, String corpId, String userId, Integer channelType);
 
     /**
      * 生成短链
@@ -165,7 +187,7 @@ public interface WeFormService extends IService<WeForm> {
      * @param channelType   {@link com.easyink.wecom.domain.enums.form.FormChannelEnum}
      * @return
      */
-    String genShortUrl(String url, Integer formId, String corpId, String userId, Integer channelType);
+    String genShortUrl(String url, Long formId, String corpId, String userId, Integer channelType);
 
     /**
      * 中间页获取表单内容
@@ -176,7 +198,7 @@ public interface WeFormService extends IService<WeForm> {
      * @param channelType   {@link com.easyink.wecom.domain.enums.form.FormChannelEnum}
      * @return {@link FormContentVO}
      */
-    FormContentVO getContent(Integer formId, String userId, String openId, Integer channelType);
+    FormContentVO getContent(Long formId, String userId, String openId, Integer channelType);
 
     /**
      * 提交表单
@@ -192,6 +214,7 @@ public interface WeFormService extends IService<WeForm> {
      * @param response      响应
      * @return
      */
-    PromotionalVO promotion(Integer formId, HttpServletResponse response);
+    PromotionalVO promotion(Long formId, HttpServletResponse response);
+
 }
 

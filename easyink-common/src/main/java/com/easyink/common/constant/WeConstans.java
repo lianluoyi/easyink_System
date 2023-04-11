@@ -345,7 +345,7 @@ public class WeConstans {
     public static final Integer USE_SCOP_BUSINESSID_TYPE_ALL = 3;
 
     /**
-     * 客户流失通知开关 0:关闭 1:开启
+     * 客户流失开关 0:关闭 1:开启
      */
     public static final String DEL_FOLLOW_USER_SWITCH_CLOSE = "0";
     public static final String DEL_FOLLOW_USER_SWITCH_OPEN = "1";
@@ -889,9 +889,24 @@ public class WeConstans {
     public static final int AUTO_TAG_ADD_DEPARTMENT_TYPE = 1;
 
     /**
-     * userId前缀
+     * 密文 userId前缀
      */
     public static final String USER_ID_PREFIX = "woI_";
+
+    /**
+     * 密文 externalUserId前缀
+     */
+    public static final String EXTERNAL_USER_ID_PREFIX = "wmI_";
+
+    /**
+     * 密文 corpId前缀
+     */
+    public static final String CORP_ID_PREFIX = "wpI_";
+
+    /**
+     * 群聊chatId前缀
+     */
+    public static final String CHAT_ID_PREFIX = "wr";
 
     /**
      * 数字0
@@ -902,5 +917,15 @@ public class WeConstans {
      * 若员工在可见范围内，其部门不在可见范围则将其department设置为-1 Tower 任务: 兼容不同的可见范围 ( https://tower.im/teams/636204/todos/61467 )
      */
     public static final String OTHER_USER_DEPARTMENT = "-1";
+
+    /**
+     * 表单默认图标
+     */
+    public static final String FORM_DEFAULT_ICON_URL = "https://easy-1304809163.cos.ap-nanjing.myqcloud.com/questionnaire.png";
+
+    /**
+     * 当前微信授权用户来自快照页
+     */
+    public static final String WECHAT_OPEN_SNAP_SHOT_USER = "1";
 
 }

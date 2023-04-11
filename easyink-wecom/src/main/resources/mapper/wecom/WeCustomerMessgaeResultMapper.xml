@@ -201,7 +201,8 @@
         wu.head_image_url,
         IF(wcm.`status`!='1','3','2') sendStatus,
         wcm.remark,
-        GROUP_CONCAT( IF ( wcm.external_name = '', wg.group_name, wcm.external_name ) SEPARATOR '、' ) customers
+        GROUP_CONCAT( IF ( wcm.external_name = '', wg.group_name, wcm.external_name ) SEPARATOR '、' ) customers,
+        count(IF(wcm.external_name = '', wg.group_name, wcm.external_name)) `count`
         FROM
         we_customer_messgaeResult wcm
         LEFT JOIN we_group wg ON wg.chat_id = wcm.chat_id

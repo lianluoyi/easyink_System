@@ -13,8 +13,10 @@
         <result property="title" column="title"/>
         <result property="url" column="url"/>
         <result property="coverUrl" column="cover_url"/>
+        <result property="accountOriginalId" column="account_original_id"/>
+        <result property="appid" column="appid"/>
         <result property="isDefined" column="is_defined"/>
-        <result property="radarId" column="radar_id"/>
+        <result property="extraId" column="extra_id"/>
     </resultMap>
 
     <resultMap type="com.easyink.wecom.domain.vo.sop.SopAttachmentVO" id="attachmentListOfRule">
@@ -24,11 +26,17 @@
         <result property="title" column="title"/>
         <result property="url" column="url"/>
         <result property="coverUrl" column="cover_url"/>
+        <result property="accountOriginalId" column="account_original_id"/>
+        <result property="appid" column="appid"/>
         <result property="isDefined" column="is_defined"/>
-        <result property="radarId" column="radar_id"/>
+        <result property="extraId" column="extra_id"/>
         <collection property="radar" ofType="com.easyink.wecom.domain.vo.radar.WeRadarVO"
-                    column="{id=radar_id,corpId=corp_id}"
+                    column="{id=extra_id,corpId=corp_id}"
                     select="com.easyink.wecom.mapper.radar.WeRadarMapper.getOne">
+        </collection>
+        <collection property="form" ofType="com.easyink.wecom.domain.entity.form.WeFormMaterial"
+                    column="{formId=extra_id}"
+                    select="com.easyink.wecom.mapper.form.WeFormMapper.getFormMaterial">
         </collection>
     </resultMap>
 
@@ -43,9 +51,11 @@
         , wwd.title
         , wwd.url
         , wwd.cover_url
+        , wwd.account_original_id
+        , wwd.appid
         , wwd.is_defined
         , wwd.size
-        , wwd.radar_id
+        , wwd.extra_id
     </sql>
 
 
@@ -59,8 +69,10 @@
              ,title
              ,url
              ,cover_url
+             ,account_original_id
+             ,appid
              , is_defined
-             , radar_id
+             , extra_id
         FROM we_words_detail
         WHERE corp_id = #{corpId}
           AND group_id = #{groupId}
@@ -92,9 +104,11 @@
         ,title
         ,url
         ,cover_url
+        ,account_original_id
+        ,appid
         ,is_defined
         ,size
-        ,radar_id
+        ,extra_id
         )
         VALUES
         <foreach collection="list" item="item" separator=",">
@@ -107,9 +121,11 @@
             ,#{item.title}
             ,#{item.url}
             ,#{item.coverUrl}
+            ,#{item.accountOriginalId}
+            ,#{item.appid}
             ,#{item.isDefined}
             ,#{item.size}
-            ,#{item.radarId}
+            ,#{item.extraId}
             )
         </foreach>
         ON DUPLICATE KEY UPDATE
@@ -119,9 +135,11 @@
         title = VALUES(title),
         url = VALUES(url),
         cover_url = VALUES(cover_url),
+        account_original_id = VALUES(account_original_id),
+        appid = VALUES(appid),
         size = VALUES(size),
         is_defined = VALUES(is_defined),
-        radar_id = VALUES(radar_id)
+        extra_id = VALUES(extra_id)
     </insert>
     <delete id="deleteByGroupIds">
         delete

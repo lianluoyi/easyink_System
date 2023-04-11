@@ -36,7 +36,7 @@ public class WeFormOperRecordController extends BaseController {
 
     @ApiOperation("客户操作记录")
     @GetMapping("/getCustomerOperRecord")
-    public TableDataInfo<FormCustomerOperRecordVO> getCustomerOperRecord(@ApiParam("表单id") @RequestParam("formId") @NotNull Integer formId,
+    public TableDataInfo<FormCustomerOperRecordVO> getCustomerOperRecord(@ApiParam("表单id") @RequestParam("formId") @NotNull Long formId,
                                                                          @ApiParam("时间类型，1：点击时间，2：提交时间") Integer timeType,
                                                                          @ApiParam("开始时间") Date beginTime,
                                                                          @ApiParam("结束时间") Date endTime,
@@ -48,7 +48,7 @@ public class WeFormOperRecordController extends BaseController {
 
     @ApiOperation("员工发送记录")
     @GetMapping("/getUserSendRecord")
-    public TableDataInfo<FormUserSendRecordVO> getUserSendRecord(@ApiParam("表单id") @RequestParam("formId") @NotNull Integer formId,
+    public TableDataInfo<FormUserSendRecordVO> getUserSendRecord(@ApiParam("表单id") @RequestParam("formId") @NotNull Long formId,
                                                                  @ApiParam("时间类型，1：点击时间，2：提交时间") Integer timeType,
                                                                  @ApiParam("开始时间") Date beginTime,
                                                                  @ApiParam("结束时间") Date endTime,
@@ -59,13 +59,13 @@ public class WeFormOperRecordController extends BaseController {
 
     @ApiOperation("获取表单详情")
     @GetMapping("/getFormResult")
-    public AjaxResult<FormOperRecordDetailVO> getFormResult(@ApiParam("表单id") @RequestParam("formId") @NotNull Integer formId) {
+    public AjaxResult<FormOperRecordDetailVO> getFormResult(@ApiParam("表单id") @RequestParam("formId") @NotNull Long formId) {
         return AjaxResult.success(weFormOperRecordService.getFormResult(formId));
     }
 
     @ApiOperation("导出客户操作记录")
     @GetMapping("/exportCustomerOperRecord")
-    public AjaxResult exportCustomerOperRecord(@ApiParam("表单id") @RequestParam("formId") @NotNull Integer formId,
+    public AjaxResult exportCustomerOperRecord(@ApiParam("表单id") @RequestParam("formId") @NotNull Long formId,
                                                @ApiParam("时间类型，1：点击时间，2：提交时间") Integer timeType,
                                                @ApiParam("开始时间") Date beginTime,
                                                @ApiParam("结束时间") Date endTime,
@@ -76,7 +76,7 @@ public class WeFormOperRecordController extends BaseController {
 
     @ApiOperation("导出员工发送记录")
     @GetMapping("/exportUserSendRecord")
-    public AjaxResult exportUserSendRecord(@ApiParam("表单id") @RequestParam("formId") @NotNull Integer formId,
+    public AjaxResult exportUserSendRecord(@ApiParam("表单id") @RequestParam("formId") @NotNull Long formId,
                                            @ApiParam("时间类型，1：点击时间，2：提交时间") Integer timeType,
                                            @ApiParam("开始时间") Date beginTime,
                                            @ApiParam("结束时间") Date endTime,

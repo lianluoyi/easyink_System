@@ -104,6 +104,24 @@ public class LoginUser implements UserDetails {
     private String uiColor;
 
     /**
+     * 是否为第三方系统使用
+     */
+    @Setter
+    private Boolean isOtherSysUse;
+
+    /**
+     * 获取 是否为第三方系统使用
+     *
+     * @return
+     */
+    public Boolean getIsOtherSysUse() {
+        if (isOtherSysUse == null) {
+            return false;
+        }
+        return isOtherSysUse;
+    }
+
+    /**
      * 企业名
      */
     @Getter

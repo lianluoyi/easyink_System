@@ -53,7 +53,7 @@ public class WeGroupController extends BaseController {
     public TableDataInfo<WeGroup> list(FindWeGroupDTO weGroup) {
         startPage();
         weGroup.setCorpId(LoginTokenService.getLoginUser().getCorpId());
-        List<WeGroup> list = this.weGroupService.list(weGroup);
+        List<WeGroup> list = weGroupService.list(weGroup);
         return getDataTable(list);
     }
 

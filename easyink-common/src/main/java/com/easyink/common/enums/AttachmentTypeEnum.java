@@ -39,8 +39,11 @@ public enum AttachmentTypeEnum {
     /**
      * 雷达链接
      */
-    RADAR(7, "radar");
-
+    RADAR(7, "radar"),
+    /**
+     * 智能表单
+     */
+    FORM(8, "form");
     /**
      * 素材类型
      */
@@ -113,6 +116,8 @@ public enum AttachmentTypeEnum {
                 return MINIPROGRAM;
             case 7:
                 return RADAR;
+            case 8:
+                return FORM;
             default:
                 return null;
         }

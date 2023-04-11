@@ -7,6 +7,7 @@ import com.easyink.wecom.domain.dto.form.FormGroupUpdateDTO;
 import com.easyink.wecom.domain.entity.form.WeFormGroup;
 import com.easyink.wecom.domain.enums.form.FormSourceType;
 import com.easyink.wecom.domain.vo.form.FormGroupTreeVO;
+import com.easyink.wecom.domain.vo.form.FormGroupTrees;
 
 import java.util.List;
 
@@ -27,6 +28,16 @@ public interface WeFormGroupService extends IService<WeFormGroup> {
      * @return
      */
     List<FormGroupTreeVO> selectTree(Integer sourceType, Integer departmentId, String corpId);
+
+
+    /**
+     * 查询所有分组的列表树
+     *
+     * @param departmentId  部门id
+     * @param corpId        企业id
+     * @return
+     */
+    FormGroupTrees selectTrees(Integer departmentId, String corpId);
 
     /**
      * 保存表单分组

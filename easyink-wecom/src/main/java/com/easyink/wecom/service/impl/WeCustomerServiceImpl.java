@@ -9,9 +9,14 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.dtflys.forest.exceptions.ForestRuntimeException;
 import com.easyink.common.annotation.DataScope;
+import com.easyink.common.constant.Constants;
 import com.easyink.common.constant.GenConstants;
 import com.easyink.common.constant.WeConstans;
 import com.easyink.common.core.domain.AjaxResult;
+import com.easyink.common.core.domain.wecom.BaseExtendPropertyRel;
+import com.easyink.common.core.domain.wecom.WeUser;
+import com.easyink.common.enums.CustomerExtendPropertyEnum;
+import com.easyink.common.enums.MethodParamType;
 import com.easyink.common.enums.ResultTip;
 import com.easyink.common.enums.customer.SubjectTypeEnum;
 import com.easyink.common.enums.wecom.ServerTypeEnum;
@@ -22,8 +27,10 @@ import com.easyink.common.utils.bean.BeanUtils;
 import com.easyink.common.utils.poi.ExcelUtil;
 import com.easyink.common.utils.sql.BatchInsertUtil;
 import com.easyink.common.utils.wecom.CorpSecretDecryptUtil;
+import com.easyink.wecom.annotation.Convert2Cipher;
 import com.easyink.wecom.client.WeCustomerClient;
 import com.easyink.wecom.client.WeUnionIdClient;
+import com.easyink.wecom.client.WeUpdateIDClient;
 import com.easyink.wecom.client.WeUserClient;
 import com.easyink.wecom.domain.*;
 import com.easyink.wecom.domain.dto.*;
@@ -38,6 +45,7 @@ import com.easyink.wecom.domain.dto.pro.EditCustomerFromPlusDTO;
 import com.easyink.wecom.domain.dto.tag.RemoveWeCustomerTagDTO;
 import com.easyink.wecom.domain.dto.unionid.GetUnionIdDTO;
 import com.easyink.wecom.domain.entity.WeCustomerExportDTO;
+import com.easyink.wecom.domain.entity.WeExternalUseridMapping;
 import com.easyink.wecom.domain.vo.QueryCustomerFromPlusVO;
 import com.easyink.wecom.domain.vo.WeCustomerExportVO;
 import com.easyink.wecom.domain.vo.WeMakeCustomerTagVO;
@@ -46,7 +54,9 @@ import com.easyink.wecom.domain.vo.customer.WeCustomerUserListVO;
 import com.easyink.wecom.domain.vo.customer.WeCustomerVO;
 import com.easyink.wecom.domain.vo.sop.CustomerSopVO;
 import com.easyink.wecom.domain.vo.unionid.GetUnionIdVO;
+import com.easyink.wecom.login.util.LoginTokenService;
 import com.easyink.wecom.mapper.WeCustomerMapper;
+import com.easyink.wecom.mapper.WeExternalUseridMappingMapper;
 import com.easyink.wecom.service.*;
 import com.easyink.wecom.service.wechatopen.WechatOpenService;
 import lombok.extern.slf4j.Slf4j;
@@ -62,6 +72,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import javax.validation.constraints.NotBlank;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -113,6 +124,12 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
     @Autowired
     private We3rdAppService we3rdAppService;
 
+    @Autowired
+    private WeExternalUseridMappingMapper weExternalUseridMappingMapper;
+
+    @Autowired
+    private WeUpdateIDClient convertIDClient;
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean saveOrUpdate(WeCustomer weCustomer) {
@@ -148,6 +165,7 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    @Convert2Cipher(paramType = MethodParamType.STRUCT)
     public void editCustomer(EditCustomerDTO dto) {
         if (dto == null || StringUtils.isAnyBlank(dto.getExternalUserid(), dto.getUserId(), dto.getCorpId())) {
             throw new CustomException(ResultTip.TIP_GENERAL_PARAM_ERROR);
@@ -174,25 +192,81 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
                 .eq(WeFlowerCustomerRel::getExternalUserid, externalUserId)
                 .eq(WeFlowerCustomerRel::getUserId, userId)
         );
-        // 4.对客户打标签
-        if (dto.getEditTag() != null) {
-            WeFlowerCustomerRel flowerCustomerRel = weFlowerCustomerRelService.getOne(userId, externalUserId, corpId);
-            //移除所有标签
-            this.removeAllLabel(flowerCustomerRel);
-            // 批量打上新的标签
-            if (!dto.getEditTag().isEmpty()) {
-                this.batchMarkCustomTag(
-                        WeMakeCustomerTagVO.builder()
-                                .corpId(corpId)
-                                .externalUserid(externalUserId)
-                                .userId(userId)
-                                .addTag(dto.getEditTag())
-                                .build()
-                );
-            }
+        // 4.修改客户标签
+        if (CollUtil.isNotEmpty(dto.getAddTags()) || CollUtil.isNotEmpty(dto.getRemoveTags())) {
+            // 批量修改标签
+            WeCustomerService weCustomerService = (WeCustomerServiceImpl)AopContext.currentProxy();
+            weCustomerService.batchMarkCustomTag(corpId, userId, externalUserId, dto.getAddTags(), dto.getRemoveTags());
         }
         // 5.添加轨迹内容(信息动态)
         weCustomerTrajectoryService.recordEditOperation(dto);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public void batchMarkCustomTagWithTagIds(String corpId, String userId, String externalUserId, List<String> addTagIds, List<String> removeTagIds) {
+        if (StringUtils.isAnyBlank(userId, externalUserId, corpId) || (CollUtil.isEmpty(addTagIds) && CollUtil.isEmpty(removeTagIds))) {
+            log.info("员工id，客户id，公司id不能为空，userId：{}，externalUserId：{}，corpId：{}", userId, externalUserId, corpId);
+            throw new CustomException("增量式打标签错误");
+        }
+        if (CollUtil.isEmpty(addTagIds) && CollUtil.isEmpty(removeTagIds)) {
+            return;
+        }
+        //查询查出员工和客户关系
+        WeFlowerCustomerRel flowerCustomerRel = weFlowerCustomerRelService.getOne(userId, externalUserId, corpId);
+        if (flowerCustomerRel == null) {
+            return;
+        }
+        if (CollUtil.isEmpty(addTagIds) && CollUtil.isEmpty(removeTagIds)) {
+            return;
+        }
+        List<WeFlowerCustomerTagRel> addTagRels = new ArrayList<>();
+        for (String tagId : addTagIds) {
+            //本地标签关系
+            addTagRels.add(
+                    WeFlowerCustomerTagRel.builder()
+                            .flowerCustomerRelId(flowerCustomerRel.getId())
+                            .externalUserid(flowerCustomerRel.getExternalUserid())
+                            .tagId(tagId)
+                            .createTime(new Date())
+                            .build()
+            );
+        }
+        //官方接口参数
+        log.info("可打的标签id列表: {}", addTagIds);
+        log.info("可移除的标签id列表: {}", removeTagIds);
+        CustomerTagEdit customerTagEdit = CustomerTagEdit.builder()
+                .userid(flowerCustomerRel.getUserId())
+                .external_userid(flowerCustomerRel.getExternalUserid())
+                .build();
+        // 新增标签
+        if (CollUtil.isNotEmpty(addTagRels)) {
+            weFlowerCustomerTagRelService.batchInsetWeFlowerCustomerTagRel(addTagRels);
+            customerTagEdit.setAdd_tag(ArrayUtil.toArray(addTagIds, String.class));
+        }
+        // 删除标签
+        if (CollUtil.isNotEmpty(removeTagIds)) {
+            weFlowerCustomerTagRelService.remove(new LambdaQueryWrapper<WeFlowerCustomerTagRel>()
+                    .eq(WeFlowerCustomerTagRel::getFlowerCustomerRelId, flowerCustomerRel.getId())
+                    .eq(WeFlowerCustomerTagRel::getExternalUserid, flowerCustomerRel.getExternalUserid())
+                    .in(WeFlowerCustomerTagRel::getTagId, removeTagIds));
+            customerTagEdit.setRemove_tag(ArrayUtil.toArray(removeTagIds, String.class));
+        }
+        //企微新接口
+        weCustomerClient.makeCustomerLabel(customerTagEdit, corpId);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public void batchMarkCustomTag(String corpId, String userId, String externalUserId, List<WeTag> addTags, List<WeTag> removeTags) {
+        if (StringUtils.isAnyBlank(corpId, userId, externalUserId) || (CollUtil.isEmpty(addTags) && CollUtil.isEmpty(removeTags))) {
+            log.info("员工id，客户id，公司id不能为空，userId：{}，externalUserId：{}，corpId：{}", userId, externalUserId, corpId);
+            throw new CustomException("增量式打标签错误");
+        }
+        List<String> addTagIds = addTags == null ? Collections.emptyList() : addTags.stream().map(WeTag::getTagId).filter(Objects::nonNull).collect(Collectors.toList());
+        List<String> removeTagIds = removeTags == null ? Collections.emptyList() : removeTags.stream().map(WeTag::getTagId).filter(Objects::nonNull).collect(Collectors.toList());
+        WeCustomerService weCustomerService = (WeCustomerServiceImpl)AopContext.currentProxy();
+        weCustomerService.batchMarkCustomTagWithTagIds(corpId, userId, externalUserId, addTagIds, removeTagIds);
     }
 
     @Override
@@ -230,14 +304,188 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
         return weCustomerMapper.selectWeCustomerById(externalUserId, corpId);
     }
 
-
+    /**
+     * 获取用户列表
+     *
+     * @param weCustomer {@link WeCustomer}
+     * @return
+     */
     @Override
     @DataScope
     public List<WeCustomerVO> selectWeCustomerListV2(WeCustomer weCustomer) {
+
+
         if (StringUtils.isBlank(weCustomer.getCorpId())) {
             throw new CustomException(ResultTip.TIP_GENERAL_PARAM_ERROR);
         }
-        return weCustomerMapper.selectWeCustomerListV2(weCustomer);
+        if (CollectionUtils.isNotEmpty(weCustomer.getExtendProperties())){
+            List<WeCustomerExtend> extendList=extendProperties(weCustomer);
+            if (CollectionUtils.isEmpty(extendList)){
+                return new ArrayList<>();
+            }
+            weCustomer.setExtendList(extendList);
+        }
+
+         return weCustomerMapper.selectWeCustomerListV2(weCustomer);
+    }
+
+    /**
+     * 处理用户自定义字段
+     *
+     * @param weCustomer
+     * @return 筛选后的检索列表
+     */
+    public  List<WeCustomerExtend> extendProperties(WeCustomer weCustomer) {
+        List<BaseExtendPropertyRel> baseExtendPropertyRelList = weCustomer.getExtendProperties();
+        List<BaseExtendPropertyRel> oneLineType = new ArrayList<>();
+        List<BaseExtendPropertyRel> multipleType = new ArrayList<>();
+        List<BaseExtendPropertyRel> timeType = new ArrayList<>();
+
+        for (BaseExtendPropertyRel baseExtendPropertyRel : baseExtendPropertyRelList) {
+            baseExtendPropertyRel.setCorpId(weCustomer.getCorpId());
+            // 判断是否为单行文本类型
+            if (Objects.equals(baseExtendPropertyRel.getPropertyType(), CustomerExtendPropertyEnum.SINGLE_ROW.getType())) {
+                oneLineType.add(baseExtendPropertyRel);
+            }
+            //判断是否为下拉框类型
+            else if (Objects.equals(baseExtendPropertyRel.getPropertyType(), CustomerExtendPropertyEnum.COMBO_BOX.getType())) {
+                multipleType.add(baseExtendPropertyRel);
+            }
+            //判断是否为时间类型
+            else if (Objects.equals(baseExtendPropertyRel.getPropertyType(), CustomerExtendPropertyEnum.DATE.getType())) {
+                timeType.add(baseExtendPropertyRel);
+            }
+        }
+
+        List<BaseExtendPropertyRel> oneLineList =  new ArrayList<>();
+
+        if (oneLineType.size()>0){
+            oneLineList=weCustomerMapper.selectTypeOneLine(oneLineType);
+            if (oneLineList.size()==0){
+                return new ArrayList<>();
+            }
+        }
+        if (multipleType.size()>0){
+            List<BaseExtendPropertyRel> multipleList=weCustomerMapper.selectTypeMultiple(multipleType);
+            if (multipleList.size()==0){
+                return new ArrayList<>();
+            }
+            oneLineList=getIntersectionTypeNotFind(oneLineList,multipleList);
+            if (oneLineList.size()==0){
+                return new ArrayList<>();
+            }
+        }
+        if (timeType.size()>0){
+            List<BaseExtendPropertyRel> timeList=weCustomerMapper.selectTypeTime(timeType);
+            if (timeList.size()==0){
+                return new ArrayList<>();
+            }
+            oneLineList=getIntersectionTypeNotFind(oneLineList,timeList);
+        }
+
+        List<WeCustomerExtend> extendList = new ArrayList<>();
+        if (oneLineList.size() > 0) {
+            for (BaseExtendPropertyRel list : oneLineList) {
+                WeCustomerExtend weCustomerExtend = new WeCustomerExtend();
+                weCustomerExtend.setExternalUserid(list.getExternalUserid());
+                weCustomerExtend.setUserId(list.getUserId());
+                extendList.add(weCustomerExtend);
+            }
+        }
+        return extendList;
+    }
+
+
+    /**
+     * 获取查询所需集合。如果其中一个为空，返回另一个
+     *
+     * @param list1 集合1
+     * @param list2 集合2
+     * @return 查询所需的集合
+     */
+    public static List<BaseExtendPropertyRel> getIntersectionTypeNotFind(List<BaseExtendPropertyRel> list1,List<BaseExtendPropertyRel> list2) {
+        if (list1.size()>0){
+            if (list2.size()>0){
+                list1.retainAll(list2);
+                return list1;
+            }else return list1;
+        }
+        return list2;
+    }
+
+    /**
+     * 将DTO类转换为实体类
+     *
+     * @param weCustomerSearchDTO
+     * @return
+     */
+    @Override
+    public WeCustomer changeWecustomer(WeCustomerSearchDTO weCustomerSearchDTO){
+        //初始化添加列表
+        WeFlowerCustomerRel weFlowerCustomerRel =new WeFlowerCustomerRel();
+        if (weCustomerSearchDTO.getBeginTime()!=null){
+            weFlowerCustomerRel.setBeginTime(weCustomerSearchDTO.getBeginTime().toString());
+        }
+        if (weCustomerSearchDTO.getEndTime()!=null){
+            weFlowerCustomerRel.setEndTime(weCustomerSearchDTO.getEndTime().toString());
+        }
+        if (!StringUtils.isBlank(weCustomerSearchDTO.getAddWay())){
+            weFlowerCustomerRel.setAddWay(weCustomerSearchDTO.getAddWay());
+        }
+        if (!StringUtils.isBlank(weCustomerSearchDTO.getEmail())){
+            weFlowerCustomerRel.setEmail(weCustomerSearchDTO.getEmail());
+        }
+        if (!StringUtils.isBlank(weCustomerSearchDTO.getAddress())){
+            weFlowerCustomerRel.setAddress(weCustomerSearchDTO.getAddress());
+        }
+        List<WeFlowerCustomerRel> weFlowerCustomerRels = new ArrayList<>() ;
+        weFlowerCustomerRels.add(weFlowerCustomerRel);
+        // 转化实体类
+        WeCustomer weCustomer =new WeCustomer();
+        weCustomer.setCorpId(LoginTokenService.getLoginUser().getCorpId());
+        weCustomer.setExternalUserid(weCustomerSearchDTO.getExternalUserid());
+        weCustomer.setStatus(weCustomerSearchDTO.getStatus());
+        weCustomer.setWeFlowerCustomerRels(weFlowerCustomerRels);
+
+        if (!StringUtils.isBlank(weCustomerSearchDTO.getName())){
+            weCustomer.setName(weCustomerSearchDTO.getName());
+            weCustomer.setRemark(weCustomerSearchDTO.getName());
+        }
+        if (!StringUtils.isBlank(weCustomerSearchDTO.getDesc())){
+            weCustomer.setDesc(weCustomerSearchDTO.getDesc());
+        }
+        if (!StringUtils.isBlank(weCustomerSearchDTO.getUserId())){
+            weCustomer.setUserId(weCustomerSearchDTO.getUserId());
+        }
+        if (!StringUtils.isBlank(weCustomerSearchDTO.getUserIds())){
+            weCustomer.setUserIds(weCustomerSearchDTO.getUserIds());
+        }
+        if (!StringUtils.isBlank(weCustomerSearchDTO.getTagIds())){
+            weCustomer.setTagIds(weCustomerSearchDTO.getTagIds());
+        }
+        if (!StringUtils.isBlank(weCustomerSearchDTO.getGender())){
+            weCustomer.setGender(weCustomerSearchDTO.getGender());
+        }
+        if (!StringUtils.isBlank(weCustomerSearchDTO.getCorpFullName())){
+            weCustomer.setCorpFullName(weCustomerSearchDTO.getCorpFullName());
+        }
+        if (!StringUtils.isBlank(weCustomerSearchDTO.getBirthday())){
+            weCustomer.setBirthdayStr(weCustomerSearchDTO.getBirthday());
+        }
+        if (!StringUtils.isBlank(weCustomerSearchDTO.getPhone())){
+            weCustomer.setPhone(weCustomerSearchDTO.getPhone());
+        }
+        if (!StringUtils.isBlank(weCustomerSearchDTO.getBeginTime())){
+            weCustomer.setBeginTime(weCustomerSearchDTO.getBeginTime());
+        }
+        if (!StringUtils.isBlank(weCustomerSearchDTO.getEndTime())){
+            weCustomer.setEndTime(weCustomerSearchDTO.getEndTime());
+        }
+        if (weCustomerSearchDTO.getExtendProperties().size()>0){
+            weCustomer.setExtendProperties(weCustomerSearchDTO.getExtendProperties());
+        }
+
+        return weCustomer;
     }
 
     @Override
@@ -246,7 +494,7 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
         weCustomerPushMessageDTO.setCorpId(corpId);
         //-1表示筛选条件未选择性别 选择性别的情况下添加过滤条件
         if (!Integer.valueOf(-1).equals(sopFilter.getGender())) {
-            weCustomerPushMessageDTO.setGender(sopFilter.getGender());
+            weCustomerPushMessageDTO.setGender(String.valueOf(sopFilter.getGender()));
         }
         weCustomerPushMessageDTO.setTagIds(sopFilter.getTagId());
         weCustomerPushMessageDTO.setCustomerStartTime(sopFilter.getStartTime());
@@ -349,8 +597,10 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
             log.info("[批量获取客户详情] 该员工没有添加客户, corpId:{}, userId:{}", corpId, userId);
             return;
         }
+        Map<String, String> userIdInDbMap = weUserService.list(new LambdaQueryWrapper<WeUser>().select(WeUser::getUserId).eq(WeUser::getCorpId, corpId))
+                .stream().collect(Collectors.toMap(WeUser::getUserId, WeUser::getUserId));
         // 2. 数据处理:对返回的数据进行处理
-        resp.handleData(corpId);
+        resp.handleData(corpId, userIdInDbMap);
         if (resp.isEmptyResult()) {
             log.info("[批量获取客户详情] 该员工没有添加客户, corpId:{}, userId:{}", corpId, userId);
             return;
@@ -364,6 +614,9 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
                         .eq(WeFlowerCustomerRel::getUserId, userId)
                         .in(WeFlowerCustomerRel::getExternalUserid, externalUserIdList)
         );
+        if (CollectionUtils.isNotEmpty(localRelList)) {
+            updateCustomerRel(resp, localRelList, corpId);
+        }
         // 对以前删除但是重新加回的客户重新把状态设置为正常
         resp.activateDelCustomer(localRelList);
         //**** 客户信息更新、插入 , 客户-成员关系更新 , 客户-标签关系更新
@@ -376,6 +629,33 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
         BatchInsertUtil.doInsert(tagRelList, list -> weFlowerCustomerTagRelService.batchInsert(list));
     }
 
+    /**
+     * 更新流失后添加的客户数据，客户-员工关系
+     *
+     * @param resp 企微响应
+     * @param localRelList  本地数据
+     */
+    public void updateCustomerRel(GetByUserResp resp, List<WeFlowerCustomerRel> localRelList, String corpId){
+        List<WeFlowerCustomerRel> updateRelList = new ArrayList<>();
+        Map<String, WeFlowerCustomerRel> localMap = localRelList.stream().collect(Collectors.toMap(WeFlowerCustomerRel::getExternalUserid, Function.identity()));
+        // 本地数据与远端数据对比
+        for (WeFlowerCustomerRel remoteFlowerCustomerRel : resp.getRelList()) {
+            WeFlowerCustomerRel localFlowerCustomerRel = localMap.get(remoteFlowerCustomerRel.getExternalUserid());
+            // 若该客户与本地记录的添加时间不一样，表示此客户是流失后重新添加员工的客户，将该客户存入列表等待更新状态
+            if(localFlowerCustomerRel != null){
+                if (remoteFlowerCustomerRel.getCreateTime().compareTo(localFlowerCustomerRel.getCreateTime()) != 0) {
+                    remoteFlowerCustomerRel.setStatus(Constants.NORMAL_CODE);
+                    updateRelList.add(remoteFlowerCustomerRel);
+                }
+            }
+        }
+        // 存在创建时间不同的客户则更新客户状态
+        if (CollectionUtils.isNotEmpty(updateRelList)) {
+            LambdaUpdateWrapper<WeFlowerCustomerRel> updateRelWrapper = new LambdaUpdateWrapper<>();
+            updateRelWrapper.eq(WeFlowerCustomerRel::getCorpId, corpId);
+            weFlowerCustomerRelService.batchUpdateStatus(updateRelList);
+        }
+    }
 
     /**
      * 调用企微根据corpId获取离职员工列表
@@ -436,26 +716,6 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
     }
 
     /**
-     * 客户打标签
-     *
-     * @param weMakeCustomerTag 客户打标签实体
-     */
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void makeLabel(WeMakeCustomerTagVO weMakeCustomerTag) {
-        if (StringUtils.isBlank(weMakeCustomerTag.getCorpId())) {
-            log.error("打标签失败失败，corpId不能为空");
-            throw new CustomException("打标签失败");
-        }
-        List<CustomerTagEdit> customerTagEdits = getCustomerTagEdits(weMakeCustomerTag);
-        if (CollUtil.isNotEmpty(customerTagEdits)) {
-            //企微新接口
-            customerTagEdits.forEach(tagEdit -> weCustomerClient.makeCustomerLabel(tagEdit, weMakeCustomerTag.getCorpId()));
-        }
-    }
-
-
-    /**
      * 客户批量打标签
      *
      * @param list
@@ -467,10 +727,10 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
             return;
         }
         for (WeMakeCustomerTagVO item : list) {
-            this.batchMarkCustomTag(item);
-            // 有操作人才需要记录信息动态
-            if (StringUtils.isNotBlank(updateBy)) {
-                weCustomerTrajectoryService.recordEditTagOperation(item.getCorpId(), item.getUserId(), item.getExternalUserid(), updateBy, item.getAddTag());
+            IncrementalMarkTag(item);
+            // 有操作人才需要记录信息动态 且 修改了标签
+            if (StringUtils.isNotBlank(updateBy) && !(CollUtil.isEmpty(item.getAddTag()) && CollUtil.isEmpty(item.getRemoveTags()))) {
+                weCustomerTrajectoryService.recordEditTagOperation(item.getCorpId(), item.getUserId(), item.getExternalUserid(), updateBy);
             }
 
         }
@@ -479,63 +739,17 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void batchMakeLabel(List<WeMakeCustomerTagVO> weMakeCustomerTagVOS) {
-        ((WeCustomerService)AopContext.currentProxy()).batchMakeLabel(weMakeCustomerTagVOS, null);
-    }
-
-    /**
-     * 打标签方法抽取
-     *
-     * @param weMakeCustomerTag 客户打标签实体
-     * @return
-     */
-    @Transactional
-    public List<CustomerTagEdit> getCustomerTagEdits(WeMakeCustomerTagVO weMakeCustomerTag) {
-        if (StringUtils.isBlank(weMakeCustomerTag.getCorpId())) {
-            log.error("打标签失败失败，corpId不能为空");
-            throw new CustomException("打标签失败");
+    public void singleMarkLabel(String corpId, String userId, String externalUserId, List<String> addTagIds, String oprUserId){
+        if (StringUtils.isAnyBlank(corpId, userId, externalUserId) || CollUtil.isEmpty(addTagIds)) {
+            log.info("员工id，客户id，公司id不能为空，userId：{}，externalUserId：{}，corpId：{}", userId, externalUserId, corpId);
+            return;
         }
-        List<CustomerTagEdit> customerTagEdits = new ArrayList<>();
-        //查询出当前用户对应的
-        WeFlowerCustomerRel flowerCustomerRel = weFlowerCustomerRelService.getOne(weMakeCustomerTag.getUserId(), weMakeCustomerTag.getExternalUserid(), weMakeCustomerTag.getCorpId());
-        if (flowerCustomerRel != null) {
-            List<WeTag> addTags = weMakeCustomerTag.getAddTag();
-            //移除所有标签
-            this.removeAllLabel(flowerCustomerRel);
-            if (CollUtil.isNotEmpty(addTags)) {
-                addTags.removeAll(Collections.singleton(null));
-                List<WeFlowerCustomerTagRel> tagRels = new ArrayList<>();
-                //官方接口参数
-                CustomerTagEdit customerTagEdit = CustomerTagEdit.builder()
-                        .userid(flowerCustomerRel.getUserId())
-                        .external_userid(flowerCustomerRel.getExternalUserid())
-                        .build();
-                List<String> tags = new ArrayList<>();
-                for (WeTag tag : addTags) {
-                    tags.add(tag.getTagId());
-                    //本地标签关系
-                    tagRels.add(
-                            WeFlowerCustomerTagRel.builder()
-                                    .flowerCustomerRelId(flowerCustomerRel.getId())
-                                    .externalUserid(flowerCustomerRel.getExternalUserid())
-                                    .tagId(tag.getTagId())
-                                    .createTime(new Date())
-                                    .build()
-                    );
-                }
-
-                customerTagEdit.setAdd_tag(ArrayUtil.toArray(tags, String.class));
-                customerTagEdits.add(customerTagEdit);
-                //保存或更新本地
-                if (CollUtil.isNotEmpty(tagRels)) {
-                    weFlowerCustomerTagRelService.saveOrUpdateBatch(tagRels);
-                }
-            }
-            // 记录客户被打标签的信息动态
-            weCustomerTrajectoryService.recordEditTagOperation(weMakeCustomerTag.getCorpId(), weMakeCustomerTag.getUserId(), weMakeCustomerTag.getExternalUserid(),
-                    weMakeCustomerTag.getUpdateBy(), weMakeCustomerTag.getAddTag());
+        WeCustomerService weCustomerService = (WeCustomerService)AopContext.currentProxy();
+        weCustomerService.batchMarkCustomTagWithTagIds(corpId, userId, externalUserId, addTagIds, null);
+        // 有操作人才需要记录信息动态 且 修改了标签
+        if (StringUtils.isNotBlank(oprUserId) && CollUtil.isNotEmpty(addTagIds)) {
+            weCustomerTrajectoryService.recordEditTagOperation(corpId, userId, externalUserId, oprUserId);
         }
-        return customerTagEdits;
     }
 
     /**
@@ -544,71 +758,23 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
      * @param weMakeCustomerTag
      * @return
      */
-    public void batchMarkCustomTag(WeMakeCustomerTagVO weMakeCustomerTag) {
+    @Transactional(rollbackFor = Exception.class)
+    public void IncrementalMarkTag(WeMakeCustomerTagVO weMakeCustomerTag) {
         if (StringUtils.isAnyBlank(weMakeCustomerTag.getUserId(), weMakeCustomerTag.getExternalUserid(), weMakeCustomerTag.getCorpId())) {
             log.error("员工id，客户id，公司id不能为空，userId：{}，externalUserId：{}，corpId：{}", weMakeCustomerTag.getUserId(), weMakeCustomerTag.getExternalUserid(), weMakeCustomerTag.getCorpId());
             throw new CustomException("增量式打标签错误");
         }
         //增量标签
         List<WeTag> addTags = weMakeCustomerTag.getAddTag();
-        if (CollUtil.isEmpty(addTags)) {
+        // 移除标签
+        List<WeTag> removeTags = weMakeCustomerTag.getRemoveTags();
+        if (CollUtil.isEmpty(addTags) && CollUtil.isEmpty(removeTags)) {
             return;
         }
-        log.info("需要打的标签列表: {}", addTags.stream().map(WeTag::getTagId).collect(Collectors.toList()));
-
-        //查询出当前用户对应的
-        WeFlowerCustomerRel flowerCustomerRel = weFlowerCustomerRelService.getOne(weMakeCustomerTag.getUserId(), weMakeCustomerTag.getExternalUserid(), weMakeCustomerTag.getCorpId());
-
-        if (flowerCustomerRel == null) {
-            return;
-        }
-        //去除空参数
-        addTags.removeAll(Collections.singleton(null));
-        if (CollUtil.isEmpty(addTags)) {
-            return;
-        }
-
-        //获取已存在的标签
-        LambdaQueryWrapper<WeFlowerCustomerTagRel> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(WeFlowerCustomerTagRel::getFlowerCustomerRelId, flowerCustomerRel.getId());
-        List<WeFlowerCustomerTagRel> weFlowerCustomerTagRelList = weFlowerCustomerTagRelService.list(queryWrapper);
-        Set<String> existTagSet = weFlowerCustomerTagRelList.stream().map(WeFlowerCustomerTagRel::getTagId).collect(Collectors.toSet());
-
-        List<WeFlowerCustomerTagRel> tagRels = new ArrayList<>();
-        List<String> tags = new ArrayList<>();
-        for (WeTag tag : addTags) {
-            //如果标签已存在则不需要重新保存
-            if (existTagSet.contains(tag.getTagId())) {
-                continue;
-            }
-            tags.add(tag.getTagId());
-            //本地标签关系
-            tagRels.add(
-                    WeFlowerCustomerTagRel.builder()
-                            .flowerCustomerRelId(flowerCustomerRel.getId())
-                            .externalUserid(flowerCustomerRel.getExternalUserid())
-                            .tagId(tag.getTagId())
-                            .createTime(new Date())
-                            .build()
-            );
-        }
-        //保存或更新本地
-        if (CollUtil.isNotEmpty(tagRels)) {
-            weFlowerCustomerTagRelService.saveOrUpdateBatch(tagRels);
-        }
-
-        //官方接口参数
-        log.info("可打的标签id列表: {}", tags);
-        if (CollUtil.isNotEmpty(tags)) {
-            CustomerTagEdit customerTagEdit = CustomerTagEdit.builder()
-                    .userid(flowerCustomerRel.getUserId())
-                    .external_userid(flowerCustomerRel.getExternalUserid())
-                    .build();
-            customerTagEdit.setAdd_tag(ArrayUtil.toArray(tags, String.class));
-            //企微新接口
-            weCustomerClient.makeCustomerLabel(customerTagEdit, weMakeCustomerTag.getCorpId());
-        }
-
+        List<String> addTagIds = addTags == null ? Collections.emptyList() : addTags.stream().map(WeTag::getTagId).filter(Objects::nonNull).collect(Collectors.toList());
+        List<String> removeTagIds = removeTags == null ? Collections.emptyList() : removeTags.stream().map(WeTag::getTagId).filter(Objects::nonNull).collect(Collectors.toList());
+        WeCustomerService weCustomerService = (WeCustomerService)AopContext.currentProxy();
+        weCustomerService.batchMarkCustomTagWithTagIds(weMakeCustomerTag.getCorpId(), weMakeCustomerTag.getUserId(), weMakeCustomerTag.getExternalUserid(), addTagIds, removeTagIds);
     }
 
     /**
@@ -637,17 +803,6 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
                             .remove_tag(ArrayUtil.toArray(removeTag.stream().map(WeFlowerCustomerTagRel::getTagId).collect(Collectors.toList()), String.class))
                             .build(), flowerCustomerRel.getCorpId());
         }
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void removeLabel(String corpId, String externalUserid, String userid, List<String> delIdList) {
-        RemoveWeCustomerTagDTO dto = new RemoveWeCustomerTagDTO();
-        List<RemoveWeCustomerTagDTO.WeUserCustomer> list = new ArrayList<>();
-        list.add(new RemoveWeCustomerTagDTO.WeUserCustomer(externalUserid, userid, corpId));
-        dto.setCustomerList(list);
-        dto.setWeTagIdList(delIdList);
-        this.removeLabel(dto);
     }
 
     @Override
@@ -754,6 +909,7 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
     }
 
 
+    @Convert2Cipher
     @Override
     public WeCustomerPortrait findCustomerByOperUseridAndCustomerId(String externalUserid, String userid, String corpId) {
         if (StringUtils.isAnyBlank(externalUserid, userid, corpId)) {
@@ -780,7 +936,6 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
         );
         return weCustomerPortrait;
     }
-
 
     @Override
     @DataScope
@@ -890,16 +1045,18 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
 
     @Override
     public <T> AjaxResult<T> export(WeCustomerExportDTO dto) {
-        WeCustomer weCustomer = new WeCustomer();
-        BeanUtils.copyProperties(dto, weCustomer);
+        List<String> selectProperties=dto.getSelectedProperties();
+        WeCustomerSearchDTO weCustomerSearchDTO=new WeCustomerSearchDTO();
+        BeanUtils.copyProperties(dto, weCustomerSearchDTO);
+        WeCustomer weCustomer=changeWecustomer(weCustomerSearchDTO);
         List<WeCustomerVO> list = this.selectWeCustomerListV2(weCustomer);
         if (CollectionUtils.isEmpty(list)) {
             throw new CustomException(ResultTip.TIP_NO_DATA_TO_EXPORT);
         }
         List<WeCustomerExportVO> exportList = list.stream().map(WeCustomerExportVO::new).collect(Collectors.toList());
-        weCustomerExtendPropertyService.setKeyValueMapper(weCustomer.getCorpId(), exportList, dto.getSelectedProperties());
+        weCustomerExtendPropertyService.setKeyValueMapper(weCustomer.getCorpId(), exportList, selectProperties);
         ExcelUtil<WeCustomerExportVO> util = new ExcelUtil<>(WeCustomerExportVO.class);
-        return util.exportExcelV2(exportList, "customer", dto.getSelectedProperties());
+        return util.exportExcelV2(exportList, "customer", selectProperties);
     }
 
     /**
@@ -983,6 +1140,39 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
                     .set(WeCustomer::getUnionid, unionId));
         }
         return customer;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public String getOpenExUserId(String corpId, String externalUserId) {
+        if (StringUtils.isAnyBlank(corpId, externalUserId)) {
+            return StringUtils.EMPTY;
+        }
+        WeExternalUseridMapping weExternalUseridMapping = weExternalUseridMappingMapper.selectOne(new LambdaUpdateWrapper<WeExternalUseridMapping>()
+                .eq(WeExternalUseridMapping::getCorpId, corpId)
+                .eq(WeExternalUseridMapping::getExternalUserid, externalUserId)
+                .last(GenConstants.LIMIT_1));
+        if (weExternalUseridMapping == null) {
+            String openExUserId = getOpenExUserIdByClient(corpId, externalUserId);
+            weExternalUseridMapping = new WeExternalUseridMapping(corpId, externalUserId, openExUserId);
+            weExternalUseridMappingMapper.insertOrUpdate(weExternalUseridMapping);
+        }
+        return weExternalUseridMapping.getOpenExternalUserid();
+    }
+
+    /**
+     * 通过接口将外部联系人exUserId转化为密文
+     *
+     * @param corpId            企业id
+     * @param externalUserId    外部联系人exUserId
+     * @return
+     */
+    protected String getOpenExUserIdByClient(String corpId, String externalUserId) {
+        List<String> externalUserIds = new ArrayList<>();
+        externalUserIds.add(externalUserId);
+        final CorpIdToOpenCorpIdResp newExternalUser = convertIDClient.getNewExternalUserid(corpId, externalUserIds);
+        Map<String,String> openExternalUserIdMap = newExternalUser.getItems().stream().collect(Collectors.toMap(CorpIdToOpenCorpIdResp.ExternalUserMapping::getExternal_userid, CorpIdToOpenCorpIdResp.ExternalUserMapping::getNew_external_userid));
+        return openExternalUserIdMap.getOrDefault(externalUserId, com.easyink.common.utils.StringUtils.EMPTY);
     }
 
 }

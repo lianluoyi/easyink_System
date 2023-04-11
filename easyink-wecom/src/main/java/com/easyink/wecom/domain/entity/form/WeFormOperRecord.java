@@ -33,7 +33,7 @@ public class WeFormOperRecord implements Serializable {
 
     @ApiModelProperty("智能表单id")
     @TableField("form_id")
-    private Integer formId;
+    private Long formId;
 
     @ApiModelProperty("发送智能表单的员工id")
     @TableField("user_id")

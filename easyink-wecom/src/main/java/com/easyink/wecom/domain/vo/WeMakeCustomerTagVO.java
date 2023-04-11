@@ -25,6 +25,11 @@ public class  WeMakeCustomerTagVO {
     private List<WeTag> addTag;
 
     /**
+     * 需要移除的标签
+     */
+    private List<WeTag> removeTags;
+
+    /**
      * 公司id
      */
     private String corpId;

@@ -72,5 +72,5 @@ public interface WeRadarMapper extends BaseMapper<WeRadar> {
      * @param id 雷达id
      * @return 需要打上的标签列表
      */
-    List<WeTag> getTagListByRadarId(@Param("id") Long id);
+    List<String> getTagListByRadarId(@Param("id") Long id);
 }

@@ -32,7 +32,7 @@ public interface WeFormOperRecordService extends IService<WeFormOperRecord> {
      * @param weFormAdvanceSetting {@link WeFormAdvanceSetting}
      * @param channelType          {@link com.easyink.wecom.domain.enums.form.FormChannelEnum}
      */
-    void syncAddClickRecord(Long recordId, Integer formId, String userId, String openId, WeForm weForm, WeFormAdvanceSetting weFormAdvanceSetting, Integer channelType);
+    void syncAddClickRecord(Long recordId, Long formId, String userId, String openId, WeForm weForm, WeFormAdvanceSetting weFormAdvanceSetting, Integer channelType);
 
 
     /**
@@ -68,7 +68,7 @@ public interface WeFormOperRecordService extends IService<WeFormOperRecord> {
      * @param channelType   渠道类型 {@link com.easyink.wecom.domain.enums.form.FormChannelEnum}
      * @return {@link FormCustomerOperRecordVO}
      */
-    List<FormCustomerOperRecordVO> getCustomerOperRecord(Integer formId, Integer timeType, Date beginTime, Date endTime, String customerName, Integer channelType);
+    List<FormCustomerOperRecordVO> getCustomerOperRecord(Long formId, Integer timeType, Date beginTime, Date endTime, String customerName, Integer channelType);
 
     /**
      * 获取员工发送记录
@@ -80,7 +80,7 @@ public interface WeFormOperRecordService extends IService<WeFormOperRecord> {
      * @param userName      员工姓名
      * @return
      */
-    List<FormUserSendRecordVO> getUserSendRecord(Integer formId, Integer timeType, Date beginTime, Date endTime, String userName);
+    List<FormUserSendRecordVO> getUserSendRecord(Long formId, Integer timeType, Date beginTime, Date endTime, String userName);
 
     /**
      * 获取客户表单详情
@@ -88,7 +88,7 @@ public interface WeFormOperRecordService extends IService<WeFormOperRecord> {
      * @param formId            表单id
      * @return  {@link FormOperRecordDetailVO}
      */
-    List<FormOperRecordDetailVO> getFormResult(Integer formId);
+    List<FormOperRecordDetailVO> getFormResult(Long formId);
 
     /**
      * 导出客户操作记录
@@ -101,7 +101,7 @@ public interface WeFormOperRecordService extends IService<WeFormOperRecord> {
      * @param channelType   渠道类型 {@link com.easyink.wecom.domain.enums.form.FormChannelEnum}
      * @return
      */
-    AjaxResult exportCustomerOperRecord(Integer formId, Integer timeType, Date beginTime, Date endTime, String customerName, Integer channelType);
+    AjaxResult exportCustomerOperRecord(Long formId, Integer timeType, Date beginTime, Date endTime, String customerName, Integer channelType);
 
     /**
      *
@@ -112,6 +112,6 @@ public interface WeFormOperRecordService extends IService<WeFormOperRecord> {
      * @param userName      员工姓名
      * @return
      */
-    AjaxResult exportUserSendRecord(Integer formId, Integer timeType, Date beginTime, Date endTime, String userName);
+    AjaxResult exportUserSendRecord(Long formId, Integer timeType, Date beginTime, Date endTime, String userName);
 }
 

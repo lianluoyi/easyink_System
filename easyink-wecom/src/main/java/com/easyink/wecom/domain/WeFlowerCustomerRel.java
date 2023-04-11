@@ -212,7 +212,6 @@ public class WeFlowerCustomerRel {
         this.state = followInfo.getState();
         this.externalUserid = externalContact.getExternalUserid();
         this.createTime = DateUtils.unix2Date(followInfo.getCreatetime());
-        this.status = Constants.NORMAL_CODE;
         // 增加来源的视频号名称
         if (followInfo.getWechat_channels() == null || StringUtils.isBlank(followInfo.getWechat_channels().getNickname())) {
             this.wechatChannel = StringUtils.EMPTY;

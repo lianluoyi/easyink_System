@@ -178,10 +178,11 @@ public class PageHomeServiceImpl implements PageHomeService {
                                                                               .size() - 2);
         DateTime beginTime = DateUtil.beginOfDay(new Date());
         DateTime endTime = DateUtil.endOfDay(new Date());
-        //获取今日添加客户数量
+        //获取今日添加客户数量 查询正常和流失状态的客户
         int newCustomerCount = weFlowerCustomerRelService.count(new LambdaQueryWrapper<WeFlowerCustomerRel>()
                 .eq(WeFlowerCustomerRel::getCorpId, corpId)
-                .between(WeFlowerCustomerRel::getCreateTime, beginTime, endTime));
+                .between(WeFlowerCustomerRel::getCreateTime, beginTime, endTime)
+                .in(WeFlowerCustomerRel::getStatus, CustomerStatusEnum.NORMAL.getCode().toString(), CustomerStatusEnum.DRAIN.getCode().toString()));
         //今日群新增人数
         int groupMemberCount = weGroupMemberService.count(new LambdaQueryWrapper<WeGroupMember>()
                 .eq(WeGroupMember::getCorpId, corpId)

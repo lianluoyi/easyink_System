@@ -61,6 +61,9 @@ public class WeAutoConfigInterceptor implements Interceptor<Object> {
         } else if (request.getUrl().contains("/choose_corp")) {
             // 短信验证后选择企业
             setCheckReq(request);
+        } else if (request.getUrl().contains("/saveIpConfig")){
+            // 自动配置可信IP
+            setTrustIp(request);
         } else {
             //登陆后
             setCommonReq(request);
@@ -70,6 +73,26 @@ public class WeAutoConfigInterceptor implements Interceptor<Object> {
             request.addQuery("_d2st", d2st) ;
         }
         return true;
+    }
+
+    /**
+     * 配置可信IP
+     * @param request 请求头
+     */
+    private void setTrustIp(ForestRequest request) {
+        setCommonReq(request);
+        String d2st = getD2ct(request);
+        request.addBody("_d2st", d2st);
+        // 目前看好像就只有获取企业部门成员的接口需要的queryString
+        request.addQuery("_d2st", d2st);
+        // 从Header获取可信IP
+        String ipList = request.getHeaderValue("ipList");
+        // 重排ipList格式
+        if (StringUtils.isNotBlank(ipList)) {
+            for (String trustIp : ipList.split(";")) {
+                request.addBody("ipList[]", trustIp);
+            }
+        }
     }
 
     /**

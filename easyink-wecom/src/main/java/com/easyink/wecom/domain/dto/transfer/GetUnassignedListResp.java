@@ -13,6 +13,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 类名: 获取待分配的离职成员列表请求响应实体
@@ -69,11 +70,15 @@ public class GetUnassignedListResp extends WePageBaseResp<GetUnassignedListResp.
     }
 
     @Override
-    public void handleData(String corpId) {
-        if (CollectionUtils.isEmpty(this.info)) {
+    public void handleData(String corpId, Map<String, String> userIdInDbMap) {
+        if (CollectionUtils.isEmpty(this.info) || userIdInDbMap == null || userIdInDbMap.isEmpty()) {
             return;
         }
         for (UnassignedInfo detail : info) {
+            if (!userIdInDbMap.containsKey(detail.getHandover_userid())) {
+                // 如果离职员工不存在数据库中则不入库
+                continue;
+            }
             // 构建待更新的离职员工实体
             this.updateUserList.add(
                     WeUser.builder()

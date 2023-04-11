@@ -29,12 +29,12 @@ public class WeFormCustomerFeedbackServiceImpl extends ServiceImpl<WeFormCustome
 
 
     @Override
-    public void saveFeedback(Integer formId, String customerId, String userId, FormComponentType componentType, Integer componentValue) {
+    public void saveFeedback(Long formId, String customerId, String userId, FormComponentType componentType, Integer componentValue) {
         this.saveFeedback(formId, customerId, userId, componentType, componentValue, LoginTokenService.getLoginUser().getCorpId());
     }
 
     @Override
-    public void saveFeedback(Integer formId, String customerId, String userId, FormComponentType componentType, Integer componentValue, String corpId) {
+    public void saveFeedback(Long formId, String customerId, String userId, FormComponentType componentType, Integer componentValue, String corpId) {
         if (formId == null || StringUtils.isAnyBlank(customerId, userId, corpId) || componentType == null || componentValue == null) {
             throw new CustomException(ResultTip.TIP_PARAM_MISSING);
         }
@@ -59,7 +59,7 @@ public class WeFormCustomerFeedbackServiceImpl extends ServiceImpl<WeFormCustome
     }
 
     @Override
-    public void batchAddFeedback(Integer formId, String customerId, String userId, List<Integer> scoreValueList, List<Integer> npsValueList, String corpId) {
+    public void batchAddFeedback(Long formId, String customerId, String userId, List<Integer> scoreValueList, List<Integer> npsValueList, String corpId) {
         if (formId == null || StringUtils.isAnyBlank(customerId, userId, corpId)) {
             throw new CustomException(ResultTip.TIP_PARAM_MISSING);
         }

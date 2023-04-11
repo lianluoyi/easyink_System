@@ -117,4 +117,14 @@ public interface WeFlowerCustomerRelService extends IService<WeFlowerCustomerRel
      * @return
      */
     List<String> listUpUserIdListByCustomerId(String customerId, String corpId);
+
+    /**
+     * 更新已流失重新添加回来的客户状态
+     *
+     * @param corpId 企业ID
+     * @param userId 员工ID
+     * @param external_userid 外部联系人ID
+     * @return 结果
+     */
+    Integer updateLossExternalUser(String corpId, String userId, String external_userid);
 }

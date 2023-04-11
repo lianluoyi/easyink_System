@@ -455,5 +455,12 @@
         GROUP BY temp.user_id
     </select>
 
+    <select id="batchGetWeEmpleCodeConfigId" resultType="java.lang.String">
+        SELECT config_id FROM we_emple_code WHERE corp_id = #{corpId} AND id IN
+        <foreach collection="ids" item="id" index="index" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
 
 </mapper>

@@ -332,13 +332,18 @@ public interface WeAdminClient {
      * @param req       请求
      * @return {@link GetDepartMemberResp}
      */
-
     @Get("/contacts/getDepartmentMember")
     BaseAdminResult<GetDepartMemberResp> getDepartMember(@Header("qrcodeKey") String qrcodeKey,
                                                          @Query GetDepartMemberReq req);
 
-
-    @Post(value = "/apps/saveIpConfig" , contentType = "contentType = application/x-www-form-urlencoded")
-    void saveIp(@Header("qrcodeKey")String qrcodeKey ,@Body("app_id") String appId ,@Body("ipList[]")String ipList );
+    /**
+     * 设置企业可信IP
+     * @param qrcodeKey 扫码的Key
+     * @param appId 应用ID
+     * @param ipList 可信IP
+     * @return
+     */
+    @Post(value = "/apps/saveIpConfig")
+    BaseAdminResult saveIp(@Header("qrcodeKey")String qrcodeKey ,@Body("app_id") String appId , @Header("ipList") String ipList );
 
 }

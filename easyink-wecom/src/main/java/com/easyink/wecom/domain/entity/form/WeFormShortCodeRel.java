@@ -23,7 +23,7 @@ import java.util.Date;
 public class WeFormShortCodeRel {
     @ApiModelProperty("表单id")
     @TableField("form_id")
-    private Integer formId;
+    private Long formId;
 
     @ApiModelProperty("短链后面的唯一字符串（用于和域名拼接成短链）")
     @TableField("short_code")

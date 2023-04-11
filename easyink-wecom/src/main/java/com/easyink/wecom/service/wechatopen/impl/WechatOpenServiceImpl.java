@@ -6,28 +6,32 @@ import com.dtflys.forest.http.ForestRequest;
 import com.easyink.common.config.RuoYiConfig;
 import com.easyink.common.config.WechatOpenConfig;
 import com.easyink.common.constant.GenConstants;
+import com.easyink.common.constant.WeConstans;
 import com.easyink.common.constant.form.FormConstants;
 import com.easyink.common.constant.wechatopen.WechatOpenConstants;
 import com.easyink.common.core.domain.entity.WeCorpAccount;
 import com.easyink.common.core.domain.model.LoginUser;
 import com.easyink.common.core.redis.RedisCache;
 import com.easyink.common.enums.ResultTip;
-import com.easyink.common.enums.wechatopen.WechatOpenEnum;
 import com.easyink.common.enums.wecom.ServerTypeEnum;
 import com.easyink.common.exception.CustomException;
 import com.easyink.common.redis.WechatOpenConfigRedisCache;
-import com.easyink.common.shorturl.SysShortUrlMapping;
-import com.easyink.common.shorturl.service.ShortUrlAdaptor;
+import com.easyink.common.shorturl.model.SysShortUrlMapping;
+import com.easyink.common.shorturl.service.ShortUrlService;
 import com.easyink.common.utils.spring.SpringUtils;
 import com.easyink.wecom.client.WechatOpen3rdClient;
 import com.easyink.wecom.client.WechatOpenClient;
 import com.easyink.wecom.domain.entity.form.WeForm;
 import com.easyink.wecom.domain.entity.form.WeFormAdvanceSetting;
 import com.easyink.wecom.domain.entity.wechatopen.WeOpenConfig;
-import com.easyink.wecom.domain.resp.*;
+import com.easyink.wecom.domain.resp.GetAccessTokenResp;
+import com.easyink.wecom.domain.resp.GetOfficialAuthInfoResp;
+import com.easyink.wecom.domain.resp.SnsUserInfoResp;
+import com.easyink.wecom.domain.resp.WechatOpen3rdResp;
 import com.easyink.wecom.domain.vo.AppIdVO;
 import com.easyink.wecom.domain.vo.WeOpenConfigVO;
 import com.easyink.wecom.domain.vo.WeServerTypeVO;
+import com.easyink.wecom.handler.shorturl.ShortUrlHandlerFactory;
 import com.easyink.wecom.login.util.LoginTokenService;
 import com.easyink.wecom.mapper.form.WeFormMapper;
 import com.easyink.wecom.mapper.wechatopen.WeOpenConfigMapper;
@@ -72,16 +76,15 @@ public class WechatOpenServiceImpl extends ServiceImpl<WeOpenConfigMapper, WeOpe
     private final WechatOpenConfig wechatOpenConfig;
     private final WechatOpenClient wechatOpenClient;
     private final RedisCache redisCache;
-    private final ShortUrlAdaptor shortUrlAdaptor;
+    private final ShortUrlService shortUrlService;
     @Resource(name = "wechatOpenConfigRedisCache")
     private WechatOpenConfigRedisCache wechatOpenConfigRedisCache;
     private final WechatOpen3rdClient wechatOpen3rdClient;
-    private final WeRadarOfficialAccountConfigService weRadarOfficialAccountConfigService;
     private final RuoYiConfig ruoYiConfig;
     private final WeFormAdvanceSettingService weFormAdvanceSettingService;
 
     private final WeFormMapper weFormMapper;
-    private final WeFormService weFormService;
+    private final ShortUrlHandlerFactory shortUrlHandlerFactory;
     private final WeCustomerService weCustomerService;
 
     private final WeOpenConfigMapper weOpenConfigMapper;
@@ -90,35 +93,39 @@ public class WechatOpenServiceImpl extends ServiceImpl<WeOpenConfigMapper, WeOpe
     @Resource(name = "formTaskExecutor")
     private ThreadPoolTaskExecutor formTaskExecutor;
     @Lazy
-    public WechatOpenServiceImpl(WechatOpenConfig wechatOpenConfig, WechatOpenClient wechatOpenClient, RedisCache redisCache, ShortUrlAdaptor shortUrlAdaptor, WechatOpen3rdClient wechatOpen3rdClient, WeRadarOfficialAccountConfigService weRadarOfficialAccountConfigService, RuoYiConfig ruoYiConfig, WeFormAdvanceSettingService weFormAdvanceSettingService, WeFormMapper weFormMapper, WeFormService weFormService, WeCustomerService weCustomerService, WeOpenConfigMapper weOpenConfigMapper, WeCorpAccountService weCorpAccountService) {
+    public WechatOpenServiceImpl(WechatOpenConfig wechatOpenConfig, WechatOpenClient wechatOpenClient, RedisCache redisCache, WechatOpen3rdClient wechatOpen3rdClient, WeRadarOfficialAccountConfigService weRadarOfficialAccountConfigService, ShortUrlService shortUrlService, RuoYiConfig ruoYiConfig, WeFormAdvanceSettingService weFormAdvanceSettingService, WeFormMapper weFormMapper, WeFormService weFormService, ShortUrlHandlerFactory shortUrlHandlerFactory, WeCustomerService weCustomerService, WeOpenConfigMapper weOpenConfigMapper, WeCorpAccountService weCorpAccountService) {
         this.wechatOpenConfig = wechatOpenConfig;
         this.wechatOpenClient = wechatOpenClient;
         this.redisCache = redisCache;
-        this.shortUrlAdaptor = shortUrlAdaptor;
+        this.shortUrlService = shortUrlService;
         this.wechatOpen3rdClient = wechatOpen3rdClient;
-        this.weRadarOfficialAccountConfigService = weRadarOfficialAccountConfigService;
         this.ruoYiConfig = ruoYiConfig;
         this.weFormAdvanceSettingService = weFormAdvanceSettingService;
         this.weFormMapper = weFormMapper;
-        this.weFormService = weFormService;
+        this.shortUrlHandlerFactory = shortUrlHandlerFactory;
         this.weCustomerService = weCustomerService;
         this.weOpenConfigMapper = weOpenConfigMapper;
         this.weCorpAccountService = weCorpAccountService;
     }
 
     @Override
-    public AppIdVO getAppId(String shortCode, Boolean useFormIdFlag, Integer formId) {
-        WeOpenConfig config = null;
-        if (Boolean.TRUE.equals(useFormIdFlag)) {
-            if (null == formId) {
-                throw new CustomException(ResultTip.TIP_PARAM_MISSING);
-            }
-            // 智能表单获取公众号配置
-            config = getFormWeOpenConfig(formId);
-        } else {
-            // 通过短链获取配置公众号appid
-            config = getWeOpenConfigByShortCode(shortCode);
-        }
+    public AppIdVO getAppIdByShortCode(String shortCode) {
+        return buildAppIdVO(getWeOpenConfigByShortCode(shortCode));
+    }
+
+    @Override
+    public AppIdVO getAppIdByFormId(Long formId) {
+        // 智能表单获取公众号配置
+        return buildAppIdVO(getFormWeOpenConfig(formId));
+    }
+
+    /**
+     * 组装返回appIdVO
+     *
+     * @param config    {@link WeOpenConfig}
+     * @return  AppIdVO
+     */
+    private AppIdVO buildAppIdVO(WeOpenConfig config) {
         if(config == null || StringUtils.isBlank(config.getOfficialAccountAppId())) {
             throw  new CustomException(ResultTip.TIP_MISS_APPID);
         }
@@ -129,6 +136,7 @@ public class WechatOpenServiceImpl extends ServiceImpl<WeOpenConfigMapper, WeOpe
         if(ruoYiConfig.isThirdServer()) {
             appIdVO.setComponentAppId(wechatOpenConfig.getPlatform3rdAccount().getAppId());
         }
+        log.info("[获取appId] appIdVO:{}",appIdVO);
         return appIdVO;
     }
 
@@ -138,7 +146,7 @@ public class WechatOpenServiceImpl extends ServiceImpl<WeOpenConfigMapper, WeOpe
      * @param formId    表单id
      * @return
      */
-    private WeOpenConfig getFormWeOpenConfig(Integer formId) {
+    private WeOpenConfig getFormWeOpenConfig(Long formId) {
         if (null == formId) {
             return null;
         }
@@ -172,29 +180,23 @@ public class WechatOpenServiceImpl extends ServiceImpl<WeOpenConfigMapper, WeOpe
      * @return
      */
     private WeOpenConfig getWeOpenConfigByShortCode(String shortCode) {
+        log.info("[获取appId] shortCode:{}",shortCode);
         if (StringUtils.isBlank(shortCode)) {
             return null;
         }
-        // 获取长链
-        SysShortUrlMapping mapping = shortUrlAdaptor.getLongUrlMapping(shortCode);
+        // 获取短链映射
+        SysShortUrlMapping mapping = shortUrlService.getUrlByMapping(shortCode);
         if (mapping == null || mapping.getAppendInfo() == null || StringUtils.isBlank(mapping.getBaseAppendInfo().getCorpId())) {
             log.error("[通过短链获取appid] 根据短链code获取corpId失败,{}", shortCode);
             throw new CustomException(ResultTip.TIP_MISS_CORP_ID);
         }
-        if (WechatOpenEnum.UseOfficeAccountType.RADAR.getCode().equals(mapping.getType())) {
-            String corpId = mapping.getRadarAppendInfo().getCorpId();
-            return weRadarOfficialAccountConfigService.getRadarOfficialAccountConfig(corpId);
-        } else if (WechatOpenEnum.UseOfficeAccountType.FORM.getCode().equals(mapping.getType())) {
-            String corpId = mapping.getFormAppendInfo().getCorpId();
-            String appId = mapping.getFormAppendInfo().getAppId();
-            return this.getConfig(corpId, appId);
-        }
-        return null;
+        return shortUrlHandlerFactory.getByType(mapping.getType()).getWeOpenConfig(mapping);
     }
 
 
     @Override
     public String getOpenId(String code, String corpId, String appId) {
+        log.info("[获取openId] code:{}, corpId:{}, appId:{}", code, corpId, appId);
         if (StringUtils.isBlank(code)) {
             throw new CustomException(ResultTip.TIP_MISSING_USER_CODE);
         }
@@ -219,6 +221,9 @@ public class WechatOpenServiceImpl extends ServiceImpl<WeOpenConfigMapper, WeOpe
         if (resp == null || resp.isError() || StringUtils.isBlank(resp.getOpenId())) {
             throw new CustomException(ResultTip.TIP_WECHAT_OPEN_GET_AUTH_ERROR);
         }
+        if (resp.getIs_snapshotuser() != null && WeConstans.WECHAT_OPEN_SNAP_SHOT_USER.equals(resp.getIs_snapshotuser())) {
+            throw new CustomException(ResultTip.TIP_WECHAT_OPEN_IS_SNAP_SHOT_USER);
+        }
         // 保存对应openid的sns_access_token
         redisCache.setCacheObject(snsRedisKey(resp.getOpenId()), resp.getAccess_token());
         return resp.getOpenId();
@@ -233,21 +238,20 @@ public class WechatOpenServiceImpl extends ServiceImpl<WeOpenConfigMapper, WeOpe
         if (request == null) {
             return;
         }
-        if (wechatOpenConfig == null || wechatOpenConfig.getOfficialAccount() == null
-                || StringUtils.isAnyBlank(wechatOpenConfig.getOfficialAccount().getAppId(), wechatOpenConfig.getOfficialAccount().getAppSecret())) {
+        if (wechatOpenConfig == null || wechatOpenConfig.getMiniApp() == null
+                || StringUtils.isAnyBlank(wechatOpenConfig.getMiniApp().getAppId(), wechatOpenConfig.getMiniApp().getAppSecret())) {
             log.info("[微信公众平台请求]没有设置appid和appsecret,无法生成access_token");
             return;
         }
-        String appId = wechatOpenConfig.getOfficialAccount().getAppId();
+        String appId = wechatOpenConfig.getMiniApp().getAppId();
         // 先从缓存中获取
-        String corpId = request.getHeader("corpId").getValue();
-        String redisKey = getAccessTokenKey(appId, corpId);
+        String redisKey = getAccessTokenKey(appId);
         String accessToken = redisCache.getCacheObject(redisKey);
         if (StringUtils.isNotBlank(accessToken)) {
             request.addQuery(ACCESS_TOKEN, accessToken);
             return;
         }
-        String secret = wechatOpenConfig.getOfficialAccount().getAppSecret();
+        String secret = wechatOpenConfig.getMiniApp().getAppSecret();
         // 没有则请求开放平台重新获取
         GetAccessTokenResp resp = wechatOpenClient.getAccessToken(CLIENT_CREDENTIAL_GRANT_TYPE, appId, secret);
         if (resp.isError() || StringUtils.isBlank(resp.getAccess_token())) {
@@ -291,15 +295,20 @@ public class WechatOpenServiceImpl extends ServiceImpl<WeOpenConfigMapper, WeOpe
     }
 
     @Override
-    public String getDomain(String corpId){
+    public String getDomain(String corpId) {
         if (StringUtils.isBlank(corpId)) {
             return null;
         }
+        String domain;
         if (ruoYiConfig.isInternalServer()) {
-            return wechatOpenConfig.getOfficialAccount().getDomain();
-        }else {
-            return wechatOpenConfig.getPlatform3rdAccount().getDomain();
+            domain = wechatOpenConfig.getOfficialAccount().getDomain();
+        } else {
+            domain = wechatOpenConfig.getPlatform3rdAccount().getDomain();
         }
+        if (StringUtils.isBlank(domain)) {
+            throw new CustomException(ResultTip.NO_OFFICIAL_ACCOUNT_CONFIG);
+        }
+        return domain;
     }
 
     @Override
@@ -461,11 +470,10 @@ public class WechatOpenServiceImpl extends ServiceImpl<WeOpenConfigMapper, WeOpe
     /**
      * 获取微信小程序的accessToken
      *
-     * @param appId  小程序appId
-     * @param corpId 企业id
+     * @param appId 小程序appId
      * @return
      */
-    public String getAccessTokenKey(String appId, String corpId) {
-        return "wechatOpen:" + corpId + ":accessToken:" + appId;
+    public String getAccessTokenKey(String appId) {
+        return "wechatOpen" + ":accessToken:" + appId;
     }
 }

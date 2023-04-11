@@ -5,11 +5,13 @@ import cn.hutool.core.date.DateUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.easyink.common.constant.WeConstans;
+import com.easyink.common.enums.MethodParamType;
 import com.easyink.common.enums.ResultTip;
 import com.easyink.common.exception.BaseException;
 import com.easyink.common.exception.CustomException;
 import com.easyink.common.utils.DateUtils;
 import com.easyink.common.utils.SnowFlakeUtil;
+import com.easyink.wecom.annotation.Convert2Cipher;
 import com.easyink.wecom.client.WeCustomerGroupClient;
 import com.easyink.wecom.domain.WeGroupMember;
 import com.easyink.wecom.domain.dto.FindWeGroupMemberDTO;
@@ -72,6 +74,7 @@ public class WeGroupMemberServiceImpl extends ServiceImpl<WeGroupMemberMapper, W
     }
 
     @Override
+    @Convert2Cipher(paramType = MethodParamType.STRUCT)
     public FindWeGroupMemberCountVO selectWeGroupMemberCount(FindWeGroupMemberDTO findWeGroupMemberDTO) {
         if (findWeGroupMemberDTO == null || StringUtils.isBlank(findWeGroupMemberDTO.getCorpId()) || StringUtils.isBlank(findWeGroupMemberDTO.getChatId())) {
             throw new CustomException(ResultTip.TIP_GENERAL_BAD_REQUEST);

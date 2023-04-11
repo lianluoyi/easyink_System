@@ -38,18 +38,14 @@ public class WechatOpenConfig {
          */
         private String appSecret;
         /**
-         * 域名
-         */
-        private String domain;
-        /**
-         * 小程序页面路径
-         */
-        private String codePath;
-        /**
          * 所属环境  要打开的小程序版本。正式版为 "release"，
          * 体验版为"trial"，开发版为"develop"，仅在微信外打开时生效。
          */
         private String envVersion;
+        /**
+         * 需要token的接口
+         */
+        private String[] needTokenUrl;
     }
 
     @Data

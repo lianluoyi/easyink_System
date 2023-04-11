@@ -10,10 +10,8 @@ import com.easyink.common.constant.GenConstants;
 import com.easyink.common.core.domain.model.LoginUser;
 import com.easyink.common.core.domain.wecom.BaseExtendPropertyRel;
 import com.easyink.common.core.domain.wecom.WeUser;
-import com.easyink.common.enums.CustomerExtendPropertyEnum;
-import com.easyink.common.enums.CustomerTrajectoryEnums;
-import com.easyink.common.enums.ExternalGroupMemberTypeEnum;
-import com.easyink.common.enums.MessageType;
+import com.easyink.common.enums.*;
+import com.easyink.wecom.annotation.Convert2Cipher;
 import com.easyink.wecom.client.WeMessagePushClient;
 import com.easyink.wecom.domain.*;
 import com.easyink.wecom.domain.dto.WeMessagePushDTO;
@@ -60,10 +58,12 @@ public class WeCustomerTrajectoryServiceImpl extends ServiceImpl<WeCustomerTraje
     private final WeTagService weTagService;
     private final WeOperationsCenterSopDetailService sopDetailService;
     private final WeOperationsCenterSopTaskService sopTaskService;
+    private final WeFlowerCustomerTagRelService weFlowerCustomerTagRelService;
+    private final WeFlowerCustomerRelService weFlowerCustomerRelService;
 
     @Autowired
     @Lazy
-    public WeCustomerTrajectoryServiceImpl(WeMessagePushClient weMessagePushClient, WeCustomerMapper weCustomerMapper, WeUserMapper weUserMapper, WeGroupService weGroupService, WeCustomerExtendPropertyService weCustomerExtendPropertyService, WeTagService weTagService, WeOperationsCenterSopDetailService sopDetailService, WeOperationsCenterSopTaskService sopTaskService) {
+    public WeCustomerTrajectoryServiceImpl(WeMessagePushClient weMessagePushClient, WeCustomerMapper weCustomerMapper, WeUserMapper weUserMapper, WeGroupService weGroupService, WeCustomerExtendPropertyService weCustomerExtendPropertyService, WeTagService weTagService, WeOperationsCenterSopDetailService sopDetailService, WeOperationsCenterSopTaskService sopTaskService, WeFlowerCustomerTagRelService weFlowerCustomerTagRelService, WeFlowerCustomerRelService weFlowerCustomerRelService) {
         this.weMessagePushClient = weMessagePushClient;
         this.weCustomerMapper = weCustomerMapper;
         this.weUserMapper = weUserMapper;
@@ -72,6 +72,8 @@ public class WeCustomerTrajectoryServiceImpl extends ServiceImpl<WeCustomerTraje
         this.weTagService = weTagService;
         this.sopDetailService = sopDetailService;
         this.sopTaskService = sopTaskService;
+        this.weFlowerCustomerTagRelService = weFlowerCustomerTagRelService;
+        this.weFlowerCustomerRelService = weFlowerCustomerRelService;
     }
 
     /**
@@ -196,19 +198,26 @@ public class WeCustomerTrajectoryServiceImpl extends ServiceImpl<WeCustomerTraje
     }
 
     @Override
-    public void recordEditTagOperation(String corpId, String userId, String externalUserId, String updateBy, List<WeTag> editTags) {
-        if (StringUtils.isAnyBlank(userId, corpId, externalUserId) || editTags == null) {
+    public void recordEditTagOperation(String corpId, String userId, String externalUserId, String updateBy) {
+        if (StringUtils.isAnyBlank(userId, corpId, externalUserId, updateBy)) {
             return;
         }
         List<WeCustomerTrajectory> list = new ArrayList<>();
+        List<String> tagIds = new ArrayList<>();
         Time now = new Time(System.currentTimeMillis());
         try {
             String editTagStr = StringUtils.EMPTY;
-            if (CollectionUtils.isNotEmpty(editTags)) {
-                List<String> tagIdList = editTags.stream().map(WeTag::getTagId).collect(Collectors.toList());
+            WeFlowerCustomerRel flowerCustomerRel = weFlowerCustomerRelService.getOne(userId, externalUserId, corpId);
+            tagIds = weFlowerCustomerTagRelService.list(new LambdaQueryWrapper<WeFlowerCustomerTagRel>()
+                    .select(WeFlowerCustomerTagRel::getTagId)
+                    .eq(WeFlowerCustomerTagRel::getFlowerCustomerRelId, flowerCustomerRel.getId()))
+                .stream()
+                .map(WeFlowerCustomerTagRel::getTagId)
+                .collect(Collectors.toList());
+            if (CollectionUtils.isNotEmpty(tagIds)) {
                 List<WeTag> tagList = weTagService.list(new LambdaQueryWrapper<WeTag>()
                         .eq(WeTag::getCorpId, corpId)
-                        .in(WeTag::getTagId, tagIdList)
+                        .in(WeTag::getTagId, tagIds)
                 );
                 editTagStr = tagList.stream().map(WeTag::getName).collect(Collectors.joining(","));
             }
@@ -230,7 +239,7 @@ public class WeCustomerTrajectoryServiceImpl extends ServiceImpl<WeCustomerTraje
             }
         } catch (Exception e) {
             // 不让记录操作异常 导致编辑资料失败
-            log.error("[记录客户信息动态]修改客户扩展字段异常,corpId:{},userId{},customer:{},list:{}, e:{}", corpId, userId, externalUserId, editTags, ExceptionUtils.getStackTrace(e));
+            log.error("[记录客户信息动态]修改客户扩展字段异常,corpId:{},userId{},customer:{},list:{}, e:{}", corpId, userId, externalUserId, tagIds, ExceptionUtils.getStackTrace(e));
         }
     }
 
@@ -248,7 +257,19 @@ public class WeCustomerTrajectoryServiceImpl extends ServiceImpl<WeCustomerTraje
         // 记录客户扩展字段修改操作
         this.recordEditExtendPropOperation(corpId, userId, externalUserId, updateBy, dto.getExtendProperties());
         // 记录客户标签修改操作
-        this.recordEditTagOperation(corpId, userId, externalUserId, updateBy, dto.getEditTag());
+        if (labelWasUpdate(dto)){
+            this.recordEditTagOperation(corpId, userId, externalUserId, updateBy);
+        }
+    }
+
+    /**
+     * 客户标签已被更新
+     *
+     * @param dto   {@link EditCustomerDTO}
+     * @return
+     */
+    private boolean labelWasUpdate(EditCustomerDTO dto) {
+        return !(CollUtil.isEmpty(dto.getAddTags()) && CollUtil.isEmpty(dto.getRemoveTags()));
     }
 
     /**
@@ -350,6 +371,7 @@ public class WeCustomerTrajectoryServiceImpl extends ServiceImpl<WeCustomerTraje
     }
 
     @Override
+    @Convert2Cipher
     public List<WeCustomerTrajectory> listOfTrajectory(String corpId, String externalUserid, Integer trajectoryType, String userId) {
         boolean isTodo = false;
         LambdaQueryWrapper<WeCustomerTrajectory> wrapper = new LambdaQueryWrapper<WeCustomerTrajectory>()

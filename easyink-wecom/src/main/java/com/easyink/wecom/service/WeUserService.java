@@ -15,6 +15,7 @@ import com.easyink.wecom.domain.vo.WeUserVO;
 import com.easyink.wecom.domain.vo.transfer.TransferResignedUserVO;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 通讯录相关客户Service接口
@@ -190,9 +191,10 @@ public interface WeUserService extends IService<WeUser> {
     /**
      * 同步离职员工 第二版
      *
-     * @param corpId 企业id
+     * @param corpId            企业id
+     * @param userIdInDbMap    数据中存在的员工userId
      */
-    void syncWeLeaveUserV2(String corpId);
+    void syncWeLeaveUserV2(String corpId, Map<String, String> userIdInDbMap);
 
     /**
      * 删除用户
@@ -309,5 +311,14 @@ public interface WeUserService extends IService<WeUser> {
      * @param corpId    企业id
      */
     void getUserBehaviorDataByCorpId(String corpId);
+
+    /**
+     * 获取加密后的userId
+     *
+     * @param corpId 企业id
+     * @param userId 员工id
+     * @return
+     */
+    String getOpenUserId(String corpId, String userId);
 
 }

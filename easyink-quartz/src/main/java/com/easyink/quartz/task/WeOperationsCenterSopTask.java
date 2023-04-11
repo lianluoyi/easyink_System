@@ -18,6 +18,7 @@ import com.easyink.wecom.domain.vo.sop.WeSopUserIdAndTargetIdVO;
 import com.easyink.wecom.service.*;
 import com.easyink.wecom.service.radar.WeRadarService;
 import com.easyink.wecom.utils.ApplicationMessageUtil;
+import com.easyink.wecom.utils.ExtraMaterialUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.ObjectUtils;
@@ -284,13 +285,15 @@ public class WeOperationsCenterSopTask {
             final String sopRuleName = saveRuleNameMap.get(userId + sopDetailEntity.getRuleId());
             for (SopAttachmentVO sopAttachmentVO : sopAttachmentVos) {
                 WeOperationsCenterSopTaskEntity sopTask = new WeOperationsCenterSopTaskEntity();
-                if (AttachmentTypeEnum.RADAR.getMessageType().equals(sopAttachmentVO.getMediaType())) {
-                    try {
+                try {
+                    if (AttachmentTypeEnum.RADAR.getMessageType().equals(sopAttachmentVO.getMediaType())) {
                         buildRadarAttachment(sopAttachmentVO, channelType, userId, corpId, sopRuleName);
-                    } catch (Exception e) {
-                        log.error("sop处理构建雷达素材失败, corpId: {},sopRuleName: {},userId: {}, sopType: {}, radarInfo: {}, e: {}", corpId, sopRuleName, userId, channelType, sopAttachmentVO, ExceptionUtils.getMessage(e));
-                        continue;
+                    } else if (AttachmentTypeEnum.FORM.getMessageType().equals(sopAttachmentVO.getMediaType())) {
+                        buildFormAttachment(sopAttachmentVO, channelType, userId, corpId);
                     }
+                } catch (Exception e) {
+                    log.error("sop处理构建雷达素材失败, corpId: {},sopRuleName: {},userId: {}, sopType: {}, radarInfo: {}, e: {}", corpId, sopRuleName, userId, channelType, sopAttachmentVO, ExceptionUtils.getMessage(e));
+                    continue;
                 }
                 BeanUtils.copyProperties(sopAttachmentVO, sopTask);
                 sopTask.setId(SnowFlakeUtil.nextId());
@@ -317,7 +320,7 @@ public class WeOperationsCenterSopTask {
      * @param sopRuleName
      */
     private void buildRadarAttachment(SopAttachmentVO sopAttachmentVO, int channelType, String userId, String corpId, String sopRuleName) {
-        final AttachmentParam radarAttachment = SpringUtils.getBean(WeRadarService.class).getRadarShortUrl(sopAttachmentVO.getRadarId(), channelType, userId, corpId, sopRuleName);
+        final AttachmentParam radarAttachment = SpringUtils.getBean(WeRadarService.class).getRadarShortUrl(sopAttachmentVO.getExtraId(), channelType, userId, corpId, sopRuleName);
         if (ObjectUtils.isEmpty(radarAttachment)) {
             return;
         }
@@ -325,6 +328,26 @@ public class WeOperationsCenterSopTask {
         sopAttachmentVO.setContent(radarAttachment.getDescription());
         sopAttachmentVO.setCoverUrl(radarAttachment.getPicUrl());
         sopAttachmentVO.setUrl(radarAttachment.getUrl());
+        sopAttachmentVO.setMediaType(WeCategoryMediaTypeEnum.LINK.getMediaType());
+    }
+
+    /**
+     * 构建表单附件
+     *
+     * @param sopAttachmentVO   {@link SopAttachmentVO}
+     * @param channelType       {@link com.easyink.wecom.domain.enums.form.FormChannelEnum}
+     * @param userId            员工id
+     * @param corpId            企业id
+     */
+    private void buildFormAttachment(SopAttachmentVO sopAttachmentVO, int channelType, String userId, String corpId) {
+        final AttachmentParam attachment = ExtraMaterialUtils.getFormAttachment(sopAttachmentVO.getExtraId(), channelType, corpId, userId);
+        if (ObjectUtils.isEmpty(attachment)) {
+            return;
+        }
+        sopAttachmentVO.setTitle(attachment.getContent());
+        sopAttachmentVO.setContent(attachment.getDescription());
+        sopAttachmentVO.setCoverUrl(attachment.getPicUrl());
+        sopAttachmentVO.setUrl(attachment.getUrl());
         sopAttachmentVO.setMediaType(WeCategoryMediaTypeEnum.LINK.getMediaType());
     }
 

@@ -40,7 +40,7 @@ public class WeCustomerSeedMessageVO {
     @ApiModelProperty(value = "文件url")
     private String fileUrl;
 
-    @ApiModelProperty(value = "链接消息：图文消息标题")
+    @ApiModelProperty(value = "链接消息：图文消息标题, 存储雷达表单标题，用户群发详情显示")
     private String linkTitle;
 
     @ApiModelProperty(value = "链接消息：图文消息封面的url")

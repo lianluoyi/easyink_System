@@ -103,6 +103,7 @@ public class WeCustomerSeedMessageServiceImpl extends ServiceImpl<WeCustomerSeed
             customerSeedMessage.setMiniprogramTitle(Optional.ofNullable(miniprogramMessage.getTitle()).orElse(StrUtil.EMPTY));
             customerSeedMessage.setMiniprogramMediaId(Optional.ofNullable(miniprogramMessage.getPic_media_id()).orElse(StrUtil.EMPTY));
             customerSeedMessage.setAppid(Optional.ofNullable(miniprogramMessage.getAppid()).orElse(StrUtil.EMPTY));
+            customerSeedMessage.setAccountOriginalId(Optional.ofNullable(miniprogramMessage.getAccountOriginalId()).orElse(StrUtil.EMPTY));
             customerSeedMessage.setPage(Optional.ofNullable(miniprogramMessage.getPage()).orElse(StrUtil.EMPTY));
             customerSeedMessage.setMessageType(GroupMessageType.MINIPROGRAM.getType());
         }
@@ -115,11 +116,17 @@ public class WeCustomerSeedMessageServiceImpl extends ServiceImpl<WeCustomerSeed
             customerSeedMessage.setLinDesc(Optional.ofNullable(linkMessage.getDesc()).orElse(StrUtil.EMPTY));
             customerSeedMessage.setIsDefined(Optional.ofNullable(linkMessage.getIsDefined()).orElse(Boolean.FALSE));
             customerSeedMessage.setMessageType(GroupMessageType.LINK.getType());
-
+        // 雷达
         } else if (GroupMessageType.RADAR.getType().equals(msgtype) && attachment.getRadarMessage() != null) {
             RadarMessageDTO radarMessage = attachment.getRadarMessage();
-            customerSeedMessage.setRadarId(radarMessage.getRadarId());
+            customerSeedMessage.setExtraId(radarMessage.getRadarId());
+            customerSeedMessage.setLinkTitle(radarMessage.getLinkTitle());
             customerSeedMessage.setMessageType(GroupMessageType.RADAR.getType());
+        } else if (GroupMessageType.FORM.getType().equals(msgtype) && attachment.getFormMessage() != null) {
+            FormMessageDTO formMessage = attachment.getFormMessage();
+            customerSeedMessage.setExtraId(formMessage.getFormId());
+            customerSeedMessage.setLinkTitle(formMessage.getLinkTitle());
+            customerSeedMessage.setMessageType(GroupMessageType.FORM.getType());
         }
         //视频
         else if (GroupMessageType.VIDEO.getType().equals(msgtype) && attachment.getVideoDTO() != null) {

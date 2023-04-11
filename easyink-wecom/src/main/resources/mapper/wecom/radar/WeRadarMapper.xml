@@ -165,7 +165,7 @@
         WHERE id = #{id}
     </select>
 <!--    根据雷达id获取需要打上的标签 -->
-    <select id="getTagListByRadarId" resultType="com.easyink.wecom.domain.WeTag">
+    <select id="getTagListByRadarId" resultType="java.lang.String">
         SELECT
             tag_id
         FROM

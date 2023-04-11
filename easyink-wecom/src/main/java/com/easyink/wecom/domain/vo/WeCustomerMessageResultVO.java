@@ -28,6 +28,7 @@ public class WeCustomerMessageResultVO {
     private String taskName;
     @ApiModelProperty("发送状态  0-未执行 1-已执行 2-发送成功 3-发送失败")
     private String sendStatus;
-
+    @ApiModelProperty("发送对象的人数总数")
+    private Integer count;
 
 }

@@ -20,6 +20,7 @@ import com.easyink.wecom.client.We3rdUserClient;
 import com.easyink.wecom.domain.WeAuthCorpInfo;
 import com.easyink.wecom.domain.WeAuthCorpInfoExtend;
 import com.easyink.wecom.domain.dto.app.ToOpenCorpIdResp;
+import com.easyink.wecom.domain.vo.customerloss.CustomerLossSwitchVO;
 import com.easyink.wecom.login.util.LoginTokenService;
 import com.easyink.wecom.mapper.WeCorpAccountMapper;
 import com.easyink.wecom.service.*;
@@ -44,7 +45,7 @@ import java.util.stream.Collectors;
  * @date: 2021-09-26 18:03
  */
 @Slf4j
-@Service
+@Service("corpAccountService")
 public class WeCorpAccountServiceImpl extends ServiceImpl<WeCorpAccountMapper, WeCorpAccount> implements WeCorpAccountService {
 
 
@@ -109,7 +110,9 @@ public class WeCorpAccountServiceImpl extends ServiceImpl<WeCorpAccountMapper, W
             if (weAuthCorpInfoExtendService.isCustomizedApp(corpId)) {
                 WeCorpAccount validWeCorpAccount = findValidWeCorpAccount(corpId);
                 validWeCorpAccount.setChatSecret(wxCorpAccount.getChatSecret());
+                // 修改流失设置开关状态
                 validWeCorpAccount.setCustomerChurnNoticeSwitch(wxCorpAccount.getCustomerChurnNoticeSwitch());
+                validWeCorpAccount.setCustomerLossTagSwitch(wxCorpAccount.getCustomerLossTagSwitch());
                 wxCorpAccount = validWeCorpAccount;
             }
             updateSuccess = this.update(wxCorpAccount, updateWrapper);
@@ -196,6 +199,9 @@ public class WeCorpAccountServiceImpl extends ServiceImpl<WeCorpAccountMapper, W
 
     @Override
     public void startCustomerChurnNoticeSwitch(String corpId, String status) {
+        if (StringUtils.isBlank(corpId)) {
+            throw new WeComException("企业ID不能为空");
+        }
         WeCorpAccount validWeCorpAccount = findValidWeCorpAccount(corpId);
         if (validWeCorpAccount == null) {
             throw new CustomException(ResultTip.TIP_MISS_CORP_ID);
@@ -205,12 +211,49 @@ public class WeCorpAccountServiceImpl extends ServiceImpl<WeCorpAccountMapper, W
         this.updateWeCorpAccount(validWeCorpAccount, corpId);
     }
 
+    /**
+     * 修改流失标签开关状态
+     *
+     * @param corpId 企业ID
+     * @param status 开关状态
+     */
+    @Override
+    public void startCustomerLossTagSwitch(String corpId, String status) {
+        if (StringUtils.isBlank(corpId)) {
+            throw new WeComException("企业ID不能为空");
+        }
+        WeCorpAccount validWeCorpAccount = findValidWeCorpAccount(corpId);
+        if (validWeCorpAccount == null) {
+            throw new CustomException(ResultTip.TIP_MISS_CORP_ID);
+        }
+        // 修改流失标签的开关
+        validWeCorpAccount.setCustomerLossTagSwitch(status);
+        this.updateWeCorpAccount(validWeCorpAccount, corpId);
+    }
+
 
     @Override
     public String getCustomerChurnNoticeSwitch(String corpId) {
         WeCorpAccount validWeCorpAccount = this.findValidWeCorpAccount(corpId);
         return Optional.ofNullable(validWeCorpAccount).map(WeCorpAccount::getCustomerChurnNoticeSwitch)
                 .orElse(WeConstans.DEL_FOLLOW_USER_SWITCH_CLOSE);
+    }
+
+    /**
+     * 查询客户流失提醒和流失标签开关状态
+     *
+     * @param corpId 企业ID
+     * @return 结果
+     */
+    @Override
+    public CustomerLossSwitchVO getCustomerLossSwitch(String corpId) {
+        WeCorpAccount validWeCorpAccount = this.findValidWeCorpAccount(corpId);
+        CustomerLossSwitchVO customerLossSwitchVO = new CustomerLossSwitchVO();
+        customerLossSwitchVO.setCustomerChurnNoticeSwitch(Optional.ofNullable(validWeCorpAccount).map(WeCorpAccount::getCustomerChurnNoticeSwitch)
+                .orElse(WeConstans.DEL_FOLLOW_USER_SWITCH_CLOSE));
+        customerLossSwitchVO.setCustomerLossTagSwitch(Optional.ofNullable(validWeCorpAccount).map(WeCorpAccount::getCustomerLossTagSwitch)
+                .orElse(WeConstans.DEL_FOLLOW_USER_SWITCH_CLOSE));
+        return customerLossSwitchVO;
     }
 
     /**

@@ -66,7 +66,7 @@ public class WeCustomer extends BaseEntity {
 
     @ApiModelProperty(value = "外部联系人性别 0-未知 1-男性 2-女性")
     @TableField("gender")
-    private Integer gender;
+    private String gender;
 
     @ApiModelProperty(value = "外部联系人在微信开放平台的唯一身份标识,通过此字段企业可将外部联系人与公众号/小程序用户关联起来。")
     @TableField("unionid")
@@ -77,6 +77,13 @@ public class WeCustomer extends BaseEntity {
     @JsonFormat(pattern = "yyyy-MM-dd")
     @Excel(name = "出生日期", dateFormat = "yyyy-MM-dd" ,sort = 9)
     private Date birthday;
+
+    /**
+     * 用于高级筛选进行生日搜索
+     */
+    @TableField(exist = false)
+    @ApiModelProperty("高级筛选生日")
+    private String birthdayStr;
 
     @ApiModelProperty(value = "客户企业简称")
     @TableField("corp_name")
@@ -192,6 +199,10 @@ public class WeCustomer extends BaseEntity {
     @TableField(exist = false)
     private Integer transferStatus;
 
+    @ApiModelProperty(value = "筛选结果")
+    @TableField(exist = false)
+    private List<WeCustomerExtend> extendList;
+
 
     /**
      * 根据API返回的客户详情实体 构建数据交互的企微客户实体
@@ -200,7 +211,15 @@ public class WeCustomer extends BaseEntity {
      * @param corpId          企业ID
      */
     public WeCustomer(ExternalContact externalContact, String corpId) {
-        BeanUtils.copyPropertiesignoreOther(externalContact, this);
+        this.externalUserid=externalContact.getExternalUserid();
+        this.name=externalContact.getName();
+        this.position=externalContact.getPosition();
+        this.avatar=externalContact.getAvatar();
+        this.corpName=externalContact.getCorpName();
+        this.corpFullName=externalContact.getCorpFullName();
+        this.type=externalContact.getType();
+        this.gender= String.valueOf(externalContact.getGender());
+        this.unionid=externalContact.getUnionid();
         this.corpId = corpId;
         if (StringUtils.isBlank(externalContact.getUnionid())) {
             this.unionid = StringUtils.EMPTY;

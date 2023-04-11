@@ -101,11 +101,14 @@
 
 
     <insert id="batchInsetWeFlowerCustomerTagRel">
-        insert into we_flower_customer_tag_rel (id, flower_customer_rel_id, tag_id, create_time)
+        insert into we_flower_customer_tag_rel (id, flower_customer_rel_id, tag_id, create_time, external_userid)
         values
         <foreach collection="list" item="tag" index="index" separator=",">
-            (#{tag.id},#{tag.flowerCustomerRelId},#{tag.tagId},#{tag.createTime})
+            (#{tag.id},#{tag.flowerCustomerRelId},#{tag.tagId},#{tag.createTime},#{tag.externalUserid})
         </foreach>
+        ON DUPLICATE key update
+        flower_customer_rel_id=values(flower_customer_rel_id),
+        tag_id=values(tag_id)
     </insert>
     <!--    批量更新/插入-->
     <insert id="batchInsert" parameterType="com.easyink.wecom.domain.WeFlowerCustomerTagRel">

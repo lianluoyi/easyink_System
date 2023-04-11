@@ -1,6 +1,7 @@
 package com.easyink.wecom.domain.entity;
 
 import com.easyink.wecom.domain.WeCustomer;
+import com.easyink.wecom.domain.dto.WeCustomerSearchDTO;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
@@ -16,7 +17,7 @@ import java.util.List;
  */
 @Data
 @ApiModel("导出企业微信客户列表参数")
-public class WeCustomerExportDTO extends WeCustomer {
+public class WeCustomerExportDTO extends WeCustomerSearchDTO {
 
     @NotEmpty(message = "请选择需要导出的字段")
     @ApiModelProperty(value = "指定导出的字段名集合")

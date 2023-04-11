@@ -5,7 +5,6 @@ import com.dtflys.forest.http.ForestRequest;
 import com.easyink.wecom.domain.entity.wechatopen.WeOpenConfig;
 import com.easyink.wecom.domain.vo.AppIdVO;
 import com.easyink.wecom.domain.vo.WeOpenConfigVO;
-import reactor.util.annotation.Nullable;
 
 import java.util.List;
 
@@ -19,12 +18,18 @@ public interface WechatOpenService extends IService<WeOpenConfig> {
     /**
      * 获取系统的appId配置
      *
-     * @param shortCode         短链
-     * @param useFormIdFlag     是否通过表单formId获取appId
-     * @param formId            表单id
+     * @param shortCode 短链
      * @return appId 于配置文件配置
      */
-    AppIdVO getAppId(String shortCode, Boolean useFormIdFlag, @Nullable Integer formId);
+    AppIdVO getAppIdByShortCode(String shortCode);
+
+    /**
+     * 通过表单Id获取系统的appId配置
+     *
+     * @param formId    表单id
+     * @return appId 于配置文件配置
+     */
+    AppIdVO getAppIdByFormId(Long formId);
 
     /**
      * 获取用户的openId

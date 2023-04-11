@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.easyink.common.core.domain.AjaxResult;
 import com.easyink.common.core.domain.entity.SysDictData;
+import com.easyink.common.core.domain.wecom.WeDepartment;
 import com.easyink.common.enums.ResultTip;
 import com.easyink.common.enums.WeEmpleCodeAnalyseTypeEnum;
 import com.easyink.common.exception.CustomException;
@@ -14,8 +15,10 @@ import com.easyink.wecom.domain.WeEmpleCodeAnalyse;
 import com.easyink.wecom.domain.dto.emplecode.FindWeEmpleCodeAnalyseDTO;
 import com.easyink.wecom.domain.vo.WeEmplyCodeAnalyseCountVO;
 import com.easyink.wecom.domain.vo.WeEmplyCodeAnalyseVO;
+import com.easyink.wecom.mapper.WeDepartmentMapper;
 import com.easyink.wecom.mapper.WeEmpleCodeAnalyseMapper;
 import com.easyink.wecom.mapper.WeEmpleCodeMapper;
+import com.easyink.wecom.mapper.WeUserMapper;
 import com.easyink.wecom.service.WeEmpleCodeAnalyseService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +28,7 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 类名：WeEmpleCodeAnalyseServiceImpl
@@ -38,6 +42,10 @@ import java.util.*;
 public class WeEmpleCodeAnalyseServiceImpl extends ServiceImpl<WeEmpleCodeAnalyseMapper, WeEmpleCodeAnalyse> implements WeEmpleCodeAnalyseService {
 
     private final WeEmpleCodeMapper weEmpleCodeMapper;
+
+    private final WeUserMapper weUserMapper;
+
+    private final WeDepartmentMapper weDepartmentMapper;
 
     @Override
     public WeEmplyCodeAnalyseVO getTimeRangeAnalyseCount(FindWeEmpleCodeAnalyseDTO analyseDTO) {
@@ -53,6 +61,21 @@ public class WeEmpleCodeAnalyseServiceImpl extends ServiceImpl<WeEmpleCodeAnalys
         Date endTime = DateUtils.dateTime(DateUtils.YYYY_MM_DD, analyseDTO.getEndTime());
         List<Date> dates = DateUtils.findDates(startTime, endTime);
 
+        // 员工ID列表
+        List<String> userIdList = new ArrayList<>();
+        // 如果是部门查询
+        if(StringUtils.isNotBlank(analyseDTO.getDepartmentId())){
+
+            WeDepartment weDepartment = new WeDepartment();
+            weDepartment.setId(Long.valueOf(analyseDTO.getDepartmentId()));
+            weDepartment.setCorpId(analyseDTO.getCorpId());
+            // 获取当前部门和所有子部门的部门ID列表
+            String departmentList = weDepartmentMapper.selectDepartmentAndChild(weDepartment);
+            List<String> departmentIdList = Arrays.stream(departmentList.split(",")).collect(Collectors.toList());
+            // 根据部门ID获取当前部门下所有正常状态的员工userId
+            userIdList = weUserMapper.listOfUserId(analyseDTO.getCorpId(), departmentIdList.toArray(new String[0]));
+            analyseDTO.setUserIdList(userIdList);
+        }
         //查询时间段内新增和流失客户数据
         List<WeEmplyCodeAnalyseCountVO> weEmpleCodeAnalyses = baseMapper.selectCountList(analyseDTO);
 
@@ -75,6 +98,16 @@ public class WeEmpleCodeAnalyseServiceImpl extends ServiceImpl<WeEmpleCodeAnalys
             resultList.add(analyseCountVO);
         }
         int total = getAddCountByState(analyseDTO.getState());
+        // 部门查询下，若查询的部门内未拥有员工，返回空数据，但统计总数依旧返回
+        if(CollectionUtils.isEmpty(userIdList) && StringUtils.isNotBlank(analyseDTO.getDepartmentId())){
+            List<WeEmplyCodeAnalyseCountVO> result = new ArrayList<>();
+            for (Date date : dates) {
+                analyseCountVO = new WeEmplyCodeAnalyseCountVO();
+                analyseCountVO.setTime(date);
+                result.add(analyseCountVO);
+            }
+            return new WeEmplyCodeAnalyseVO(result, total);
+        }
         return new WeEmplyCodeAnalyseVO(resultList,total);
     }
 

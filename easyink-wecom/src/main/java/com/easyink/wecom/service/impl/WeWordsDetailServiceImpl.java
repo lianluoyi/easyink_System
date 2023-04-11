@@ -13,7 +13,7 @@ import com.easyink.wecom.mapper.WeWordsDetailMapper;
 import com.easyink.wecom.service.WeWordsDetailService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -130,6 +130,12 @@ public class WeWordsDetailServiceImpl extends ServiceImpl<WeWordsDetailMapper, W
             if (weWordsDetailEntity.getUrl() == null) {
                 weWordsDetailEntity.setUrl(StringUtils.EMPTY);
             }
+            if(weWordsDetailEntity.getAccountOriginalId() == null) {
+                weWordsDetailEntity.setAccountOriginalId(StringUtils.EMPTY);
+            }
+            if(weWordsDetailEntity.getAppid() == null) {
+                weWordsDetailEntity.setAppid(StringUtils.EMPTY);
+            }
             if (weWordsDetailEntity.getTitle() == null) {
                 weWordsDetailEntity.setTitle(StringUtils.EMPTY);
             }
@@ -142,8 +148,8 @@ public class WeWordsDetailServiceImpl extends ServiceImpl<WeWordsDetailMapper, W
             if (weWordsDetailEntity.getSize() == null) {
                 weWordsDetailEntity.setSize(0L);
             }
-            if (weWordsDetailEntity.getRadarId() == null) {
-                weWordsDetailEntity.setRadarId(0L);
+            if (weWordsDetailEntity.getExtraId() == null) {
+                weWordsDetailEntity.setExtraId(0L);
             }
         });
     }
@@ -159,10 +165,14 @@ public class WeWordsDetailServiceImpl extends ServiceImpl<WeWordsDetailMapper, W
                 throw new CustomException(ResultTip.TIP_MISS_WORDS_ATTACHMENT_CONTENT);
             }
         } else if (WeCategoryMediaTypeEnum.MINI_APP.getMediaType().equals(weWordsDetailEntity.getMediaType())) {
-            if (StringUtils.isBlank(weWordsDetailEntity.getContent()) || StringUtils.isBlank(weWordsDetailEntity.getTitle()) || StringUtils.isBlank(weWordsDetailEntity.getUrl())) {
+            if (StringUtils.isAnyBlank(weWordsDetailEntity.getAccountOriginalId(), weWordsDetailEntity.getAppid(), weWordsDetailEntity.getTitle(), weWordsDetailEntity.getUrl())) {
                 throw new CustomException(ResultTip.TIP_MISS_WORDS_ATTACHMENT_CONTENT);
             }
-        } else {
+        } else if (WeCategoryMediaTypeEnum.FORM.getMediaType().equals(weWordsDetailEntity.getMediaType())){
+            if (weWordsDetailEntity.getExtraId() == null) {
+                throw new CustomException(ResultTip.TIP_MISS_WORDS_ATTACHMENT_CONTENT);
+            }
+        }else{
             if (StringUtils.isBlank(weWordsDetailEntity.getUrl())) {
                 throw new CustomException(ResultTip.TIP_MISS_WORDS_ATTACHMENT_CONTENT);
             }

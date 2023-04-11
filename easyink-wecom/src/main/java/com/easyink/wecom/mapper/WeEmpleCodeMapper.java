@@ -3,6 +3,7 @@ package com.easyink.wecom.mapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.easyink.wecom.domain.WeEmpleCode;
 import com.easyink.wecom.domain.dto.WeEmpleCodeDTO;
+import com.easyink.wecom.domain.dto.WeExternalContactDTO;
 import com.easyink.wecom.domain.dto.emplecode.FindWeEmpleCodeDTO;
 import com.easyink.wecom.domain.vo.*;
 import org.apache.ibatis.annotations.Mapper;
@@ -61,6 +62,14 @@ public interface WeEmpleCodeMapper extends BaseMapper<WeEmpleCode> {
      * @return 结果
      */
     int batchRemoveWeEmpleCodeIds(@Param("corpId") String corpId, @Param("ids") List<Long> ids);
+
+    /**
+     * 批量获取员工活码config_Id
+     * @param corpId 授权企业ID
+     * @param ids 需要获取的数据ID
+     * @return 结果
+     */
+    List<String> batchGetWeEmpleCodeConfigId(@Param("corpId") String corpId, @Param("ids") List<Long> ids);
 
     /**
      * 通过活动场景获取客户欢迎语

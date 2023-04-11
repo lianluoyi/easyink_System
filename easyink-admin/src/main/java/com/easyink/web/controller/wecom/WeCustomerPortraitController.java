@@ -6,6 +6,8 @@ import com.easyink.common.core.domain.AjaxResult;
 import com.easyink.common.core.domain.model.LoginUser;
 import com.easyink.common.core.page.TableDataInfo;
 import com.easyink.common.enums.CustomerTrajectoryEnums;
+import com.easyink.common.enums.MethodParamType;
+import com.easyink.wecom.annotation.Convert2Cipher;
 import com.easyink.wecom.domain.WeCustomerPortrait;
 import com.easyink.wecom.domain.WeCustomerTrajectory;
 import com.easyink.wecom.domain.WeTagGroup;
@@ -76,22 +78,6 @@ public class WeCustomerPortraitController extends BaseController {
                 .build()));
     }
 
-
-    /**
-     * 更新客户画像标签
-     *
-     * @param weMakeCustomerTag
-     * @return
-     */
-    @ApiOperation("更新客户画像标签")
-    @PostMapping(value = "/updateWeCustomerPorTraitTag")
-    public AjaxResult updateWeCustomerPorTraitTag(@Validated @RequestBody WeMakeCustomerTagVO weMakeCustomerTag) {
-        weMakeCustomerTag.setCorpId(LoginTokenService.getLoginUser().getCorpId());
-        weCustomerService.makeLabel(weMakeCustomerTag);
-        return AjaxResult.success();
-    }
-
-
     /**
      * 查看客户添加的员工
      *
@@ -129,6 +115,7 @@ public class WeCustomerPortraitController extends BaseController {
      */
     @ApiOperation("获取轨迹信息")
     @GetMapping(value = "/findTrajectory")
+    @Convert2Cipher
     public TableDataInfo<WeCustomerTrajectory> findTrajectory(String userId, String externalUserid, Integer trajectoryType) {
         startPage();
         LoginUser loginUser = LoginTokenService.getLoginUser();
@@ -147,6 +134,7 @@ public class WeCustomerPortraitController extends BaseController {
 
     @ApiOperation("获取待办事项数量")
     @GetMapping(value = "/todoCount")
+    @Convert2Cipher
     public AjaxResult<Integer> getUnFinishedCount(@ApiParam("跟进人userId") @NotBlank(message = "参数缺失") String userId,
                                                   @ApiParam("外部联系人userId") @NotBlank(message = "参数缺失") String externalUserid) {
         LoginUser loginUser = LoginTokenService.getLoginUser();
@@ -168,6 +156,7 @@ public class WeCustomerPortraitController extends BaseController {
      */
     @ApiOperation("添加或编辑轨迹")
     @PostMapping(value = "/addOrEditWaitHandle")
+    @Convert2Cipher(paramType = MethodParamType.STRUCT)
     public AjaxResult addOrEditWaitHandle(@RequestBody WeCustomerTrajectory trajectory) {
         trajectory.setCorpId(LoginTokenService.getLoginUser().getCorpId());
         weCustomerTrajectoryService.saveOrUpdate(trajectory);

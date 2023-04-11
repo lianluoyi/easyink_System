@@ -32,7 +32,7 @@ public interface WeFormUseRecordService extends IService<WeFormUseRecord> {
      * @param externalUserId 客户id
      * @param corpId         企业id
      */
-    void saveRecord(Integer formId, String userId, String externalUserId, String corpId);
+    void saveRecord(Long formId, String userId, String externalUserId, String corpId);
 
     /**
      * 保存员工使用表单记录
@@ -41,6 +41,6 @@ public interface WeFormUseRecordService extends IService<WeFormUseRecord> {
      * @param userId         员工id
      * @param externalUserId 客户id
      */
-    void saveRecord(Integer formId, String userId, String externalUserId);
+    void saveRecord(Long formId, String userId, String externalUserId);
 }
 

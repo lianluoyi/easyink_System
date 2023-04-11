@@ -24,11 +24,11 @@ public class WeFormCustomerFeedback {
      * 主键id
      */
     @TableId(type = IdType.AUTO)
-    private Integer id;
+    private Long id;
     /**
      * 表单id
      */
-    private Integer formId;
+    private Long formId;
     /**
      * 客户id
      */

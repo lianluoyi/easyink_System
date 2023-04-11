@@ -12,6 +12,7 @@ import com.easyink.common.constant.WeConstans;
 import com.easyink.common.core.domain.AjaxResult;
 import com.easyink.common.core.domain.wecom.WeUser;
 import com.easyink.common.enums.CustomerTrajectoryEnums;
+import com.easyink.common.enums.MethodParamType;
 import com.easyink.common.enums.ResultTip;
 import com.easyink.common.exception.BaseException;
 import com.easyink.common.exception.CustomException;
@@ -21,6 +22,7 @@ import com.easyink.common.utils.SnowFlakeUtil;
 import com.easyink.common.utils.StringUtils;
 import com.easyink.common.utils.bean.BeanUtils;
 import com.easyink.common.utils.poi.ExcelUtil;
+import com.easyink.wecom.annotation.Convert2Cipher;
 import com.easyink.wecom.client.WeCustomerClient;
 import com.easyink.wecom.client.WeCustomerGroupClient;
 import com.easyink.wecom.domain.WeCustomerAddGroup;
@@ -556,6 +558,7 @@ public class WeGroupServiceImpl extends ServiceImpl<WeGroupMapper, WeGroup> impl
     }
 
     @Override
+    @Convert2Cipher
     public List<WeCustomerAddGroup> findWeGroupByCustomer(String userId, String externalUserid, String corpId) {
         return this.baseMapper.findWeGroupByCustomer(userId, externalUserid, corpId);
     }

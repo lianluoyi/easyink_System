@@ -15,6 +15,7 @@ import com.easyink.wecom.domain.dto.form.FormGroupUpdateDTO;
 import com.easyink.wecom.domain.entity.form.WeFormGroup;
 import com.easyink.wecom.domain.enums.form.FormSourceType;
 import com.easyink.wecom.domain.vo.form.FormGroupTreeVO;
+import com.easyink.wecom.domain.vo.form.FormGroupTrees;
 import com.easyink.wecom.login.util.LoginTokenService;
 import com.easyink.wecom.mapper.form.WeFormGroupMapper;
 import com.easyink.wecom.service.WeDepartmentService;
@@ -78,6 +79,15 @@ public class WeFormGroupServiceImpl extends ServiceImpl<WeFormGroupMapper, WeFor
             formGroupVOList.add(formGroupTreeVO);
         });
         return (List<FormGroupTreeVO>) TreeUtil.build(formGroupVOList);
+    }
+
+    @Override
+    public FormGroupTrees selectTrees(Integer departmentId, String corpId) {
+        FormGroupTrees formGroupTrees = new FormGroupTrees();
+        formGroupTrees.setCorpFormGroup(selectTree(FormSourceType.CORP.getCode(), null, corpId));
+        formGroupTrees.setDepartmentFormGroup(selectTree(FormSourceType.DEPARTMENT.getCode(), departmentId, corpId));
+        formGroupTrees.setSelfFormGroup(selectTree(FormSourceType.PERSONAL.getCode(), null, corpId));
+        return formGroupTrees;
     }
 
     @Transactional(rollbackFor = Exception.class)

@@ -65,19 +65,19 @@ public class WeFormController extends BaseController {
 
     @ApiOperation("表单编辑详情")
     @GetMapping("/edit/detail")
-    public AjaxResult<WeFormEditDetailVO> editDetail(@ApiParam(value = "表单id") @RequestParam(value = "id") Integer id) {
+    public AjaxResult<WeFormEditDetailVO> editDetail(@ApiParam(value = "表单id") @RequestParam(value = "id") Long id) {
         return AjaxResult.success(this.weFormService.getEditDetail(id, LoginTokenService.getLoginUser().getCorpId()));
     }
 
     @ApiOperation("表单详情")
     @GetMapping("/detail")
-    public AjaxResult<FormDetailViewVO> detail(@ApiParam(value = "表单id") @RequestParam(value = "id") Integer id) {
+    public AjaxResult<FormDetailViewVO> detail(@ApiParam(value = "表单id") @RequestParam(value = "id") Long id) {
         return AjaxResult.success(this.weFormService.getDetail(id, LoginTokenService.getLoginUser().getCorpId()));
     }
 
     @ApiOperation("表单数据总览")
     @GetMapping("/total/view")
-    public AjaxResult<FormTotalView> totalView(@ApiParam(value = "表单id") @RequestParam(value = "id") Integer id) {
+    public AjaxResult<FormTotalView> totalView(@ApiParam(value = "表单id") @RequestParam(value = "id") Long id) {
         return AjaxResult.success(this.weFormService.totalView(id, LoginTokenService.getLoginUser().getCorpId()));
     }
 
@@ -90,7 +90,7 @@ public class WeFormController extends BaseController {
 
     @ApiOperation("推广")
     @GetMapping("/promotional")
-    public AjaxResult<PromotionalVO> promotional(@ApiParam(value = "表单id") @RequestParam("id") Integer id, HttpServletResponse response) {
+    public AjaxResult<PromotionalVO> promotional(@ApiParam(value = "表单id") @RequestParam("id") Long id, HttpServletResponse response) {
         return AjaxResult.success(weFormService.promotion(id, response)
 );
     }
@@ -98,7 +98,7 @@ public class WeFormController extends BaseController {
     @ApiOperation("启用禁用表单")
     @PostMapping("/enableForm")
     public AjaxResult<PromotionalVO> enableForm(
-            @ApiParam(value = "表单id") @RequestParam("id") Integer id,
+            @ApiParam(value = "表单id") @RequestParam("id") Long id,
             @ApiParam(value = "启用禁用状态") @RequestParam("enableFlag") Boolean enableFlag
     ) {
         weFormService.enableForm(id, enableFlag, LoginTokenService.getLoginUser().getCorpId());
@@ -107,7 +107,7 @@ public class WeFormController extends BaseController {
 
     @ApiOperation("中间页获取表单内容，同时异步记录点击事件")
     @GetMapping("/getContent")
-    public AjaxResult getContent(@ApiParam("表单id") Integer formId,
+    public AjaxResult getContent(@ApiParam("表单id") Long formId,
                                  @ApiParam("员工id") String userId,
                                  @ApiParam("用户的公众号openid") String openId,
                                  @ApiParam("表单渠道id") Integer channelType) {
@@ -122,15 +122,14 @@ public class WeFormController extends BaseController {
         return AjaxResult.success("success");
     }
 
-    @ApiOperation("获取表单URL")
-    @GetMapping("/form/url")
+    @ApiOperation("侧边栏获取表单URL")
+    @GetMapping("/genFormUrl")
     public AjaxResult<String> genFormUrl(
-            @ApiParam("表单id") @RequestParam("formId") Integer formId,
-            @ApiParam("企业id") @RequestParam("corpId") String corpId,
+            @ApiParam("表单id") @RequestParam("formId") Long formId,
             @ApiParam("员工id") @RequestParam("userId") String userId,
             @ApiParam("渠道类型") @RequestParam("channelType") Integer channelType
     ) {
-        return AjaxResult.success(weFormService.genFormUrl(formId, corpId, userId, channelType));
+        return AjaxResult.success("success", weFormService.sideBarGenFormUrl(formId, userId, channelType));
     }
 
 }

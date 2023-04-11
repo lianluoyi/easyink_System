@@ -21,19 +21,15 @@ import com.easyink.common.token.SysPermissionService;
 import com.easyink.common.token.TokenService;
 import com.easyink.common.utils.MessageUtils;
 import com.easyink.common.utils.ServletUtils;
-import com.easyink.common.utils.wecom.RsaUtil;
 import com.easyink.wecom.client.We3rdUserClient;
 import com.easyink.wecom.client.WeAccessTokenClient;
+import com.easyink.wecom.client.WeUpdateIDClient;
 import com.easyink.wecom.client.WeUserClient;
 import com.easyink.wecom.domain.WeExternalUserMappingUser;
-import com.easyink.wecom.domain.dto.WeAccessUserInfo3rdDTO;
-import com.easyink.wecom.domain.dto.WeLoginUserInfoDTO;
-import com.easyink.wecom.domain.dto.WeUserDTO;
-import com.easyink.wecom.domain.dto.WeUserInfoDTO;
+import com.easyink.wecom.domain.dto.*;
 import com.easyink.wecom.mapper.WeDepartmentMapper;
 import com.easyink.wecom.service.*;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -45,7 +41,11 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 import javax.servlet.http.Cookie;
 import javax.validation.constraints.NotNull;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static com.easyink.common.utils.wecom.LoginRsaUtil.decryptByPrivateKey;
 
@@ -62,6 +62,7 @@ public class SysLoginService {
     @Resource
     private AuthenticationManager authenticationManager;
     private final WeUserClient weUserClient;
+    private final WeUpdateIDClient weUpdateIDClient;
     private final WeAccessTokenClient weAccessTokenClient;
     private final WeUserService weUserService;
     private final SysPermissionService permissionService;
@@ -78,10 +79,11 @@ public class SysLoginService {
     private WeExternalUserMappingUserService weExternalUserMappingUserService;
 
     @Autowired
-    public SysLoginService(@NotNull WeUserClient weUserClient, @NotNull WeUserService weUserService,
+    public SysLoginService(@NotNull WeUserClient weUserClient, WeUpdateIDClient weUpdateIDClient, @NotNull WeUserService weUserService,
                            @NotNull SysPermissionService permissionService, @NotNull TokenService tokenService,
                            @NotNull WeDepartmentMapper weDepartmentMapper, WeAccessTokenClient weAccessTokenClient, WeAuthCorpInfoService weAuthCorpInfoService, WeCorpAccountService weCorpAccountService, We3rdUserClient we3rdUserClient, RedisCache redisCache, RuoYiConfig ruoYiConfig, We3rdAppService we3rdAppService) {
         this.weUserClient = weUserClient;
+        this.weUpdateIDClient = weUpdateIDClient;
         this.weUserService = weUserService;
         this.permissionService = permissionService;
         this.tokenService = tokenService;
@@ -152,6 +154,36 @@ public class SysLoginService {
     }
 
 
+    /**
+     * 络客SRCM获取token
+     *
+     * @param corpId    企业id
+     * @param userId    用户id
+     * @return
+     */
+    public LoginResult getLoginToken(String corpId, String userId) {
+        if (StringUtils.isAnyBlank(corpId, userId)) {
+            throw new CustomException(ResultTip.TIP_PARAM_MISSING);
+        }
+        if (ruoYiConfig.isThirdServer()) {
+            CorpIdToOpenCorpIdResp openCorpId = weUpdateIDClient.getOpenCorpId(corpId);
+            corpId = openCorpId.getOpen_corpid();
+            userId = weUserService.getOpenUserId(corpId, userId);
+        }
+        //  构造 登录用户实体
+        WeUser weUser = weUserService.selectWeUserById(corpId, userId);
+        if (weUser == null) {
+            throw new CustomException(ResultTip.TIP_USER_NOT_ACTIVE);
+        }
+        LoginUser loginUser = new LoginUser(weUser, permissionService.getMenuPermission(weUser));
+        loginUser.setIsOtherSysUse(true);
+        // 缓存登录信息 生成token
+        String token = tokenService.createToken(loginUser);
+        Cookie cookie = new Cookie("Admin-Token", token);
+        cookie.setHttpOnly(true);
+        ServletUtils.getResponse().addCookie(cookie);
+        return new LoginResult(token, null);
+    }
 
     /**
      * 处理登录回调

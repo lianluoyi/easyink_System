@@ -3,6 +3,7 @@ package com.easyink.wecom.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.easyink.common.core.domain.entity.WeCorpAccount;
 import com.easyink.common.core.domain.model.LoginUser;
+import com.easyink.wecom.domain.vo.customerloss.CustomerLossSwitchVO;
 
 import java.util.List;
 
@@ -64,9 +65,24 @@ public interface WeCorpAccountService extends IService<WeCorpAccount> {
     void startCustomerChurnNoticeSwitch(String corpId, String status);
 
     /**
+     * 客户流失标签开关
+     *
+     * @param status 开关状态
+     * @return
+     */
+    void startCustomerLossTagSwitch(String corpId, String status);
+
+    /**
      * 客户流失通知开关查询
      */
     String getCustomerChurnNoticeSwitch(String corpId);
+
+    /**
+     * 客户流失开关查询
+     * @param corpId 企业ID
+     * @return
+     */
+    CustomerLossSwitchVO getCustomerLossSwitch(String corpId);
 
     /**
      * 企业是否已配置内部应用

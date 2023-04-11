@@ -295,7 +295,7 @@ public class WeMsgTlpMaterialServiceImpl extends ServiceImpl<WeMsgTlpMaterialMap
                 log.error("type is error !!, type: {}", weMsgTlpMaterial.getType());
                 continue;
             }
-            AttachmentParam param = AttachmentParam.costFromWeMsgTlpMaterial(weMsgTlpMaterial.getRadarId(), userId, corpId, weMsgTlpMaterial, type);
+            AttachmentParam param = AttachmentParam.costFromWeMsgTlpMaterial(weMsgTlpMaterial.getExtraId(), userId, corpId, weMsgTlpMaterial, type);
             attachments = attachmentService.buildAttachment(param, corpId);
 //            attachments = this.buildByWelcomeMsgType(param.getContent(), param.getPicUrl(), param.getDescription(), param.getUrl(), param.getTypeEnum(), corpId);
             if (attachments != null) {

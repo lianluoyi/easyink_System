@@ -32,12 +32,16 @@ public class WechatOpenController extends BaseController {
         this.wechatOpenService = wechatOpenService;
     }
 
-    @GetMapping("/appId")
-    @ApiOperation("获取公众号的appId")
-    public AjaxResult<AppIdVO> getAppId(@Nullable @ApiParam("短链") String shortCode,
-                                        @ApiParam("是否通过表单formId获取appId") Boolean useFormIdFlag,
-                                        @ApiParam("当前为表单formId") Integer formId) {
-        return AjaxResult.success("操作成功", wechatOpenService.getAppId(shortCode, useFormIdFlag, formId));
+    @GetMapping("/getAppIdByShortCode")
+    @ApiOperation("通过短链获取公众号的appId")
+    public AjaxResult<AppIdVO> getAppId(@Nullable @ApiParam("短链") String shortCode) {
+        return AjaxResult.success("操作成功", wechatOpenService.getAppIdByShortCode(shortCode));
+    }
+
+    @GetMapping("/getAppIdByFormId")
+    @ApiOperation("通过表单id获取公众号的appId")
+    public AjaxResult<AppIdVO> getAppIdByFormId(@Nullable @ApiParam("表单formId") Long formId){
+        return AjaxResult.success("操作成功", wechatOpenService.getAppIdByFormId(formId));
     }
 
     @GetMapping("/getDomain")

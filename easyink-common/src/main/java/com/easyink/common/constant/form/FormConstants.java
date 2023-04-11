@@ -62,7 +62,7 @@ public class FormConstants {
      * @param channelType   {@link com.easyink.wecom.domain.enums.form.FormChannelEnum}
      * @return
      */
-    public static String genFormUrl(String domain, Integer formId, String userId,Integer channelType) {
+    public static String genFormUrl(String domain, Long formId, String userId,Integer channelType) {
         if (formId == null || channelType == null || StringUtils.isAnyBlank(domain, userId)) {
             return null;
         }
