@@ -186,7 +186,7 @@ git clone https://github.com/lianluoyi/easyink_Sidebar.git
 
 除了本地服务器，我们还提供了快速部署的方法。
 
-请查看: [How to deploy easyink on K8s cluster](https://gitee.com/lianluoyi/easyink-install/wikis/%E7%94%A8%E6%88%B7%E6%8C%87%E5%8D%97)
+请查看: [How to deploy easyink on K8s cluster](https://xsxda94vjq.feishu.cn/wiki/wikcnEt21zsEptSLJhkBC67BPwc)
 
 
 
