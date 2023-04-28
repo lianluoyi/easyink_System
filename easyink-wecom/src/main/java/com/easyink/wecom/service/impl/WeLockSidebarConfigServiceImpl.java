@@ -19,7 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 
 /**
- * 络客侧边栏配置(WeLockSidebarConfig)表服务实现类
+ * 第三方SCRM系统侧边栏配置(WeLockSidebarConfig)表服务实现类
  *
  * @author wx
  * @since 2023-03-14 15:39:09

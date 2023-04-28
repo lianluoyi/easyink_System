@@ -1,0 +1,23 @@
+-- 2023-04-10 lcy 修改user_name、create_by、update_by字段的字符集 Tower 任务: 特定账号发出的表单、雷达使用异常 ( https://tower.im/teams/636204/todos/65450 )
+ALTER TABLE `we_form_oper_record` CHANGE `user_name` `user_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '发送智能表单的员工名称';
+ALTER TABLE `we_radar_click_record` CHANGE `user_name` `user_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '发送雷达链接的用户名称';
+ALTER TABLE `we_emple_code` CHANGE `update_by` `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '更新者';
+ALTER TABLE `we_emple_code` CHANGE `create_by` `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '创建人';
+ALTER TABLE `we_redeem_code_activity` CHANGE `update_by` `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '更新人';
+ALTER TABLE `we_redeem_code_activity` CHANGE `create_by` `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '创建人';
+ALTER TABLE `we_radar` CHANGE `update_by` `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '更新人';
+ALTER TABLE `we_radar` CHANGE `create_by` `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '创建人';
+ALTER TABLE `we_open_config` CHANGE `update_by` `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '更新人';
+ALTER TABLE `we_open_config` CHANGE `create_by` `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '创建人';
+ALTER TABLE `we_radar_official_account_config` CHANGE `update_by` `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '更新人';
+ALTER TABLE `we_radar_official_account_config` CHANGE `create_by` `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '创建人';
+ALTER TABLE `we_form` CHANGE `update_by` `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '更新人';
+ALTER TABLE `we_form` CHANGE `create_by` `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '创建人';
+ALTER TABLE `we_form_group` CHANGE `update_by` `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '更新人';
+ALTER TABLE `we_form_group` CHANGE `create_by` `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '创建人';
+ALTER TABLE `we_customer_extend_property` CHANGE `create_by` `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '创建人';
+ALTER TABLE `we_msg_tlp` CHANGE `create_by` `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '创建人';
+ALTER TABLE `we_moment_task` CHANGE `create_by` `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '创建人';
+ALTER TABLE `we_radar_channel` CHANGE `create_by` `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '创建人';
+ALTER TABLE `sys_short_url_mapping` CHANGE `create_by` `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '创建人';
+ALTER TABLE `we_operations_center_sop` CHANGE `create_by` `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT  '创建人.员工userId';
