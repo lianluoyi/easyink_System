@@ -160,6 +160,27 @@ public class WeFlowerCustomerRelServiceImpl extends ServiceImpl<WeFlowerCustomer
         return getOne(wrapper);
     }
 
+    /**
+     * 获取客户最近添加的员工关系
+     *
+     * @param externalUserid 客户ID
+     * @param corpId 企业ID
+     * @return 客户-员工关系信息
+     */
+    @Override
+    public WeFlowerCustomerRel getLastUser(String externalUserid, String corpId) {
+        if (StringUtils.isAnyBlank(externalUserid, corpId)) {
+            return null;
+        }
+        // 查出该客户最近添加的员工
+        LambdaQueryWrapper<WeFlowerCustomerRel> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(WeFlowerCustomerRel::getExternalUserid, externalUserid);
+        wrapper.eq(WeFlowerCustomerRel::getCorpId, corpId);
+        wrapper.orderByDesc(WeFlowerCustomerRel::getCreateTime);
+        wrapper.last(GenConstants.LIMIT_1);
+        return getOne(wrapper);
+    }
+
 
     @Override
     public void alignData(GetByUserResp resp, String userId, String corpId) {

@@ -83,6 +83,9 @@ public class WeCustomerVO {
     @ApiModelProperty(value = "跟进人部门名称")
     private String department;
 
+    @ApiModelProperty(value = "跟进人部门名称,用于转换")
+    private String departmentName;
+
     // 标签信息
 
     @ApiModelProperty(value = "跟进人对客户打的标签集合")

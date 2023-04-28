@@ -40,15 +40,15 @@ ALTER TABLE `we_words_detail`
 ALTER TABLE `we_customer_seedmessage`
     ADD COLUMN `account_original_id` varchar(64) NOT NULL DEFAULT '' COMMENT '小程序账号原始id，必须是关联到企业的小程序应用' AFTER `appid`;
 
--- 2023-03-14 wx 络客侧边栏配置 Tower 任务: 对接络客侧边栏 ( https://tower.im/teams/636204/todos/63301 )
+-- 2023-03-14 wx 第三方SCRM系统侧边栏配置 Tower 任务: 对接第三方SCRM系统侧边栏 ( https://tower.im/teams/636204/todos/63301 )
 CREATE TABLE `we_lock_sidebar_config` (
-                                          `app_id` varchar(32) NOT NULL COMMENT '络客app_id',
+                                          `app_id` varchar(32) NOT NULL COMMENT '第三方SCRM系统app_id',
                                           `corp_id` varchar(64) NOT NULL COMMENT '企业Id',
-                                          `app_secret` varchar(64) NOT NULL DEFAULT '' COMMENT '络客app_secret',
+                                          `app_secret` varchar(64) NOT NULL DEFAULT '' COMMENT '第三方SCRM系统app_secret',
                                           PRIMARY KEY (`app_id`) USING BTREE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='络客侧边栏配置';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='第三方SCRM系统侧边栏配置';
 
--- 2023-03-14 wx 外部联系人externalUserId明密文映射表（代开发应用使用）Tower 任务: 对接络客侧边栏 ( https://tower.im/teams/636204/todos/63301 )
+-- 2023-03-14 wx 外部联系人externalUserId明密文映射表（代开发应用使用）Tower 任务: 对接第三方SCRM系统侧边栏 ( https://tower.im/teams/636204/todos/63301 )
 CREATE TABLE `we_external_userid_mapping` (
                                               `corp_id` varchar(64) NOT NULL COMMENT '密文corpId',
                                               `external_userid` varchar(64) NOT NULL COMMENT '明文externalUserId',
@@ -56,7 +56,7 @@ CREATE TABLE `we_external_userid_mapping` (
                                               PRIMARY KEY (`corp_id`,`external_userid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='外部联系人externalUserId明密文映射表';
 
--- 2023-03-14 wx 员工userId明密文映射表（代开发应用使用） Tower 任务: 对接络客侧边栏 ( https://tower.im/teams/636204/todos/63301 )
+-- 2023-03-14 wx 员工userId明密文映射表（代开发应用使用） Tower 任务: 对接第三方SCRM系统侧边栏 ( https://tower.im/teams/636204/todos/63301 )
 CREATE TABLE `we_user_id_mapping` (
                                       `corp_id` varchar(64) NOT NULL COMMENT '密文企业id',
                                       `user_id` varchar(64) NOT NULL COMMENT '明文userId',
@@ -64,7 +64,7 @@ CREATE TABLE `we_user_id_mapping` (
                                       PRIMARY KEY (`corp_id`,`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='员工userId明密文映射表';
 
--- 2023-03-14 wx Tower 任务: 去除络客关联配置表中的corpId字段 ( https://tower.im/teams/636204/todos/64258 )
+-- 2023-03-14 wx Tower 任务: 去除第三方SCRM系统关联配置表中的corpId字段 ( https://tower.im/teams/636204/todos/64258 )
 ALTER TABLE `we_lock_sidebar_config`
 DROP COLUMN `corp_id`;
 
@@ -73,13 +73,13 @@ DROP COLUMN `corp_id`;
 ALTER TABLE `we_group_code`
     ADD COLUMN `app_link`  varchar(128) NOT NULL DEFAULT '' COMMENT '活码短链' AFTER `create_type`;
 
--- 2023-3-17 wx Tower 任务: easyink配置络客侧边栏的appId与appSecret ( https://tower.im/teams/636204/todos/64397 )
+-- 2023-3-17 wx Tower 任务: easyink配置第三方SCRM系统侧边栏的appId与appSecret ( https://tower.im/teams/636204/todos/64397 )
 ALTER TABLE `we_lock_sidebar_config`
     ADD `corp_id` varchar(64) NOT NULL COMMENT '企业Id' AFTER app_id,
     DROP PRIMARY KEY,
     ADD PRIMARY KEY (`app_id`, `corp_id`) USING BTREE;
 
-    -- 2023-3-20 wx 增加api配置菜单 Tower 任务: 络客侧边栏配置可视化 ( https://tower.im/teams/636204/todos/64397 )
+    -- 2023-3-20 wx 增加api配置菜单 Tower 任务: 第三方SCRM系统侧边栏配置可视化 ( https://tower.im/teams/636204/todos/64397 )
 INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`, `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`)
 VALUES (2319, 'API配置', 2305, 12, 'apiConfig', 'configCenter/apiConfig', 1, 'C', '0', '0', '', '#', '王孙', '2023-03-20 10:35:14', '王孙', '2023-03-20 10:39:07', '');
 

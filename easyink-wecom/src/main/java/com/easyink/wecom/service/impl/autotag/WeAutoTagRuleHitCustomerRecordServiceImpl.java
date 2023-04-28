@@ -1,6 +1,7 @@
 package com.easyink.wecom.service.impl.autotag;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.easyink.common.core.domain.wecom.WeUser;
 import com.easyink.common.enums.ResultTip;
 import com.easyink.common.exception.CustomException;
 import com.easyink.common.utils.DateUtils;
@@ -9,12 +10,12 @@ import com.easyink.wecom.domain.WeTag;
 import com.easyink.wecom.domain.entity.autotag.WeAutoTagRuleHitCustomerRecord;
 import com.easyink.wecom.domain.entity.autotag.WeAutoTagRuleHitCustomerRecordTagRel;
 import com.easyink.wecom.domain.query.autotag.CustomerTagRuleRecordQuery;
-import com.easyink.wecom.domain.vo.WeMakeCustomerTagVO;
 import com.easyink.wecom.domain.vo.autotag.record.CustomerCountVO;
 import com.easyink.wecom.domain.vo.autotag.record.customer.CustomerTagRuleRecordVO;
 import com.easyink.wecom.mapper.autotag.WeAutoTagRuleHitCustomerRecordMapper;
 import com.easyink.wecom.mapper.autotag.WeAutoTagRuleHitCustomerRecordTagRelMapper;
 import com.easyink.wecom.service.WeCustomerService;
+import com.easyink.wecom.service.WeUserService;
 import com.easyink.wecom.service.autotag.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -49,6 +50,13 @@ public class WeAutoTagRuleHitCustomerRecordServiceImpl extends ServiceImpl<WeAut
     private WeAutoTagRuleHitCustomerRecordTagRelService weAutoTagRuleHitCustomerRecordTagRelService;
     @Autowired
     private WeAutoTagRuleHitCustomerRecordTagRelMapper weAutoTagRuleHitCustomerRecordTagRelMapper;
+
+    private final WeUserService weUserService;
+
+    @Autowired
+    public WeAutoTagRuleHitCustomerRecordServiceImpl(WeUserService weUserService) {
+        this.weUserService = weUserService;
+    }
 
     /**
      * 新客规则记录列表
@@ -126,10 +134,17 @@ public class WeAutoTagRuleHitCustomerRecordServiceImpl extends ServiceImpl<WeAut
             weAutoTagRuleHitCustomerRecordTagRelMapper.insertBatch(batchAddTagRelList);
         }
 
+        // 获取员工详情
+        WeUser weUser = weUserService.getUserDetail(corpId, userId);
+        if (weUser == null) {
+            log.info("[新客打标签] 获取员工详情,查询不到员工信息,corpId:{},userId:{}", corpId, userId);
+            return;
+        }
+
         // 5.调用接口打标签
         if (CollectionUtils.isNotEmpty(allTagIdList)) {
             log.info(">>>>>>>>>>>>>>>准备进行打标签,标签列表: {}", allTagIdList);
-            weCustomerService.singleMarkLabel(corpId, userId, customerId, allTagIdList, userId);
+            weCustomerService.singleMarkLabel(corpId, userId, customerId, allTagIdList, weUser.getName());
         }
 
 

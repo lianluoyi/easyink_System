@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.easyink.common.constant.UserConstants;
 import com.easyink.common.constant.form.FormConstants;
 import com.easyink.common.core.domain.AjaxResult;
 import com.easyink.common.core.domain.entity.SysUser;
@@ -141,8 +142,8 @@ public class WeFormOperRecordServiceImpl extends ServiceImpl<WeFormOperRecordMap
             // 将最近成为好友的员工设置为所属员工
             Optional<WeFlowerCustomerRel> max = weFlowerCustomerRels.stream().max(Comparator.comparing(WeFlowerCustomerRel::getCreateTime));
             if (max.isPresent()) {
-                userDetail = weUserService.getUserDetail(weForm.getCorpId(), weFormOperRecord.getEmployees());
                 weFormOperRecord.setEmployees(max.get().getUserId());
+                userDetail = weUserService.getUserDetail(weForm.getCorpId(), weFormOperRecord.getEmployees());
             }
         }
         // 5.插入点击记录
@@ -194,6 +195,10 @@ public class WeFormOperRecordServiceImpl extends ServiceImpl<WeFormOperRecordMap
             log.info("[智能表单-高级设置处理] 获取客户详情,查询不到客户信息,corpId:{},externalUserId:{}", corpId, weFormOperRecord.getExternalUserId());
             return;
         }
+        // 是否是管理员
+        if (UserConstants.INIT_ADMIN_ROLE_KEY.equals(weFormOperRecord.getUserId())) {
+            getLastUser(weForm.getCorpId(), weFormOperRecord);
+        }
         // 获取员工详情
         WeUser weUser = weUserService.getUserDetail(corpId, weFormOperRecord.getUserId());
         if (weUser == null) {
@@ -239,6 +244,10 @@ public class WeFormOperRecordServiceImpl extends ServiceImpl<WeFormOperRecordMap
             log.error("[智能表单-高级设置处理] 执行高级设置参数缺失,weForm:{}, weFormAdvanceSetting:{}, weFormOperRecord:{}", weForm, weFormAdvanceSetting, weFormOperRecord);
             return;
         }
+        // 是否是管理员
+        if (UserConstants.INIT_ADMIN_ROLE_KEY.equals(weFormOperRecord.getUserId())) {
+            getLastUser(weForm.getCorpId(), weFormOperRecord);
+        }
         // 轨迹记录
         if (Boolean.TRUE.equals(weFormAdvanceSetting.getTractRecordFlag())) {
             weCustomerTrajectoryService.recordFormClickOperation(weForm, weFormOperRecord, weUser, customer);
@@ -257,6 +266,26 @@ public class WeFormOperRecordServiceImpl extends ServiceImpl<WeFormOperRecordMap
         }
     }
 
+    /**
+     * 查找客户最近添加的员工
+     *
+     * @param corpId 企业ID
+     * @param weFormOperRecord {@link WeFormOperRecord}
+     */
+    private void getLastUser(String corpId, WeFormOperRecord weFormOperRecord) {
+        if (StringUtils.isBlank(corpId) || weFormOperRecord == null) {
+            log.error("[智能表单-高级设置处理] 执行高级设置参数缺失,corpId:{}, weFormOperRecord:{}", corpId, weFormOperRecord);
+            return;
+        }
+        // 查出该客户最近添加的员工
+        WeFlowerCustomerRel flowerCustomerRel = weFlowerCustomerRelService.getLastUser(weFormOperRecord.getExternalUserId(), corpId);
+        if (flowerCustomerRel == null) {
+            log.info("[智能表单-高级设置处理] 用户不存在添加的员工, flowerCustomerRel:{}", flowerCustomerRel);
+            throw new CustomException(ResultTip.TIP_NOT_HAVE_FOLLOW_USER);
+        }
+        // 更改admin为添加的员工userid
+        weFormOperRecord.setUserId(flowerCustomerRel.getUserId());
+    }
 
     /**
      * 发送企业通知
@@ -289,7 +318,7 @@ public class WeFormOperRecordServiceImpl extends ServiceImpl<WeFormOperRecordMap
         if (CollectionUtils.isEmpty(tagIdList)) {
             return;
         }
-        weCustomerService.singleMarkLabel(corpId, userId, externalUserId, tagIdList, userId);
+        weCustomerService.singleMarkLabel(corpId, userId, externalUserId, tagIdList, userName);
     }
 
     @Override

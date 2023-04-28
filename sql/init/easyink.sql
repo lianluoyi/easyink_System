@@ -1544,11 +1544,11 @@ CREATE TABLE `we_emple_code`
     `skip_verify`                tinyint(4) NOT NULL DEFAULT '1' COMMENT '自动成为好友:0：否，1：全天，2：时间段',
     `scenario`                   varchar(300)  NOT NULL DEFAULT '' COMMENT '活动场景',
     `welcome_msg`                varchar(2000) NOT NULL DEFAULT '' COMMENT '欢迎语',
-    `create_by`                  varchar(64)   NOT NULL DEFAULT '' COMMENT '创建人',
+    `create_by`                  varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '创建人',
     `create_time`                datetime      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `del_flag`                   tinyint(4) NOT NULL DEFAULT '0' COMMENT '0:正常;1:删除;',
     `qr_code`                    varchar(100)  NOT NULL DEFAULT '' COMMENT '二维码链接',
-    `update_by`                  varchar(64)   NOT NULL DEFAULT '' COMMENT '更新者',
+    `update_by`                  varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '更新者',
     `update_time`                datetime      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `state`                      varchar(30)   NOT NULL DEFAULT '' COMMENT '用于区分客户具体是通过哪个「联系我」添加。不能超过30个字符',
     `source`                     tinyint(4) NOT NULL DEFAULT '0' COMMENT '来源类型：0：活码创建，1：新客建群创建',
@@ -2770,7 +2770,7 @@ CREATE TABLE `we_customer_extend_property`
     `property_sort` int(11) NOT NULL DEFAULT '20' COMMENT '字段排序',
     `status`        tinyint(1) NOT NULL DEFAULT '1' COMMENT '状态（0停用1启用）',
     `create_time`   datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    `create_by`     varchar(64) NOT NULL DEFAULT '' COMMENT '创建人',
+    `create_by`     varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '创建人',
     `update_time`   datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     PRIMARY KEY (`id`),
     UNIQUE KEY `un_corp_id_name` (`corp_id`, `name`) USING BTREE
@@ -2814,7 +2814,7 @@ CREATE TABLE `we_operations_center_sop`
     `id`          bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
     `corp_id`     varchar(64) NOT NULL DEFAULT '' COMMENT '企业ID',
     `name`        varchar(32) NOT NULL DEFAULT '' COMMENT 'SOP名称',
-    `create_by`   varchar(64) NOT NULL DEFAULT '' COMMENT '创建人.员工userId',
+    `create_by`   varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '创建人.员工userId',
     `create_time` datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `sop_type`    tinyint(2) NOT NULL DEFAULT '0' COMMENT 'sop类型 0：定时sop，1：循环sop，2：新客sop，3：活动sop，4：生日sop，5：群日历',
     `filter_type` tinyint(2) NOT NULL DEFAULT '0' COMMENT '使用群聊类型 0：指定群聊 ,1：筛选群聊 ',
@@ -3073,7 +3073,7 @@ CREATE TABLE `we_msg_tlp`
     `exist_special_flag`   tinyint(2) NOT NULL DEFAULT '0' COMMENT '是否存在有特殊时段欢迎语(存在则有关联rule_id) 0:否 1:是',
     `template_id`          varchar(64)   NOT NULL DEFAULT '' COMMENT '入群欢迎语返回的模板id',
     `notice_flag`          tinyint(1) NOT NULL DEFAULT '0' COMMENT '群素材是否通知员工标识(0: 不通知(默认) 1:通知)',
-    `create_by`            varchar(64)   NOT NULL DEFAULT '' COMMENT '创建人',
+    `create_by`            varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '创建人',
     `create_time`          datetime      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     PRIMARY KEY (`id`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ROW_FORMAT=DYNAMIC COMMENT='欢迎语模板表';
@@ -3143,7 +3143,7 @@ CREATE TABLE `we_moment_task`
     `tags`        text          NOT NULL COMMENT '客户标签',
     `create_time` datetime      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `update_time` datetime      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '更新时间',
-    `create_by`   varchar(255)  NOT NULL DEFAULT '' COMMENT '创建人',
+    `create_by`   varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '创建人',
     PRIMARY KEY (`id`),
     KEY           `idx_corp_id` (`corp_id`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='朋友圈任务信息表';
@@ -3314,9 +3314,9 @@ CREATE TABLE `we_redeem_code_activity`
     `name`            varchar(32) NOT NULL DEFAULT '' COMMENT '活动名称',
     `start_time`      date        NOT NULL DEFAULT '0000-00-00' COMMENT '活动开始时间',
     `end_time`        date        NOT NULL DEFAULT '0000-00-00' COMMENT '活动结束时间',
-    `create_by`       varchar(64) NOT NULL DEFAULT '' COMMENT '创建人',
+    `create_by`       varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '创建人',
     `create_time`     datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    `update_by`       varchar(64) NOT NULL DEFAULT '' COMMENT '更新人',
+    `update_by`       varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '更新人',
     `update_time`     datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `enable_limited`  tinyint(1) NOT NULL DEFAULT '1' COMMENT '客户参与限制，0：可以参与多次，1：只可参与一次',
     `enable_alarm`    tinyint(1) NOT NULL DEFAULT '0' COMMENT '库存告警开关，0：不开启，1：开启',
@@ -3365,9 +3365,9 @@ CREATE TABLE `we_radar`
     `enable_customer_tag`    tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否允许打上客户标签（ 1[true]是 0[false]否) ',
     `enable_update_notice`   tinyint(1) NOT NULL DEFAULT '1' COMMENT '更新后是否通知员工（true[1]是 false[0]否) ',
     `create_time`            datetime      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    `create_by`              varchar(64)   NOT NULL DEFAULT '' COMMENT '创建人',
+    `create_by`              varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '创建人',
     `update_time`            datetime      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '更新时间',
-    `update_by`              varchar(64)   NOT NULL DEFAULT '' COMMENT '更新人',
+    `update_by`              varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '更新人',
     `is_defined`             tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否使用自定义链接（1[true]是,0[false]否)',
     `type`                   tinyint(1) NOT NULL DEFAULT '1' COMMENT '雷达类型（1个人雷达，2部门雷达，3企业雷达）',
     PRIMARY KEY (`id`),
@@ -3393,7 +3393,7 @@ CREATE TABLE `we_radar_channel`
     `name`        varchar(32)  NOT NULL DEFAULT '' COMMENT '渠道名称',
     `short_url`   varchar(255) NOT NULL DEFAULT '' COMMENT '渠道的短链url',
     `create_time` datetime     NOT NULL,
-    `create_by`   varchar(64)  NOT NULL,
+    `create_by`   varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '创建人',
     UNIQUE KEY `uniq_redar_name` (`radar_id`,`name`) USING BTREE,
     KEY           `idx_radar_id_channel_name` (`radar_id`,`name`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='雷达-渠道表';
@@ -3406,7 +3406,7 @@ CREATE TABLE `we_radar_click_record`
     `id`                       bigint(20) NOT NULL COMMENT '雷达点击记录表ID',
     `radar_id`                 bigint(20) NOT NULL DEFAULT '0' COMMENT '雷达id',
     `user_id`                  varchar(64)  NOT NULL DEFAULT '' COMMENT '发送活码用户id',
-    `user_name`                varchar(200) NOT NULL DEFAULT '' COMMENT '发送雷达链接的用户名称',
+    `user_name`                varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '发送雷达链接的用户名称',
     `external_user_id`         varchar(32)  NOT NULL DEFAULT '' COMMENT '客户id',
     `external_user_name`       varchar(128) NOT NULL DEFAULT '' COMMENT '客户名称',
     `external_user_head_image` varchar(512) NOT NULL DEFAULT '' COMMENT '客户头像url',
@@ -3434,7 +3434,7 @@ CREATE TABLE `sys_short_url_mapping`
      `long_url` varchar(1024) NOT NULL COMMENT '原链接（长链接）',
      `append_info` varchar(512) NOT NULL DEFAULT '' COMMENT '附加信息Json(user_id,radar_id,channel_id,detail)',
      `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-     `create_by` varchar(64) NOT NULL DEFAULT '' COMMENT '创建人',
+     `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '创建人',
      `type` tinyint(1) NOT NULL DEFAULT '1' COMMENT '链接类型，-1：未知，1：雷达，2：表单',
      PRIMARY KEY (`id`),
      UNIQUE KEY `uniq_short_code` (`short_code`) USING BTREE
@@ -3455,9 +3455,9 @@ CREATE TABLE `we_open_config`
     `head_img` varchar(255) NOT NULL DEFAULT '' COMMENT '授权方头像，自建应用为空',
     `authorizer_access_token` varchar(255) NOT NULL DEFAULT '' COMMENT '授权方接口调用凭据',
     `authorizer_refresh_token` varchar(255) NOT NULL DEFAULT '' COMMENT '接口调用凭据刷新令牌(上面令牌过期，需用此令牌刷新)',
-    `create_by` varchar(64) NOT NULL DEFAULT '' COMMENT '创建人',
+    `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '创建人',
     `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    `update_by` varchar(64) NOT NULL DEFAULT '' COMMENT '更新人',
+    `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '更新人',
     `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '更新时间',
     PRIMARY KEY (`corp_id`,`official_account_app_id`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='企业公众号配置表';
@@ -3467,9 +3467,9 @@ CREATE TABLE `we_radar_official_account_config`
 (
     `corp_id` varchar(64) NOT NULL COMMENT '企业id',
     `app_id` varchar(64) NOT NULL COMMENT '公众号appid',
-    `create_by` varchar(64) NOT NULL DEFAULT '' COMMENT '创建人',
+    `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '创建人',
     `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    `update_by` varchar(64) NOT NULL DEFAULT '' COMMENT '更新人',
+    `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '更新人',
     `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     PRIMARY KEY (`corp_id`,`app_id`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='雷达公众号配置';
@@ -3480,7 +3480,7 @@ CREATE TABLE `we_form_oper_record`
    `id` bigint(20) NOT NULL COMMENT '主键id',
    `form_id` bigint(20) NOT NULL DEFAULT '0' COMMENT '智能表单id',
    `user_id` varchar(64) NOT NULL DEFAULT '' COMMENT '发送智能表单的员工id',
-   `user_name` varchar(200) NOT NULL DEFAULT '' COMMENT '发送智能表单的员工名称',
+   `user_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '发送智能表单的员工名称',
    `user_head_image` varchar(255) NOT NULL DEFAULT '' COMMENT '员工头像地址url',
    `external_user_id` varchar(32) NOT NULL DEFAULT '' COMMENT '客户id',
    `employees` varchar(64) NOT NULL DEFAULT '' COMMENT '客户所属员工user_id',
@@ -3523,9 +3523,9 @@ CREATE TABLE `we_form` (
                            `del_flag` tinyint(1) NOT NULL DEFAULT '0' COMMENT '删除标识 0: 未删除 1:删除',
                            `delete_id` int(11) NOT NULL DEFAULT '0' COMMENT '唯一键删除id(删除的时候给deleteId设置为主键id(不重复))',
                            `corp_id` varchar(64) NOT NULL DEFAULT '' COMMENT '企业id',
-                           `create_by` varchar(64) NOT NULL DEFAULT '' COMMENT '创建人',
+                           `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '创建人',
                            `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-                           `update_by` varchar(64) NOT NULL DEFAULT '' COMMENT '更新人',
+                           `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '更新人',
                            `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
                            PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='表单表';
@@ -3566,9 +3566,9 @@ CREATE TABLE `we_form_group` (
                                  `corp_id` varchar(64) NOT NULL DEFAULT '' COMMENT '企业id',
                                  `delete_id` int(11) NOT NULL DEFAULT '0' COMMENT '唯一键删除id(删除的时候给deleteId设置为主键id(不重复))',
                                  `sort` int(11) NOT NULL DEFAULT '0' COMMENT '排序号',
-                                 `create_by` varchar(64) NOT NULL DEFAULT '' COMMENT '创建人',
+                                 `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '创建人',
                                  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-                                 `update_by` varchar(64) NOT NULL DEFAULT '' COMMENT '更新人',
+                                 `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '更新人',
                                  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
                                  PRIMARY KEY (`id`),
                                  UNIQUE KEY `corp_id_name_delete_flag_unique` (`corp_id`,`name`,`del_flag`,`delete_id`) USING BTREE COMMENT '企业下名称逻辑删除唯一索引'
@@ -3603,15 +3603,15 @@ CREATE TABLE `we_user_customer_message_statistics` (
                                                        KEY `idx_corp_id_user_id` (`corp_id`,`user_id`) USING BTREE COMMENT '员工id索引'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='员工客户发送消息统计数据（每天统计一次，会话存档ES中统计）';
 
--- 2022-03-14 wx 络客侧边栏配置 Tower 任务: 对接络客侧边栏 ( https://tower.im/teams/636204/todos/63301 )
+-- 2022-03-14 wx 第三方SCRM系统侧边栏配置 Tower 任务: 对接第三方SCRM系统侧边栏 ( https://tower.im/teams/636204/todos/63301 )
 CREATE TABLE `we_lock_sidebar_config` (
-                                          `app_id` varchar(32) NOT NULL COMMENT '络客app_id',
+                                          `app_id` varchar(32) NOT NULL COMMENT '第三方SCRM系统app_id',
                                           `corp_id` varchar(64) NOT NULL COMMENT '企业Id',
-                                          `app_secret` varchar(64) NOT NULL DEFAULT '' COMMENT '络客app_secret',
+                                          `app_secret` varchar(64) NOT NULL DEFAULT '' COMMENT '第三方SCRM系统app_secret',
                                           PRIMARY KEY (`app_id`,`corp_id`) USING BTREE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='络客侧边栏配置';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='第三方SCRM系统侧边栏配置';
 
--- 2022-03-14 wx 外部联系人externalUserId明密文映射表（代开发应用使用）Tower 任务: 对接络客侧边栏 ( https://tower.im/teams/636204/todos/63301 )
+-- 2022-03-14 wx 外部联系人externalUserId明密文映射表（代开发应用使用）Tower 任务: 对接第三方SCRM系统侧边栏 ( https://tower.im/teams/636204/todos/63301 )
 CREATE TABLE `we_external_userid_mapping` (
                                               `corp_id` varchar(64) NOT NULL COMMENT '密文corpId',
                                               `external_userid` varchar(64) NOT NULL COMMENT '明文externalUserId',
@@ -3619,7 +3619,7 @@ CREATE TABLE `we_external_userid_mapping` (
                                               PRIMARY KEY (`corp_id`,`external_userid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='外部联系人externalUserId明密文映射表';
 
--- 2022-03-14 wx 员工userId明密文映射表（代开发应用使用） Tower 任务: 对接络客侧边栏 ( https://tower.im/teams/636204/todos/63301 )
+-- 2022-03-14 wx 员工userId明密文映射表（代开发应用使用） Tower 任务: 对接第三方SCRM系统侧边栏 ( https://tower.im/teams/636204/todos/63301 )
 CREATE TABLE `we_user_id_mapping` (
                                       `corp_id` varchar(64) NOT NULL COMMENT '密文企业id',
                                       `user_id` varchar(64) NOT NULL COMMENT '明文userId',
