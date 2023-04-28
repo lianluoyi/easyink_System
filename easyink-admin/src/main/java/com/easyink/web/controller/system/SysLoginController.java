@@ -64,7 +64,7 @@ public class SysLoginController {
         return AjaxResult.success(new LoginResult(token));
     }
 
-    @ApiOperation("络客SRCM获取token")
+    @ApiOperation("第三方SCRM系统获取token")
     @GetMapping("/lockToken")
     public AjaxResult<LoginResult> lockToken(@RequestParam("corpId") String corpId, @RequestParam("userId") String userId) {
         return AjaxResult.success(loginService.getLoginToken(corpId, userId));

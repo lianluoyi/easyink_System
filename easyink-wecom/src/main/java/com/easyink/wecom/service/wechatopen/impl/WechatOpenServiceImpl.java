@@ -355,6 +355,7 @@ public class WechatOpenServiceImpl extends ServiceImpl<WeOpenConfigMapper, WeOpe
             // 获取原有配置
             config.setCorpId(loginUser.getCorpId());
             config.setOfficialAccountDomain(getDomain(config.getCorpId()));
+            config.setUpdateBy(loginUser.getUserId());
             We3rdAppService we3rdAppService = SpringUtils.getBean(We3rdAppService.class);
             WeServerTypeVO serverType = we3rdAppService.getServerType();
             // 自建应用只保存一个

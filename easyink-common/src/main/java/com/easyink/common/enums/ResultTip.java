@@ -172,6 +172,7 @@ public enum ResultTip {
     TIP_CORP_NO_CUSTOMER_ASSIGNABLE(3006, "该企业不存在可分配的员工"),
     TIP_USER_NO_CUSTOMER_ASSIGNABLE(3007, "该成员不存在可分配的客户"),
     TIP_BIND_USER_MAPPING_ERROR(3008, "所在企业未绑定三方员工映射关系"),
+    TIP_NOT_HAVE_FOLLOW_USER(3009, "该客户没有添加任何员工"),
 
     //客户中心返回码
     TIP_EXTENDS_CUSTOMER_FALSE(4000, "分配失败，请联系客服或技术人员"),
