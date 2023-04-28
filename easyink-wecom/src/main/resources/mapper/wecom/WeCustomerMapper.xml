@@ -185,6 +185,7 @@
         <result property="status" column="status"/>
         <result property="userName" column="user_name"/>
         <result property="department" column="department"/>
+        <result property="departmentName" column="department"/>
         <result property="remarkMobiles" column="remark_mobiles"/>
         <result property="address" column="address"/>
         <result property="wechatChannel" column="wechat_channel"/>

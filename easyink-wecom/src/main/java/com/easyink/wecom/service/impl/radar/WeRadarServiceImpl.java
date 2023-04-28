@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.easyink.common.constant.Constants;
 import com.easyink.common.constant.GenConstants;
+import com.easyink.common.constant.UserConstants;
 import com.easyink.common.constant.radar.RadarConstants;
 import com.easyink.common.core.domain.entity.WeCorpAccount;
 import com.easyink.common.core.domain.wecom.WeUser;
@@ -23,7 +24,7 @@ import com.easyink.common.utils.sql.SqlUtil;
 import com.easyink.wecom.annotation.Convert2Cipher;
 import com.easyink.wecom.client.WeMessagePushClient;
 import com.easyink.wecom.domain.WeCustomer;
-import com.easyink.wecom.domain.WeTag;
+import com.easyink.wecom.domain.WeFlowerCustomerRel;
 import com.easyink.wecom.domain.dto.WeMessagePushDTO;
 import com.easyink.wecom.domain.dto.common.AttachmentParam;
 import com.easyink.wecom.domain.dto.message.TextMessageDTO;
@@ -34,15 +35,11 @@ import com.easyink.wecom.domain.entity.radar.WeRadar;
 import com.easyink.wecom.domain.entity.radar.WeRadarChannel;
 import com.easyink.wecom.domain.entity.radar.WeRadarTag;
 import com.easyink.wecom.domain.entity.radar.WeRadarUrl;
-import com.easyink.wecom.domain.vo.WeMakeCustomerTagVO;
 import com.easyink.wecom.domain.vo.radar.WeRadarVO;
 import com.easyink.wecom.handler.shorturl.RadarShortUrlHandler;
 import com.easyink.wecom.login.util.LoginTokenService;
 import com.easyink.wecom.mapper.radar.WeRadarMapper;
-import com.easyink.wecom.service.WeCorpAccountService;
-import com.easyink.wecom.service.WeCustomerService;
-import com.easyink.wecom.service.WeCustomerTrajectoryService;
-import com.easyink.wecom.service.WeUserService;
+import com.easyink.wecom.service.*;
 import com.easyink.wecom.service.radar.WeRadarChannelService;
 import com.easyink.wecom.service.radar.WeRadarClickRecordService;
 import com.easyink.wecom.service.radar.WeRadarService;
@@ -88,10 +85,12 @@ public class WeRadarServiceImpl extends ServiceImpl<WeRadarMapper, WeRadar> impl
 
     private final RadarShortUrlHandler radarUrlHandler;
 
+    private final WeFlowerCustomerRelService weFlowerCustomerRelService;
+
 
     @Autowired
     @Lazy
-    public WeRadarServiceImpl(WeRadarChannelService radarChannelService, WeCorpAccountService corpAccountService, WeMessagePushClient messagePushClient, WeUserService weUserService, WeMessagePushClient weMessagePushClient, WeRadarClickRecordService weRadarClickRecordService, WeCorpAccountService weCorpAccountService, WeCustomerTrajectoryService weCustomerTrajectoryService, WeCustomerService weCustomerService, RadarShortUrlHandler radarUrlHandler) {
+    public WeRadarServiceImpl(WeRadarChannelService radarChannelService, WeCorpAccountService corpAccountService, WeMessagePushClient messagePushClient, WeUserService weUserService, WeMessagePushClient weMessagePushClient, WeRadarClickRecordService weRadarClickRecordService, WeCorpAccountService weCorpAccountService, WeCustomerTrajectoryService weCustomerTrajectoryService, WeCustomerService weCustomerService, RadarShortUrlHandler radarUrlHandler, WeFlowerCustomerRelService weFlowerCustomerRelService) {
         this.radarChannelService = radarChannelService;
         this.corpAccountService = corpAccountService;
         this.messagePushClient = messagePushClient;
@@ -102,6 +101,7 @@ public class WeRadarServiceImpl extends ServiceImpl<WeRadarMapper, WeRadar> impl
         this.weCustomerTrajectoryService = weCustomerTrajectoryService;
         this.weCustomerService = weCustomerService;
         this.radarUrlHandler = radarUrlHandler;
+        this.weFlowerCustomerRelService = weFlowerCustomerRelService;
     }
 
     /**
@@ -374,7 +374,12 @@ public class WeRadarServiceImpl extends ServiceImpl<WeRadarMapper, WeRadar> impl
             throw new CustomException(ResultTip.TIP_FAIL_TO_GET_CUSTOMER_INFO);
         }
         // 3. 获取员工详情
-        WeUser user = weUserService.getUserDetail(radar.getCorpId(), appendInfo.getUserId());
+        WeUser user;
+        if (UserConstants.INIT_ADMIN_ROLE_KEY.equals(appendInfo.getUserId())) {
+            user = getLastUser(customer.getExternalUserid(), radar.getCorpId());
+        } else {
+            user = weUserService.getUserDetail(radar.getCorpId(), appendInfo.getUserId());
+        }
         if (user == null) {
             log.error("[异步雷达触发记录处理]找不到使用雷达的员工详情,radar:{},mapping:{},customer:{},appendInfo:{}", radar, mapping, customer, appendInfo);
         }
@@ -382,6 +387,27 @@ public class WeRadarServiceImpl extends ServiceImpl<WeRadarMapper, WeRadar> impl
         weRadarClickRecordService.createRecord(appendInfo, customer, openId, user);
         // 5. 执行高级设置 (行为通知、轨迹记录、客户标签)
         doExtraSetting(radar, user, customer, appendInfo);
+    }
+
+    /**
+     * 查找客户最近添加的员工
+     *
+     * @param externalUserid 客户id
+     * @param corpId 企业id
+     * @return 员工信息
+     */
+    private WeUser getLastUser(String externalUserid, String corpId) {
+        if (StringUtils.isAnyBlank(externalUserid, corpId)) {
+            log.info("[异步雷达触发记录处理] 参数缺失, externalUserid:{}, corpId:{}", externalUserid, corpId);
+            return null;
+        }
+        // 查出该客户最近添加的员工
+        WeFlowerCustomerRel flowerCustomerRel = weFlowerCustomerRelService.getLastUser(externalUserid, corpId);
+        if (flowerCustomerRel == null) {
+            log.info("[异步雷达触发记录处理] 用户不存在添加的员工, flowerCustomerRel:{}", flowerCustomerRel);
+            throw new CustomException(ResultTip.TIP_NOT_HAVE_FOLLOW_USER);
+        }
+        return weUserService.getUserDetail(corpId, flowerCustomerRel.getUserId());
     }
 
     /**
@@ -433,7 +459,7 @@ public class WeRadarServiceImpl extends ServiceImpl<WeRadarMapper, WeRadar> impl
             log.info("[雷达高级设置处理]没有需要打上的标签,radar:{},customer:{}", id, customer);
             return;
         }
-        weCustomerService.singleMarkLabel(customer.getCorpId(), user.getUserId(), customer.getExternalUserid(), tagIdList, user.getUserId());
+        weCustomerService.singleMarkLabel(customer.getCorpId(), user.getUserId(), customer.getExternalUserid(), tagIdList, user.getName());
 
     }
 

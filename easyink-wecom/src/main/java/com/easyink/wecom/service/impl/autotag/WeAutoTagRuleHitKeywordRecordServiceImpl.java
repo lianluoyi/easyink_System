@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.easyink.common.constant.WeConstans;
 import com.easyink.common.core.domain.conversation.ChatInfoVO;
 import com.easyink.common.core.domain.conversation.msgtype.TextVO;
+import com.easyink.common.core.domain.wecom.WeUser;
 import com.easyink.common.enums.autotag.AutoTagLabelTypeEnum;
 import com.easyink.common.enums.autotag.AutoTagMatchTypeEnum;
 import com.easyink.common.utils.StringUtils;
@@ -14,13 +15,13 @@ import com.easyink.wecom.domain.entity.autotag.WeAutoTagRuleHitKeywordRecord;
 import com.easyink.wecom.domain.entity.autotag.WeAutoTagRuleHitKeywordRecordTagRel;
 import com.easyink.wecom.domain.query.autotag.TagRuleRecordKeywordDetailQuery;
 import com.easyink.wecom.domain.query.autotag.TagRuleRecordQuery;
-import com.easyink.wecom.domain.vo.WeMakeCustomerTagVO;
 import com.easyink.wecom.domain.vo.autotag.record.CustomerCountVO;
 import com.easyink.wecom.domain.vo.autotag.record.keyword.KeywordRecordDetailVO;
 import com.easyink.wecom.domain.vo.autotag.record.keyword.KeywordTagRuleRecordVO;
 import com.easyink.wecom.mapper.autotag.WeAutoTagRuleHitKeywordRecordMapper;
 import com.easyink.wecom.mapper.autotag.WeAutoTagRuleHitKeywordRecordTagRelMapper;
 import com.easyink.wecom.service.WeCustomerService;
+import com.easyink.wecom.service.WeUserService;
 import com.easyink.wecom.service.autotag.*;
 import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
@@ -53,6 +54,14 @@ public class WeAutoTagRuleHitKeywordRecordServiceImpl extends ServiceImpl<WeAuto
     private WeAutoTagRuleHitKeywordRecordTagRelService weAutoTagRuleHitKeywordRecordTagRelService;
     @Autowired
     private WeAutoTagRuleHitKeywordRecordTagRelMapper weAutoTagRuleHitKeywordRecordTagRelMapper;
+
+    private final WeUserService weUserService;
+
+    @Autowired
+    public WeAutoTagRuleHitKeywordRecordServiceImpl(WeUserService weUserService) {
+        this.weUserService = weUserService;
+    }
+
 
     /**
      * 关键词记录列表
@@ -180,10 +189,16 @@ public class WeAutoTagRuleHitKeywordRecordServiceImpl extends ServiceImpl<WeAuto
             for (Map.Entry<String, Set<WeTag>> userCustomerTagEntry : userCustomerTagMap.entrySet()) {
                 String[] split = userCustomerTagEntry.getKey().split(StrUtil.COLON);
                 String userId = split[0];
+                // 获取员工详情
+                WeUser weUser = weUserService.getUserDetail(corpId, userId);
+                if (weUser == null) {
+                    log.info("[关键词打标签] 查询不到员工信息,corpId:{},userId:{}", corpId, userId);
+                    return;
+                }
                 String customerId = split[1];
                 List<String> weTagIdList = new ArrayList<>(userCustomerTagEntry.getValue()).stream().map(WeTag::getTagId).collect(Collectors.toList());
                 log.info("关键词打标签: 员工: {}, 客户: {}, 标签列表: {}", userId, customerId,weTagIdList);
-                weCustomerService.singleMarkLabel(corpId, userId, customerId, weTagIdList, userId);
+                weCustomerService.singleMarkLabel(corpId, userId, customerId, weTagIdList, weUser.getName());
             }
         }
     }

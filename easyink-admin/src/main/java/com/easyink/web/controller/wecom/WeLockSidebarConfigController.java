@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.annotation.Resource;
 
 /**
- * 络客侧边栏配置(WeLockSidebarConfig)表控制层
+ * 第三方SCRM系统侧边栏配置(WeLockSidebarConfig)表控制层
  *
  * @author wx
  * @since 2023-03-14 15:39:06
@@ -30,7 +30,7 @@ public class WeLockSidebarConfigController {
 
 
     @GetMapping("/get")
-    @ApiOperation("络客SCRM查询侧边栏配置")
+    @ApiOperation("第三方SCRM系统查询侧边栏配置")
     public AjaxResult get(@RequestParam("appId") String appId) {
         return AjaxResult.success(weLockSidebarConfigService.getConfig(appId));
     }

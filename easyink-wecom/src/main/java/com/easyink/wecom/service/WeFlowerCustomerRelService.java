@@ -50,6 +50,15 @@ public interface WeFlowerCustomerRelService extends IService<WeFlowerCustomerRel
     WeFlowerCustomerRel getOne(String userId, String externalUserid, String corpId);
 
     /**
+     * 获取客户最近添加的员工关系
+     *
+     * @param externalUserid 客户ID
+     * @param corpId 企业ID
+     * @return 客户-员工关系信息
+     */
+    WeFlowerCustomerRel getLastUser(String externalUserid, String corpId);
+
+    /**
      * 员工-客户关系：对齐与服务器数据，同步远端数据
      *
      * @param resp   {@link GetByUserResp}
