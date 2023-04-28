@@ -2,6 +2,7 @@ package com.easyink.wecom.service.impl.autotag;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.easyink.common.core.domain.wecom.WeUser;
 import com.easyink.common.enums.CustomerStatusEnum;
 import com.easyink.common.utils.StringUtils;
 import com.easyink.wecom.domain.WeFlowerCustomerRel;
@@ -10,7 +11,6 @@ import com.easyink.wecom.domain.WeTag;
 import com.easyink.wecom.domain.entity.autotag.WeAutoTagRuleHitGroupRecord;
 import com.easyink.wecom.domain.entity.autotag.WeAutoTagRuleHitGroupRecordTagRel;
 import com.easyink.wecom.domain.query.autotag.TagRuleRecordQuery;
-import com.easyink.wecom.domain.vo.WeMakeCustomerTagVO;
 import com.easyink.wecom.domain.vo.autotag.record.CustomerCountVO;
 import com.easyink.wecom.domain.vo.autotag.record.group.GroupTagRuleRecordVO;
 import com.easyink.wecom.mapper.autotag.WeAutoTagRuleHitGroupRecordMapper;
@@ -18,6 +18,7 @@ import com.easyink.wecom.mapper.autotag.WeAutoTagRuleHitGroupRecordTagRelMapper;
 import com.easyink.wecom.service.WeCustomerService;
 import com.easyink.wecom.service.WeFlowerCustomerRelService;
 import com.easyink.wecom.service.WeGroupService;
+import com.easyink.wecom.service.WeUserService;
 import com.easyink.wecom.service.autotag.WeAutoTagGroupSceneGroupRelService;
 import com.easyink.wecom.service.autotag.WeAutoTagGroupSceneTagRelService;
 import com.easyink.wecom.service.autotag.WeAutoTagRuleHitGroupRecordService;
@@ -56,6 +57,14 @@ public class WeAutoTagRuleHitGroupRecordServiceImpl extends ServiceImpl<WeAutoTa
 
     @Autowired
     private WeAutoTagRuleHitGroupRecordTagRelMapper weAutoTagRuleHitGroupRecordTagRelMapper;
+
+    private final WeUserService weUserService;
+
+    @Autowired
+    public WeAutoTagRuleHitGroupRecordServiceImpl(WeUserService weUserService) {
+        this.weUserService = weUserService;
+    }
+
 
     /**
      * 群记录列表
@@ -127,9 +136,11 @@ public class WeAutoTagRuleHitGroupRecordServiceImpl extends ServiceImpl<WeAutoTa
             for (String customerId : newJoinCustomerIdList) {
                 // 查询客户所属的员工列表,loop:打标签
                 List<String> userIdList = weFlowerCustomerRelService.listUpUserIdListByCustomerId(customerId, corpId);
-                for (String userId : userIdList) {
-                    log.info("入群打标签: 员工: {}, 客户: {}", userId, customerId);
-                    weCustomerService.singleMarkLabel(corpId, userId, customerId, allTagIdList, userId);
+                // 获取客户所属员工信息
+                List<WeUser> weUserList = weUserService.listByIds(userIdList);
+                for (WeUser weUser : weUserList) {
+                    log.info("入群打标签: 员工: {}, 客户: {}", weUser.getUserId(), customerId);
+                    weCustomerService.singleMarkLabel(corpId, weUser.getUserId(), customerId, allTagIdList, weUser.getName());
                 }
             }
         }

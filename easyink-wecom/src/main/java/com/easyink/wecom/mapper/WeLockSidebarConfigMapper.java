@@ -5,7 +5,7 @@ import com.easyink.wecom.domain.WeLockSidebarConfig;
 import org.apache.ibatis.annotations.Mapper;
 
 /**
- * 络客侧边栏配置(WeLockSidebarConfig)表数据库访问层
+ * 第三方SCRM系统侧边栏配置(WeLockSidebarConfig)表数据库访问层
  *
  * @author wx
  * @since 2023-03-14 15:40:45

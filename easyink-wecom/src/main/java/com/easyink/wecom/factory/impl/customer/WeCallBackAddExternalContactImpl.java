@@ -9,6 +9,7 @@ import com.easyink.common.constant.Constants;
 import com.easyink.common.constant.GenConstants;
 import com.easyink.common.constant.WeConstans;
 import com.easyink.common.constant.redeemcode.RedeemCodeConstants;
+import com.easyink.common.core.domain.wecom.WeUser;
 import com.easyink.common.core.redis.RedisCache;
 import com.easyink.common.enums.*;
 import com.easyink.common.enums.code.WelcomeMsgTypeEnum;
@@ -23,7 +24,6 @@ import com.easyink.wecom.domain.dto.redeemcode.WeRedeemCodeDTO;
 import com.easyink.wecom.domain.vo.welcomemsg.WeEmployMaterialVO;
 import com.easyink.wecom.domain.dto.common.*;
 import com.easyink.wecom.domain.vo.SelectWeEmplyCodeWelcomeMsgVO;
-import com.easyink.wecom.domain.vo.WeMakeCustomerTagVO;
 import com.easyink.wecom.domain.vo.WxCpXmlMessageVO;
 import com.easyink.wecom.factory.WeEventStrategy;
 import com.easyink.wecom.service.*;
@@ -87,6 +87,12 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
     @Autowired
     private WeRedeemCodeService weRedeemCodeService;
 
+    private final WeUserService weUserService;
+
+    @Autowired
+    public WeCallBackAddExternalContactImpl(WeUserService weUserService) {
+        this.weUserService = weUserService;
+    }
 
 
     @Override
@@ -342,15 +348,20 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
             return;
         }
         try {
+            // 获取员工详情
+            WeUser weUser = weUserService.getUserDetail(weFlowerCustomerRel.getCorpId(), weFlowerCustomerRel.getUserId());
+            if (weUser == null) {
+                log.info("[setEmplyCodeTag] 员工活码,查询不到员工信息,corpId:{},userId:{}", weFlowerCustomerRel.getCorpId(), weFlowerCustomerRel.getUserId());
+                return;
+            }
             //查询活码对应标签
             List<WeEmpleCodeTag> tagList = weEmpleCodeTagService.list(new LambdaQueryWrapper<WeEmpleCodeTag>().eq(WeEmpleCodeTag::getEmpleCodeId, empleCodeId));
-
             //存在则打标签
             if (CollectionUtils.isNotEmpty(tagList)) {
                 log.info("setEmplyCodeTag 员工活码 开始批量打标签！");
                 //查询这个tagId对应的groupId
                 List<String> tagIdList = tagList.stream().map(WeEmpleCodeTag::getTagId).filter(Objects::nonNull).collect(Collectors.toList());
-                weCustomerService.singleMarkLabel(weFlowerCustomerRel.getCorpId(), weFlowerCustomerRel.getUserId(), weFlowerCustomerRel.getExternalUserid(), tagIdList, null);
+                weCustomerService.singleMarkLabel(weFlowerCustomerRel.getCorpId(), weFlowerCustomerRel.getUserId(), weFlowerCustomerRel.getExternalUserid(), tagIdList, weUser.getName());
             }
         } catch (Exception e) {
             log.error("setEmplyCodeTag error!! empleCodeId={},e={}", empleCodeId, ExceptionUtils.getStackTrace(e));

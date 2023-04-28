@@ -155,7 +155,7 @@ public class SysLoginService {
 
 
     /**
-     * 络客SRCM获取token
+     * 第三方SCRM系统获取token
      *
      * @param corpId    企业id
      * @param userId    用户id

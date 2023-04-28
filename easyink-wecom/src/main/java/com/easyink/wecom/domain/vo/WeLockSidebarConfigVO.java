@@ -7,7 +7,7 @@ import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
 /**
- * 络客侧边栏配置返回VO
+ * 第三方SCRM系统侧边栏配置返回VO
  *
  * @author wx
  * 2023/3/21 17:35
@@ -15,15 +15,15 @@ import lombok.Data;
 @Data
 public class WeLockSidebarConfigVO {
 
-    @ApiModelProperty("络客app_id")
+    @ApiModelProperty("第三方SCRM系统app_id")
     @TableField("app_id")
     private String appId;
 
-    @ApiModelProperty("络客app_id")
+    @ApiModelProperty("第三方SCRM系统app_id")
     @TableField("corp_id")
     private String corpId;
 
-    @ApiModelProperty("络客app_secret")
+    @ApiModelProperty("第三方SCRM系统app_secret")
     @TableField("app_secret")
     private String appSecret;
 

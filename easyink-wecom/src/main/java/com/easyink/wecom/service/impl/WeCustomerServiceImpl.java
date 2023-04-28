@@ -739,7 +739,7 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void singleMarkLabel(String corpId, String userId, String externalUserId, List<String> addTagIds, String oprUserId){
+    public void singleMarkLabel(String corpId, String userId, String externalUserId, List<String> addTagIds, String oprUserName){
         if (StringUtils.isAnyBlank(corpId, userId, externalUserId) || CollUtil.isEmpty(addTagIds)) {
             log.info("员工id，客户id，公司id不能为空，userId：{}，externalUserId：{}，corpId：{}", userId, externalUserId, corpId);
             return;
@@ -747,8 +747,8 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
         WeCustomerService weCustomerService = (WeCustomerService)AopContext.currentProxy();
         weCustomerService.batchMarkCustomTagWithTagIds(corpId, userId, externalUserId, addTagIds, null);
         // 有操作人才需要记录信息动态 且 修改了标签
-        if (StringUtils.isNotBlank(oprUserId) && CollUtil.isNotEmpty(addTagIds)) {
-            weCustomerTrajectoryService.recordEditTagOperation(corpId, userId, externalUserId, oprUserId);
+        if (StringUtils.isNotBlank(oprUserName) && CollUtil.isNotEmpty(addTagIds)) {
+            weCustomerTrajectoryService.recordEditTagOperation(corpId, userId, externalUserId, oprUserName);
         }
     }
 
