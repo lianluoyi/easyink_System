@@ -8,6 +8,7 @@ import com.easyink.wecom.domain.dto.statistics.*;
 import com.easyink.wecom.domain.entity.WeUserCustomerMessageStatistics;
 import com.easyink.wecom.domain.vo.ConversationArchiveVO;
 import com.easyink.wecom.domain.vo.statistics.*;
+import com.github.pagehelper.PageInfo;
 
 import java.util.List;
 
@@ -25,7 +26,7 @@ public interface WeUserCustomerMessageStatisticsService extends IService<WeUserC
      *
      * @param corpId    企业id
      */
-    void getMessageStatistics(String corpId);
+    void getMessageStatistics(String corpId, String time);
 
     /**
      * 统计员工会话数据
@@ -33,8 +34,9 @@ public interface WeUserCustomerMessageStatisticsService extends IService<WeUserC
      * @param userMessages     {@link ConversationArchiveVO}
      * @param weUser           {@link WeUser}
      * @param userBehaviorData {@link WeUserBehaviorData}
+     * @param time 日期
      */
-    void statistics(List<ConversationArchiveVO> userMessages, WeUser weUser, WeUserBehaviorData userBehaviorData);
+    void statistics(List<ConversationArchiveVO> userMessages, WeUser weUser, WeUserBehaviorData userBehaviorData, String time);
 
     /**
      * 获取客户概况-数据概览
@@ -52,6 +54,22 @@ public interface WeUserCustomerMessageStatisticsService extends IService<WeUserC
      * @return {@link CustomerOverviewVO}
      */
     List<CustomerOverviewVO> getCustomerOverViewOfUser(CustomerOverviewDTO dto, Boolean pageFlag);
+
+    /**
+     * 获取客户概况-日期维度
+     *
+     * @param dto {@link CustomerOverviewDTO}
+     * @return 结果VO {@link CustomerOverviewDateVO}
+     */
+    List<CustomerOverviewDateVO> getCustomerOverViewOfDate(CustomerOverviewDTO dto);
+
+    /**
+     * 导出客户概况-数据总览-日期维度
+     *
+     * @param dto   {@link CustomerOverviewDTO}
+     * @return 结果
+     */
+    AjaxResult exportCustomerOverViewOfDate(CustomerOverviewDTO dto);
 
     /**
      * 获取客户活跃度-日期维度
@@ -112,7 +130,7 @@ public interface WeUserCustomerMessageStatisticsService extends IService<WeUserC
      * @param pageFlag  是否分页
      * @return
      */
-    List<UserServiceVO> getUserServiceOfUser(UserServiceDTO dto, boolean pageFlag);
+    PageInfo<UserServiceVO> getUserServiceOfUser(UserServiceDTO dto);
 
     /**
      * 导出客户概况-数据总览-员工维度
@@ -154,4 +172,20 @@ public interface WeUserCustomerMessageStatisticsService extends IService<WeUserC
      * @return
      */
     AjaxResult exportUserServiceOfUser(UserServiceDTO dto);
+
+    /**
+     * 获取员工服务-数据详情-日期维度
+     *
+     * @param dto {@link UserServiceDTO}
+     * @return
+     */
+    List<UserServiceTimeVO> getUserServiceOfTime(UserServiceDTO dto);
+
+    /**
+     * 导出员工服务-数据总览-日期维度
+     *
+     * @param dto {@link UserServiceDTO}
+     * @return
+     */
+    AjaxResult exportUserServiceOfTime(UserServiceDTO dto);
 }

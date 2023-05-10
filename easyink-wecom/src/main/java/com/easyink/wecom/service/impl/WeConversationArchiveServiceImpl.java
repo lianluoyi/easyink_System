@@ -84,13 +84,15 @@ public class WeConversationArchiveServiceImpl implements WeConversationArchiveSe
         builder.size(pageSize);
         builder.from(from);
         builder.sort(WeConstans.MSG_TIME, SortOrder.DESC);
+        // 需要完全匹配
+        String minimumShouldMatch = "100%" ;
         BoolQueryBuilder fromBuilder = QueryBuilders.boolQuery().must(QueryBuilders.matchQuery(WeConstans.ROOMID, ""))
-                .must(QueryBuilders.matchQuery(WeConstans.FROM, query.getFromId()))
-                .must(QueryBuilders.matchQuery(WeConstans.TO_LIST, query.getReceiveId()));
+                .must(QueryBuilders.matchQuery(WeConstans.FROM, query.getFromId()).minimumShouldMatch(minimumShouldMatch))
+                .must(QueryBuilders.matchQuery(WeConstans.TO_LIST, query.getReceiveId()).minimumShouldMatch(minimumShouldMatch));
 
         BoolQueryBuilder toLsitBuilder = QueryBuilders.boolQuery().must(QueryBuilders.matchQuery(WeConstans.ROOMID, ""))
-                .must(QueryBuilders.matchQuery(WeConstans.FROM, query.getReceiveId()))
-                .must(QueryBuilders.matchQuery(WeConstans.TO_LIST, query.getFromId()));
+                .must(QueryBuilders.matchQuery(WeConstans.FROM, query.getReceiveId()).minimumShouldMatch(minimumShouldMatch))
+                .must(QueryBuilders.matchQuery(WeConstans.TO_LIST, query.getFromId()).minimumShouldMatch(minimumShouldMatch));
         //查询聊天类型
         if (StringUtils.isNotEmpty(query.getMsgType())) {
             fromBuilder.must(QueryBuilders.termQuery(WeConstans.MSG_TYPE, query.getMsgType()));
@@ -353,10 +355,12 @@ public class WeConversationArchiveServiceImpl implements WeConversationArchiveSe
             Date endTime = DateUtils.dateTime(DateUtils.YYYY_MM_DD_HH_MM, query.getEndTime());
             boolQueryBuilder.filter(QueryBuilders.rangeQuery(WeConstans.MSG_TIME).gte(beginTime.getTime()).lte(endTime.getTime()));
         }
-        //匹配发送人
+        //todo 以后需要修改索引Mapping的类型,把toList 字段的类型改成keyword,避免分词,这里就可以直接使用terms进行完全匹配,不必使用 match
+        //匹配发送人, 需要100 %匹配
+        String minimumShouldMatch = "100%" ;
         BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().should(QueryBuilders.termsQuery("from", query.getFromId()));
         //匹配收消息人
-        queryBuilder.should(QueryBuilders.matchQuery("toListInfo.userId", query.getFromId()));
+        queryBuilder.should(QueryBuilders.matchQuery("toListInfo.userId", query.getFromId()).minimumShouldMatch(minimumShouldMatch));
         boolQueryBuilder.filter(queryBuilder.minimumShouldMatch(1));
         builder.query(boolQueryBuilder);
         return elasticSearch.searchPage(WeConstans.getChatDataIndex(query.getCorpId()), builder, pageNum, pageSize, ConversationArchiveVO.class);

@@ -21,6 +21,7 @@ import com.easyink.common.core.domain.wecom.WeUser;
 import com.easyink.common.core.redis.RedisCache;
 import com.easyink.common.enums.*;
 import com.easyink.common.exception.CustomException;
+import com.easyink.common.utils.DateUtils;
 import com.easyink.common.utils.MyDateUtil;
 import com.easyink.common.utils.bean.BeanUtils;
 import com.easyink.common.utils.file.FileUploadUtils;
@@ -60,6 +61,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -1057,7 +1061,7 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
 
     @Transactional(rollbackFor = Exception.class)
     @Override
-    public void getUserBehaviorDataByCorpId(String corpId) {
+    public void getUserBehaviorDataByCorpId(String corpId, String time) {
         if (StringUtils.isBlank(corpId)) {
             log.error("corpId不允许为空。");
             return;
@@ -1069,8 +1073,10 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
             return;
         }
         //删除存在的数据
-        Long startTime = MyDateUtil.strToDate(-1, 0);
-        Long endTime = MyDateUtil.strToDate(-1, 1);
+        Date beginDate = DateUtils.dateTime(DateUtils.YYYY_MM_DD_HH_MM_SS, time + DateUtils.BEGIN_TIME_SUFFIX);
+        Date endDate = DateUtils.dateTime(DateUtils.YYYY_MM_DD_HH_MM_SS, time + DateUtils.END_TIME_SUFFIX);
+        Long startTime = beginDate.getTime() / 1000;
+        Long endTime = endDate.getTime() / 1000;
         LambdaQueryWrapper<WeUserBehaviorData> wrapper1 = new LambdaQueryWrapper<>();
         wrapper1.eq(WeUserBehaviorData::getCorpId, corpId);
         wrapper1.between(WeUserBehaviorData::getStatTime, DateUtil.date(startTime * 1000), DateUtil.date(endTime * 1000));

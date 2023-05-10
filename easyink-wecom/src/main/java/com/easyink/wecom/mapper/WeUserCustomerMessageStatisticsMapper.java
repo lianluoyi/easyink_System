@@ -1,10 +1,7 @@
 package com.easyink.wecom.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.easyink.wecom.domain.dto.statistics.CustomerActivityDTO;
-import com.easyink.wecom.domain.dto.statistics.CustomerActivityUserDetailDTO;
-import com.easyink.wecom.domain.dto.statistics.StatisticsDTO;
-import com.easyink.wecom.domain.dto.statistics.UserServiceDTO;
+import com.easyink.wecom.domain.dto.statistics.*;
 import com.easyink.wecom.domain.entity.WeUserCustomerMessageStatistics;
 import com.easyink.wecom.domain.vo.statistics.*;
 
@@ -34,6 +31,14 @@ public interface WeUserCustomerMessageStatisticsMapper extends BaseMapper<WeUser
      * @return  {@link UserServiceVO}
      */
     UserServiceVO getUserServiceOfTotal(StatisticsDTO dto);
+
+    /**
+     * 获取员工服务-数据详情-时间维度
+     *
+     * @param dto {@link UserServiceDTO}
+     * @return {@link UserServiceTimeDTO}
+     */
+    List<UserServiceTimeDTO> getUserServiceOfTime(UserServiceDTO dto);
 
     /**
      * 获取客户活跃度-日期维度
@@ -74,5 +79,12 @@ public interface WeUserCustomerMessageStatisticsMapper extends BaseMapper<WeUser
      * @return  {@link CustomerActivityOfCustomerVO}
      */
     List<CustomerActivityOfCustomerVO> getCustomerActivityOfUserDetail(CustomerActivityUserDetailDTO dto);
+
+    /**
+     *  获取有进行对话的员工
+     * @param dto {@link UserServiceDTO}
+     * @return {@link UserServiceTimeDTO}
+     */
+    List<UserServiceTimeDTO> getFilterOfUser(UserServiceDTO dto);
 }
 

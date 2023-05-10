@@ -18,6 +18,21 @@ public class GenConstants {
     public static final String LIMIT_5 = "LIMIT 5";
 
     /**
+     * 计算概率拼接百分号
+     */
+    public static final String PERCENT = "%";
+
+    /**
+     * 正序
+     */
+    public static final String ASC = "ASC";
+
+    /**
+     * 倒序
+     */
+    public static final String DESC = "DESC";
+
+    /**
      * 群聊名称占位符
      */
     public static final String GROUP_NAME = "${groupName}";

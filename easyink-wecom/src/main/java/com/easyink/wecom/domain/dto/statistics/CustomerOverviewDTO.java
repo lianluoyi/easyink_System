@@ -15,8 +15,8 @@ public class CustomerOverviewDTO extends StatisticsDTO{
         if(totalContactCntSort == null) {
             return null;
         }
-        if ("asc".equalsIgnoreCase(totalContactCntSort)) {
-            return "asc";
+        if ("ASC".equalsIgnoreCase(totalContactCntSort)) {
+            return "ASC";
         }else {
             return "DESC";
         }
@@ -26,8 +26,8 @@ public class CustomerOverviewDTO extends StatisticsDTO{
         if(contactLossCntSort == null) {
             return null;
         }
-        if ("asc".equalsIgnoreCase(contactLossCntSort)) {
-            return "asc";
+        if ("ASC".equalsIgnoreCase(contactLossCntSort)) {
+            return "ASC";
         }else {
             return "DESC";
         }
@@ -37,8 +37,8 @@ public class CustomerOverviewDTO extends StatisticsDTO{
         if(newContactCntSort == null) {
             return null;
         }
-        if ("asc".equalsIgnoreCase(newContactCntSort)) {
-            return "asc";
+        if ("ASC".equalsIgnoreCase(newContactCntSort)) {
+            return "ASC";
         }else {
             return "DESC";
         }
@@ -48,8 +48,8 @@ public class CustomerOverviewDTO extends StatisticsDTO{
         if(newContactRetentionRateSort == null) {
             return null;
         }
-        if ("asc".equalsIgnoreCase(newContactRetentionRateSort)) {
-            return "asc";
+        if ("ASC".equalsIgnoreCase(newContactRetentionRateSort)) {
+            return "ASC";
         }else {
             return "DESC";
         }
@@ -59,8 +59,8 @@ public class CustomerOverviewDTO extends StatisticsDTO{
         if(newContactStartTalkRateSort == null) {
             return null;
         }
-        if ("asc".equalsIgnoreCase(newContactStartTalkRateSort)) {
-            return "asc";
+        if ("ASC".equalsIgnoreCase(newContactStartTalkRateSort)) {
+            return "ASC";
         }else {
             return "DESC";
         }
@@ -70,8 +70,8 @@ public class CustomerOverviewDTO extends StatisticsDTO{
         if(serviceResponseRateSort == null) {
             return null;
         }
-        if ("asc".equalsIgnoreCase(serviceResponseRateSort)) {
-            return "asc";
+        if ("ASC".equalsIgnoreCase(serviceResponseRateSort)) {
+            return "ASC";
         }else {
             return "DESC";
         }
@@ -106,4 +106,14 @@ public class CustomerOverviewDTO extends StatisticsDTO{
      * 服务响应率排序 正序asc 倒叙desc
      */
     private String serviceResponseRateSort;
+
+    /**
+     * 排序类型名称
+     */
+    private String sortName;
+
+    /**
+     * 排序方式 正序ASC 倒叙DESC
+     */
+    private String sortType;
 }

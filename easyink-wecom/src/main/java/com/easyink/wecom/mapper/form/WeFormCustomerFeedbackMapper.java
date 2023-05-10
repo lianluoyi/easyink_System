@@ -41,5 +41,21 @@ public interface WeFormCustomerFeedbackMapper extends BaseMapper<WeFormCustomerF
      * @return {@link UserGoodReviewDTO}
      */
     List<UserGoodReviewDTO> selectGoodReviews(GoodCommitDTO dto);
+
+    /**
+     * 查询指定时间所有人的好评
+     *
+     * @param dto {@link GoodCommitDTO}
+     * @return
+     */
+    List<UserGoodReviewDTO> selsectGoodReviewsForPerson(GoodCommitDTO dto);
+
+    /**
+     * 查询时间维度所需评价数据
+     *
+     * @param dto {@link GoodCommitDTO}
+     * @return {@link UserGoodReviewDTO}
+     */
+    List<UserGoodReviewDTO> selectGoodReviewsForTime(GoodCommitDTO dto);
 }
 

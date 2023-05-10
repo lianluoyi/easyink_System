@@ -9,21 +9,26 @@ ruoyi:
     startCosUpload: ${START_COS_UPLOAD:true}
 #腾讯云对象存储
     cos:
+      # 访问API密钥，用于生成签名验证
       secretId: ${COS_SECRET_ID:}
       secretKey: ${COS_SECRET_KEY:}
+      # COS地域简称，具体可参照（https://cloud.tencent.com/document/product/436/6224）
       region: ${COS_REGION:}
+      # 存储桶名称 + APPID 组合
       bucketName: ${COS_BUCKET_NAME:}
+      # 云存储文件上传地址：bucketName + region + (myqcloud.com 腾讯云域名，固定字符) 示例（https://free-1253559996.cos.ap-guangzhou.myqcloud.com）
       cosImgUrlPrefix: ${COS_COS_IMG_URL_PREFIX:}
-    allowUploadExtensionList: ${ALLOW_UPLOAD_EXTENSION_LIST:png, jpg, jpeg, gif, doc, docx, pdf, xlsx, xls, csv, txt, zip, rar, ppt, pptx, mp3, mp4, wav} # 允许上传的文件后缀
+    # 允许上传的文件后缀
+    allowUploadExtensionList: ${ALLOW_UPLOAD_EXTENSION_LIST:png, jpg, jpeg, gif, doc, docx, pdf, xlsx, xls, csv, txt, zip, rar, ppt, pptx, mp3, mp4, wav}
   # 文件路径 示例（ Windows配置D:/ruoyi/uploadPath，Linux配置 /app/project/pic）
   # 获取ip地址开关
   addressEnabled: true
   # 验证码类型 math 数组计算 char 字符验证
   captchaType: ${CAPTCHA_TYPE:math}
   # 登录密码RSA公钥 生成规则: PCKS#8 1024bit （不包含前后缀）
-  loginRsaPublicKey: ${LOGIN_RSA_PUBLIC_KEY:}
+  loginRsaPublicKey: ${LOGIN_RSA_PUBLIC_KEY:MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAm/peY4wS5+9Y1Bu/+YPEEWnpX5hEGvhrAQIkSAzQ//aOu90U+Z3shdq0DU8qxEnWDjzD5CFRpMTksBcNfYPNulHl1ekYu7oGkAwsqPIFQuKsnhuhuEKQ6IXPjHGCvW4HsonGAM7PpfHsxAh5HfEE+6PAeZGld8n1PAN6mdUGsznstc2nxzr+Agpjal8Efo+9AYU+jnn4Ro0TfDl4a0qNx1rar/GvoPMudS0DWk96OMNAgOzC1pE+Jr3C1AdNMbo1PhtG7Cf4Ukt89zFTVnM2ZpkbGlI4U3gAlb0++KvlLbrf84Tf7feOYNO+I4eNjwTiS59A2mAi6OJUdAalnPxrgwIDAQAB}
   # 登录密码RSA私钥 同上
-  loginRsaPrivateKey: ${LOGIN_RSA_PRIVATE_KEY:}
+  loginRsaPrivateKey: ${LOGIN_RSA_PRIVATE_KEY:MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCb+l5jjBLn71jUG7/5g8QRaelfmEQa+GsBAiRIDND/9o673RT5neyF2rQNTyrESdYOPMPkIVGkxOSwFw19g826UeXV6Ri7ugaQDCyo8gVC4qyeG6G4QpDohc+McYK9bgeyicYAzs+l8ezECHkd8QT7o8B5kaV3yfU8A3qZ1QazOey1zafHOv4CCmNqXwR+j70BhT6OefhGjRN8OXhrSo3HWtqv8a+g8y51LQNaT3o4w0CA7MLWkT4mvcLUB00xujU+G0bsJ/hSS3z3MVNWczZmmRsaUjhTeACVvT74q+Utut/zhN/t945g074jh42PBOJLn0DaYCLo4lR0BqWc/GuDAgMBAAECggEAQ/IGEP4xNCievNMTxvj/vYgx+YsGS+tgDXHl5R70IjRAzBRL8Uq6gDqbiVqtqhDx9oTA3o0nGAwPBKgeH8l9IkdPw+WE+S3ZcwFiqPu4kADXKg6mXXJd1nSHy0mdJrCaGMuMXci5SrP+rAx22jSmM4oLK8nm1y46LjjjvMQ/5W1Jj+1bEWfZfq0WyLf8twOZn9b08jvpPlHt5SkKyjmXF2ZcxM6iJr4mTfondn3pPJWoj8KNXahAZoQCBekedW/7oT4Pqg+T4Ka3gIEwD74anljx0a7Z5NPA7DBEyr+uN7jM6sZ2QgZxbohh4OGFjxF2OHmN5j7MK2u/LG2WchS1xQKBgQD3twqjURfwfGAj6GQAhUu362fE2Ym7t+MmpSN4TLjSUCc3P3hp1MVPrI1aifl7FZQL62AK0tCVWQ44rwroOS5KQcOvxth78Qgsk27CnZiUX2JnHIOYOzV8aH1d2Csapd14wz3ggSi76tHP/sZDAifcluCR8zXCTMFbaruS24drHwKBgQChMd3XxEFhei6JeIyRMY3wkMSJRISZWQZiTPlHa2/o4Cd5EV0xNuiVtFKCvN+ub+wP7VCqE+fq0Uu62uJb/V8V98tIEmjy4kTHXnMiIDQ3acM5/diQl+bteFf2AuupmFeH0vKlxEI4qjB3YAwK1BuI1XtLvbVbMjtAFPLBqMqXHQKBgA/5K6RwXDzTqFdoatplvgY0FdLpvCnwp6McTvc460oUhRLY8ujQIZELrWnDL+Ux9QP3v4+zHGQlA/e/wdJLraJ4LygsiFUlq8NEFoZSJz6aD/xaKFoupzpIep0MjWsAexGIdXr+mSPU9oaVBS/Y+b0NtZlzt2m6DVXZwhKsOUU9AoGAPaR6N5b/ga1duoh1CNkwdHyIDA49vv7CaDkTYvJ8+0stDSlMwBNFYmpw2zorN+PpHDYekMvH9o5PLYei5JbCE/6MqGUR6UAKGUvPL4+tKDuzwquGc9UDJHDPAm8fe92cK37J+AZTZKQAoMYEFOgEF5G78rz7a4KMEfdw1gocXykCgYBCLJQHJufoodu4vxoiz2s6NvYowKdNreUnerWEByNb1XenHEhZZHLcowGTOEc0TT/HpKeagPsLq1soq3MWNpFU0su1nquOR7OPAumMs+9VCNl5XDEILwkTGsSExlrvGhpjtgL9JBDMDjbIBoItIGvKBi3e2y3nJwI7V6BaBWX35g==}
   # 企业微信用户首次登录系统默认密码
   weUserDefaultPwd: admin
   # 默认应用名
@@ -32,28 +37,51 @@ ruoyi:
   serverType: ${SERVER_TYPE:internal}
   # 是否允许返回异常详情给前端
   enableExceptionDetailResp: ${ENABLE_EXCEPTION_DETAIL_RESP:false}
+  # 三方应用默认配置 （自建应用不需要配置）
   thirdDefaultDomain:
+    # 前端页面地址
     dashboard: ${DASHBOARD:}
+    # 侧边栏地址
     sidebar: ${SIDEBAR:}
+    # 后台地址
     scrm: ${SCRM:}
+  # 服务商信息 （自建应用不需要配置）
   provider:
+    # 服务商的企业ID
     corpId: ${PROVIDER_CORP_ID:}
+    # 服务商的Secret
     secret: ${PROVIDER_SECRET:}
+    # 约定的Token
     token: ${PROVIDER_TOKEN:}
+    # 约定的解码EncodingAesKey
     encodingAesKey: ${PROVIDER_ENCODING_AES_KEY:}
+    # 三方应用信息 （自建应用不需要配置此项）
     webSuite:
+      # 三方应用的SuiteId
       suiteId: ${WEB_SUITE_ID:}
+      # 三方应用的Secret
       secret: ${WEB_SUITE_SECRET:}
+      # 约定的Token
       token: ${WEB_SUITE_TOKEN:}
+      # 约定的解码EncodingAesKey
       encodingAesKey: ${WEB_SUITE_ENCODING_AES_KEY:}
+    # 代开发应用信息 （自建应用不需要配置此项）
     dkSuite:
+      # 代开发应用的模板ID
       dkId: ${DK_SUITE_ID:}
+      # 代开发应用的模板Secret
       secret: ${DK_SUITE_SECRET:}
+      # 约定的Token
       token: ${DK_SUITE_TOKEN:}
+      # 约定的解码EncodingAesKey
       encodingAesKey: ${DK_SUITE_ENCODING_AES_KEY:}
+      # 代开发授权二维码图片地址
       dkQrCode: ${DK_QRCODE:}
+  # 自建应用信息
   selfBuild:
+    # 约定的Token
     token: ${SELF_BUILD_TOKEN:3lTqc9EEO}
+    # 约定的解码EncodingAesKey
     encodingAesKey: ${SELF_BUILD_ENCODING_AES_KEY:1K3K7DD74kbNNu58De5R7xoi2CyYxBdyxv8UHibVLoZ}
     #匿名访问的URL
   anonUrl:
@@ -130,12 +158,16 @@ server:
 
 # 日志配置
 logging:
+  # 日志级别 ALL < TRACE < DEBUG < INFO < WARN < ERROR < FATAL < OFF
   level:
     com.ruoyi: ${COM_RUOYI:info}
     org.springframework: ${ORG_SPRINGFRAMEWORK:warn}
   file:
+    # 日志文件存放位置
     path: ${LOG_PATH:./logs}
+    # 日志文件要保留的归档的最大天数
     max-history: ${LOG_MAX_HISTORY:15}
+    # 日志名称
     name: ${LOG_NAME:/wecom}
 
 # Spring配置
@@ -195,7 +227,7 @@ spring:
                     # 慢SQL记录
                     log-slow-sql: ${MYSQL_SERVICE_FILTER_STAT_LOG_SLOW_SQL:true}
                     slow-sql-millis: ${MYSQL_SERVICE_FILTER_STAT_SLOW_SQL_MILLIS:1000}
-                    merge-sql: ${MYSQL_SERVICE_FILTER_STAT_MERGE_SQL:true}
+                    merge-sql: ${MYSQL_SERVICE_FILTER_STAT_MERGE_SQL:false}
                 wall:
                     config:
                         multi-statement-allow: ${MYSQL_SERVICE_WALL_CONFIG_MULTI_STATEMENT_ALLOW:true}
@@ -209,7 +241,9 @@ spring:
   task:
     execution:
       pool:
+        # 线程所允许的空闲时间
         keep-alive: ${TASK_POOL_KEEP_ALIVE:10s}
+      # 线程名称前缀
       thread-name-prefix: ${TASK_POOL_THREAD_NAME_PREFIX:common-pool-}
   # 服务模块
   devtools:
@@ -244,8 +278,8 @@ token:
     header: ${TOKEN_HEADER:Authorization}
     # 令牌密钥
     secret: ${TOKEN_SECRET:easywecom}
-    # 令牌有效期（默认30分钟）
-    expireTime: ${TOKEN_EXPIRE_TIME:300}
+    # 令牌有效期（单位为分钟，默认为24小时）
+    expireTime: ${TOKEN_EXPIRE_TIME:1440}
 
 mybatis-plus:
    mapper-locations: classpath*:mapper/**/*Mapper.xml
@@ -268,30 +302,55 @@ pagehelper:
   params: count=countSql
 
 knife4j:
+  # 是否开启增强配置
   enable: true
+  # 自定义文档集合，该属性是数组
   documents:
+      # 所属分组
     - group: 1.0版本
+      # 类似于接口中的tag,对于自定义文档的分组
       name: 其他文档
+      # markdown文件路径,可以是一个文件夹(classpath:markdowns/*)，也可以是单个文件(classpath:md/sign.md)
       locations: classpath*:markdown/*
+  # 前端Ui的个性化配置属性
   setting:
+    # Ui默认显示语言,目前主要有两种:中文(zh-CN)、英文(en-US)
     language: zh-CN
+    # 是否显示界面中SwaggerModel功能
     enableSwaggerModels: true
+    # 是否显示界面中"文档管理"功能
     enableDocumentManage: true
+    # 自定义model名称
     swaggerModelName: 实体类列表
+    # 是否开启界面中对某接口的版本控制,如果开启，后端变化后Ui界面会存在小蓝点
     enableVersion: false
+    # 是否在每个Debug调试栏后显示刷新变量按钮,默认不显示
     enableReloadCacheParameter: false
+    # 调试Tab是否显示AfterScript功能,默认开启
     enableAfterScript: true
+    # 具体接口的过滤类型
     enableFilterMultipartApiMethodType: POST
+    # 针对RequestMapping的接口请求类型,在不指定参数类型的情况下,如果不过滤,默认会显示7个类型的接口地址参数,如果开启此配置,默认展示一个Post类型的接口地址
     enableFilterMultipartApis: false
+    # 是否开启请求参数缓存
     enableRequestCache: true
+    # 是否显示Footer
     enableFooter: false
+    # 是否开启自定义Footer
     enableFooterCustom: true
+    # 自定义Footer内容
     footerCustomContent: Apache License 2.0 | Copyright  2017-[厦门联络易科技有限公司](www.lianluoyi.cn)
+  # 是否开启一个默认的跨域配置,该功能配合自定义Host使用
   cors: false
+  # 是否开启生产环境保护策略
   production: ${KNIFE4J_PRODUCTION:true}
+  # 对Knife4j提供的资源提供BasicHttp校验,保护文档
   basic:
+    # 关闭BasicHttp功能
     enable: false
+    # basic用户名
     username: apidoc
+    # basic密码
     password: 123321
 
 
@@ -307,15 +366,25 @@ xss:
 
 # elasticsearch配置
 elasticsearch:
+  # 是否开启
   open: ${ES_OPEN:false}
+  # 协议类型
   schema: ${ES_SCHEMA:http}
+  # 地址+端口号
   address: ${ES_ADDRESS:es:9200}
+  # 用户名
   userName: ${ES_USER_NAME:""}
+  # 密码
   password: ${ES_PASSWD:""}
+  # 连接超时时间
   connectTimeout: ${ES_CONNECT_TIMEOUT:10000}
+  # socket连接超时时间
   socketTimeout: ${ES_SOCKET_TIMEOUT:10000}
+  # 获取连接请求超时时间
   connectionRequestTimeout: ${ES_CONNECTION_REQUEST_TIMEOUT:10000}
+  # 最大连接数
   maxConnectNum: ${ES_MAX_CONNECT_NUM:100}
+  # 每条路由的最大连接数
   maxConnectPerRoute: ${ES_MAX_CONNECT_PER_ROUTE:100}
 
 # forest配置
@@ -459,6 +528,7 @@ wechatopen:
         - /component/api_get_authorizer_info
 
 decrypt:
+    # 解密unionId的密钥
     unionIdKey: ${DECRYPT_UNIONID_KEY:}
 
 

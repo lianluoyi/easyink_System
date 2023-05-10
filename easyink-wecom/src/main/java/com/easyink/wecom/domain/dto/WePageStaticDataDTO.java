@@ -111,6 +111,14 @@ public class WePageStaticDataDTO {
          * 时间段内加入的新客流失数 , 此数据 企微官方统计接口没有返回,所以由系统定时任务自行统计
          */
         private Integer newContactLossCnt;
+        /**
+         * 新增客户群人数
+         */
+        private Integer newChatCnt;
+        /**
+         * 新增客户群人数（相比之前)
+         */
+        private Integer newChatCntDiff ;
 
 
         /**

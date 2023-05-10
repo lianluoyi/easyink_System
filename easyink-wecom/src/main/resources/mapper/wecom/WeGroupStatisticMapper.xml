@@ -77,7 +77,7 @@
         IFNULL(sum(member_has_msg), 0) as member_has_msg,
         IFNULL(sum(msg_total), 0) as msg_total
         from (select (@s := @s + 1) as _index,
-        yearweek(date(date_sub(date_format(current_date, '%Y-%m-%d'), interval @s week))) as _date
+        yearweek(date(date_sub(date_format(current_date, '%Y-%m-%d'), interval @s week)),1) as _date
         from information_schema.character_sets,
         (select @s := -1) as init
         where @s &lt; #{few}
@@ -91,7 +91,7 @@
         sum(ifnull(wgs.member_total, 0)) member_total,
         sum(ifnull(wgs.member_has_msg, 0)) member_has_msg,
         sum(ifnull(wgs.msg_total, 0)) msg_total,
-        yearweek(date_format(wgs.stat_time, '%Y-%m-%d')) as finish_date
+        yearweek(date_format(wgs.stat_time, '%Y-%m-%d'),1) as finish_date
 
         from
         (
@@ -157,28 +157,32 @@
     <!--    获取群聊总数和 群成员总数的每周数据统计-->
     <select id="getGroupCntWeekDate" resultType="com.easyink.wecom.domain.dto.WePageCountDTO">
         SELECT
-        CONCAT(left(YEARWEEK(stat_time),4),'年',right(YEARWEEK(stat_time),2),'周') as x_time ,ifnull (  sum(chat_total) , 0 ) as chat_total , ifnull(sum(member_total)  , 0 ) as member_total FROM we_group_statistic
+        CONCAT(left(YEARWEEK(stat_time,1),4),'年',right(YEARWEEK(stat_time,1),2),'周') as x_time ,ifnull (  sum(chat_total) , 0 ) as chat_total , ifnull(sum(member_total)  , 0 ) as member_total FROM we_group_statistic
         WHERE corp_id = #{corpId} AND stat_time = date_format( date_sub( #{endTime}, INTERVAL 6 WEEK ), '%Y-%m-%d 00:00:00' )
         UNION
         SELECT
-        CONCAT(left(YEARWEEK(stat_time),4),'年',right(YEARWEEK(stat_time),2),'周') as x_time ,ifnull (  sum(chat_total) , 0 ) as chat_total , ifnull(sum(member_total)  , 0 ) as member_total FROM we_group_statistic
+        CONCAT(left(YEARWEEK(stat_time,1),4),'年',right(YEARWEEK(stat_time,1),2),'周') as x_time ,ifnull (  sum(chat_total) , 0 ) as chat_total , ifnull(sum(member_total)  , 0 ) as member_total FROM we_group_statistic
         WHERE corp_id = #{corpId} AND stat_time = date_format( date_sub( #{endTime}, INTERVAL 5 WEEK ), '%Y-%m-%d 00:00:00' )
         UNION
         SELECT
-        CONCAT(left(YEARWEEK(stat_time),4),'年',right(YEARWEEK(stat_time),2),'周') as x_time ,  ifnull (  sum(chat_total) , 0 ) as chat_total , ifnull(sum(member_total)  , 0 ) as member_total FROM we_group_statistic
+        CONCAT(left(YEARWEEK(stat_time,1),4),'年',right(YEARWEEK(stat_time,1),2),'周') as x_time ,  ifnull (  sum(chat_total) , 0 ) as chat_total , ifnull(sum(member_total)  , 0 ) as member_total FROM we_group_statistic
         WHERE corp_id = #{corpId} AND stat_time = date_format( date_sub( #{endTime}, INTERVAL 4 WEEK ), '%Y-%m-%d 00:00:00' )
         UNION
         SELECT
-        CONCAT(left(YEARWEEK(stat_time),4),'年',right(YEARWEEK(stat_time),2),'周') as x_time , ifnull (  sum(chat_total) , 0 ) as chat_total , ifnull(sum(member_total)  , 0 ) as member_total  FROM we_group_statistic
+        CONCAT(left(YEARWEEK(stat_time,1),4),'年',right(YEARWEEK(stat_time,1),2),'周') as x_time , ifnull (  sum(chat_total) , 0 ) as chat_total , ifnull(sum(member_total)  , 0 ) as member_total  FROM we_group_statistic
         WHERE corp_id = #{corpId} AND stat_time = date_format( date_sub( #{endTime}, INTERVAL 3 WEEK ), '%Y-%m-%d 00:00:00' )
         UNION
         SELECT
-        CONCAT(left(YEARWEEK(stat_time),4),'年',right(YEARWEEK(stat_time),2),'周') as x_time ,ifnull (  sum(chat_total) , 0 ) as chat_total , ifnull(sum(member_total)  , 0 ) as member_total FROM we_group_statistic
+        CONCAT(left(YEARWEEK(stat_time,1),4),'年',right(YEARWEEK(stat_time,1),2),'周') as x_time ,ifnull (  sum(chat_total) , 0 ) as chat_total , ifnull(sum(member_total)  , 0 ) as member_total FROM we_group_statistic
         WHERE corp_id = #{corpId} AND stat_time = date_format( date_sub( #{endTime}, INTERVAL 2 WEEK ), '%Y-%m-%d 00:00:00' )
         UNION
         SELECT
-        CONCAT(left(YEARWEEK(stat_time),4),'年',right(YEARWEEK(stat_time),2),'周') as x_time , ifnull (  sum(chat_total) , 0 ) as chat_total , ifnull(sum(member_total)  , 0 ) as member_total  FROM we_group_statistic
+        CONCAT(left(YEARWEEK(stat_time,1),4),'年',right(YEARWEEK(stat_time,1),2),'周') as x_time , ifnull (  sum(chat_total) , 0 ) as chat_total , ifnull(sum(member_total)  , 0 ) as member_total  FROM we_group_statistic
         WHERE corp_id = #{corpId} AND stat_time = date_format( date_sub( #{endTime}, INTERVAL 1 WEEK ), '%Y-%m-%d 00:00:00' )
+        UNION
+        SELECT
+        CONCAT(left(YEARWEEK(stat_time,1),4),'年',right(YEARWEEK(stat_time,1),2),'周') as x_time , ifnull (  sum(chat_total) , 0 ) as chat_total , ifnull(sum(member_total)  , 0 ) as member_total  FROM we_group_statistic
+        WHERE corp_id = #{corpId} AND stat_time = date_format( date_sub(now(), INTERVAL 1 DAY ), '%Y-%m-%d 00:00:00' )
     </select>
 <!--    获取群聊总数和群成员的每月数据统计 （当月的截止至 date )-->
     <select id="getMonthChatCntDate" resultType="com.easyink.wecom.domain.dto.WePageCountDTO">

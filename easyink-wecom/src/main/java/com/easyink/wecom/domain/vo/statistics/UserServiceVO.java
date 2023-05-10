@@ -51,6 +51,12 @@ public class UserServiceVO extends UserBaseVO {
     private String customerPositiveCommentsRate;
 
     /**
+     * 排序用客户好评率
+     */
+    @JsonIgnore
+    private BigDecimal customerPositiveCommentsRateTmp;
+
+    /**
      * 客户主动发起聊天数
      */
     @JsonIgnore
@@ -121,6 +127,20 @@ public class UserServiceVO extends UserBaseVO {
                 .toPlainString();
     }
 
+    public BigDecimal getCustomerPositiveCommentsRateTmp(){
+        BigDecimal scoreDecimal=new BigDecimal(score);
+        BigDecimal numDecimal=new BigDecimal(num);
+        int scale=2;
+        //计算用户好评率
+        if (num==0||score==0){
+            return BigDecimal.ZERO;
+        }else {
+            return scoreDecimal
+                    .multiply(new BigDecimal(10))
+                    .divide(numDecimal, scale, RoundingMode.HALF_UP)
+                    .stripTrailingZeros();
+        }
+    }
     /**
      * 获取回复率  客户主动发起聊天后，员工在当天有回复消息的聊天数 / 客户主动发起聊天数
      *

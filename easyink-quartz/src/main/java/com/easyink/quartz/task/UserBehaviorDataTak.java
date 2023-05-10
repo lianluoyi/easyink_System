@@ -1,6 +1,7 @@
 package com.easyink.quartz.task;
 
 import com.easyink.common.core.domain.entity.WeCorpAccount;
+import com.easyink.common.utils.DateUtils;
 import com.easyink.wecom.service.WeCorpAccountService;
 import com.easyink.wecom.service.WeUserService;
 import lombok.extern.slf4j.Slf4j;
@@ -9,6 +10,7 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -35,7 +37,7 @@ public class UserBehaviorDataTak {
         weCorpAccountList.forEach(weCorpAccount -> {
             try {
                 if (weCorpAccount != null && StringUtils.isNotBlank(weCorpAccount.getCorpId())) {
-                    weUserService.getUserBehaviorDataByCorpId(weCorpAccount.getCorpId());
+                    weUserService.getUserBehaviorDataByCorpId(weCorpAccount.getCorpId(), DateUtils.dateTime(DateUtils.getYesterday(DateUtils.getNowDate())));
                 }
             } catch (Exception e) {
                 log.error("[获取用户数据]统计客户任务异常,corpid:{},e:{}", weCorpAccount.getCorpId(), ExceptionUtils.getStackTrace(e));
