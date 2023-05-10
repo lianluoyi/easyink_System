@@ -59,5 +59,5 @@ public interface PageHomeService {
      * @param corpId  企业id
      * @param isToday 是否统计今天,实时的统计今天, 定时任务统计昨天的
      */
-    void doSystemCustomStat(String corpId, boolean isToday);
+    void doSystemCustomStat(String corpId, boolean isToday, String time);
 }

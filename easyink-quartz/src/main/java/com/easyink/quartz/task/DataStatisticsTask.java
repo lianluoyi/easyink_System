@@ -1,6 +1,8 @@
 package com.easyink.quartz.task;
 
+import cn.hutool.core.date.DateUtil;
 import com.easyink.common.core.domain.entity.WeCorpAccount;
+import com.easyink.common.utils.DateUtils;
 import com.easyink.wecom.service.WeCorpAccountService;
 import com.easyink.wecom.service.WeUserCustomerMessageStatisticsService;
 import com.easyink.wecom.service.WeUserService;
@@ -34,7 +36,7 @@ public class DataStatisticsTask {
         weCorpAccountList.parallelStream().forEach(weCorpAccount -> {
             try {
                 if (weCorpAccount != null && StringUtils.isNotBlank(weCorpAccount.getCorpId())) {
-                    userCustomerMessageStatisticsService.getMessageStatistics(weCorpAccount.getCorpId());
+                    userCustomerMessageStatisticsService.getMessageStatistics(weCorpAccount.getCorpId(), DateUtils.dateTime(DateUtils.getYesterday(DateUtils.getNowDate())));
                 }
             } catch (Exception e) {
                 log.error("[数据统计定时任务]统计任务异常,corpId:{},e:{}", weCorpAccount.getCorpId(), ExceptionUtils.getStackTrace(e));

@@ -310,7 +310,7 @@ public interface WeUserService extends IService<WeUser> {
      *
      * @param corpId    企业id
      */
-    void getUserBehaviorDataByCorpId(String corpId);
+    void getUserBehaviorDataByCorpId(String corpId, String time);
 
     /**
      * 获取加密后的userId

@@ -1,18 +1,23 @@
 package com.easyink.wecom.service.impl;
 
+import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.easyink.common.annotation.DataScope;
 import com.easyink.common.constant.GenConstants;
+import com.easyink.common.constant.WeConstans;
 import com.easyink.common.core.domain.AjaxResult;
 import com.easyink.common.core.domain.ConversationArchiveQuery;
 import com.easyink.common.core.domain.wecom.WeUser;
+import com.easyink.common.enums.ContactSpeakEnum;
 import com.easyink.common.enums.StaffActivateEnum;
 import com.easyink.common.utils.DateUtils;
+import com.easyink.common.utils.bean.BeanUtils;
 import com.easyink.common.utils.poi.ExcelUtil;
 import com.easyink.wecom.domain.WeUserBehaviorData;
 import com.easyink.wecom.domain.dto.statistics.*;
 import com.easyink.wecom.domain.entity.WeUserCustomerMessageStatistics;
+import com.easyink.wecom.domain.enums.statistics.StatisticsEnum;
 import com.easyink.wecom.domain.vo.ConversationArchiveVO;
 import com.easyink.wecom.domain.vo.statistics.*;
 import com.easyink.wecom.mapper.WeFlowerCustomerRelMapper;
@@ -20,18 +25,23 @@ import com.easyink.wecom.mapper.WeUserBehaviorDataMapper;
 import com.easyink.wecom.mapper.WeUserCustomerMessageStatisticsMapper;
 import com.easyink.wecom.mapper.WeUserMapper;
 import com.easyink.wecom.mapper.form.WeFormCustomerFeedbackMapper;
+import com.easyink.wecom.service.WeConversationArchiveService;
 import com.easyink.wecom.service.WeUserBehaviorDataService;
 import com.easyink.wecom.service.WeUserCustomerMessageStatisticsService;
+import com.easyink.wecom.service.WeUserService;
 import com.github.pagehelper.PageHelper;
-import lombok.RequiredArgsConstructor;
-import com.easyink.wecom.service.*;
 import com.github.pagehelper.PageInfo;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.springframework.aop.framework.AopContext;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
@@ -55,12 +65,26 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
     private final WeUserBehaviorDataMapper weUserBehaviorDataMapper;
     private final WeFormCustomerFeedbackMapper weFormCustomerFeedbackMapper;
     private final WeFlowerCustomerRelMapper weFlowerCustomerRelMapper;
+
+    /**
+     * 导出员工服务报表命名
+     */
+    protected static final String SHEET_NAME="员工服务报表";
+    /**
+     * 员工是否与客户聊天标识符
+     */
+    protected static final String EMPTY_CHAT="-1";
     /**
      * 导出客户活跃度报表名称
      */
     protected static final String CUSTOMER_ACTIVITY_REPORT_FORMS = "客户活跃度报表";
+
+    /**
+     * 导出客户概况报表-日期维度名称
+     */
+    protected static final String CUSTOMER_OVERVIEW_DATE_FORMS = "客户概况报表-日期维度";
     @Override
-    public void getMessageStatistics(String corpId) {
+    public void getMessageStatistics(String corpId, String time) {
         if (StringUtils.isBlank(corpId)) {
             log.error("corpId不允许为空。");
             return;
@@ -73,7 +97,7 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
             return;
         }
         // 获取前一天的数据
-        String yesterday = DateUtils.dateTime(DateUtils.getYesterday(new Date()));
+        String yesterday = time;
         visibleUser.parallelStream().forEach(weUser -> {
             try {
                 //根据员工id在会话存档中获取全部对话
@@ -85,7 +109,7 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
                 int pageNum = 0;
                 int pageSize = 100;
                 // 员工的全部消息
-                List<ConversationArchiveVO> userMessages = new CopyOnWriteArrayList<>();
+                List<ConversationArchiveVO> userMessages = new ArrayList<>();
                 PageInfo<ConversationArchiveVO> chatList;
                 do {
                     pageNum++;
@@ -102,19 +126,55 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
                 if (userBehaviorData == null) {
                     return;
                 }
+                // 处理消息
+                if (!CollectionUtils.isEmpty(userMessages)) {
+                    Iterator<ConversationArchiveVO> iterator = userMessages.iterator();
+                    while (iterator.hasNext()) {
+                        ConversationArchiveVO msg = iterator.next();
+                        // ture 表示该消息为员工发送或员工接收的消息，将此消息删除
+                        if (handleUserMsg(msg.getFromInfo(), msg.getToListInfo())) {
+                            iterator.remove();
+                        }
+                        //过滤群聊数据
+                        if (StringUtils.isNotBlank(msg.getRoomId())){
+                            iterator.remove();
+                        }
+                    }
+                }
                 WeUserBehaviorData totalContactAndLossCnt = weFlowerCustomerRelMapper.getTotalContactAndLossCnt(userBehaviorData.getUserId(), userBehaviorData.getCorpId(),DateUtils.parseBeginDay(yesterday), DateUtils.parseEndDay(yesterday));
                 userBehaviorData.setContactTotalCnt(totalContactAndLossCnt.getContactTotalCnt());
                 userBehaviorData.setNewCustomerLossCnt(totalContactAndLossCnt.getNewCustomerLossCnt());
                 weUserBehaviorDataService.updateById(userBehaviorData);
-                statistics(userMessages, weUser, userBehaviorData);
+                statistics(userMessages, weUser, userBehaviorData, yesterday);
             } catch (Exception e) {
                 log.error("员工数据拉取失败: corpId:{},userId:【{}】,ex:【{}】", weUser.getCorpId(), weUser.getUserId(), ExceptionUtils.getStackTrace(e));
             }
         });
     }
 
+    /**
+     * 处理判断是否为员工之间的消息
+     *
+     * @param fromInfo 发送者信息
+     * @param toListInfo 接收者信息
+     * @return True 是为员工互相发送的消息； False：不是为员工互相发送的消息
+     */
+    public boolean handleUserMsg(JSONObject fromInfo, JSONObject toListInfo){
+        if (fromInfo == null || toListInfo == null){
+            return false;
+        }
+        // 是否为员工互相发送的消息
+        if (fromInfo.get(WeConstans.IS_USER) != null && toListInfo.get(WeConstans.IS_USER) != null) {
+            if (Boolean.FALSE.equals(fromInfo.get(WeConstans.IS_USER)) && Boolean.FALSE.equals(toListInfo.get(WeConstans.IS_USER))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     @Override
-    public void statistics(List<ConversationArchiveVO> userMessages, WeUser weUser, WeUserBehaviorData userBehaviorData) {
+    public void statistics(List<ConversationArchiveVO> userMessages, WeUser weUser, WeUserBehaviorData userBehaviorData, String time) {
+        Date nowDate = DateUtils.dateTime(DateUtils.YYYY_MM_DD, time);
         if (CollectionUtils.isEmpty(userMessages) || userBehaviorData == null) {
             // TODO 标识该员工 没有和任何人讲话
             String nullSign = "-1";
@@ -122,7 +182,7 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
             weUserCustomerMessageStatistics.setUserId(weUser.getUserId());
             weUserCustomerMessageStatistics.setCorpId(weUser.getCorpId());
             weUserCustomerMessageStatistics.setExternalUserid(nullSign);
-            weUserCustomerMessageStatistics.setSendTime(DateUtils.getYesterday(new Date()));
+            weUserCustomerMessageStatistics.setSendTime(nowDate);
             this.save(weUserCustomerMessageStatistics);
             return;
         }
@@ -160,7 +220,7 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
             // 获取添加客户时间
             userCustomerMessageStatistics.setAddTime(getCustomerAddTime(entry.getValue(), false));
             // 发送消息时间
-            userCustomerMessageStatistics.setSendTime(DateUtils.getYesterday(new Date()));
+            userCustomerMessageStatistics.setSendTime(nowDate);
             // 构建聊天记录并统计
             buildContactAndSet(weUser, userCustomerMessageStatistics, entry.getValue(), receiveUserMessageMap.getOrDefault(externalUserId, new ArrayList<>()));
             // 客户是否在30分钟内回复
@@ -168,7 +228,7 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
                 thirtyMinReplyCount ++;
             }
             // 是否为新客户 当天新加的客户
-            if (isNewCustomer(entry.getValue())) {
+            if (isNewCustomer(entry.getValue(), nowDate)) {
                 newCustomerStartContactCnt++;
             }
             receiveUserMessageMap.remove(externalUserId);
@@ -185,9 +245,11 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
             // 员工对该客户发送的消息数
             userCustomerMessageStatistics.setUserSendMessageCnt(entry.getValue().size());
             // 获取添加客户时间
-            userCustomerMessageStatistics.setAddTime(getCustomerAddTime(entry.getValue(), true));
+            if (!Objects.isNull(getCustomerAddTime(entry.getValue(), true))){
+                userCustomerMessageStatistics.setAddTime(getCustomerAddTime(entry.getValue(), true));
+            }
             // 发送消息时间
-            userCustomerMessageStatistics.setSendTime(DateUtils.getYesterday(new Date()));
+            userCustomerMessageStatistics.setSendTime(nowDate);
             //
             buildContactAndSet(weUser, userCustomerMessageStatistics, null, entry.getValue());
             userCustomerMessageStatisticsList.add(userCustomerMessageStatistics);
@@ -241,6 +303,84 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
             startPage(dto);
         }
         return weUserBehaviorDataMapper.getCustomerOverViewOfUser(dto);
+    }
+
+    /**
+     * 导出客户概况-数据总览-日期维度
+     *
+     * @param dto   {@link CustomerOverviewDTO}
+     * @return 结果
+     */
+    @Override
+    @DataScope
+    public AjaxResult exportCustomerOverViewOfDate(CustomerOverviewDTO dto) {
+        List<CustomerOverviewDateVO> list = getCustomerOverViewOfDate(dto);
+        // 导出
+        list.forEach(CustomerOverviewDateVO::bindExportData);
+        ExcelUtil<CustomerOverviewDateVO> util = new ExcelUtil<>(CustomerOverviewDateVO.class);
+        return util.exportExcel(list, CUSTOMER_OVERVIEW_DATE_FORMS);
+    }
+
+    /**
+     * 获取客户概况-日期维度
+     *
+     * @param dto  {@link StatisticsDTO}
+     * @return {@link CustomerOverviewVO}
+     */
+    @Override
+    @DataScope
+    public List<CustomerOverviewDateVO> getCustomerOverViewOfDate(CustomerOverviewDTO dto) {
+        if (!isHaveDataScope(dto) || dto == null) {
+            return new ArrayList<>();
+        }
+        if (dto.getEndTime() == null) {
+            dto.setEndTime(DateUtils.parseBeginDay(DateUtils.dateTime(DateUtils.getYesterday(new Date()))));
+        }
+        //转换获取所需查询类
+        UserServiceDTO userServiceDTO= new UserServiceDTO();
+        BeanUtils.copyProperties(dto,userServiceDTO);
+        // 查询时间段内的所有数据
+        List<WeUserBehaviorData> weUserBehaviorDataList = weUserBehaviorDataMapper.getCustomerOverViewOfDate(dto);
+        List<UserServiceTimeDTO> userServiceTimeDTOList=weUserCustomerMessageStatisticsMapper.getFilterOfUser(userServiceDTO);
+        if (weUserBehaviorDataList == null) {
+            return new ArrayList<>();
+        }
+        // 获取时间范围内的所有日期
+        Date beginTime = DateUtils.dateTime(DateUtils.YYYY_MM_DD, dto.getBeginTime());
+        Date endTime = DateUtils.dateTime(DateUtils.YYYY_MM_DD, dto.getEndTime());
+        List<Date> dates = DateUtils.findDates(beginTime, endTime);
+        // 最终需要返回的数据VO列表
+        List<CustomerOverviewDateVO> resultList = new ArrayList<>();
+        for (Date date : dates) {
+            CustomerOverviewDateVO customerOverviewDateVO = new CustomerOverviewDateVO(DateUtils.dateTime(date));
+            for (WeUserBehaviorData weUserBehaviorData : weUserBehaviorDataList) {
+                int chatCnt=0;
+                String judgeTime=DateUtils.parseDateToStr(DateUtils.YYYY_MM_DD,weUserBehaviorData.getStatTime());
+                // 判断是否有对话
+                if (DateUtils.dateTime(weUserBehaviorData.getStatTime()).equals(DateUtils.dateTime(date))) {
+                    for (UserServiceTimeDTO userServiceTimeDTO:userServiceTimeDTOList){
+                        //判断是否有对话且时间相等
+                        if (Objects.equals(userServiceTimeDTO.getUserId(),weUserBehaviorData.getUserId())&&Objects.equals(judgeTime,userServiceTimeDTO.getSendTime())){
+                            chatCnt=weUserBehaviorData.getChatCnt();
+                            break;
+                        }
+                    }
+                    // 原始数据处理
+                    customerOverviewDateVO.handleAddData(weUserBehaviorData.getAllChatCnt(),
+                            weUserBehaviorData.getContactTotalCnt(),
+                            weUserBehaviorData.getNegativeFeedbackCnt(),
+                            weUserBehaviorData.getNewCustomerLossCnt(),
+                            weUserBehaviorData.getNewContactCnt(),
+                            weUserBehaviorData.getNewContactSpeakCnt(),
+                            weUserBehaviorData.getRepliedWithinThirtyMinCustomerCnt()
+                            ,chatCnt);
+                }
+            }
+            resultList.add(customerOverviewDateVO);
+        }
+        // 根据排序规则进行排序
+        StatisticsEnum.CustomerOverviewSortTypeEnum.sort(dto, resultList);
+        return resultList;
     }
 
     /**
@@ -347,17 +487,110 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
 
     @Override
     @DataScope
-    public List<UserServiceVO> getUserServiceOfUser(UserServiceDTO dto, boolean pageFlag) {
+    public PageInfo<UserServiceVO> getUserServiceOfUser(UserServiceDTO dto) {
+        List<UserServiceVO> userServiceVOS=getUserServiceOfUserMain(dto);
+        //返回分页后的数据
+        return list2PageInfo(userServiceVOS,dto.getPageNum(),dto.getPageSize());
+    }
+
+    /**
+     * 获取需要的员工数据
+     * @param dto 查询条件
+     * @return
+     */
+    @DataScope
+    public List<UserServiceVO> getUserServiceOfUserMain(UserServiceDTO dto ){
         if (!isHaveDataScope(dto)) {
             return new ArrayList<>();
         }
-        if (Boolean.TRUE.equals(pageFlag)) {
-            startPage(dto);
+        GoodCommitDTO goodCommitDTO=new GoodCommitDTO(dto);
+        List<UserServiceVO> userServiceVOS=weUserCustomerMessageStatisticsMapper.getUserServiceOfUser(dto);
+        List<UserGoodReviewDTO> userGoodReviews = weFormCustomerFeedbackMapper.selsectGoodReviewsForPerson(goodCommitDTO);
+        //进行好评率处理
+        if (!CollectionUtils.isEmpty(userServiceVOS)&&!CollectionUtils.isEmpty(userGoodReviews)){
+            handleGoodReviews(userGoodReviews,userServiceVOS,dto);
         }
-        return weUserCustomerMessageStatisticsMapper.getUserServiceOfUser(dto);
+        return userServiceVOS;
+    }
+    /**
+     * 进行手动分页
+     *
+     * @param arrayList 待分页数据
+     * @param pageNum 页数
+     * @param pageSize 页面大小
+     * @return
+     */
+    public static  PageInfo<UserServiceVO> list2PageInfo(List<UserServiceVO> arrayList, Integer pageNum, Integer pageSize) {
+        PageHelper.startPage(pageNum, pageSize);
+        int pageStart = pageNum == 1 ? 0 : (pageNum - 1) * pageSize;
+        int pageEnd = arrayList.size() < pageSize * pageNum ? arrayList.size() : pageSize * pageNum;
+        List<UserServiceVO> pageResult = new LinkedList<>();
+        if (arrayList.size() > pageStart) {
+            pageResult = arrayList.subList(pageStart, pageEnd);
+        }
+        PageInfo<UserServiceVO> pageInfo = new PageInfo<>(pageResult);
+        //获取PageInfo其他参数
+        pageInfo.setTotal(arrayList.size());
+        int endRow = pageInfo.getEndRow() == 0 ? 0 : (int) ((pageNum - 1) * pageSize + pageInfo.getEndRow() + 1);
+        pageInfo.setEndRow(endRow);
+        boolean hasNextPage = arrayList.size() > pageSize * pageNum;
+        pageInfo.setHasNextPage(hasNextPage);
+        boolean hasPreviousPage = pageNum == 1 ? false : true;
+        pageInfo.setHasPreviousPage(hasPreviousPage);
+        pageInfo.setIsFirstPage(!hasPreviousPage);
+        boolean isLastPage = arrayList.size() > pageSize * (pageNum - 1) && arrayList.size() <= pageSize * pageNum;
+        pageInfo.setIsLastPage(isLastPage);
+        int pages = arrayList.size() % pageSize == 0 ? arrayList.size() / pageSize : (arrayList.size() / pageSize) + 1;
+        pageInfo.setNavigateLastPage(pages);
+        int[] navigatePageNums = new int[pages];
+        for (int i = 1; i < pages; i++) {
+            navigatePageNums[i - 1] = i;
+        }
+        pageInfo.setNavigatepageNums(navigatePageNums);
+        int nextPage = pageNum < pages ? pageNum + 1 : 0;
+        pageInfo.setNextPage(nextPage);
+        pageInfo.setPageNum(pageNum);
+        pageInfo.setPageSize(pageSize);
+        pageInfo.setPages(pages);
+        pageInfo.setPrePage(pageNum - 1);
+        pageInfo.setSize(pageInfo.getList().size());
+        int starRow = arrayList.size() < pageSize * pageNum ? 1 + pageSize * (pageNum - 1) : 0;
+        pageInfo.setStartRow(starRow);
+        return pageInfo;
+    }
+    /**
+     * 处理好评率
+     *
+     * @param userGoodReviews 好评列表
+     * @param userServiceVOS 员工列表
+     * @return 增加好评率的员工列表
+     */
+    public void handleGoodReviews(List<UserGoodReviewDTO> userGoodReviews,List<UserServiceVO> userServiceVOS,UserServiceDTO dto){
+        for (UserServiceVO userServiceVO:userServiceVOS){
+            int score=0;
+            int num=0;
+            for (UserGoodReviewDTO userGoodReview: userGoodReviews) {
+                if (Objects.equals(userServiceVO.getUserId(),userGoodReview.getUserId())){
+                    score+=userGoodReview.getScore();
+                    num++;
+                }
+            }
+            userServiceVO.setNum(num);
+            userServiceVO.setScore(score);
+        }
+        //判断是否需要用好评率进行排序
+        if (!Objects.isNull(dto.getCustomerPositiveCommentsRateSort())){
+            if (GenConstants.DESC.equals(dto.getCustomerPositiveCommentsRateSort())){
+                userServiceVOS.sort(Comparator.comparing(UserServiceVO::getCustomerPositiveCommentsRateTmp,Comparator.reverseOrder()));
+            }else {
+                userServiceVOS.sort(Comparator.comparing(UserServiceVO::getCustomerPositiveCommentsRateTmp));
+            }
+        }
     }
 
+
     @Override
+    @DataScope
     public AjaxResult exportCustomerOverViewOfUser(CustomerOverviewDTO dto) {
         String sheetName = "客户概况报表";
         List<CustomerOverviewVO> list = getCustomerOverViewOfUser(dto, false);
@@ -368,6 +601,7 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
     }
 
     @Override
+    @DataScope
     public AjaxResult exportCustomerActivityOfDate(CustomerActivityDTO dto) {
         List<CustomerActivityOfDateVO> list = getCustomerActivityOfDate(dto, false);
         // 导出
@@ -377,6 +611,7 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
     }
 
     @Override
+    @DataScope
     public AjaxResult exportCustomerActivityOfUser(CustomerActivityDTO dto) {
         List<CustomerActivityOfUserVO> list = getCustomerActivityOfUser(dto, false);
         // 导出
@@ -386,6 +621,7 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
     }
 
     @Override
+    @DataScope
     public AjaxResult exportCustomerActivityOfCustomer(CustomerActivityDTO dto) {
         List<CustomerActivityOfCustomerVO> list = getCustomerActivityOfCustomer(dto, false);
         // 导出
@@ -394,13 +630,127 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
     }
 
     @Override
+    @DataScope
     public AjaxResult exportUserServiceOfUser(UserServiceDTO dto) {
         String sheetName = "员工服务报表";
-        List<UserServiceVO> list = getUserServiceOfUser(dto, false);
+        List<UserServiceVO> list = getUserServiceOfUserMain(dto);
         // 导出
         list.forEach(UserServiceVO::bindExportData);
         ExcelUtil<UserServiceVO> util = new ExcelUtil<>(UserServiceVO.class);
         return util.exportExcel(list, sheetName);
+    }
+
+    @Override
+    @DataScope
+    public List<UserServiceTimeVO> getUserServiceOfTime(UserServiceDTO dto) {
+        if (!isHaveDataScope(dto)) {
+            return new ArrayList<>();
+        }
+        Date start=DateUtils.dateTime(DateUtils.YYYY_MM_DD, dto.getBeginTime());
+        Date end=DateUtils.dateTime(DateUtils.YYYY_MM_DD, dto.getEndTime());
+        List<Date> dateList=DateUtils.findDates(start,end);
+        List<UserServiceTimeVO> resultTmpMap=userServiceTimeCombination(dateList);
+        List<UserServiceTimeDTO> timeVOList=weUserCustomerMessageStatisticsMapper.getUserServiceOfTime(dto);
+        if (CollectionUtils.isEmpty(timeVOList)){
+            return resultTmpMap;
+        }
+        GoodCommitDTO goodCommitDTO=new GoodCommitDTO(dto);
+        //单独获取好评的list
+        List<UserGoodReviewDTO> reviewDTOS=weFormCustomerFeedbackMapper.selectGoodReviewsForTime(goodCommitDTO);
+        //进行数据计算
+        List<UserServiceTimeVO> resultMap=handleServiceOfTime(timeVOList,reviewDTOS,resultTmpMap);
+        return sortUserServiceOfTime(resultMap,dto);
+    }
+
+    /**
+     * 统计每天的员工数据
+     *
+     * @param timeVOList 获取到所有的数据
+     * @param goodReviewDTOS 用户评价数据
+     * @param resultMap 拼接时间后的列表
+     * @return 统计计算完成的员工数据list
+     */
+    public List<UserServiceTimeVO> handleServiceOfTime(List<UserServiceTimeDTO> timeVOList ,List<UserGoodReviewDTO> goodReviewDTOS,List<UserServiceTimeVO> resultMap){
+        for (UserServiceTimeVO serviceTimeVO : resultMap) {
+            //对所需数据进行记录
+            for (UserServiceTimeDTO userServiceTimeVO : timeVOList) {
+                //判断时间是否符合
+                if (serviceTimeVO.getTime().equals(userServiceTimeVO.getSendTime())) {
+                    //当员工没有与客户聊天，也会在数据库记录下这个员工的数据，会标记客户id为-1。
+                    //记录聊天总数时，应先判断员工是否与客户聊天，再记录聊天总数
+                    if (!EMPTY_CHAT.equals(userServiceTimeVO.getExternalUserid())){
+                        serviceTimeVO.addChatTotal();
+                        //增加发送消息数
+                        serviceTimeVO.addSendContactCnt(userServiceTimeVO.getUserSendMessageCnt());
+                        //增加有效对话次数
+                        serviceTimeVO.addEffctiveCommunicationCustomerCnt(userServiceTimeVO.getThreeRoundsDialogueFlag());
+                        //是否为客户先发起对话
+                        if (Objects.equals(userServiceTimeVO.getUserActiveDialogue(), ContactSpeakEnum.CUSTOMER.getCode())) {
+                            //增加客户主动发起聊天数
+                            serviceTimeVO.addCustomerActiveStartContactCnt();
+                            //增加首次回复间隔时长
+                            serviceTimeVO.addFirstReplyTimeIntervalAlterReceive(userServiceTimeVO.getFirstReplyTimeIntervalAlterReceive());
+                        }
+                        //判断是否为客户先发起的对话，且员工发送数量不为0
+                        if (Objects.equals(userServiceTimeVO.getUserActiveDialogue(), ContactSpeakEnum.CUSTOMER.getCode()) && userServiceTimeVO.getUserSendMessageCnt() != 0) {
+                            serviceTimeVO.addUserReplyContactCnt();
+                        }
+                    }
+                }
+            }
+            //对客户评价进行记录
+            for (UserGoodReviewDTO userGoodReviewDTO : goodReviewDTOS) {
+                //判断时间是否符合
+                if (DateUtils.parseDateToStr(DateUtils.YYYY_MM_DD,userGoodReviewDTO.getCreateTime()).equals(serviceTimeVO.getTime())) {
+                    serviceTimeVO.addNUm();
+                    serviceTimeVO.addScore(userGoodReviewDTO.getScore());
+                }
+            }
+            //通过获取的数据计算每天的结果
+            serviceTimeVO.calculateResult();
+        }
+        return resultMap;
+    }
+
+    /**
+     * 将时间赋值到结果列表中
+     *
+     * @param dateList 日期列表
+     * @return 组合后的list
+     */
+    public List<UserServiceTimeVO> userServiceTimeCombination (List<Date> dateList){
+        List<UserServiceTimeVO> userServiceTimeVOList=new ArrayList<>();
+        for (Date date:dateList){
+            UserServiceTimeVO userServiceTimeVO=UserServiceTimeVO.builder().time(DateUtils.parseDateToStr(DateUtils.YYYY_MM_DD,date)).build();
+            userServiceTimeVOList.add(userServiceTimeVO);
+        }
+        return userServiceTimeVOList;
+    }
+
+    /**
+     * 根据前端条件进行排序
+     *
+     * @param list 需要排序的员工数据
+     * @param dto 所需排序规则
+     * @return 排序完成的员工数据
+     */
+    public List<UserServiceTimeVO> sortUserServiceOfTime(List<UserServiceTimeVO> list,UserServiceDTO dto){
+        if (dto.getSortType()!=null&&dto.getSortName()!=null){
+            StatisticsEnum.UserServiceSortOfTimeEnums.sortList(dto.getSortName(),list,dto.getSortType());
+        }else {
+            list.sort(Comparator.comparing(UserServiceTimeVO::getTime).reversed());
+        }
+        return list;
+    }
+
+    @Override
+    @DataScope
+    public AjaxResult exportUserServiceOfTime(UserServiceDTO dto) {
+        List<UserServiceTimeVO> list = getUserServiceOfTime(dto);
+        // 导出
+        list.forEach(UserServiceTimeVO::bindExportData);
+        ExcelUtil<UserServiceTimeVO> util = new ExcelUtil<>(UserServiceTimeVO.class);
+        return util.exportExcel(list, SHEET_NAME);
     }
 
     /**
@@ -433,12 +783,12 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
      * @param sendUserMessages              客户发送员工的消息
      * @return
      */
-    private boolean isNewCustomer(List<ConversationArchiveVO> sendUserMessages) {
+    private boolean isNewCustomer(List<ConversationArchiveVO> sendUserMessages, Date nowDate) {
         Date customerAddTime = getCustomerAddTime(sendUserMessages, false);
         if (customerAddTime == null) {
             return false;
         }
-        return DateUtils.isSameDay(customerAddTime, DateUtils.getYesterday(new Date()));
+        return DateUtils.isSameDay(customerAddTime, nowDate);
     }
 
     /**
@@ -463,7 +813,9 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
         int firstIndex = 0;
         ContactStatisticsHandle contactStatisticsHandle = new ContactStatisticsHandle();
         contactStatisticsHandle.refresh();
-        contactStatisticsHandle.handleFirstSpeak(collect.get(firstIndex), userCustomerMessageStatistics);
+        //判断第一次对话是否为员工发送
+        Boolean isUserSpeak = isUserSpeak(collect.get(firstIndex),weUser);
+        contactStatisticsHandle.handleFirstSpeak(collect.get(firstIndex), userCustomerMessageStatistics, isUserSpeak);
         collect.remove(firstIndex);
         for (ConversationArchiveVO conversation : collect) {
             // 客户发言
@@ -477,7 +829,7 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
                 break;
             }
         }
-        contactStatisticsHandle.saveStatisticsResult(userCustomerMessageStatistics);
+        contactStatisticsHandle.saveStatisticsResult(userCustomerMessageStatistics, isUserSpeak);
     }
 
     /**
@@ -507,9 +859,18 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
         int firstIndex = 0;
         String createTimePlaceHolder = "createTime";
         if (Boolean.TRUE.equals(userSendFlag)) {
+            //判断获取聊天数据的客户添加时间是否为null
+            if (Objects.isNull(records.get(firstIndex))||Objects.isNull(records.get(firstIndex).getToListInfo())||Objects.isNull(records.get(firstIndex).getToListInfo().get(createTimePlaceHolder))){
+                return  null;
+            }
             return new Date((Long) records.get(firstIndex).getToListInfo().get(createTimePlaceHolder));
         } else {
+            //判断获取聊天数据的客户添加时间是否为null
+            if (Objects.isNull(records.get(firstIndex))||Objects.isNull(records.get(firstIndex).getFromInfo())||Objects.isNull(records.get(firstIndex).getFromInfo().get(createTimePlaceHolder))){
+                return  null;
+            }
             return new Date((Long) records.get(firstIndex).getFromInfo().get(createTimePlaceHolder));
         }
     }
+
 }

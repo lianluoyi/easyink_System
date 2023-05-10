@@ -52,6 +52,7 @@ public class CommonController {
     @GetMapping("/getPublicKey")
     @ApiOperation(value = "获取登录公钥")
     public AjaxResult<String> getPublicKey() {
+        if (ruoYiConfig.getLoginRsaPublicKey()==null||StringUtils.isEmpty(ruoYiConfig.getLoginRsaPublicKey())) return AjaxResult.error(500,"请联系技术人员配置登录密钥");
         return AjaxResult.success(null, ruoYiConfig.getLoginRsaPublicKey()) ;
     }
 

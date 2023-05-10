@@ -78,4 +78,12 @@ public interface WeUserBehaviorDataMapper extends BaseMapper<WeUserBehaviorData>
      * @return
      */
     List<CustomerOverviewVO> getCustomerOverViewOfUser(CustomerOverviewDTO dto);
+
+    /**
+     * 获取客户概况-数据总览-日期维度
+     *
+     * @param dto {@link CustomerOverviewDTO}
+     * @return 原始数据列表
+     */
+    List<WeUserBehaviorData> getCustomerOverViewOfDate(CustomerOverviewDTO dto);
 }

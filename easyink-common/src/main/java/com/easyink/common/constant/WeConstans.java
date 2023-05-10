@@ -9,6 +9,12 @@ import lombok.Getter;
  * @create: 2020-08-26 17:01
  **/
 public class WeConstans {
+
+    /**
+     * 判断是否为员工消息的标识
+     */
+    public static final String IS_USER = "externalUser";
+
     public static final String SLASH = "/";
     public static final String VERTICAL_BAR = "|";
     public static final String SUFFIX = "等";
@@ -52,13 +58,16 @@ public class WeConstans {
     public static final String ORDER_ACCESS_KEY = "orderAccessKey";
     public static final String ORDER_SERVER_URL = "orderServerUrl";
 
-
     /**
      * 索引对应数据
      */
     public static final String FROM = "from";
     public static final String FROMM_INFO = "fromInfo";
     public static final String TO_LIST = "tolist";
+    /**
+     * 会话存档- 接受人的userId
+     */
+    public static final String TO_LIST_USER_ID = "toListInfo.userId";
     public static final String ROOMID = "roomid";
     public static final String ROOM_INFO = "roomInfo";
     public static final String TO_LIST_INFO = "toListInfo";
@@ -386,7 +395,6 @@ public class WeConstans {
     //表示所在部门是否为上级，0-否，1-是，顺序与Department字段的部门逐一对应
     //激活状态：1=已激活 2=已禁用 4=未激活 已激活代表已激活企业微信或已关注微工作台（原企业号） 5=成员退出
     public enum corpUserEnum {
-
         USER_SEX_TYPE_MAN(1, "男性"),
         USER_SEX_TYPE_WEMAN(2, "女性"),
 

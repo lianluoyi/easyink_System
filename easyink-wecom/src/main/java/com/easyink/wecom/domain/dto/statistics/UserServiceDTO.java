@@ -56,6 +56,12 @@ public class UserServiceDTO extends StatisticsDTO{
     @ApiModelProperty("客户好评率排序 正序 ASC 倒叙 DESC 不需要排序 null")
     private String customerPositiveCommentsRateSort;
 
+    @ApiModelProperty("需要进行排序的字段")
+    private String sortName;
+
+    @ApiModelProperty("排序类型")
+    private String sortType;
+
     public String getChatTotalSort() {
         if (chatTotalSort == null) {
             return null;

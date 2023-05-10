@@ -3,6 +3,7 @@ package com.easyink.quartz.task;
 import com.easyink.common.constant.RedisKeyConstants;
 import com.easyink.common.core.domain.entity.WeCorpAccount;
 import com.easyink.common.core.redis.RedisCache;
+import com.easyink.common.utils.DateUtils;
 import com.easyink.wecom.domain.dto.WePageStaticDataDTO;
 import com.easyink.wecom.service.PageHomeService;
 import com.easyink.wecom.service.WeCorpAccountService;
@@ -43,10 +44,9 @@ public class PageHomeDataTask {
         // 先统计截止至今日的客户总数
         weCorpAccountList.forEach(weCorpAccount -> {
             if (weCorpAccount != null && StringUtils.isNotBlank(weCorpAccount.getCorpId())) {
-                pageHomeService.doSystemCustomStat(weCorpAccount.getCorpId(), false );
+                pageHomeService.doSystemCustomStat(weCorpAccount.getCorpId(), false, DateUtils.dateTime(DateUtils.getYesterday(DateUtils.getNowDate())));
                 getCorpRealTimeData(weCorpAccount.getCorpId());
                 pageHomeService.getCorpBasicData(weCorpAccount.getCorpId());
-
             }
         });
         log.info("定时任务执行完成------>");

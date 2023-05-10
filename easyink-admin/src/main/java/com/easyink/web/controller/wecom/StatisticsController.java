@@ -3,19 +3,20 @@ package com.easyink.web.controller.wecom;
 import com.easyink.common.core.controller.BaseController;
 import com.easyink.common.core.domain.AjaxResult;
 import com.easyink.common.core.page.TableDataInfo;
+import com.easyink.common.enums.ResultTip;
 import com.easyink.wecom.domain.dto.statistics.*;
 import com.easyink.wecom.domain.vo.statistics.*;
 import com.easyink.wecom.login.util.LoginTokenService;
+import com.easyink.wecom.service.PageHomeService;
 import com.easyink.wecom.service.WeUserCustomerMessageStatisticsService;
+import com.easyink.wecom.service.WeUserService;
+import com.github.pagehelper.PageInfo;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * 数据统计Controller
@@ -30,6 +31,18 @@ import org.springframework.web.bind.annotation.RestController;
 public class StatisticsController extends BaseController {
 
     private final WeUserCustomerMessageStatisticsService weUserCustomerMessageStatisticsService;
+    private final WeUserService weUserService;
+    private final PageHomeService pageHomeService;
+
+    @GetMapping("/data")
+    @ApiOperation("执行对应日期的数据统计任务，执行前需先将we_user_customer_message_statisticsService表中对应日期的数据删除。")
+    public AjaxResult getData(String time) {
+        String corpId = LoginTokenService.getLoginUser().getCorpId();
+        weUserService.getUserBehaviorDataByCorpId(corpId, time);
+        pageHomeService.doSystemCustomStat(corpId, false, time);
+        weUserCustomerMessageStatisticsService.getMessageStatistics(corpId,time);
+        return AjaxResult.success();
+    }
 
     @PostMapping("/getCustomerOverViewOfTotal")
     @ApiOperation("获取客户概况-数据总览")
@@ -43,6 +56,21 @@ public class StatisticsController extends BaseController {
     public TableDataInfo<CustomerOverviewVO> getCustomerOverViewOfUser(@RequestBody @Validated CustomerOverviewDTO dto) {
         dto.setCorpId(LoginTokenService.getLoginUser().getCorpId());
         return getDataTable(weUserCustomerMessageStatisticsService.getCustomerOverViewOfUser(dto, true));
+    }
+
+    @PostMapping("/getCustomerOverViewOfDate")
+    @ApiOperation("获取客户概况-数据总览-日期维度")
+    public TableDataInfo<CustomerOverviewDateVO> getCustomerOverViewOfDate(@RequestBody @Validated CustomerOverviewDTO dto) {
+        dto.setCorpId(LoginTokenService.getLoginUser().getCorpId());
+        return getDataTable(weUserCustomerMessageStatisticsService.getCustomerOverViewOfDate(dto));
+    }
+
+    @PreAuthorize("@ss.hasPermi('statistic:customerContact:export')")
+    @PostMapping("/exportCustomerOverViewOfDate")
+    @ApiOperation("导出客户概况-数据总览-日期维度")
+    public AjaxResult<CustomerOverviewDateVO> exportCustomerOverViewOfDare(@RequestBody @Validated CustomerOverviewDTO dto) {
+        dto.setCorpId(LoginTokenService.getLoginUser().getCorpId());
+        return AjaxResult.success(weUserCustomerMessageStatisticsService.exportCustomerOverViewOfDate(dto));
     }
 
     @PreAuthorize("@ss.hasPermi('statistic:customerContact:export')")
@@ -123,7 +151,14 @@ public class StatisticsController extends BaseController {
     @ApiOperation("获取员工服务-数据总览-员工维度")
     public TableDataInfo<UserServiceVO> getUserServiceOfUser(@RequestBody @Validated UserServiceDTO dto) {
         dto.setCorpId(LoginTokenService.getLoginUser().getCorpId());
-        return getDataTable(weUserCustomerMessageStatisticsService.getUserServiceOfUser(dto, true));
+        //构建返回条件
+        TableDataInfo tableDataInfo=new TableDataInfo();
+        PageInfo<UserServiceVO> pageInfo=weUserCustomerMessageStatisticsService.getUserServiceOfUser(dto);
+        tableDataInfo.setTotal((int) pageInfo.getTotal());
+        tableDataInfo.setRows(pageInfo.getList());
+        tableDataInfo.setCode(ResultTip.TIP_GENERAL_SUCCESS.getCode());
+        tableDataInfo.setMsg("查询成功");
+        return tableDataInfo;
     }
 
     @PreAuthorize("@ss.hasPermi('statistic:employeeService:export')")
@@ -134,5 +169,19 @@ public class StatisticsController extends BaseController {
         return AjaxResult.success(weUserCustomerMessageStatisticsService.exportUserServiceOfUser(dto));
     }
 
+    @PostMapping("/getUserServiceOfTime")
+    @ApiOperation("获取员工服务-数据总览-时间维度")
+    public TableDataInfo<UserServiceTimeVO> getUserServiceOfTime(@RequestBody @Validated UserServiceDTO dto){
+        dto.setCorpId(LoginTokenService.getLoginUser().getCorpId());
+        return getDataTable(weUserCustomerMessageStatisticsService.getUserServiceOfTime(dto));
+    }
+
+    @PreAuthorize("@ss.hasPermi('statistic:employeeService:export')")
+    @PostMapping("/exportUserServiceOfTime")
+    @ApiOperation("导出员工服务-数据总览-时间维度")
+    public AjaxResult exportUserServiceOfTime(@RequestBody @Validated UserServiceDTO dto) {
+        dto.setCorpId(LoginTokenService.getLoginUser().getCorpId());
+        return AjaxResult.success(weUserCustomerMessageStatisticsService.exportUserServiceOfTime(dto));
+    }
 
 }

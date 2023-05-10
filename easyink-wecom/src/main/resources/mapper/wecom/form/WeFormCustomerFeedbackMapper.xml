@@ -59,6 +59,54 @@
             AND wfcf.create_time &lt;= #{endTime}
         </if>
     </select>
+    <!-- 获取员工服务-时间维度所需好评记录   -->
+    <select id="selectGoodReviewsForTime"
+            resultType="com.easyink.wecom.domain.dto.statistics.UserGoodReviewDTO">
+        SELECT
+        wfcf.score AS score,
+        wfcf.create_time AS createTime
+        FROM we_form_customer_feedback wfcf
+        LEFT JOIN we_user wu ON wu.corp_id = wfcf.corp_id AND wu.user_id = wfcf.user_id
+        WHERE wfcf.corp_id = #{corpId}
+        ${params.dataScope}
+        AND wu.is_activate = ${@com.easyink.common.constant.WeConstans@WE_USER_IS_ACTIVATE}
+        <if test="userIds != null and userIds.size() > 0">
+            AND wfcf.user_id IN
+            <foreach collection="userIds" item="userId" open="(" separator="," close=")">
+                #{userId}
+            </foreach>
+        </if>
+        <if test="beginTime !=null">
+            AND wfcf.create_time &gt;= #{beginTime}
+        </if>
+        <if test="endTime !=null">
+            AND wfcf.create_time &lt;= #{endTime}
+        </if>
+    </select>
+     <!-- 获取所有人的好评数据   -->
+    <select id="selsectGoodReviewsForPerson"
+            resultType="com.easyink.wecom.domain.dto.statistics.UserGoodReviewDTO">
+        SELECT
+        wfcf.user_id,
+        wfcf.score
+        FROM we_form_customer_feedback wfcf
+        LEFT JOIN we_user wu ON wu.corp_id = wfcf.corp_id AND wu.user_id = wfcf.user_id
+        WHERE wfcf.corp_id = #{corpId}
+        ${params.dataScope}
+        AND wu.is_activate = ${@com.easyink.common.constant.WeConstans@WE_USER_IS_ACTIVATE}
+        <if test="userIds != null and userIds.size() > 0">
+            AND wfcf.user_id IN
+            <foreach collection="userIds" item="userId" open="(" separator="," close=")">
+                #{userId}
+            </foreach>
+        </if>
+        <if test="beginTime !=null">
+            AND wfcf.create_time &gt;= #{beginTime}
+        </if>
+        <if test="endTime !=null">
+            AND wfcf.create_time &lt;= #{endTime}
+        </if>
+    </select>
 
 </mapper>
 
