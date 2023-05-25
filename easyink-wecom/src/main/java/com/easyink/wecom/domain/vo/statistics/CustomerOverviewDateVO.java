@@ -150,7 +150,7 @@ public class CustomerOverviewDateVO {
     }
 
     /**
-     * 获取服务响应率   当天员工首次给客户发消息，客户在30分钟内回复的客户数 / 会话客户数
+     * 获取服务响应率   当天员工首次给客户发消息，客户在30分钟内回复的客户数 / 员工主动发起的会话数
      *
      * @return 服务响应率
      */
@@ -166,7 +166,7 @@ public class CustomerOverviewDateVO {
         BigDecimal userActiveChatCntDecimal = new BigDecimal(userActiveChatCnt);
         BigDecimal repliedWithinThirtyMinCustomerCntDecimal = new BigDecimal(repliedWithinThirtyMinCustomerCnt);
         int scale = 2;
-        // 计算服务响应率  当天员工首次给客户发消息，客户在30分钟内回复的客户数 / 会话客户数
+        // 计算服务响应率  当天员工首次给客户发消息，客户在30分钟内回复的客户数 / 员工主动发起的会话数
         serviceResponseRateBySort = repliedWithinThirtyMinCustomerCntDecimal
                 .multiply(percent)
                 .divide(userActiveChatCntDecimal, scale, RoundingMode.HALF_UP)
@@ -209,6 +209,7 @@ public class CustomerOverviewDateVO {
      * @param newContactCnt 新增客户数
      * @param newContactSpeakCnt 当天新增客户中与员工对话过的人数
      * @param repliedWithinThirtyMinCustomerCnt 当天员工首次给客户发消息，客户在30分钟内回复的客户数
+     * @param userActiveChatCnt 员工主动发起会话数
      */
     public void handleAddData(Integer allChatCnt, Integer contactTotalCnt, Integer negativeFeedbackCnt, Integer newCustomerLossCnt, Integer newContactCnt, Integer newContactSpeakCnt, Integer repliedWithinThirtyMinCustomerCnt,Integer userActiveChatCnt){
         this.allChatCnt += allChatCnt;

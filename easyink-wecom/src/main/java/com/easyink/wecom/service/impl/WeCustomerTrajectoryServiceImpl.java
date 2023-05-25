@@ -378,10 +378,18 @@ public class WeCustomerTrajectoryServiceImpl extends ServiceImpl<WeCustomerTraje
                 .eq(WeCustomerTrajectory::getCorpId, corpId)
                 .ne(WeCustomerTrajectory::getStatus, CustomerTrajectoryEnums.TodoTaskStatusEnum.DEL.getCode())
                 .eq(WeCustomerTrajectory::getExternalUserid, externalUserid)
-                .eq(WeCustomerTrajectory::getTrajectoryType, trajectoryType);
+                .eq(WeCustomerTrajectory::getTrajectoryType, trajectoryType)
+                .orderByDesc(WeCustomerTrajectory::getCreateDate)
+                .orderByDesc(WeCustomerTrajectory::getStartTime);
         if (CustomerTrajectoryEnums.Type.TO_DO.getDesc().equals(trajectoryType)) {
-            wrapper.eq(WeCustomerTrajectory::getUserId, userId);
+            if(StringUtils.isNotBlank(userId)) {
+                wrapper.eq(WeCustomerTrajectory::getUserId, userId);
+            }
             isTodo = true;
+        }
+        // 如果是信息动态,则 过滤掉非当前操作人操作的记录
+        if (CustomerTrajectoryEnums.Type.INFO.getDesc().equals(trajectoryType)) {
+            wrapper.eq(WeCustomerTrajectory::getUserId, userId);
         }
         List<WeCustomerTrajectory> trajectoryList = baseMapper.selectList(wrapper);
         if (isTodo) {
@@ -396,11 +404,8 @@ public class WeCustomerTrajectoryServiceImpl extends ServiceImpl<WeCustomerTraje
                     setSopAttachment(taskEntityList, weCustomerTrajectory);
                 }
             }
-        }
-        // 如果是信息动态,则 过滤掉非当前操作人操作的记录
-        if (CustomerTrajectoryEnums.Type.INFO.getDesc().equals(trajectoryType)) {
-            LoginUser loginUser = LoginTokenService.getLoginUser();
-            return trajectoryList.stream().filter(a -> loginUser.getUserId().equals(a.getUserId())).collect(Collectors.toList());
+            //待办动态单独进行list排序
+            trajectoryList.sort(Comparator.comparing(WeCustomerTrajectory::getCreateDate,Comparator.reverseOrder()));
         }
         return trajectoryList;
     }

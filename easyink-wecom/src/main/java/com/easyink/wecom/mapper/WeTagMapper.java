@@ -2,6 +2,8 @@ package com.easyink.wecom.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.easyink.wecom.domain.WeTag;
+import com.easyink.wecom.domain.dto.statistics.WeTagStatisticsDTO;
+import com.easyink.wecom.domain.vo.statistics.WeTagCustomerStatisticsVO;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 
@@ -53,4 +55,29 @@ public interface WeTagMapper extends BaseMapper<WeTag> {
      * @param weTags 标签集合
      */
     Integer batchInsert(@Param("list") List<WeTag> weTags);
+
+
+    /**
+     * 获取所有的标签组和标签组下的标签信息
+     *
+     * @param dto {@link WeTagStatisticsDTO}
+     * @return 结果集 {@link WeTagCustomerStatisticsVO}
+     */
+    List<WeTagCustomerStatisticsVO> selectTagStatistics(@Param("dto") WeTagStatisticsDTO dto, @Param("tagIdList") List<String> tagIdList);
+
+    /**
+     * 获取所有标签和客户信息
+     *
+     * @param dto {@link WeTagStatisticsDTO}
+     * @return 标签和客户ID
+     */
+    List<WeTag> getWeTagList(WeTagStatisticsDTO dto);
+
+    /**
+     * 获取所有标签下的客户数量(去重)
+     *
+     * @param dto {@link WeTagStatisticsDTO}
+     * @return 标签和客户ID
+     */
+    List<WeTagCustomerStatisticsVO> getCustomerTagCnt(WeTagStatisticsDTO dto);
 }

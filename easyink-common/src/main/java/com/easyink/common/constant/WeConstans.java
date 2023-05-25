@@ -64,6 +64,11 @@ public class WeConstans {
     public static final String FROM = "from";
     public static final String FROMM_INFO = "fromInfo";
     public static final String TO_LIST = "tolist";
+
+    /**
+     * tolist精准查询
+     */
+    public static final String TO_LIST_KEYWORD = "tolist.keyword";
     /**
      * 会话存档- 接受人的userId
      */

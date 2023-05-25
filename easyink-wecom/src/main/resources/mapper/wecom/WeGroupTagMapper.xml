@@ -82,4 +82,25 @@
             </foreach>
     </select>
 
+    <select id="getTagList" resultType="com.easyink.wecom.domain.vo.statistics.WeTagGroupStatisticsVO">
+        SELECT
+        wgt.`id` as tagId ,
+        wgt.`name` as tagName,
+        wgtc.`name` as groupTagName,
+        wgtc.`id` as tagGroupId,
+        wgt.create_time
+        FROM we_group_tag wgt
+        LEFT JOIN we_group_tag_category wgtc ON wgtc.`id`=wgt.group_id AND wgt.corp_id=wgtc.corp_id
+        WHERE
+        wgt.corp_id = #{corpId}
+        <if test="tagGroupIds != null and tagGroupIds.size()>0">
+            AND wgt.group_id IN
+            <foreach item="item" index="index" collection="tagGroupIds" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+    </select>
+
+
+
 </mapper>

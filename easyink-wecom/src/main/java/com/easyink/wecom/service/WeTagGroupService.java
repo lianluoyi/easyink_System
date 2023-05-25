@@ -3,6 +3,7 @@ package com.easyink.wecom.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.easyink.wecom.domain.WeTagGroup;
 import com.easyink.wecom.domain.dto.tag.WeCropGroupTagDTO;
+import com.easyink.wecom.domain.vo.statistics.WeTagGroupListVO;
 
 import java.util.List;
 
@@ -22,6 +23,14 @@ public interface WeTagGroupService extends IService<WeTagGroup> {
      * @return 标签组集合
      */
     List<WeTagGroup> selectWeTagGroupList(WeTagGroup weTagGroup);
+
+    /**
+     * 查询所有标签组信息
+     *
+     * @param corpId 企业ID
+     * @return 标签组集合
+     */
+    List<WeTagGroupListVO> findWeTagGroupList(String corpId);
 
     /**
      * 新增标签组

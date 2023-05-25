@@ -194,5 +194,33 @@
         </where>
     </select>
 
+    <select id="selectTagCountList" resultType="com.easyink.wecom.domain.WeGroup">
+        SELECT
+        chat_id
+        FROM we_group wg
+        LEFT JOIN we_user wu ON wg.corp_id = wu.corp_id AND wg.`owner`=wu.user_id
+        WHERE
+        wg.corp_id = #{corpId}
+        ${params.dataScope}
+        <if test="userIds != null and userIds.size()>0">
+            AND wg.`owner` in
+            <foreach item="item" index="index" collection="userIds" separator="," open="(" close=")">
+                #{item}
+            </foreach>
+        </if>
+        <if test="departmentIds != null and departmentIds.size()>0">
+            AND wu.main_department in
+            <foreach item="item" index="index" collection="departmentIds" separator="," open="(" close=")">
+                #{item}
+            </foreach>
+        </if>
+        <if test="beginTime != null and beginTime != ''"><!-- 开始时间检索 -->
+            AND wg.create_time &gt;= #{beginTime}
+        </if>
+        <if test="endTime != null and endTime != ''"><!-- 结束时间检索 -->
+            AND wg.create_time &lt;= #{endTime}
+        </if>
+
+    </select>
 
 </mapper>

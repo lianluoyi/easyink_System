@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.easyink.common.core.domain.wecom.WeUser;
 import com.easyink.wecom.domain.WeCustomerAddUser;
 import com.easyink.wecom.domain.dto.QueryUserDTO;
+import com.easyink.wecom.domain.dto.statistics.WeTagStatisticsDTO;
 import com.easyink.wecom.domain.dto.transfer.TransferResignedUserListDTO;
 import com.easyink.wecom.domain.vo.WeUserVO;
 import com.easyink.wecom.domain.vo.transfer.TransferResignedUserVO;
@@ -172,4 +173,12 @@ public interface WeUserMapper extends BaseMapper<WeUser> {
      * @return affected rows
      */
     Integer batchUpdateUserPrivacy(@Param("list") List<WeUser> list);
+
+    /**
+     * 查询员工所属客户关系id，包括流失的客户
+     *
+     * @param dto {@link WeTagStatisticsDTO}
+     * @return 客户关系ID列表
+     */
+    List<String> selectFlowerCustomerRelIdList(WeTagStatisticsDTO dto);
 }

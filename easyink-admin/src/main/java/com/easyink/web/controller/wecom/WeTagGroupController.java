@@ -51,6 +51,17 @@ public class WeTagGroupController extends BaseController {
     }
 
     /**
+     * 查询所有标签组信息
+     *
+     * @return
+     */
+    @GetMapping("/tagGroupList")
+    @ApiOperation("查询所有标签组信息")
+    public TableDataInfo tagGroupList() {
+        return getDataTable(weTagGroupService.findWeTagGroupList(LoginTokenService.getLoginUser().getCorpId()));
+    }
+
+    /**
      * 查询标签组是否存在
      *
      * @param tagGroupName

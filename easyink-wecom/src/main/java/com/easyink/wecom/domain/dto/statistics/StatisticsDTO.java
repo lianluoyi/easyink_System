@@ -44,7 +44,7 @@ public class StatisticsDTO extends RootEntity {
     }
 
     public String getEndTime() {
-        return DateUtils.parseBeginDay(endTime);
+        return DateUtils.parseEndDay(endTime);
     }
 
     /**

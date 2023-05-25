@@ -117,6 +117,10 @@ public class WeUserBehaviorData implements Serializable {
     @TableField("contact_total_cnt")
     private Integer contactTotalCnt;
 
+    @ApiModelProperty("当天员工主动发起的会话数量（DataStatisticsTask定时任务统计）")
+    @TableField("user_active_chat_cnt")
+    private Integer userActiveChatCnt = 0;
+
     @TableField(exist = false)
     private Map<String, Object> params = new HashMap<>();
 }

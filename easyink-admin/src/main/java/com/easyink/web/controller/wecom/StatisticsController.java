@@ -4,12 +4,11 @@ import com.easyink.common.core.controller.BaseController;
 import com.easyink.common.core.domain.AjaxResult;
 import com.easyink.common.core.page.TableDataInfo;
 import com.easyink.common.enums.ResultTip;
+import com.easyink.common.utils.PageInfoUtil;
 import com.easyink.wecom.domain.dto.statistics.*;
 import com.easyink.wecom.domain.vo.statistics.*;
 import com.easyink.wecom.login.util.LoginTokenService;
-import com.easyink.wecom.service.PageHomeService;
-import com.easyink.wecom.service.WeUserCustomerMessageStatisticsService;
-import com.easyink.wecom.service.WeUserService;
+import com.easyink.wecom.service.*;
 import com.github.pagehelper.PageInfo;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -17,6 +16,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * 数据统计Controller
@@ -33,6 +34,9 @@ public class StatisticsController extends BaseController {
     private final WeUserCustomerMessageStatisticsService weUserCustomerMessageStatisticsService;
     private final WeUserService weUserService;
     private final PageHomeService pageHomeService;
+    private final WeTagService weTagService;
+
+    private final WeGroupTagService weGroupTagService;
 
     @GetMapping("/data")
     @ApiOperation("执行对应日期的数据统计任务，执行前需先将we_user_customer_message_statisticsService表中对应日期的数据删除。")
@@ -56,6 +60,28 @@ public class StatisticsController extends BaseController {
     public TableDataInfo<CustomerOverviewVO> getCustomerOverViewOfUser(@RequestBody @Validated CustomerOverviewDTO dto) {
         dto.setCorpId(LoginTokenService.getLoginUser().getCorpId());
         return getDataTable(weUserCustomerMessageStatisticsService.getCustomerOverViewOfUser(dto, true));
+    }
+
+    @PostMapping("/getCustomerTagTableView")
+    @ApiOperation("获取标签统计-客户标签-表格视图")
+    public TableDataInfo<WeTagCustomerStatisticsVO> getCustomerTagTableView(@RequestBody @Validated WeTagStatisticsDTO dto){
+        dto.setCorpId(LoginTokenService.getLoginUser().getCorpId());
+        return weTagService.selectTagStatistics(dto);
+    }
+
+    @PostMapping("/getCustomerTagChartView")
+    @ApiOperation("获取标签统计-客户标签-图表视图")
+    public TableDataInfo<WeTagCustomerStatisticsChartVO> getCustomerTagChartView(@RequestBody @Validated WeTagStatisticsDTO dto){
+        dto.setCorpId(LoginTokenService.getLoginUser().getCorpId());
+        return weTagService.selectTagStatisticsByChart(dto);
+    }
+
+    @PreAuthorize("@ss.hasPermi('statistic:labelStatistics:export')")
+    @PostMapping("/exportCustomerTagsView")
+    @ApiOperation("导出标签统计-客户标签")
+    public AjaxResult<CustomerOverviewDateVO> exportCustomerTagsView(@RequestBody @Validated WeTagStatisticsDTO dto) {
+        dto.setCorpId(LoginTokenService.getLoginUser().getCorpId());
+        return AjaxResult.success(weTagService.exportCustomerTagsView(dto));
     }
 
     @PostMapping("/getCustomerOverViewOfDate")
@@ -182,6 +208,29 @@ public class StatisticsController extends BaseController {
     public AjaxResult exportUserServiceOfTime(@RequestBody @Validated UserServiceDTO dto) {
         dto.setCorpId(LoginTokenService.getLoginUser().getCorpId());
         return AjaxResult.success(weUserCustomerMessageStatisticsService.exportUserServiceOfTime(dto));
+    }
+
+    @PostMapping("/getGroupTagTableView")
+    @ApiOperation("获取群标签-表格视图")
+    public TableDataInfo<WeTagGroupStatisticsVO> getGroupTagTableView(@RequestBody @Validated WeTagStatisticsDTO weTagStatisticsDTO) {
+        weTagStatisticsDTO.setCorpId(LoginTokenService.getLoginUser().getCorpId());
+        List<WeTagGroupStatisticsVO> weTagGroupStatisticsVOS = weGroupTagService.groupTagTableView(weTagStatisticsDTO);
+        return PageInfoUtil.getDataTable(weTagGroupStatisticsVOS, weTagStatisticsDTO.getPageNum(),weTagStatisticsDTO.getPageSize());
+    }
+
+    @PostMapping("/getGroupTagChartView")
+    @ApiOperation("获取群标签-图表视图")
+    public TableDataInfo<WeTagGroupStatisticChartVO> getGroupTagChartView(@RequestBody @Validated WeTagStatisticsDTO weTagStatisticsDTO) {
+        weTagStatisticsDTO.setCorpId(LoginTokenService.getLoginUser().getCorpId());
+        List<WeTagGroupStatisticChartVO> weTagStatisticsChartVOList = weGroupTagService.groupTagChartView(weTagStatisticsDTO);
+        return PageInfoUtil.getDataTable(weTagStatisticsChartVOList, weTagStatisticsDTO.getPageNum(),weTagStatisticsDTO.getPageSize());
+    }
+
+    @PostMapping("/exportGroupTagsView")
+    @ApiOperation("导出群标签表格")
+    public AjaxResult exportGroupTagsView(@RequestBody @Validated WeTagStatisticsDTO weTagStatisticsDTO) {
+        weTagStatisticsDTO.setCorpId(LoginTokenService.getLoginUser().getCorpId());
+        return AjaxResult.success(weGroupTagService.exportGroupTags(weTagStatisticsDTO));
     }
 
 }

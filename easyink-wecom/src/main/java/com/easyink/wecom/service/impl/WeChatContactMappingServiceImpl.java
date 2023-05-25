@@ -10,19 +10,20 @@ import com.easyink.common.annotation.DataScope;
 import com.easyink.common.constant.GenConstants;
 import com.easyink.common.constant.WeConstans;
 import com.easyink.common.core.domain.wecom.WeUser;
+import com.easyink.common.enums.ResultTip;
+import com.easyink.common.exception.CustomException;
 import com.easyink.common.utils.StringUtils;
 import com.easyink.wecom.domain.WeChatContactMapping;
 import com.easyink.wecom.domain.WeCustomer;
+import com.easyink.wecom.domain.WeFlowerCustomerRel;
 import com.easyink.wecom.domain.WeGroup;
 import com.easyink.wecom.domain.dto.WeGroupMemberDTO;
 import com.easyink.common.core.domain.conversation.ChatInfoVO;
 import com.easyink.wecom.mapper.WeChatContactMappingMapper;
 import com.easyink.wecom.mapper.WeCustomerMapper;
+import com.easyink.wecom.mapper.WeFlowerCustomerRelMapper;
 import com.easyink.wecom.mapper.WeUserMapper;
-import com.easyink.wecom.service.WeChatContactMappingService;
-import com.easyink.wecom.service.WeConversationArchiveService;
-import com.easyink.wecom.service.WeGroupMemberService;
-import com.easyink.wecom.service.WeGroupService;
+import com.easyink.wecom.service.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ObjectUtils;
@@ -56,6 +57,13 @@ public class WeChatContactMappingServiceImpl extends ServiceImpl<WeChatContactMa
     private WeGroupService weGroupService;
     @Autowired
     private WeGroupMemberService weGroupMemberService;
+
+    private final WeFlowerCustomerRelMapper weFlowerCustomerRelMapper;
+
+    @Autowired
+    public WeChatContactMappingServiceImpl(WeFlowerCustomerRelMapper weFlowerCustomerRelMapper) {
+        this.weFlowerCustomerRelMapper = weFlowerCustomerRelMapper;
+    }
 
     /**
      * 查询聊天关系映射
@@ -295,18 +303,54 @@ public class WeChatContactMappingServiceImpl extends ServiceImpl<WeChatContactMa
                 chatData.setFromInfo(JSON.parse(JSON.toJSONString(weUser)));
             }
         } else if (WeConstans.ID_TYPE_EX.equals(fromType)) {
-            //获取外部联系人信息
+            // 获取外部联系人信息
             WeCustomer weCustomer = weCustomerMapper.selectOne(new LambdaQueryWrapper<WeCustomer>()
                     .eq(WeCustomer::getCorpId, corpId)
                     .eq(WeCustomer::getExternalUserid, fromId)
                     .last(GenConstants.LIMIT_1));
+            // 员工Id
+            String userId;
+            // 如果客户是接收消息者，员工为发送消息者
             if (key.equals(WeConstans.TO_LIST_INFO)) {
+                userId = chatData.getFrom();
+                // 根据WeFlowerCustomerRel表，将员工-客户建立好友时间更新
+                updateCustomerRelTime(userId, corpId, fromId, weCustomer);
+                // 获取员工客户映射关系信息
                 chatData.setToListInfo(JSON.parse(JSON.toJSONString(weCustomer)));
             } else if (key.equals(WeConstans.FROMM_INFO)) {
+                // 客户是发送消息者，员工为接收消息者。
+                userId = chatData.getTolist().get(0);
+                // 根据WeFlowerCustomerRel表，将员工-客户建立好友时间更新
+                updateCustomerRelTime(userId, corpId, fromId, weCustomer);
                 chatData.setFromInfo(JSON.parse(JSON.toJSONString(weCustomer)));
             }
         } else if (WeConstans.ID_TYPE_MACHINE.equals(fromType)) {
             //拉去机器人信息暂不处理
+        }
+    }
+
+    /**
+     * 获取正确的员工-客户建立好友关系时间
+     *
+     * @param userId 员工ID
+     * @param corpId 企业ID
+     * @param externalUserId 客户ID
+     * @param weCustomer {@link WeCustomer}
+     */
+    public void updateCustomerRelTime(String userId, String corpId, String externalUserId, WeCustomer weCustomer){
+        if (StringUtils.isEmpty(userId) || StringUtils.isEmpty(corpId) || StringUtils.isEmpty(externalUserId) || weCustomer == null){
+            throw new CustomException(ResultTip.TIP_PARAM_MISSING);
+        }
+        // 获取员工-客户关系信息
+        WeFlowerCustomerRel weFlowerCustomerRel = weFlowerCustomerRelMapper.selectOne(new LambdaQueryWrapper<WeFlowerCustomerRel>()
+                .eq(WeFlowerCustomerRel::getCorpId, corpId)
+                .eq(WeFlowerCustomerRel::getUserId, userId)
+                .eq(WeFlowerCustomerRel::getExternalUserid, externalUserId)
+                .last(GenConstants.LIMIT_1));
+        if (weFlowerCustomerRel != null) {
+            // 更新时间
+            weCustomer.setCreateTime(weFlowerCustomerRel.getCreateTime());
+            weCustomer.setUpdateTime(weFlowerCustomerRel.getDeleteTime());
         }
     }
 

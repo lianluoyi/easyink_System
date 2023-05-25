@@ -181,7 +181,6 @@ public class WeFlowerCustomerRelServiceImpl extends ServiceImpl<WeFlowerCustomer
         return getOne(wrapper);
     }
 
-
     @Override
     public void alignData(GetByUserResp resp, String userId, String corpId) {
         List<WeCustomer> customerList = resp.getCustomerList();

@@ -70,4 +70,24 @@
             </foreach>
     </select>
 
+    <select id="getTagIdList" resultType="com.easyink.wecom.domain.vo.wegrouptag.WeGroupTagRelDetail">
+        SELECT
+        wgt. `id` as tagId,
+        wgt.`name` as name,
+        wgtr.chat_id as chatId
+        FROM
+        we_group_tag_rel wgtr
+        LEFT JOIN we_group_tag wgt ON wgt.`id`=wgtr.tag_id
+        WHERE
+        wgtr.corp_id = #{corpId}
+        <if test="weGroupList!= null and weGroupList.size()>0">
+            AND wgtr.chat_id IN
+            <foreach collection="weGroupList" item="item" index="index" open="(" separator="," close=")">
+                <if test="item.chatId!= null and item.chatId !=''">
+                    #{item.chatId}
+                </if>
+            </foreach>
+        </if>
+    </select>
+
 </mapper>

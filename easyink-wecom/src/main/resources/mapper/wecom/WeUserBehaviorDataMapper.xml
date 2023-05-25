@@ -3,6 +3,19 @@
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.easyink.wecom.mapper.WeUserBehaviorDataMapper">
+    <!--  批量更新员工主动发起会话数接口  -->
+    <update id="batchUpdate">
+        INSERT INTO we_user_behavior_data
+        (id, corp_id, user_id, user_active_chat_cnt, stat_time )
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+            #{item.id}, #{item.corpId}, #{item.userId}, #{item.userActiveChatCnt}, #{item.statTime}
+            )
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+        id = VALUES(id), user_active_chat_cnt = VALUES(user_active_chat_cnt)
+    </update>
 
     <!--获取客户概况-数据总览-员工维度-->
     <select id="getCustomerOverViewOfUser"
@@ -12,7 +25,7 @@
         bd.contact_total_cnt
                 FROM we_user_behavior_data bd
                 WHERE bd.corp_id = #{corpId}
-                AND bd.stat_time = #{endTime}
+                AND bd.stat_time = #{beginTime}
                 AND bd.user_id  = ubd.user_id
                 ) ,0) as totalContactCnt,
         SUM(IFNULL(ubd.new_contact_cnt,0)) as newContactCnt,
@@ -22,7 +35,7 @@
         SUM(IFNULL(ubd.new_contact_speak_cnt, 0)) as newContactSpeakCnt,
         SUM(IFNULL(ubd.replied_within_thirty_min_customer_cnt, 0)) as replied_within_thirty_min_customer_cnt,
         SUM(IFNULL(ubd.all_chat_cnt, 0)) as all_chat_cnt,
-        SUM(IFNULL(ubd.chat_cnt, 0)) as userActiveChatCnt,
+        IFNULL(sum(ubd.user_active_chat_cnt),0) as userActiveChatCnt,
         <if test="newContactRetentionRateSort != null and newContactRetentionRateSort != ''">
             IF(IFNULL(SUM(ubd.new_contact_cnt), 0) = 0, 100, CAST((SUM(ubd.new_contact_cnt) - IFNULL(SUM(ubd.new_customer_loss_cnt), 0)) *1./ SUM(ubd.new_contact_cnt) as decimal(8,2))) as newContactRetentionRate,
         </if>
@@ -30,7 +43,7 @@
             IF(IFNULL(SUM(ubd.new_contact_cnt), 0) = 0, 0, CAST(IFNULL(SUM(ubd.new_contact_speak_cnt), 0) *1./ SUM(ubd.new_contact_cnt) as decimal(8,2))) as newContactStartTalkRate,
         </if>
         <if test="serviceResponseRateSort != null and serviceResponseRateSort != ''">
-            IF(IFNULL(SUM(ubd.chat_cnt), 0) = 0, 0, CAST(IFNULL(SUM(ubd.replied_within_thirty_min_customer_cnt), 0) *1./ SUM(ubd.chat_cnt) as decimal(8,2))) as serviceResponseRate,
+            IF(IFNULL(SUM(ubd.user_active_chat_cnt), 0) = 0, 0, CAST(IFNULL(SUM(ubd.replied_within_thirty_min_customer_cnt), 0) *1./ SUM(ubd.user_active_chat_cnt) as decimal(8,2))) as serviceResponseRate,
         </if>
         wu.`user_name`,
         wd.`name` departmentName,
@@ -111,7 +124,7 @@
         FROM we_user_behavior_data bd
         LEFT JOIN we_user wu ON wu.corp_id = bd.corp_id AND wu.user_id = bd.user_id
         WHERE bd.corp_id = #{corpId}
-        AND bd.stat_time = #{endTime}
+        AND bd.stat_time = #{beginTime}
         <if test="userIds != null and userIds.size() > 0">
             AND bd.user_id IN
             <foreach collection="userIds" item="userId" open="(" separator="," close=")">
@@ -128,23 +141,7 @@
         IFNULL(sum(wube.new_contact_speak_cnt), 0) as newContactSpeakCnt,
         IFNULL(sum(wube.replied_within_thirty_min_customer_cnt), 0) as replied_within_thirty_min_customer_cnt,
         IFNULL(sum(wube.all_chat_cnt), 0) as all_chat_cnt,
-        IFNULL( (SELECT SUM(wubed.chat_cnt)
-        FROM
-        we_user_behavior_data wubed
-        WHERE
-        wubed.stat_time &gt;= #{beginTime}
-        AND wubed.stat_time &lt;= #{endTime}
-        AND wubed.`corp_id` = #{corpId}
-        AND wubed.user_id IN
-        (SELECT user_id FROM  we_user_customer_message_statistics WHERE external_userid != '-1'
-        AND send_time &gt;= #{beginTime}
-        AND send_time &lt;= #{endTime} )
-        <if test="userIds != null and userIds.size() > 0">
-        AND wubed.user_id IN
-        <foreach collection="userIds" item="userId" open="(" separator="," close=")">
-            #{userId}
-        </foreach>
-        </if>),0) as userActiveChatCnt
+        IFNULL(sum(wube.user_active_chat_cnt),0) as userActiveChatCnt
         from we_user_behavior_data wube
         LEFT JOIN we_user wu ON wu.corp_id = wube.corp_id AND wu.user_id = wube.user_id
         <where>

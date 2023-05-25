@@ -1,8 +1,13 @@
 package com.easyink.wecom.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.easyink.common.core.domain.AjaxResult;
+import com.easyink.common.core.page.TableDataInfo;
 import com.easyink.wecom.domain.WeTag;
+import com.easyink.wecom.domain.dto.statistics.WeTagStatisticsDTO;
 import com.easyink.wecom.domain.vo.autotag.TagInfoVO;
+import com.easyink.wecom.domain.vo.statistics.WeTagCustomerStatisticsChartVO;
+import com.easyink.wecom.domain.vo.statistics.WeTagCustomerStatisticsVO;
 
 import java.util.List;
 
@@ -73,4 +78,46 @@ public interface WeTagService extends IService<WeTag> {
      * @return 标签基础详情列表
      */
     List<TagInfoVO> selectTagByIds(List<String> collect);
+
+
+    /**
+     * 导出标签统计-客户标签
+     *
+     * @param dto {@link WeTagStatisticsDTO}
+     * @return 结果
+     */
+    AjaxResult exportCustomerTagsView(WeTagStatisticsDTO dto);
+
+    /**
+     * 获取标签统计-客户标签-表格视图-分页数据
+     *
+     * @param dto {@link WeTagStatisticsDTO}
+     * @return 结果
+     */
+    TableDataInfo<WeTagCustomerStatisticsVO> selectTagStatistics(WeTagStatisticsDTO dto);
+
+    /**
+     * 获取标签统计-客户标签-表格视图
+     *
+     * @param dto {@link WeTagStatisticsDTO}
+     * @return 结果集 {@link WeTagCustomerStatisticsVO}
+     */
+    List<WeTagCustomerStatisticsVO> getCustomerTagTableView(WeTagStatisticsDTO dto);
+
+    /**
+     * 获取标签统计-客户标签-图表视图-分页数据
+     *
+     * @param dto {@link WeTagStatisticsDTO}
+     * @return 结果
+     */
+    TableDataInfo<WeTagCustomerStatisticsChartVO> selectTagStatisticsByChart(WeTagStatisticsDTO dto);
+
+    /**
+     * 获取标签统计-客户标签-图表视图
+     *
+     * @param dto {@link WeTagStatisticsDTO}
+     * @return 结果集 {@link WeTagCustomerStatisticsChartVO}
+     */
+    List<WeTagCustomerStatisticsChartVO> getCustomerTagTableChartView(WeTagStatisticsDTO dto);
+
 }

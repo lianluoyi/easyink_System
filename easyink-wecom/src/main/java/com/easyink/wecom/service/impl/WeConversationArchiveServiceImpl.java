@@ -85,14 +85,13 @@ public class WeConversationArchiveServiceImpl implements WeConversationArchiveSe
         builder.from(from);
         builder.sort(WeConstans.MSG_TIME, SortOrder.DESC);
         // 需要完全匹配
-        String minimumShouldMatch = "100%" ;
         BoolQueryBuilder fromBuilder = QueryBuilders.boolQuery().must(QueryBuilders.matchQuery(WeConstans.ROOMID, ""))
-                .must(QueryBuilders.matchQuery(WeConstans.FROM, query.getFromId()).minimumShouldMatch(minimumShouldMatch))
-                .must(QueryBuilders.matchQuery(WeConstans.TO_LIST, query.getReceiveId()).minimumShouldMatch(minimumShouldMatch));
+                .must(QueryBuilders.termsQuery(WeConstans.FROM, query.getFromId()))
+                .must(QueryBuilders.termsQuery(WeConstans.TO_LIST_KEYWORD, query.getReceiveId()));
 
         BoolQueryBuilder toLsitBuilder = QueryBuilders.boolQuery().must(QueryBuilders.matchQuery(WeConstans.ROOMID, ""))
-                .must(QueryBuilders.matchQuery(WeConstans.FROM, query.getReceiveId()).minimumShouldMatch(minimumShouldMatch))
-                .must(QueryBuilders.matchQuery(WeConstans.TO_LIST, query.getFromId()).minimumShouldMatch(minimumShouldMatch));
+                .must(QueryBuilders.termsQuery(WeConstans.FROM, query.getReceiveId()))
+                .must(QueryBuilders.termsQuery(WeConstans.TO_LIST_KEYWORD, query.getFromId()));
         //查询聊天类型
         if (StringUtils.isNotEmpty(query.getMsgType())) {
             fromBuilder.must(QueryBuilders.termQuery(WeConstans.MSG_TYPE, query.getMsgType()));
@@ -133,10 +132,10 @@ public class WeConversationArchiveServiceImpl implements WeConversationArchiveSe
         builder.from(from);
         builder.sort(WeConstans.MSG_TIME, SortOrder.DESC);
 
-        BoolQueryBuilder fromBuilder = QueryBuilders.boolQuery().must(QueryBuilders.matchQuery(WeConstans.ROOMID, query.getRoomId()))
-                .must(QueryBuilders.matchQuery("from", query.getFromId()));
+        BoolQueryBuilder fromBuilder = QueryBuilders.boolQuery().must(QueryBuilders.termsQuery(WeConstans.ROOMID, query.getRoomId()))
+                .must(QueryBuilders.termsQuery("from", query.getFromId()));
 
-        BoolQueryBuilder roomidBuilder = QueryBuilders.boolQuery().must(QueryBuilders.matchQuery(WeConstans.ROOMID, query.getRoomId()))
+        BoolQueryBuilder roomidBuilder = QueryBuilders.boolQuery().must(QueryBuilders.termsQuery(WeConstans.ROOMID, query.getRoomId()))
                 .must(QueryBuilders.matchQuery(WeConstans.TO_LIST, query.getFromId()));
 
         //查询聊天类型
@@ -175,12 +174,12 @@ public class WeConversationArchiveServiceImpl implements WeConversationArchiveSe
         SearchSourceBuilder builder = new SearchSourceBuilder();
         builder.sort(WeConstans.MSG_TIME, SortOrder.DESC);
         BoolQueryBuilder fromBuilder = QueryBuilders.boolQuery().must(QueryBuilders.matchQuery(WeConstans.ROOMID, ""))
-                .must(QueryBuilders.matchQuery(WeConstans.FROM, fromId))
-                .must(QueryBuilders.matchQuery(WeConstans.TO_LIST, receiveId));
+                .must(QueryBuilders.termsQuery(WeConstans.FROM, fromId))
+                .must(QueryBuilders.termsQuery(WeConstans.TO_LIST_KEYWORD, receiveId));
 
         BoolQueryBuilder toLsitBuilder = QueryBuilders.boolQuery().must(QueryBuilders.matchQuery(WeConstans.ROOMID, ""))
-                .must(QueryBuilders.matchQuery(WeConstans.FROM, receiveId))
-                .must(QueryBuilders.matchQuery(WeConstans.TO_LIST, fromId));
+                .must(QueryBuilders.termsQuery(WeConstans.FROM, receiveId))
+                .must(QueryBuilders.termsQuery(WeConstans.TO_LIST_KEYWORD, fromId));
         BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery()
                 .should(fromBuilder)
                 .should(toLsitBuilder)
@@ -203,10 +202,10 @@ public class WeConversationArchiveServiceImpl implements WeConversationArchiveSe
         SearchSourceBuilder builder = new SearchSourceBuilder();
         builder.sort(WeConstans.MSG_TIME, SortOrder.DESC);
         BoolQueryBuilder fromBuilder = QueryBuilders.boolQuery().must(QueryBuilders.matchQuery(WeConstans.ROOMID, roomId))
-                .must(QueryBuilders.matchQuery(WeConstans.FROM, fromId));
+                .must(QueryBuilders.termsQuery(WeConstans.FROM, fromId));
 
         BoolQueryBuilder roomidBuilder = QueryBuilders.boolQuery().must(QueryBuilders.matchQuery(WeConstans.ROOMID, roomId))
-                .must(QueryBuilders.matchQuery(WeConstans.TO_LIST, fromId));
+                .must(QueryBuilders.termsQuery(WeConstans.TO_LIST_KEYWORD, fromId));
         BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery()
                 .should(fromBuilder)
                 .should(roomidBuilder);
@@ -355,12 +354,10 @@ public class WeConversationArchiveServiceImpl implements WeConversationArchiveSe
             Date endTime = DateUtils.dateTime(DateUtils.YYYY_MM_DD_HH_MM, query.getEndTime());
             boolQueryBuilder.filter(QueryBuilders.rangeQuery(WeConstans.MSG_TIME).gte(beginTime.getTime()).lte(endTime.getTime()));
         }
-        //todo 以后需要修改索引Mapping的类型,把toList 字段的类型改成keyword,避免分词,这里就可以直接使用terms进行完全匹配,不必使用 match
         //匹配发送人, 需要100 %匹配
-        String minimumShouldMatch = "100%" ;
         BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().should(QueryBuilders.termsQuery("from", query.getFromId()));
         //匹配收消息人
-        queryBuilder.should(QueryBuilders.matchQuery("toListInfo.userId", query.getFromId()).minimumShouldMatch(minimumShouldMatch));
+        queryBuilder.should(QueryBuilders.termsQuery(WeConstans.TO_LIST_KEYWORD, query.getFromId()));
         boolQueryBuilder.filter(queryBuilder.minimumShouldMatch(1));
         builder.query(boolQueryBuilder);
         return elasticSearch.searchPage(WeConstans.getChatDataIndex(query.getCorpId()), builder, pageNum, pageSize, ConversationArchiveVO.class);

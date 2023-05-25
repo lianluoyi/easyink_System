@@ -20,6 +20,11 @@ import java.util.List;
  */
 public interface WeUserCustomerMessageStatisticsService extends IService<WeUserCustomerMessageStatistics> {
 
+    /**
+     * 更新历史中员工主动发起的会话数
+     *
+     */
+    void updateUserActiveChatCnt();
 
     /**
      * 员工会话消息统计

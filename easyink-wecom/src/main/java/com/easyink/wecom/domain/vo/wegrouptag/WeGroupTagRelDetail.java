@@ -19,4 +19,7 @@ public class WeGroupTagRelDetail {
 
     @ApiModelProperty("标签名")
     private String name;
+
+    @ApiModelProperty("微信群id")
+    private String chatId;
 }

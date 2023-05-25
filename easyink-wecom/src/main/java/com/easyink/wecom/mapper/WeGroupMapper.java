@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.easyink.wecom.domain.WeCustomerAddGroup;
 import com.easyink.wecom.domain.WeGroup;
 import com.easyink.wecom.domain.dto.FindWeGroupDTO;
+import com.easyink.wecom.domain.dto.statistics.WeTagStatisticsDTO;
 import com.easyink.wecom.domain.vo.sop.GroupSopVO;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
@@ -68,4 +69,12 @@ public interface WeGroupMapper extends BaseMapper<WeGroup> {
      * @return {@link List<GroupSopVO>}
      */
     List<GroupSopVO> listOfChat(@Param("chatName") String chatName, @Param("list") List<String> chatIds);
+
+    /**
+     * 获取进行标签统计筛选的客户群列表
+     *
+     * @param weTagStatisticsDTO
+     * @return
+     */
+    List<WeGroup> selectTagCountList(WeTagStatisticsDTO weTagStatisticsDTO);
 }

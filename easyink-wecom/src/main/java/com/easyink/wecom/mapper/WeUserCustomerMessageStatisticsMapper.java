@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.easyink.wecom.domain.dto.statistics.*;
 import com.easyink.wecom.domain.entity.WeUserCustomerMessageStatistics;
 import com.easyink.wecom.domain.vo.statistics.*;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -15,6 +16,14 @@ import java.util.List;
  * @since 2023-02-13 09:32:48
  */
 public interface WeUserCustomerMessageStatisticsMapper extends BaseMapper<WeUserCustomerMessageStatistics>{
+
+    /**
+     * 查询历史日期范围下员工主动发起会话数
+     *
+     * @param corpId 企业ID
+     * @return 结果
+     */
+    List<WeUserCustomerMessageStatistics> findHistoryData(@Param("corpId") String corpId);
 
     /**
      * 获取员工服务-数据总览-员工维度

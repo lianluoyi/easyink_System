@@ -84,5 +84,20 @@
             AND wgtc.id = #{id}
     </select>
 
+    <select id="getTagCategoryList" resultType="com.easyink.wecom.domain.WeGroupTagCategory">
+        SELECT
+            `id`,
+            `name`,
+            create_time
+        FROM we_group_tag_category
+        WHERE
+            `corp_id` = #{corpId}
+        <if test="tagGroupIds != null and tagGroupIds.size()>0">
+                AND `id` IN
+                <foreach item="item" index="index" collection="tagGroupIds" open="(" separator="," close=")">
+                    #{item}
+                </foreach>
+        </if>
+    </select>
 
 </mapper>

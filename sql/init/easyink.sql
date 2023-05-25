@@ -1000,7 +1000,9 @@ INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`
 -- 员工活码详情数据统计导出菜单 Tower 任务: 员工活码详情数据导出 ( https://tower.im/teams/636204/todos/63010 )
 INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`, `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES (2318, '导出报表', 2053, 8, '', NULL, 1, 'F', '0', '0', 'wecom:codeAnalyse:export', '#', 'admin', '2023-02-28 10:09:09', 'admin', '2023-02-28 10:09:39', '');
 INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`, `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES (2319, 'API配置', 2305, 12, 'apiConfig', 'configCenter/apiConfig', 1, 'C', '0', '0', '', '#', '王孙', '2023-03-20 10:35:14', '王孙', '2023-03-20 10:39:07', '');
-
+-- 2023-05-09 lcy 添加标签统计菜单和标签统计-导出报表功能 Tower 任务: 后端-菜单权限 ( https://tower.im/teams/636204/todos/67832 )
+INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`, `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES (2320, '标签统计', 2313, 3, 'labelStatistics', 'dataStatistics/labelStatistics/index', 1, 'C', '0', '0', NULL, '#', 'admin', '2023-05-09 13:48:26', '', NULL, '');
+INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`, `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES (2321, '导出报表', 2320, 1, '', NULL, 1, 'F', '0', '0', 'statistic:labelStatistics:export', '#', 'admin', '2023-05-09 13:48:26', 'admin', '2023-05-09 13:48:46', '');
 -- ----------------------------
 -- Table structure for sys_role
 -- ----------------------------
@@ -1623,7 +1625,7 @@ CREATE TABLE `we_flower_customer_rel`
     `add_way`          varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '该成员添加此客户的来源，',
     `state`            varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '企业自定义的state参数，用于区分客户具体是通过哪个「联系我」添加，由企业通过创建「联系我」方式指定',
     `status`           char(2) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci      NOT NULL DEFAULT '0' COMMENT '状态（0正常 1删除流失 2员工删除用户）',
-    `delete_time`      datetime                                                      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '删除时间',
+    `delete_time`      datetime                                                      NOT NULL DEFAULT '0000-00-00 00:00:00' COMMENT '删除时间',
     `wechat_channel`   varchar(64)                                                   NOT NULL DEFAULT '' COMMENT '该成员添加此客户的来源add_way为10时，对应的视频号信息',
     PRIMARY KEY (`id`) USING BTREE,
     UNIQUE INDEX `un_user_external_userid_corpid` (`external_userid`, `user_id`, `corp_id`) USING BTREE,
@@ -1642,7 +1644,8 @@ CREATE TABLE `we_flower_customer_tag_rel`
     `create_time`            datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `external_userid`        varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
     PRIMARY KEY (`id`) USING BTREE,
-    UNIQUE KEY `un_rel_tag_id` (`flower_customer_rel_id`,`tag_id`) USING BTREE
+    UNIQUE KEY `un_rel_tag_id` (`flower_customer_rel_id`,`tag_id`) USING BTREE,
+    KEY `tagid_externaluserid` (`tag_id`,`external_userid`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '客户标签关系表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
@@ -2122,6 +2125,7 @@ CREATE TABLE `we_user_behavior_data` (
                                          `all_chat_cnt` int(11) NOT NULL DEFAULT '0' COMMENT '当天员工会话数-不区分是否为员工主动发起(此数据为每日定时任务统计 会话存档ES中查找)',
                                          `new_customer_loss_cnt` int(11) NOT NULL DEFAULT '0' COMMENT '当天员工新客流失客户数 （we_flower表中查找 每日定时任务获取',
                                          `contact_total_cnt` int(11) NOT NULL DEFAULT '0' COMMENT '当天员工客户总数（we_flower表中查找 每日定时任务获取',
+                                         `user_active_chat_cnt` int(11) NOT NULL DEFAULT '0' COMMENT '当天员工主动发起的会话数量（DataStatisticsTask定时任务统计）',
                                          PRIMARY KEY (`id`) USING BTREE,
                                          KEY `stat_time_index` (`stat_time`,`user_id`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='联系客户统计数据 ';
@@ -2724,6 +2728,7 @@ CREATE TABLE `we_group_tag_category`
     `id`      bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
     `corp_id` varchar(64) NOT NULL DEFAULT '' COMMENT '企业ID',
     `name`    varchar(16) NOT NULL COMMENT '群标签组名',
+    `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '群标签组创建时间',
     PRIMARY KEY (`id`),
     UNIQUE KEY `uniq_corpid_name` (`corp_id`,`name`) USING BTREE COMMENT '唯一索引（corp_id、name）'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='群标签组表';
@@ -2738,6 +2743,7 @@ CREATE TABLE `we_group_tag`
     `corp_id`  varchar(64) NOT NULL DEFAULT '' COMMENT '企业ID',
     `group_id` bigint(20) NOT NULL DEFAULT '0' COMMENT '群标签组ID',
     `name`     varchar(16) NOT NULL COMMENT '群标签名称',
+    `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '群标签创建时间',
     PRIMARY KEY (`id`),
     UNIQUE KEY `uniq_groupid_name` (`group_id`,`name`) USING BTREE COMMENT '唯一索引（group_id、name）'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='群标签表';
@@ -3595,7 +3601,7 @@ CREATE TABLE `we_user_customer_message_statistics` (
                                                        `external_user_send_message_cnt` int(11) NOT NULL DEFAULT '0' COMMENT '客户发送消息数量 会话存档 ES 中 external_userid对user_id发送的消息数',
                                                        `add_time` date NOT NULL DEFAULT '0000-00-00' COMMENT '添加客户时间 user_id与exteranl_userId成为联系人的时间 we_flower_customer_rel 表中查找',
                                                        `send_time` date NOT NULL DEFAULT '0000-00-00' COMMENT '发送消息时间 统计的时间，当天',
-                                                       `first_reply_time_interval_alter_receive` int(6) NOT NULL DEFAULT '0' COMMENT '当天收到客户消息到首次回复客户时间间隔（单位分钟） ES中查询并计算',
+                                                       `first_reply_time_interval_alter_receive` int(6) NOT NULL DEFAULT '0' COMMENT '当天收到客户消息到首次回复客户时间间隔（单位：秒） ES中查询并计算',
                                                        `three_rounds_dialogue_flag` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否有三个轮次对话，1：有，0：无 ES中查询并统计',
                                                        `user_active_dialogue` tinyint(1) NOT NULL DEFAULT '0' COMMENT '对话是否由员工主动发起，1：是，0：否 ES中查询并统计',
                                                        PRIMARY KEY (`id`),

@@ -28,6 +28,92 @@
         where id = #{id} and status=0
     </select>
 
+    <!-- 获取所有的标签组和标签组下的标签信息 -->
+    <select id="selectTagStatistics" resultType="com.easyink.wecom.domain.vo.statistics.WeTagCustomerStatisticsVO">
+        SELECT
+            wt.tag_id,
+            wt.`name` AS tagName,
+            wtg.group_id AS tagGroupId,
+            wtg.group_name AS groupTagName
+            FROM
+            we_tag wt INNER JOIN
+            we_tag_group wtg ON wt.group_id = wtg.group_id AND wt.`status` = wtg.`status`
+        WHERE
+            wtg.corp_id = #{dto.corpId}
+            AND wtg.`status` = ${@com.easyink.common.constant.Constants@NORMAL_CODE}
+        <if test="dto.tagGroupIds != null and dto.tagGroupIds.size > 0">
+            AND wtg.group_id IN
+            <foreach collection="dto.tagGroupIds" item="tagGroupId" open="(" separator="," close=")">
+                #{tagGroupId}
+            </foreach>
+        </if>
+        <if test="tagIdList != null and tagIdList.size > 0">
+            AND wt.tag_id IN
+            <foreach collection="tagIdList" item="tagId" open="(" separator="," close=")">
+                #{tagId}
+            </foreach>
+        </if>
+    </select>
+
+    <!-- 获取所有标签和客户信息 -->
+    <select id="getWeTagList" resultType="com.easyink.wecom.domain.WeTag">
+        SELECT
+            wfctr.`tag_id`,
+            wt.`name`,
+            wt.create_time
+        FROM
+            we_flower_customer_tag_rel wfctr
+                INNER JOIN we_tag wt ON wfctr.tag_id = wt.tag_id
+                INNER JOIN we_tag_group wtg ON wt.group_id = wtg.group_id
+                AND wt.`status` = wtg.`status`
+        WHERE
+            wtg.corp_id = #{corpId}
+            AND wt.`status` = ${@com.easyink.common.constant.Constants@NORMAL_CODE}
+        <if test="flowerCustomerRelIdList != null and flowerCustomerRelIdList.size() > 0">
+            AND wfctr.flower_customer_rel_id IN
+            <foreach collection="flowerCustomerRelIdList" item="flowerCustomerRelId" open="(" separator="," close=")">
+                #{flowerCustomerRelId}
+            </foreach>
+        </if>
+        <if test="tagGroupIds != null and tagGroupIds.size > 0">
+            AND wt.group_id IN
+            <foreach collection="tagGroupIds" item="tagGroupId" open="(" separator="," close=")">
+                #{tagGroupId}
+            </foreach>
+        </if>
+        GROUP BY
+            external_userid, tag_id
+    </select>
+
+    <!-- 获取所有标签下的客户数量(去重) -->
+    <select id="getCustomerTagCnt" resultType="com.easyink.wecom.domain.vo.statistics.WeTagCustomerStatisticsVO">
+        SELECT
+        wfctr.tag_id,
+        wfctr.external_userid AS externalUserId
+        FROM
+        we_flower_customer_tag_rel wfctr
+        INNER JOIN we_tag wt ON wfctr.tag_id = wt.tag_id
+        INNER JOIN we_tag_group wtg ON wt.group_id = wtg.group_id
+        AND wt.`status` = wtg.`status`
+        WHERE
+        wtg.corp_id = #{corpId}
+        AND wt.`status` = ${@com.easyink.common.constant.Constants@NORMAL_CODE}
+        <if test="flowerCustomerRelIdList != null and flowerCustomerRelIdList.size() > 0">
+            AND wfctr.flower_customer_rel_id IN
+            <foreach collection="flowerCustomerRelIdList" item="flowerCustomerRelId" open="(" separator="," close=")">
+                #{flowerCustomerRelId}
+            </foreach>
+        </if>
+        <if test="tagGroupIds != null and tagGroupIds.size > 0">
+            AND wt.group_id IN
+            <foreach collection="tagGroupIds" item="tagGroupId" open="(" separator="," close=")">
+                #{tagGroupId}
+            </foreach>
+        </if>
+        GROUP BY
+        external_userid, tag_id
+    </select>
+
     <update id="updateWeTag" parameterType="WeTag">
         update we_tag
         <trim prefix="SET" suffixOverrides=",">

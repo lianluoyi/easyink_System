@@ -68,5 +68,7 @@ public class WeUserCustomerMessageStatistics implements Serializable {
     @TableField(exist = false)
     private Boolean repliedWithinThirtyMinCustomerFlag;
 
+    @ApiModelProperty(value = "当天员工主动发起会话次数")
+    private Integer userActiveChatCnt;
 }
 
