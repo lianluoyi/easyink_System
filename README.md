@@ -2,7 +2,7 @@
     <img src="https://wecomsaas-1253559996.cos.ap-guangzhou.myqcloud.com/2022/08/12/easyink%20logo.png" />
 </p>
 <p align="center">
-  <img src="https://img.shields.io/badge/edition-V1.26.0-brightgreen" />
+  <img src="https://img.shields.io/badge/edition-V1.27.0-brightgreen" />
   <img src="https://img.shields.io/badge/license-GPL%203.0-yellow" />
   <img src="https://img.shields.io/badge/mysql-5.7%2B-orange" />
   <img src="https://img.shields.io/badge/jdk-1.8.301(64bit)%2B-red" />
