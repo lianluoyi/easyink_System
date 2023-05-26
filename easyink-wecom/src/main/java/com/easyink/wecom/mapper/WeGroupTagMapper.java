@@ -2,6 +2,8 @@ package com.easyink.wecom.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.easyink.wecom.domain.WeGroupTag;
+import com.easyink.wecom.domain.dto.statistics.WeTagStatisticsDTO;
+import com.easyink.wecom.domain.vo.statistics.WeTagGroupStatisticsVO;
 import com.easyink.wecom.domain.vo.wegrouptag.WeGroupTagRelDetail;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
@@ -69,4 +71,14 @@ public interface WeGroupTagMapper extends BaseMapper<WeGroupTag> {
      * @return List<Long>
      */
     List<Long> getTagIdByGroupId(@Param("corpId") String corpId, @Param("groupIdList") List<Long> groupIdList);
+
+    /**
+     * 获取所需标签详情
+     *
+     * @param weTagStatisticsDTO 所需标签条件
+     * @return 标签列表
+     */
+    List<WeTagGroupStatisticsVO> getTagList(WeTagStatisticsDTO weTagStatisticsDTO);
+
+
 }

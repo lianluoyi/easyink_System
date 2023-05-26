@@ -10,6 +10,7 @@ import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
 import javax.validation.constraints.Size;
+import java.util.Date;
 
 /**
  * 类名：WeGroupTagCategory
@@ -36,4 +37,8 @@ public class WeGroupTagCategory {
     @TableField("name")
     @Size(max = 15, message = "群标签组名称长度不能超过15个字符")
     private String name;
+
+    @ApiModelProperty(value = "群标签组创建时间")
+    @TableField("create_time")
+    private Date createTime;
 }

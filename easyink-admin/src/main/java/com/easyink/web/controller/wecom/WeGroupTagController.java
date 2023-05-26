@@ -5,11 +5,15 @@ import com.easyink.common.core.controller.BaseController;
 import com.easyink.common.core.domain.AjaxResult;
 import com.easyink.common.core.page.TableDataInfo;
 import com.easyink.common.enums.BusinessType;
+import com.easyink.common.utils.PageInfoUtil;
+import com.easyink.wecom.domain.dto.statistics.WeTagStatisticsDTO;
 import com.easyink.wecom.domain.dto.wegrouptag.*;
+import com.easyink.wecom.domain.vo.statistics.WeTagGroupListVO;
 import com.easyink.wecom.domain.vo.wegrouptag.PageWeGroupTagCategoryVO;
 import com.easyink.wecom.login.util.LoginTokenService;
 import com.easyink.wecom.service.WeGroupTagCategoryService;
 import com.easyink.wecom.service.WeGroupTagRelService;
+import com.easyink.wecom.service.WeGroupTagService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,11 +34,13 @@ public class WeGroupTagController extends BaseController {
 
     private final WeGroupTagCategoryService weGroupTagCategoryService;
     private final WeGroupTagRelService weGroupTagRelService;
+    private final WeGroupTagService weGroupTagService;
 
     @Autowired
-    public WeGroupTagController(WeGroupTagCategoryService weGroupTagCategoryService, WeGroupTagRelService weGroupTagRelService) {
+    public WeGroupTagController(WeGroupTagCategoryService weGroupTagCategoryService, WeGroupTagRelService weGroupTagRelService, WeGroupTagService weGroupTagService) {
         this.weGroupTagCategoryService = weGroupTagCategoryService;
         this.weGroupTagRelService = weGroupTagRelService;
+        this.weGroupTagService = weGroupTagService;
     }
 
     @Log(title = "新增群标签组", businessType = BusinessType.INSERT)
@@ -109,5 +115,13 @@ public class WeGroupTagController extends BaseController {
         batchTagRelDTO.setCorpId(LoginTokenService.getLoginUser().getCorpId());
         weGroupTagRelService.batchDelTagRel(batchTagRelDTO);
         return AjaxResult.success();
+    }
+
+    @GetMapping("/getGroupTagList")
+    @ApiOperation("获取所有群标签组名和id")
+    public TableDataInfo<WeTagGroupListVO> getGroupTagList(){
+        WeTagStatisticsDTO statisticsDTO=new WeTagStatisticsDTO();
+        statisticsDTO.setCorpId(LoginTokenService.getLoginUser().getCorpId());
+        return PageInfoUtil.getDataTable(weGroupTagService.groupTagList(statisticsDTO));
     }
 }

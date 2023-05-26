@@ -155,7 +155,7 @@
         </collection>
         <collection property="extendProperties" javaType="ArrayList"
                     ofType="com.easyink.common.core.domain.wecom.BaseExtendPropertyRel"
-                    column="{corpId = wceprCorpID,externalUserid = wceprExternalUserid}"
+                    column="{corpId = wceprCorpID,externalUserid = wceprExternalUserid,userId = wceprUserId }"
                     select="getCustomerPropRelList">
             <result property="propertyValue" column="property_value"/>
             <result property="extendPropertyId" column="extend_property_id"/>
@@ -199,7 +199,7 @@
         </collection>
         <collection property="extendProperties" javaType="ArrayList"
                     ofType="com.easyink.common.core.domain.wecom.BaseExtendPropertyRel"
-                    column="{corpId = wceprCorpId,externalUserid = wceprExternalUserid}"
+                    column="{corpId = wceprCorpId,externalUserid = wceprExternalUserid,userId = wceprUserId}"
                     select="getCustomerPropRelList">
             <result property="propertyValue" column="property_value"/>
             <result property="extendPropertyId" column="extend_property_id"/>
@@ -216,30 +216,31 @@
 
     <select id="getCustomerPropRelList"
             resultType="com.easyink.common.core.domain.wecom.BaseExtendPropertyRel">
-        SELECT extend_property_id, property_value
+        SELECT extend_property_id, property_value,user_id
         FROM we_customer_extend_property_rel
         WHERE corp_id = #{corpId}
-          AND external_userid = #{externalUserid}
+        AND external_userid = #{externalUserid}
+        AND user_id = #{userId}
     </select>
 
     <select id="selectWeCustomerRels" resultType="com.easyink.wecom.domain.WeFlowerCustomerRel">
         SELECT id,
-               user_id,
-               external_userid,
-               corp_id,
-               oper_userid,
-               remark,
-               description,
-               create_time,
-               remark_corp_name,
-               remark_mobiles,
-               qq,
-               address,
-               email,
-               add_way,
-               state,
-               status,
-               delete_time
+        user_id,
+        external_userid,
+        corp_id,
+        oper_userid,
+        remark,
+        description,
+        create_time,
+        remark_corp_name,
+        remark_mobiles,
+        qq,
+        address,
+        email,
+        add_way,
+        state,
+        status,
+        delete_time
         FROM we_flower_customer_rel
         WHERE id = #{id}
     </select>
@@ -247,41 +248,41 @@
 
     <sql id="selectWeCustomerVo">
         select external_userid,
-               name,
-               avatar,
-               type,
-               gender,
-               unionid,
-               birthday,
-               corp_name,
-               corp_full_name,
-               position,
-               is_open_chat,
-               create_time
+        name,
+        avatar,
+        type,
+        gender,
+        unionid,
+        birthday,
+        corp_name,
+        corp_full_name,
+        position,
+        is_open_chat,
+        create_time
         from we_customer
     </sql>
     <sql id="selectWeCustomerByTagVo">
         select wc.external_userid,
-               wc.name,
-               wc.avatar,
-               wc.type,
-               wc.gender,
-               wc.unionid,
-               wc.birthday,
-               wc.corp_name,
-               wc.corp_full_name,
-               wc.position,
-               wc.is_open_chat,
-               wt.tag_id
+        wc.name,
+        wc.avatar,
+        wc.type,
+        wc.gender,
+        wc.unionid,
+        wc.birthday,
+        wc.corp_name,
+        wc.corp_full_name,
+        wc.position,
+        wc.is_open_chat,
+        wt.tag_id
         from we_customer wc
-                 left join we_flower_customer_rel wfcr on
-                wc.external_userid = wfcr.external_userid
-                and wfcr.status = 0
-                 left join we_flower_customer_tag_rel wfctr on
-            wfctr.flower_customer_rel_id = wfcr.id
-                 right join we_tag wt on
-                wt.tag_id = wfctr.tag_id
-                and wt.status = 0
+        left join we_flower_customer_rel wfcr on
+        wc.external_userid = wfcr.external_userid
+        and wfcr.status = 0
+        left join we_flower_customer_tag_rel wfctr on
+        wfctr.flower_customer_rel_id = wfcr.id
+        right join we_tag wt on
+        wt.tag_id = wfctr.tag_id
+        and wt.status = 0
     </sql>
 
     <select id="selectWeCustomerListV2" resultMap="WeCustomerResultV2">
@@ -318,6 +319,7 @@
         wcepr.external_userid as wceprExternalUserid,
         wcepr.property_value,
         wcepr.extend_property_id,
+        wcepr.user_id as wceprUserId,
         wd.name as department
         FROM
         we_customer wc
@@ -445,11 +447,11 @@
 
             <foreach collection="list" index="index" item="item"  separator="AND" >
                 (user_id,external_userid ) IN
-            ( SELECT user_id ,external_userid
+                ( SELECT user_id ,external_userid
                 FROM we_customer_extend_property_rel WHERE
                 (corp_id=#{item.corpId} AND extend_property_id=#{item.extendPropertyId} AND
                 property_value like concat('%', #{item.propertyValue}, '%'))
-             )
+                )
             </foreach>
 
         </where>
@@ -529,13 +531,13 @@
 
     <select id="selectWeCustomerTags" resultMap="weFlowerCustomerRelsMapper">
         SELECT wfcrf.flower_customer_rel_id,
-               wt.tag_id,
-               wt.`name` as tagName,
-               wt.group_id
+        wt.tag_id,
+        wt.`name` as tagName,
+        wt.group_id
         FROM we_flower_customer_tag_rel wfcrf
-                 LEFT JOIN we_tag wt ON wt.tag_id = wfcrf.tag_id
+        LEFT JOIN we_tag wt ON wt.tag_id = wfcrf.tag_id
         where wt.status = 0
-          and wfcrf.flower_customer_rel_id = #{id}
+        and wfcrf.flower_customer_rel_id = #{id}
     </select>
 
 
@@ -639,7 +641,7 @@
         UPDATE we_customer
         SET birthday = ifnull(#{birthday}, '0000-00-00 00:00:00')
         WHERE external_userid = #{externalUserid}
-          AND corp_id = #{corpId}
+        AND corp_id = #{corpId}
     </update>
 
 
@@ -738,6 +740,7 @@
         wcepr.external_userid as wceprExternalUserid,
         wcepr.extend_property_id,
         wcepr.property_value,
+        wcepr.user_id as wceprUserId,
         (SELECT wd.`name` FROM we_department wd WHERE wd.id=wu.main_department and wd.corp_id = #{corpId} LIMIT 1) as
         department
         FROM
@@ -758,61 +761,61 @@
 
     <select id="findCustomerByOperUseridAndCustomerId" resultType="com.easyink.wecom.domain.WeCustomerPortrait">
         SELECT wc.`name`,
-               wfcr.remark,
-               wfcr.remark_mobiles,
-               wc.birthday,
-               wfcr.email,
-               wfcr.address,
-               wfcr.qq,
-               wc.position,
-               wfcr.remark_corp_name,
-               wfcr.description,
-               wfcr.id as flowerCustomerRelId,
-               wfcr.user_id,
-               wc.avatar,
-               wfcr.external_userid,
-               wc.gender,
-               wc.type,
-               wc.corp_name,
-               wc.corp_full_name
+        wfcr.remark,
+        wfcr.remark_mobiles,
+        wc.birthday,
+        wfcr.email,
+        wfcr.address,
+        wfcr.qq,
+        wc.position,
+        wfcr.remark_corp_name,
+        wfcr.description,
+        wfcr.id as flowerCustomerRelId,
+        wfcr.user_id,
+        wc.avatar,
+        wfcr.external_userid,
+        wc.gender,
+        wc.type,
+        wc.corp_name,
+        wc.corp_full_name
         FROM we_customer wc
-                 LEFT JOIN we_flower_customer_rel wfcr
-                           on wc.external_userid = wfcr.external_userid and wc.corp_id = wfcr.corp_id
+        LEFT JOIN we_flower_customer_rel wfcr
+        on wc.external_userid = wfcr.external_userid and wc.corp_id = wfcr.corp_id
         WHERE wfcr.corp_id = #{corpId}
-          and wc.external_userid = #{externalUserid}
-          and wfcr.user_id = #{userid} limit 1
+        and wc.external_userid = #{externalUserid}
+        and wfcr.user_id = #{userid} limit 1
     </select>
 
 
     <select id="countSocialConn" resultType="com.easyink.wecom.domain.WeCustomerSocialConn">
         SELECT (
-                   SELECT count(*)
-                   FROM we_flower_customer_rel wfcr
-                   WHERE wfcr.external_userid = wc.external_userid
-                     AND wfcr.corp_id = #{corpId}
-               ) AS addEmployeNum,
-               (
-                   SELECT COUNT(*)
-                   FROM we_group_member wgm
-                            LEFT JOIN we_group wg on wg.chat_id = wgm.chat_id
-                   where wgm.union_id = wc.external_userid
-                     and wg.corp_id = #{corpId}
-               ) AS addGroupNum,
-               (
-                   SELECT COUNT(*)
-                   FROM we_group_member
-                   where user_id = #{userid}
-                     and chat_id in (
-                       SELECT wgm.chat_id
-                       FROM `we_group_member` wgm
-                                LEFT JOIN we_group wg on wg.chat_id = wgm.chat_id
-                       where wg.corp_id = #{corpId}
-                         and wgm.union_id = wc.external_userid
-                   )
-               ) AS commonGroupNum
+        SELECT count(*)
+        FROM we_flower_customer_rel wfcr
+        WHERE wfcr.external_userid = wc.external_userid
+        AND wfcr.corp_id = #{corpId}
+        ) AS addEmployeNum,
+        (
+        SELECT COUNT(*)
+        FROM we_group_member wgm
+        LEFT JOIN we_group wg on wg.chat_id = wgm.chat_id
+        where wgm.union_id = wc.external_userid
+        and wg.corp_id = #{corpId}
+        ) AS addGroupNum,
+        (
+        SELECT COUNT(*)
+        FROM we_group_member
+        where user_id = #{userid}
+        and chat_id in (
+        SELECT wgm.chat_id
+        FROM `we_group_member` wgm
+        LEFT JOIN we_group wg on wg.chat_id = wgm.chat_id
+        where wg.corp_id = #{corpId}
+        and wgm.union_id = wc.external_userid
+        )
+        ) AS commonGroupNum
         FROM we_customer wc
         WHERE corp_id = #{corpId}
-          and wc.external_userid = #{externalUserid}
+        and wc.external_userid = #{externalUserid}
     </select>
     <sql id="countCustomer">
         SELECT COUNT(DISTINCT external_userid)
@@ -859,6 +862,7 @@
         wfcrf.flower_customer_rel_id,
         wcepr.corp_id as wceprCorpId,
         wcepr.external_userid as wceprExternalUserid,
+        wcepr.user_id as wceprUserId,
         wcepr.property_value,
         wcepr.extend_property_id,
         wd.name as department
@@ -931,12 +935,12 @@
     <select id="selectUserListByCustomerId"
             resultType="com.easyink.wecom.domain.vo.customer.WeCustomerUserListVO">
         SELECT wu.user_id,
-               wu.user_name
+        wu.user_name
         FROM we_flower_customer_rel wfcr
-                 LEFT JOIN we_user wu ON wu.user_id = wfcr.user_id AND wu.corp_id = wfcr.corp_id
+        LEFT JOIN we_user wu ON wu.user_id = wfcr.user_id AND wu.corp_id = wfcr.corp_id
         WHERE wfcr.corp_id = #{corpId}
-          AND external_userid = #{customerId}
-          AND wfcr.status = '${@com.easyink.common.enums.CustomerStatusEnum@NORMAL.code}'
+        AND external_userid = #{customerId}
+        AND wfcr.status = '${@com.easyink.common.enums.CustomerStatusEnum@NORMAL.code}'
         ORDER BY wfcr.create_time DESC
     </select>
     <select id="listCustomers" resultType="com.easyink.wecom.domain.vo.customer.WeCustomerVO">

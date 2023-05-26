@@ -4,8 +4,11 @@ import com.easyink.common.constant.GenConstants;
 import com.easyink.common.enums.ResultTip;
 import com.easyink.common.exception.CustomException;
 import com.easyink.wecom.domain.dto.statistics.CustomerOverviewDTO;
+import com.easyink.wecom.domain.dto.statistics.WeTagStatisticsDTO;
 import com.easyink.wecom.domain.vo.statistics.CustomerOverviewDateVO;
 import com.easyink.wecom.domain.vo.statistics.UserServiceTimeVO;
+import com.easyink.wecom.domain.vo.statistics.WeTagCustomerStatisticsVO;
+import com.easyink.wecom.domain.vo.statistics.WeTagGroupStatisticsVO;
 import lombok.Getter;
 
 import org.apache.commons.collections4.CollectionUtils;
@@ -178,4 +181,132 @@ public class StatisticsEnum {
         }
     }
 
+    public enum CustomerTagSortEnum {
+
+        /**
+         * 标签下客户数排序
+         */
+        CUSTOMER_CNT_SORT("customerCntSort", Comparator.comparing(WeTagCustomerStatisticsVO::getCustomerCnt)),
+
+        /**
+         * 创建时间排序
+         */
+        CREATE_TIME_SORT("createTimeSort", Comparator.comparing(WeTagCustomerStatisticsVO::getCreateTime));
+
+        @Getter
+        private final Comparator sortType;
+        @Getter
+        private final String sortName;
+
+        CustomerTagSortEnum(String sortName,Comparator sortType) {
+            this.sortName = sortName;
+            this.sortType = sortType;
+        }
+
+        /**
+         * 根据类型获取枚举对象
+         *
+         * @param sortName 排序类型
+         * @return Optional 排序对象
+         */
+        public static Optional<Comparator> getByCode(String sortName) {
+            for (CustomerTagSortEnum value : values()) {
+                if (value.sortName.equals(sortName)) {
+                    return Optional.ofNullable(value.sortType);
+                }
+            }
+            return Optional.empty();
+        }
+
+
+        /**
+         * 排序
+         *
+         * @param dto                    {@link WeTagStatisticsDTO}
+         * @param customerOverviewVOList 要排序的结果集
+         */
+        public static void sort(WeTagStatisticsDTO dto, List<WeTagCustomerStatisticsVO> customerOverviewVOList) {
+            if (dto == null || CollectionUtils.isEmpty(customerOverviewVOList)) {
+                throw new CustomException(ResultTip.TIP_PARAM_MISSING);
+            }
+            if (dto.getSortType() == null || dto.getSortName() == null){
+                // 默认时间正序
+                customerOverviewVOList.sort(Comparator.comparing(WeTagCustomerStatisticsVO::getCreateTime));
+            } else {
+                // 判断排序类型 ASC 正序, DESC 倒叙
+                switch (dto.getSortType()) {
+                    case GenConstants.ASC:
+                        customerOverviewVOList.sort(getByCode(dto.getSortName()).get());
+                        break;
+                    case GenConstants.DESC:
+                        customerOverviewVOList.sort(getByCode(dto.getSortName()).get().reversed());
+                        break;
+                }
+            }
+        }
+    }
+    public enum GroupTagSortEnum {
+
+        /**
+         * 标签下客户数排序
+         */
+        CUSTOMER_CNT_SORT("customerCntSort", Comparator.comparing(WeTagGroupStatisticsVO::getCustomerCnt)),
+
+        /**
+         * 创建时间排序
+         */
+        CREATE_TIME_SORT("createTimeSort", Comparator.comparing(WeTagGroupStatisticsVO::getCreateTime));
+
+        @Getter
+        private final Comparator sortType;
+        @Getter
+        private final String sortName;
+
+        GroupTagSortEnum(String sortName,Comparator sortType) {
+            this.sortName = sortName;
+            this.sortType = sortType;
+        }
+
+        /**
+         * 根据类型获取枚举对象
+         *
+         * @param sortName 排序类型
+         * @return Optional 排序对象
+         */
+        public static Optional<Comparator> getByCode(String sortName) {
+            for (GroupTagSortEnum value : values()) {
+                if (value.sortName.equals(sortName)) {
+                    return Optional.ofNullable(value.sortType);
+                }
+            }
+            return Optional.empty();
+        }
+
+
+        /**
+         * 排序
+         *
+         * @param dto                    {@link WeTagStatisticsDTO}
+         * @param weTagGroupStatisticsVOS 要排序的结果集
+         */
+        public static void sort(WeTagStatisticsDTO dto, List<WeTagGroupStatisticsVO> weTagGroupStatisticsVOS) {
+            if (dto == null || CollectionUtils.isEmpty(weTagGroupStatisticsVOS)) {
+                throw new CustomException(ResultTip.TIP_PARAM_MISSING);
+            }
+            if (dto.getSortType() == null || dto.getSortName() == null){
+                // 默认时间正序
+                weTagGroupStatisticsVOS.sort(Comparator.comparing(WeTagGroupStatisticsVO::getCreateTime));
+            } else {
+                // 判断排序类型 ASC 正序, DESC 倒叙
+                switch (dto.getSortType()) {
+                    case GenConstants.ASC:
+                        weTagGroupStatisticsVOS.sort(getByCode(dto.getSortName()).get());
+                        break;
+                    case GenConstants.DESC:
+                        weTagGroupStatisticsVOS.sort(getByCode(dto.getSortName()).get().reversed());
+                        break;
+                }
+            }
+        }
+    }
 }

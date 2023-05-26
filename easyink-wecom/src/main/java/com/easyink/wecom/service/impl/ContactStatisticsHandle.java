@@ -117,7 +117,8 @@ public class ContactStatisticsHandle {
     public void saveStatisticsResult(WeUserCustomerMessageStatistics userCustomerMessageStatistics, Boolean isUserSpeak) {
         // 两者不为空说明  员工收到客户消息 且 回复客户
         if (firstReceiveExMessageTime != null && firstReplyExMessageTime != null){
-            userCustomerMessageStatistics.setFirstReplyTimeIntervalAlterReceive(DateUtils.diffTimeReturnMin(new Date(firstReplyExMessageTime), new Date(firstReceiveExMessageTime)));
+            // 计算首次回复时间与首次接收消息时间差，单位为秒
+            userCustomerMessageStatistics.setFirstReplyTimeIntervalAlterReceive(DateUtils.diffTimeReturnSecond(new Date(firstReplyExMessageTime), new Date(firstReceiveExMessageTime)));
         }
         // 彼此交互的发送了六条消息 满足三个轮次
         if (rounds >= sixTimes) {
@@ -125,8 +126,9 @@ public class ContactStatisticsHandle {
         }
         // 当天员工首次给客户发消息 且 客户有回复给员工
         if (firstReceiveUserMessageTime != null && firstReplyUserMessageTime != null && isUserSpeak) {
-            int thirtyMin = 30;
-            if (DateUtils.diffTimeReturnMin(new Date(firstReplyUserMessageTime), new Date(firstReceiveUserMessageTime)) < thirtyMin){
+            int thirtyMinBySecond = 30 * 60;
+            // 计算首次回复员工消息时间和首次接收员工的消息时间差，单位为秒
+            if (DateUtils.diffTimeReturnSecond(new Date(firstReplyUserMessageTime), new Date(firstReceiveUserMessageTime)) < thirtyMinBySecond){
                 userCustomerMessageStatistics.setRepliedWithinThirtyMinCustomerFlag(true);
             }
         }else {

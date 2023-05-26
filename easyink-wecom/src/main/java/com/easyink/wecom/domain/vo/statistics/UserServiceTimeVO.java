@@ -45,6 +45,10 @@ public class UserServiceTimeVO {
     @Builder.Default
     private String averageChatTotal="0";
 
+    @ApiModelProperty("已回复聊天数")
+    @Builder.Default
+    private Integer alreadyReplyCnt = 0;
+
     /**
      * 用于排序的平均会话数
      */
@@ -151,6 +155,13 @@ public class UserServiceTimeVO {
     }
 
     /**
+     * 增加已回复聊天数
+     */
+    public void addAlreadyReplyCnt(){
+        alreadyReplyCnt++;
+    }
+
+    /**
      * 增加发送消息数
      * @param number 发送消息数量
      */
@@ -211,6 +222,7 @@ public class UserServiceTimeVO {
         BigDecimal sendContactCntDecimal=new BigDecimal(sendContactCnt);
         BigDecimal effectiveCommunicationCustomerCntDecimal=new BigDecimal(effectiveCommunicationCustomerCnt);
         BigDecimal customerActiveStartContactCntDecimal=new BigDecimal(customerActiveStartContactCnt);
+        BigDecimal alreadyReplyCntDecimal = new BigDecimal(alreadyReplyCnt);
         BigDecimal userReplyContactCntDecimal=new BigDecimal(userReplyContactCnt);
         BigDecimal firstReplyTimeIntervalAlterReceiveDecimal=new BigDecimal(firstReplyTimeIntervalAlterReceive);
         BigDecimal scoreDecimal=new BigDecimal(score);
@@ -219,6 +231,8 @@ public class UserServiceTimeVO {
         //计算参数
         int scale = 2;
         BigDecimal percent = new BigDecimal(100);
+        // 用于计算平均首次回复时长，*60表示转换为秒处理，防止精度丢失
+        BigDecimal averageFirstReplyToMinute = new BigDecimal(60);
         //计算平均会话数
         if (chatTotal==0||sendContactCnt==0){
             averageChatTotalTmp=BigDecimal.ZERO;
@@ -235,7 +249,7 @@ public class UserServiceTimeVO {
             averageFirstReplyDuration=averageFirstReplyDurationTmp.toPlainString();
         }else {
             averageFirstReplyDurationTmp=firstReplyTimeIntervalAlterReceiveDecimal
-                    .divide(customerActiveStartContactCntDecimal,scale,RoundingMode.HALF_UP)
+                    .divide(alreadyReplyCntDecimal.multiply(averageFirstReplyToMinute),scale,RoundingMode.HALF_UP)
                     .stripTrailingZeros();
             averageFirstReplyDuration=averageFirstReplyDurationTmp.toPlainString();
         }

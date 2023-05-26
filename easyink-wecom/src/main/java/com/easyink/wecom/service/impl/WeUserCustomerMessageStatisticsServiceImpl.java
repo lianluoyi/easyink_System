@@ -1,6 +1,7 @@
 package com.easyink.wecom.service.impl;
 
 import com.alibaba.fastjson.JSONObject;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.easyink.common.annotation.DataScope;
@@ -8,6 +9,7 @@ import com.easyink.common.constant.GenConstants;
 import com.easyink.common.constant.WeConstans;
 import com.easyink.common.core.domain.AjaxResult;
 import com.easyink.common.core.domain.ConversationArchiveQuery;
+import com.easyink.common.core.domain.entity.WeCorpAccount;
 import com.easyink.common.core.domain.wecom.WeUser;
 import com.easyink.common.enums.ContactSpeakEnum;
 import com.easyink.common.enums.StaffActivateEnum;
@@ -20,10 +22,7 @@ import com.easyink.wecom.domain.entity.WeUserCustomerMessageStatistics;
 import com.easyink.wecom.domain.enums.statistics.StatisticsEnum;
 import com.easyink.wecom.domain.vo.ConversationArchiveVO;
 import com.easyink.wecom.domain.vo.statistics.*;
-import com.easyink.wecom.mapper.WeFlowerCustomerRelMapper;
-import com.easyink.wecom.mapper.WeUserBehaviorDataMapper;
-import com.easyink.wecom.mapper.WeUserCustomerMessageStatisticsMapper;
-import com.easyink.wecom.mapper.WeUserMapper;
+import com.easyink.wecom.mapper.*;
 import com.easyink.wecom.mapper.form.WeFormCustomerFeedbackMapper;
 import com.easyink.wecom.service.WeConversationArchiveService;
 import com.easyink.wecom.service.WeUserBehaviorDataService;
@@ -66,6 +65,8 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
     private final WeFormCustomerFeedbackMapper weFormCustomerFeedbackMapper;
     private final WeFlowerCustomerRelMapper weFlowerCustomerRelMapper;
 
+    private final WeCorpAccountMapper weCorpAccountMapper;
+
     /**
      * 导出员工服务报表命名
      */
@@ -83,6 +84,42 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
      * 导出客户概况报表-日期维度名称
      */
     protected static final String CUSTOMER_OVERVIEW_DATE_FORMS = "客户概况报表-日期维度";
+
+    /**
+     * 更新历史记录中员工主动发起的会话数
+     */
+    @Override
+    public void updateUserActiveChatCnt() {
+        List<WeCorpAccount> weCorpAccounts = weCorpAccountMapper.selectList(new LambdaQueryWrapper<>());
+        for (WeCorpAccount weCorpAccount : weCorpAccounts) {
+            log.info(">>>>>>>>>>>>开始迁移历史记录中员工主动发起的会话数，corpId:{}", weCorpAccount.getCorpId());
+            try {
+                // 查询历史日期范围下员工主动发起会话数
+                List<WeUserCustomerMessageStatistics> historyDataList = weUserCustomerMessageStatisticsMapper.findHistoryData(weCorpAccount.getCorpId());
+                // 对历史日期去重
+                List<Date> timeList = historyDataList.stream().distinct().map(item -> item.getSendTime()).collect(Collectors.toList());
+                // 查询对应历史日期下的数据
+                List<WeUserBehaviorData> updateList = weUserBehaviorDataMapper.selectList(new LambdaQueryWrapper<WeUserBehaviorData>()
+                        .eq(WeUserBehaviorData::getCorpId, weCorpAccount.getCorpId()).in(WeUserBehaviorData::getStatTime, timeList));
+                // 为对应日期设置员工发起会话数
+                for (WeUserCustomerMessageStatistics statistics : historyDataList) {
+                    for (WeUserBehaviorData behaviorData : updateList) {
+                        if (behaviorData.getStatTime().toString().equals(statistics.getSendTime().toString())
+                                && behaviorData.getUserId().equals(statistics.getUserId())
+                                && behaviorData.getCorpId().equals(statistics.getCorpId())) {
+                            behaviorData.setUserActiveChatCnt(statistics.getUserActiveChatCnt());
+                        }
+                    }
+                }
+                weUserBehaviorDataMapper.batchUpdate(updateList);
+            } catch (Exception e) {
+                log.error(">>>>>>>>>>>>迁移数据异常，corpId:{}，异常原因ex:{}", weCorpAccount.getCorpId(), ExceptionUtils.getStackTrace(e));
+            } finally {
+                log.info(">>>>>>>>>>>>迁移历史记录中员工主动发起的会话数结束, corpId:{}", weCorpAccount.getCorpId());
+            }
+        }
+    }
+
     @Override
     public void getMessageStatistics(String corpId, String time) {
         if (StringUtils.isBlank(corpId)) {
@@ -206,6 +243,8 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
         int newCustomerStartContactCnt = 0;
         // 当天会话数
         int chatCnt = 0;
+        // 当天员工发起的会话数
+        int userActiveChatCnt = 0;
         // 统计客户发送消息
         for (Map.Entry<String, List<ConversationArchiveVO>> entry : customerSendMessageMap.entrySet()) {
             String externalUserId = entry.getKey();
@@ -223,6 +262,11 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
             userCustomerMessageStatistics.setSendTime(nowDate);
             // 构建聊天记录并统计
             buildContactAndSet(weUser, userCustomerMessageStatistics, entry.getValue(), receiveUserMessageMap.getOrDefault(externalUserId, new ArrayList<>()));
+            if (userCustomerMessageStatistics.getUserActiveDialogue() != null){
+                if (userCustomerMessageStatistics.getUserActiveDialogue()){
+                    userActiveChatCnt++;
+                }
+            }
             // 客户是否在30分钟内回复
             if (Boolean.TRUE.equals(userCustomerMessageStatistics.getRepliedWithinThirtyMinCustomerFlag())) {
                 thirtyMinReplyCount ++;
@@ -252,12 +296,17 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
             userCustomerMessageStatistics.setSendTime(nowDate);
             //
             buildContactAndSet(weUser, userCustomerMessageStatistics, null, entry.getValue());
+            if (userCustomerMessageStatistics.getUserActiveDialogue() != null){
+                if (userCustomerMessageStatistics.getUserActiveDialogue()){
+                    userActiveChatCnt++;
+                }
+            }
             userCustomerMessageStatisticsList.add(userCustomerMessageStatistics);
             chatCnt ++;
         }
         this.saveBatch(userCustomerMessageStatisticsList);
         // 保存用户行为
-        saveUserBehaviorDate(userBehaviorData, thirtyMinReplyCount, newCustomerStartContactCnt, chatCnt);
+        saveUserBehaviorDate(userBehaviorData, thirtyMinReplyCount, newCustomerStartContactCnt, chatCnt, userActiveChatCnt);
     }
 
     /**
@@ -267,14 +316,16 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
      * @param thirtyMinReplyCount        当天员工首次给客户发消息，客户在30分钟内回复的客户数
      * @param newCustomerStartContactCnt 当天新增客户中与员工对话过的人数
      * @param chatCnt                    当天会话数-不区分是否为员工主动发起
+     * @param userActiveChatCnt          当天员工主动发起的会话数量
      */
-    private void saveUserBehaviorDate(WeUserBehaviorData userBehaviorData, Integer thirtyMinReplyCount, Integer newCustomerStartContactCnt, Integer chatCnt) {
+    private void saveUserBehaviorDate(WeUserBehaviorData userBehaviorData, Integer thirtyMinReplyCount, Integer newCustomerStartContactCnt, Integer chatCnt, Integer userActiveChatCnt) {
         if (userBehaviorData == null) {
             return;
         }
         userBehaviorData.setRepliedWithinThirtyMinCustomerCnt(thirtyMinReplyCount);
         userBehaviorData.setNewContactSpeakCnt(newCustomerStartContactCnt);
         userBehaviorData.setAllChatCnt(chatCnt);
+        userBehaviorData.setUserActiveChatCnt(userActiveChatCnt);
         weUserBehaviorDataService.updateById(userBehaviorData);
     }
 
@@ -355,14 +406,13 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
             CustomerOverviewDateVO customerOverviewDateVO = new CustomerOverviewDateVO(DateUtils.dateTime(date));
             for (WeUserBehaviorData weUserBehaviorData : weUserBehaviorDataList) {
                 int chatCnt=0;
-                String judgeTime=DateUtils.parseDateToStr(DateUtils.YYYY_MM_DD,weUserBehaviorData.getStatTime());
+                String judgeTime=DateUtils.parseDateToStr(DateUtils.YYYY_MM_DD, weUserBehaviorData.getStatTime());
                 // 判断是否有对话
                 if (DateUtils.dateTime(weUserBehaviorData.getStatTime()).equals(DateUtils.dateTime(date))) {
-                    for (UserServiceTimeDTO userServiceTimeDTO:userServiceTimeDTOList){
-                        //判断是否有对话且时间相等
-                        if (Objects.equals(userServiceTimeDTO.getUserId(),weUserBehaviorData.getUserId())&&Objects.equals(judgeTime,userServiceTimeDTO.getSendTime())){
-                            chatCnt=weUserBehaviorData.getChatCnt();
-                            break;
+                    for (UserServiceTimeDTO userServiceTimeDTO : userServiceTimeDTOList) {
+                        // 判断是否有对话且时间相等, 且为员工主动发起的会话
+                        if (Objects.equals(userServiceTimeDTO.getUserId(), weUserBehaviorData.getUserId()) && Objects.equals(judgeTime, userServiceTimeDTO.getSendTime()) && userServiceTimeDTO.getUserActiveDialogue() == ContactSpeakEnum.USER.getCode()) {
+                            chatCnt++;
                         }
                     }
                     // 原始数据处理
@@ -520,7 +570,7 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
      * @param pageSize 页面大小
      * @return
      */
-    public static  PageInfo<UserServiceVO> list2PageInfo(List<UserServiceVO> arrayList, Integer pageNum, Integer pageSize) {
+    public static PageInfo<UserServiceVO> list2PageInfo(List<UserServiceVO> arrayList, Integer pageNum, Integer pageSize) {
         PageHelper.startPage(pageNum, pageSize);
         int pageStart = pageNum == 1 ? 0 : (pageNum - 1) * pageSize;
         int pageEnd = arrayList.size() < pageSize * pageNum ? arrayList.size() : pageSize * pageNum;
@@ -679,7 +729,10 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
                     //当员工没有与客户聊天，也会在数据库记录下这个员工的数据，会标记客户id为-1。
                     //记录聊天总数时，应先判断员工是否与客户聊天，再记录聊天总数
                     if (!EMPTY_CHAT.equals(userServiceTimeVO.getExternalUserid())){
-                        serviceTimeVO.addChatTotal();
+                        //聊天总数统计发送消息数大于0的个数
+                        if (userServiceTimeVO.getUserSendMessageCnt()>0){
+                            serviceTimeVO.addChatTotal();
+                        }
                         //增加发送消息数
                         serviceTimeVO.addSendContactCnt(userServiceTimeVO.getUserSendMessageCnt());
                         //增加有效对话次数
@@ -688,7 +741,12 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
                         if (Objects.equals(userServiceTimeVO.getUserActiveDialogue(), ContactSpeakEnum.CUSTOMER.getCode())) {
                             //增加客户主动发起聊天数
                             serviceTimeVO.addCustomerActiveStartContactCnt();
-                            //增加首次回复间隔时长
+                        }
+                        // 首次回复间隔时长大于0，表示为有效的聊天
+                        if (userServiceTimeVO.getFirstReplyTimeIntervalAlterReceive() > 0 && ContactSpeakEnum.CUSTOMER.getCode().equals(userServiceTimeVO.getUserActiveDialogue())) {
+                            // 增加已回复聊天数
+                            serviceTimeVO.addAlreadyReplyCnt();
+                            // 增加首次回复间隔时长
                             serviceTimeVO.addFirstReplyTimeIntervalAlterReceive(userServiceTimeVO.getFirstReplyTimeIntervalAlterReceive());
                         }
                         //判断是否为客户先发起的对话，且员工发送数量不为0

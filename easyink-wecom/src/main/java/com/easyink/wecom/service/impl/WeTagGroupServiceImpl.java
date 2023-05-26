@@ -18,6 +18,7 @@ import com.easyink.wecom.domain.WeTagGroup;
 import com.easyink.wecom.domain.dto.WeResultDTO;
 import com.easyink.wecom.domain.dto.tag.*;
 import com.easyink.wecom.domain.vo.customerloss.CustomerLossTagVO;
+import com.easyink.wecom.domain.vo.statistics.WeTagGroupListVO;
 import com.easyink.wecom.mapper.WeTagGroupMapper;
 import com.easyink.wecom.service.WeTagGroupService;
 import com.easyink.wecom.service.WeTagService;
@@ -73,6 +74,21 @@ public class WeTagGroupServiceImpl extends ServiceImpl<WeTagGroupMapper, WeTagGr
             tagGroup.setWeTags(list);
         }
         return weTagGroups;
+    }
+
+    /**
+     * 查询所有标签组信息
+     *
+     * @param corpId 企业ID
+     * @return 结果
+     */
+    @Override
+    public List<WeTagGroupListVO> findWeTagGroupList(String corpId) {
+        if (StringUtils.isEmpty(corpId)){
+            log.info("查询企业标签组信息失败：corpId:{}", corpId);
+            return null;
+        }
+        return weTagGroupMapper.findWeTagGroupList(corpId);
     }
 
     /**

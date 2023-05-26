@@ -94,6 +94,10 @@ public class DateUtils extends org.apache.commons.lang3.time.DateUtils {
         return parseDateToStr(YYYY_MM_DD, date);
     }
 
+    public static final String getDateTime(final Date date) {
+        return parseDateToStr(YYYY_MM_DD_HH_MM_SS, date);
+    }
+
     public static final String parseDateToStr(final String format, final Date date) {
         return new SimpleDateFormat(format).format(date);
     }
@@ -210,6 +214,17 @@ public class DateUtils extends org.apache.commons.lang3.time.DateUtils {
      */
     public static long diffTimeReturnMin(Date endDate, Date startDate) {
         return diffTime(endDate, startDate) / 60 / 1000;
+    }
+
+    /**
+     * 计算两个时间差 返回秒
+     *
+     * @param endDate   结束时间
+     * @param startDate 开始时间
+     * @return
+     */
+    public static long diffTimeReturnSecond(Date endDate, Date startDate) {
+        return diffTime(endDate, startDate) / 1000;
     }
 
     /**

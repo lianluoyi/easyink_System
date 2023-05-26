@@ -123,5 +123,17 @@
           and wtg.`status` = ${@com.easyink.common.constant.Constants@NORMAL_CODE}
           and wfctr.flower_customer_rel_id = #{flowerCustomerRelId}
     </select>
+    <!-- 查询所有标签组信息 -->
+    <select id="findWeTagGroupList" resultType="com.easyink.wecom.domain.vo.statistics.WeTagGroupListVO">
+        SELECT
+            wtg.group_id as tagGroupId,
+            wtg.group_name as groupTagName
+        FROM
+            we_tag_group wtg
+        where
+            wtg.corp_id = #{corpId} AND
+            wtg.status=${@com.easyink.common.constant.Constants@NORMAL_CODE}
+        ORDER BY wtg.create_time DESC
+    </select>
 
 </mapper>

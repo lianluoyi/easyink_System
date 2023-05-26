@@ -21,6 +21,15 @@ import java.util.List;
 @Repository
 public interface WeUserBehaviorDataMapper extends BaseMapper<WeUserBehaviorData> {
 
+
+    /**
+     * 批量更新员工主动发起会话数接口
+     *
+     * @param weUserBehaviorDataList {@link WeUserBehaviorData}
+     * @return 结果
+     */
+    int batchUpdate(@Param("list") List<WeUserBehaviorData> weUserBehaviorDataList);
+
     /**
      * 按日期查询当天数据统计结果
      *

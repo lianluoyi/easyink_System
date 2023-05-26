@@ -590,9 +590,14 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
             log.info("批量获取客户详情:参数缺失,corpId:{},userId:{}", corpId, userId);
             return;
         }
-        // 1. API请求:请求企微[批量获取客户详情]接口
-        GetByUserReq req = new GetByUserReq(userId);
-        GetByUserResp resp = (GetByUserResp) req.executeTillNoNextPage(corpId);
+        GetByUserResp resp = null;
+        try {
+            // 1. API请求:请求企微[批量获取客户详情]接口
+            GetByUserReq req = new GetByUserReq(userId);
+            resp = (GetByUserResp) req.executeTillNoNextPage(corpId);
+        } catch (Exception e) {
+            log.error("[批量获取客户详情异常] corpId:{}, userId:{}", corpId, userId);
+        }
         if (resp == null){
             log.info("[批量获取客户详情] 该员工没有添加客户, corpId:{}, userId:{}", corpId, userId);
             return;
