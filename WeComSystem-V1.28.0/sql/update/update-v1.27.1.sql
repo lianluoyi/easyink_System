@@ -1,0 +1,2 @@
+-- 2023-05-23 lcy 为we_user_behavior_data新增员工主动发起的会话数量字段 Tower 任务: 服务响应率计算错误 ( https://tower.im/teams/636204/todos/68671 )
+ALTER TABLE `we_user_behavior_data` ADD COLUMN `user_active_chat_cnt` int(11) NOT NULL DEFAULT 0 COMMENT '当天员工主动发起的会话数量（DataStatisticsTask定时任务统计）' AFTER `contact_total_cnt`;

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.easyink.wecom.mapper.moment.WeMomentTaskResultMapper">
+
+    <!--更新发布信息-->
+    <update id="updatePublishInfo">
+        UPDATE we_moment_task_result SET
+        <if test = "publishTime != null">
+            publish_time  = IF(publish_time = '${@com.easyink.common.constant.WeCorpUpdateIdConstants@EMPTY_TIME}',#{publishTime}, publish_time),
+        </if>
+        publish_status = #{publishStatus}
+        WHERE user_id = #{userId} AND moment_task_id = #{momentTaskId}
+    </update>
+</mapper>

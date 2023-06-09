@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.easyink.wecom.mapper.form.WeFormMapper">
+
+    <resultMap type="com.easyink.wecom.domain.entity.form.WeForm" id="WeFormMap">
+        <result property="id" column="id" jdbcType="INTEGER"/>
+        <result property="headImageUrl" column="head_image_url" jdbcType="VARCHAR"/>
+        <result property="formName" column="form_name" jdbcType="VARCHAR"/>
+        <result property="description" column="description" jdbcType="VARCHAR"/>
+        <result property="submitText" column="submit_text" jdbcType="VARCHAR"/>
+        <result property="submitColor" column="submit_color" jdbcType="VARCHAR"/>
+        <result property="formFieldListJson" column="form_field_list_json" jdbcType="VARCHAR"/>
+        <result property="groupId" column="group_id" jdbcType="INTEGER"/>
+        <result property="delFlag" column="del_flag" jdbcType="INTEGER"/>
+        <result property="corpId" column="corp_id" jdbcType="VARCHAR"/>
+        <result property="createBy" column="create_by" jdbcType="VARCHAR"/>
+        <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+        <result property="updateBy" column="update_by" jdbcType="VARCHAR"/>
+        <result property="updateTime" column="update_time" jdbcType="TIMESTAMP"/>
+        <result property="headImageOpenFlag" column="head_image_open_flag" jdbcType="INTEGER"/>
+        <result property="showSortFlag" column="show_sort_flag" jdbcType="INTEGER"/>
+        <result property="descriptionFlag" column="description_flag" jdbcType="INTEGER"/>
+        <result property="enableFlag" column="enable_flag" jdbcType="INTEGER"/>
+    </resultMap>
+
+    <!-- 批量插入 -->
+    <insert id="insertBatch" keyProperty="id" useGeneratedKeys="true">
+        insert into we_form(head_image_url, form_name, description, submit_text, submit_color, form_field_list_json,
+        group_id, del_flag, corp_id, create_by, create_time, update_by, update_time,
+        head_image_open_flag, show_sort_flag, description_flag, enable_flag)
+        values
+        <foreach collection="entities" item="entity" separator=",">
+            (#{entity.headImage}, #{entity.name}, #{entity.description}, #{entity.submitText}, #{entity.submitColor},
+            #{entity.formFieldListJson}, #{entity.groupId}, #{entity.delFlag},
+            #{entity.corpId},
+            #{entity.createBy}, #{entity.createTime}, #{entity.updateBy}, #{entity.updateTime},
+            #{entity.headImageOpenFlag}, #{entity.showSortFlag}, #{entity.descriptionFlag}, #{entity.enableFlag})
+        </foreach>
+    </insert>
+    <!-- 批量插入或按主键更新 -->
+    <insert id="insertOrUpdateBatch" keyProperty="id" useGeneratedKeys="true">
+        insert into we_form(head_image_url, form_name, description, submit_text, submit_color, form_field_list_json,
+        group_id, del_flag, corp_id, create_by, create_time, update_by, update_time,
+        head_image_open_flag,
+        show_sort_flag, description_flag, enable_flag)
+        values
+        <foreach collection="entities" item="entity" separator=",">
+            (#{entity.headImageUrl}, #{entity.formName}, #{entity.description},
+            #{entity.submitText},#{entity.submitColor},
+            #{entity.formFieldListJson}, #{entity.groupId}, #{entity.delFlag},
+            #{entity.corpId},
+            #{entity.createBy}, #{entity.createTime}, #{entity.updateBy}, #{entity.updateTime},
+            #{entity.headImageOpenFlag}, #{entity.showSortFlag}, #{entity.descriptionFlag}, #{entity.enableFlag})
+        </foreach>
+        on duplicate key update
+        head_image_url = values(head_image_url) , form_name = values(form_name) , description = values(description) ,
+        submit_text =
+        values(submit_text) , submit_color = values(submit_color), form_field_list_json = values(form_field_list_json) ,
+        group_id = values(group_id) , del_flag = values(del_flag) , corp_id = values(corp_id) , create_by =
+        values(create_by) ,
+        create_time = values(create_time) , update_by = values(update_by) , update_time = values(update_time) ,
+        head_image_open_flag = values(head_image_open_flag) , show_sort_flag = values(show_sort_flag) , description_flag
+        = values(description_flag) , enable_flag = values(enable_flag)
+    </insert>
+    <delete id="deleteBatch">
+        UPDATE we_form
+        SET del_flag = ${@com.easyink.common.enums.DelFlag@DEL.code},
+        delete_id = CASE id
+        <foreach collection="deleteIdList" item="id">
+            WHEN #{id} THEN #{id}
+        </foreach>
+        END
+        WHERE id IN
+        <foreach collection="deleteIdList" item="id" open="(" separator="," close=")" index="index">
+            #{id}
+        </foreach>
+    </delete>
+    <select id="countSameNameNum" resultType="java.lang.Integer">
+        SELECT COUNT(1)
+        FROM we_form
+        WHERE corp_id = #{corpId}
+          AND del_flag = ${@com.easyink.common.enums.DelFlag@UN_DEL.code}
+          AND form_name = #{name}
+    </select>
+    <select id="formPage" resultType="com.easyink.wecom.domain.vo.form.FormPageVO">
+        SELECT
+        wf.id,
+        wf.form_name,
+        wf.description,
+        wf.head_image_url,
+        wf.enable_flag,
+        IF(wf.create_by = 'admin', wf.create_by, wu.user_name) AS create_by,
+        wf.create_time,
+        wfg.name AS group_name,
+        (SELECT COUNT(DISTINCT wfor.external_user_id)
+        FROM we_form_oper_record wfor
+        WHERE wfor.form_id = wf.id
+        AND wfor.commit_flag = TRUE
+        AND wfor.`external_user_id` &lt;&gt; ''
+        GROUP BY wfor.form_id) AS submit_count,
+        if(wfas.we_chat_public_platform = '', false, true) AS bind_we_chat_public_platform_flag
+        FROM we_form wf
+        LEFT JOIN we_form_group wfg on wfg.id = wf.group_id AND wfg.corp_id = wf.corp_id
+        LEFT JOIN we_form_advance_setting wfas on wfas.form_id = wf.id
+        LEFT JOIN we_user wu ON wu.corp_id = wf.corp_id AND wu.user_id = wf.create_by
+        WHERE wf.corp_id = #{corpId}
+        AND wf.del_flag = ${@com.easyink.common.enums.DelFlag@UN_DEL.code}
+        AND wfg.source_type = #{formQuery.sourceType}
+        <choose>
+            <when test="formQuery.sourceType == 2 and formQuery.departmentId != null">
+                AND wfg.department_id = #{formQuery.departmentId}
+            </when>
+            <when test="formQuery.sourceType == 3">
+                AND wf.create_by = #{formQuery.userId}
+            </when>
+        </choose>
+        <if test="formQuery.formIdList != null and formQuery.formIdList.size() != 0">
+            AND wf.id IN
+            <foreach collection="formQuery.formIdList" item="id" open="(" separator="," close=")">
+                #{id}
+            </foreach>
+        </if>
+        <if test="formQuery.groupId != null and formQuery.searchGroupIdList != null and formQuery.searchGroupIdList.size() != 0">
+            AND wfg.id IN
+            <foreach collection="formQuery.searchGroupIdList" item="id" open="(" separator="," close=")">
+                #{id}
+            </foreach>
+        </if>
+        <if test="formQuery.formName != null and formQuery.formName != ''">
+            <bind name="formNameLike" value="'%' + formQuery.formName + '%'"/>
+            AND wf.form_name LIKE #{formNameLike}
+        </if>
+        <if test="formQuery.enableFlag != null">
+            AND wf.enable_flag = #{formQuery.enableFlag}
+        </if>
+        <if test="formQuery.beginTime != null and formQuery.endTime != null">
+            AND wf.create_time BETWEEN #{formQuery.beginTime} AND #{formQuery.endTime}
+        </if>
+        ORDER BY wf.create_time DESC
+    </select>
+    <select id="selectFormDetail" resultType="com.easyink.wecom.domain.vo.form.FormDetailViewVO">
+        SELECT wf.head_image_url,
+               wf.form_name,
+               wf.submit_text,
+               wf.submit_color,
+               wf.head_image_open_flag,
+               wf.show_sort_flag,
+               wf.description,
+               wf.description_flag,
+               wf.form_field_list_json,
+               wfas.we_chat_public_platform,
+               wfas.dead_line_type,
+               wfas.custom_date,
+               wfas.submit_cnt_type,
+               wfas.action_info_param_json,
+               wfas.submit_action_type,
+               wfas.action_note_flag,
+               wfas.tract_record_flag,
+               wfas.customer_label_flag,
+               wfas.label_setting_json,
+               woc.nick_name AS we_chat_public_platform_nick_name,
+               woc.head_img AS we_chat_public_platform_head_img
+        FROM we_form wf
+                 LEFT JOIN we_form_advance_setting wfas on wfas.form_id = wf.id
+                LEFT JOIN we_open_config woc ON woc.corp_id = wf.corp_id AND woc.official_account_app_id = wfas.we_chat_public_platform
+        WHERE wf.id = #{id}
+          AND wf.corp_id = #{corpId}
+    </select>
+    <!--数据总览-->
+    <select id="selectTotalView" resultType="com.easyink.wecom.domain.vo.form.FormTotalView">
+        SELECT (SELECT IFNULL(COUNT(1), 0)
+                FROM (SELECT COUNT(1) FROM we_form_oper_record WHERE form_id = #{id} AND external_user_id &lt;&gt; '' GROUP BY form_id, external_user_id) t1
+                         LEFT JOIN (select 0) t2 ON 1 = 1) AS click_total_count,
+               (SELECT IFNULL(COUNT(1), 0)
+                FROM (SELECT COUNT(1)
+                      FROM we_form_oper_record
+                      WHERE form_id = #{id}
+                        AND commit_flag = TRUE
+                        AND external_user_id &lt;&gt; ''
+                      GROUP BY form_id,
+                               external_user_id) t1
+                         LEFT JOIN (select 0) t2 ON 1 = 1) AS submit_total_count,
+               (SELECT IFNULL(COUNT(1), 0)
+                FROM (SELECT COUNT(1)
+                      FROM we_form_oper_record
+                      WHERE form_id = #{id}
+                        AND create_time BETWEEN #{beginTime} AND #{endTime}
+                        AND external_user_id &lt;&gt; ''
+                      GROUP BY form_id, external_user_id) t1
+                         LEFT JOIN (select 0) t2 ON 1 = 1) AS today_click_count,
+               (SELECT IFNULL(COUNT(1), 0)
+                FROM (SELECT COUNT(1)
+                      FROM we_form_oper_record
+                      WHERE form_id = #{id}
+                        AND create_time BETWEEN #{beginTime} AND #{endTime}
+                        AND commit_flag = TRUE
+                        AND external_user_id &lt;&gt; ''
+                      GROUP BY form_id, external_user_id) t1
+                         LEFT JOIN (select 0) t2 ON 1 = 1) AS today_submit_count
+    </select>
+
+    <!--通过id查询表单 忽略逻辑删除-->
+    <select id="selectByIdIgnoreDelete" resultType="com.easyink.wecom.domain.entity.form.WeForm">
+        SELECT *
+        FROM we_form
+        WHERE id = #{formId}
+    </select>
+
+    <!--获取素材库表单-->
+    <select id="getFormMaterial" resultType="com.easyink.wecom.domain.entity.form.WeFormMaterial">
+        SELECT id formId,
+               head_image_url,
+               form_name,
+               description
+        FROM we_form
+        WHERE id = #{formId}
+    </select>
+
+</mapper>
+

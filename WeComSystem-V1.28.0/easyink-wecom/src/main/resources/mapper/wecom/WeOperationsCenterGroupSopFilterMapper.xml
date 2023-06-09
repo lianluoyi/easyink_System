@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.easyink.wecom.mapper.WeOperationsCenterGroupSopFilterMapper">
+
+    <!-- 可根据自己的需求，是否要使用 -->
+    <resultMap type="com.easyink.wecom.domain.WeOperationsCenterGroupSopFilterEntity" id="weOperationsCenterGroupSopFilterMap">
+         <result property="id" column="id"/>
+        <result property="corpId" column="corp_id"/>
+        <result property="sopId" column="sop_id"/>
+        <result property="owner" column="owner"/>
+        <result property="tagId" column="tag_id"/>
+        <result property="createTime" column="create_time"/>
+        <result property="endTime" column="end_time"/>
+    </resultMap>
+
+    <sql id="allColumns">
+      id
+     ,corp_id
+     ,sop_id
+     ,owner
+     ,tag_id
+     ,create_time
+     ,end_time
+    </sql>
+
+    <sql id="valueColumns">
+       #{id}
+        ,#{corpId}
+        ,#{sopId}
+        ,#{owner}
+        ,#{tagId}
+        ,#{createTime}
+        ,#{endTime}
+     </sql>
+
+    <select id="getById" resultMap="weOperationsCenterGroupSopFilterMap">
+        SELECT
+        <include refid="allColumns"/>
+        FROM we_operations_center_group_sop_filter
+        WHERE
+        id = #{id}
+        LIMIT 1
+    </select>
+
+    <select id="getByIdList" resultMap="weOperationsCenterGroupSopFilterMap">
+        SELECT
+        <include refid="allColumns"/>
+        FROM we_operations_center_group_sop_filter
+        WHERE
+        id in
+        <foreach collection="list" item="item" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+    </select>
+
+    <insert id="saveOrUpdateGroupSopFilter">
+        INSERT INTO `we_operations_center_group_sop_filter`
+        (
+          `corp_id`,
+          `sop_id`,
+          `owner`,
+          `tag_id`,
+          `create_time`,
+          `end_time`
+        )
+        VALUES
+	    (
+	      #{corpId},
+	      #{sopId},
+	      #{owner},
+	      #{tagId},
+	      #{createTime},
+	      #{endTime}
+	    )
+	    ON DUPLICATE KEY UPDATE
+	    `owner` = values(`owner`),
+	    `tag_id` = values(`tag_id`),
+	    `create_time` = values(`create_time`),
+	    `end_time` = values(`end_time`)
+
+    </insert>
+
+
+    <select id="getDataByCorpIdAndSopId" resultType="com.easyink.wecom.domain.WeOperationsCenterGroupSopFilterEntity">
+        SELECT
+            id,
+            corp_id,
+            sop_id,
+            `owner`,
+            tag_id,
+            IF(create_time='${@com.easyink.common.constant.WeConstans@DEFAULT_SOP_START_TIME}',null,create_time) create_time,
+	        IF(end_time='${@com.easyink.common.constant.WeConstans@DEFAULT_SOP_END_TIME}',null,end_time) end_time
+        FROM
+            we_operations_center_group_sop_filter
+        WHERE
+            corp_id = #{corpId}
+            AND sop_id = #{sopId}
+    </select>
+
+</mapper>

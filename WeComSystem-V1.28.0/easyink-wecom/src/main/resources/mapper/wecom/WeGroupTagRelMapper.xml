@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.easyink.wecom.mapper.WeGroupTagRelMapper">
+
+    <resultMap type="com.easyink.wecom.domain.vo.wegrouptag.WeGroupTagRelVO" id="weGroupTagRelVOMap">
+        <result property="chatId" column="chat_id"/>
+        <collection property="tagList" column="tagList" resultMap="weGroupTagRelDetailVOMap"/>
+    </resultMap>
+
+    <resultMap id="weGroupTagRelDetailVOMap" type="com.easyink.wecom.domain.vo.wegrouptag.WeGroupTagRelDetail">
+        <result property="tagId" column="tag_id"/>
+        <result property="name" column="name"/>
+    </resultMap>
+
+    <insert id="batchAddTag">
+        INSERT IGNORE INTO we_group_tag_rel
+        (
+        `corp_id`
+        ,`chat_id`
+        ,`tag_id`
+        )
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+            #{item.corpId}
+            ,#{item.chatId}
+            ,#{item.tagId}
+            )
+        </foreach>
+    </insert>
+
+    <delete id="batchDelTag">
+        DELETE FROM we_group_tag_rel
+        WHERE corp_id = #{corpId}
+        AND chat_id IN
+        <foreach collection="chatIdList" item="item" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+        AND tag_id IN
+        <foreach collection="tagIdList" item="item" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+    </delete>
+
+
+    <delete id="delByTagIdList">
+        DELETE FROM we_group_tag_rel
+        WHERE corp_id = #{corpId}
+        AND tag_id IN
+        <foreach collection="tagIdList" item="item" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+    </delete>
+
+    <select id="getByChatIdList" resultMap="weGroupTagRelVOMap">
+        SELECT
+            wgtr.chat_id,
+            wgtr.tag_id,
+            wgt.`name`
+        FROM
+            we_group_tag wgt
+        LEFT JOIN we_group_tag_rel wgtr ON wgtr.corp_id = wgt.corp_id AND wgtr.tag_id = wgt.id
+        WHERE
+            wgtr.corp_id = #{corpId}
+            AND wgtr.chat_id IN
+            <foreach collection="chatIdList" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+    </select>
+
+    <select id="getTagIdList" resultType="com.easyink.wecom.domain.vo.wegrouptag.WeGroupTagRelDetail">
+        SELECT
+        wgt. `id` as tagId,
+        wgt.`name` as name,
+        wgtr.chat_id as chatId
+        FROM
+        we_group_tag_rel wgtr
+        LEFT JOIN we_group_tag wgt ON wgt.`id`=wgtr.tag_id
+        WHERE
+        wgtr.corp_id = #{corpId}
+        <if test="weGroupList!= null and weGroupList.size()>0">
+            AND wgtr.chat_id IN
+            <foreach collection="weGroupList" item="item" index="index" open="(" separator="," close=")">
+                <if test="item.chatId!= null and item.chatId !=''">
+                    #{item.chatId}
+                </if>
+            </foreach>
+        </if>
+    </select>
+
+</mapper>

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.easyink.wecom.mapper.WeWordsLastUseMapper">
+
+    <!-- 可根据自己的需求，是否要使用 -->
+    <resultMap type="com.easyink.wecom.domain.WeWordsLastUseEntity" id="weWordsLastUseMap">
+        <result property="id" column="id"/>
+        <result property="corpId" column="corp_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="type" column="type"/>
+        <result property="wordsIds" column="words_ids"
+                typeHandler="com.easyink.framework.handler.StringArrayJoinTypeHandler"/>
+    </resultMap>
+
+    <sql id="allColumns">
+      id
+     ,corp_id
+     ,user_id
+     ,type
+     ,words_ids
+    </sql>
+
+    <select id="getByUserId" resultMap="weWordsLastUseMap">
+        SELECT
+        <include refid="allColumns"/>
+        FROM we_words_last_use
+        WHERE
+        user_id = #{userId}
+        AND corp_id = #{corpId}
+        AND type=#{type}
+        LIMIT 1
+    </select>
+
+    <!-- 新增 -->
+    <insert id="saveOrUpdate" parameterType="com.easyink.wecom.domain.WeWordsLastUseEntity"
+            keyProperty="id" keyColumn="id" useGeneratedKeys="true">
+        INSERT INTO we_words_last_use
+        (
+        <trim prefixOverrides="" suffixOverrides=",">
+            corp_id,
+            <if test="userId != null">user_id,</if>
+            <if test="type != null">type,</if>
+            <if test="wordsIds != null">words_ids,</if>
+        </trim>
+        )
+        VALUES (
+        <trim prefixOverrides="" suffixOverrides=",">
+            #{corpId},
+            <if test="userId != null">#{userId},</if>
+            <if test="type != null">#{type},</if>
+            <if test="wordsIds != null">
+                #{wordsIds,jdbcType=OTHER,typeHandler=com.easyink.framework.handler.StringArrayJoinTypeHandler},
+            </if>
+        </trim>
+        )
+        ON DUPLICATE KEY UPDATE
+        words_ids = VALUES(words_ids)
+    </insert>
+
+</mapper>

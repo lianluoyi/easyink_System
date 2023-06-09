@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.easyink.wecom.mapper.UpdateIDSecurityMapper">
+    <insert id="insertOrUpdate" >
+        insert into we_corp_update_id(corp_id, open_corpid,
+        userid_num,external_userid_num,update_log,create_time,end_time)
+        values(#{weCorpUpdate.corpId},#{weCorpUpdate.openCorpId},#{weCorpUpdate.userIdNum},#{weCorpUpdate.externalUseridNum},#{weCorpUpdate.updateLog},#{weCorpUpdate.createTime},#{weCorpUpdate.endTime})
+        on duplicate key update
+        open_corpid = VALUES(open_corpid),
+        userid_num = VALUES(userid_num),
+        external_userid_num = VALUES(external_userid_num),
+        update_log = VALUES(update_log),
+        create_time = VALUES(create_time),
+        end_time = VALUES(end_time)
+    </insert>
+    <update id="updateCorpId">
+        UPDATE ${table}
+        SET corp_id = #{openCorpId}
+        WHERE corp_id = #{corpId}
+    </update>
+
+    <delete id="removeOpenCorpId">
+        DELETE FROM ${table}
+        WHERE corp_id = #{openCorpId}
+    </delete>
+
+    <update id="updateUserIdAndExternalUserId" parameterType="WeCorpUpdateIdDataTable">
+        update ${dataTable.updateTableName}
+        SET ${dataTable.updateColumnName} = #{openUpdateId}
+        WHERE ${dataTable.updateColumnName} = #{updateId}
+        <if test="dataTable.relTableName == null or dataTable.relTableName == ''">
+            AND `corp_id` = #{corpId}
+        </if>
+        <if test="dataTable.relTableName != null and dataTable.relTableName != ''">
+            AND ${dataTable.updateTableForeignKey} in (SELECT ${dataTable.relTableForeignKey} from ${dataTable.relTableName} WHERE corp_id = #{corpId})
+        </if>
+        <if test="dataTable.criterion != null and dataTable.criterion != ''">
+            AND ${dataTable.criterion}
+        </if>
+    </update>
+</mapper>

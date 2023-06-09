@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.easyink.wecom.mapper.WeWordsDetailMapper">
+
+    <!-- 可根据自己的需求，是否要使用 -->
+    <resultMap type="com.easyink.wecom.domain.WeWordsDetailEntity" id="weWordsDetailMap">
+        <result property="id" column="id"/>
+        <result property="corpId" column="corp_id"/>
+        <result property="groupId" column="group_id"/>
+        <result property="mediaType" column="media_type"/>
+        <result property="content" column="content"/>
+        <result property="title" column="title"/>
+        <result property="url" column="url"/>
+        <result property="coverUrl" column="cover_url"/>
+        <result property="accountOriginalId" column="account_original_id"/>
+        <result property="appid" column="appid"/>
+        <result property="isDefined" column="is_defined"/>
+        <result property="extraId" column="extra_id"/>
+    </resultMap>
+
+    <resultMap type="com.easyink.wecom.domain.vo.sop.SopAttachmentVO" id="attachmentListOfRule">
+        <result property="id" column="id"/>
+        <result property="mediaType" column="media_type"/>
+        <result property="content" column="content"/>
+        <result property="title" column="title"/>
+        <result property="url" column="url"/>
+        <result property="coverUrl" column="cover_url"/>
+        <result property="accountOriginalId" column="account_original_id"/>
+        <result property="appid" column="appid"/>
+        <result property="isDefined" column="is_defined"/>
+        <result property="extraId" column="extra_id"/>
+        <collection property="radar" ofType="com.easyink.wecom.domain.vo.radar.WeRadarVO"
+                    column="{id=extra_id,corpId=corp_id}"
+                    select="com.easyink.wecom.mapper.radar.WeRadarMapper.getOne">
+        </collection>
+        <collection property="form" ofType="com.easyink.wecom.domain.entity.form.WeFormMaterial"
+                    column="{formId=extra_id}"
+                    select="com.easyink.wecom.mapper.form.WeFormMapper.getFormMaterial">
+        </collection>
+    </resultMap>
+
+    <sql id="allColumns">
+        wwd
+        .
+        id
+        , wwd.corp_id
+        , wwd.group_id
+        , wwd.media_type
+        , wwd.content
+        , wwd.title
+        , wwd.url
+        , wwd.cover_url
+        , wwd.account_original_id
+        , wwd.appid
+        , wwd.is_defined
+        , wwd.size
+        , wwd.extra_id
+    </sql>
+
+
+    <select id="listOfGroupId" resultMap="weWordsDetailMap">
+        SELECT
+        id
+             ,corp_id
+             ,group_id
+             ,media_type
+             ,content
+             ,title
+             ,url
+             ,cover_url
+             ,account_original_id
+             ,appid
+             , is_defined
+             , extra_id
+        FROM we_words_detail
+        WHERE corp_id = #{corpId}
+          AND group_id = #{groupId}
+        ORDER BY FIELD(`id`, ${seq})
+    </select>
+
+    <!-- groupId -1 表示它是sop附件 与话术附件区分开来 -->
+    <select id="listOfRuleId"
+            resultMap="attachmentListOfRule">
+        SELECT
+        <include refid="allColumns"/>
+        FROM we_words_detail wwd
+        LEFT JOIN we_operations_center_sop_material wocsm ON wocsm.material_id = wwd.id
+        WHERE
+        wwd.group_id = -1
+        AND wocsm.rule_id = #{id}
+    </select>
+
+    <!-- 批量新增或更新 -->
+    <insert id="batchInsertOrUpdate">
+
+        INSERT INTO we_words_detail
+        (
+        id
+        ,corp_id
+        ,group_id
+        ,media_type
+        ,content
+        ,title
+        ,url
+        ,cover_url
+        ,account_original_id
+        ,appid
+        ,is_defined
+        ,size
+        ,extra_id
+        )
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+            #{item.id}
+            ,#{item.corpId}
+            ,#{item.groupId}
+            ,#{item.mediaType}
+            ,#{item.content}
+            ,#{item.title}
+            ,#{item.url}
+            ,#{item.coverUrl}
+            ,#{item.accountOriginalId}
+            ,#{item.appid}
+            ,#{item.isDefined}
+            ,#{item.size}
+            ,#{item.extraId}
+            )
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+        group_id = VALUES(group_id),
+        media_type = VALUES(media_type),
+        content = VALUES(content),
+        title = VALUES(title),
+        url = VALUES(url),
+        cover_url = VALUES(cover_url),
+        account_original_id = VALUES(account_original_id),
+        appid = VALUES(appid),
+        size = VALUES(size),
+        is_defined = VALUES(is_defined),
+        extra_id = VALUES(extra_id)
+    </insert>
+    <delete id="deleteByGroupIds">
+        delete
+        from we_words_detail
+        <where>
+            corp_id = #{corpId}
+            AND
+            group_id in
+            <foreach collection="groupIds" item="item" index="index" separator="," open="(" close=")">
+                #{item}
+            </foreach>
+        </where>
+    </delete>
+</mapper>

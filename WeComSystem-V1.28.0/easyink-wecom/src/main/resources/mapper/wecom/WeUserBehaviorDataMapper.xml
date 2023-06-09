@@ -1,0 +1,315 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.easyink.wecom.mapper.WeUserBehaviorDataMapper">
+    <!--  批量更新员工主动发起会话数接口  -->
+    <update id="batchUpdate">
+        INSERT INTO we_user_behavior_data
+        (id, corp_id, user_id, user_active_chat_cnt, stat_time )
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+            #{item.id}, #{item.corpId}, #{item.userId}, #{item.userActiveChatCnt}, #{item.statTime}
+            )
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+        id = VALUES(id), user_active_chat_cnt = VALUES(user_active_chat_cnt)
+    </update>
+
+    <!--获取客户概况-数据总览-员工维度-->
+    <select id="getCustomerOverViewOfUser"
+            resultType="com.easyink.wecom.domain.vo.statistics.CustomerOverviewVO">
+        select
+        IFNULL( (SELECT
+        bd.contact_total_cnt
+                FROM we_user_behavior_data bd
+                WHERE bd.corp_id = #{corpId}
+                AND bd.stat_time = #{beginTime}
+                AND bd.user_id  = ubd.user_id
+                ) ,0) as totalContactCnt,
+        SUM(IFNULL(ubd.new_contact_cnt,0)) as newContactCnt,
+        SUM(IFNULL(ubd.negative_feedback_cnt,0)) as contactLossCnt,
+        IFNULL(sum(new_customer_loss_cnt),0) as newContactLossCnt,
+        SUM(IFNULL(ubd.new_customer_loss_cnt,0)) as new_contact_loss_cnt,
+        SUM(IFNULL(ubd.new_contact_speak_cnt, 0)) as newContactSpeakCnt,
+        SUM(IFNULL(ubd.replied_within_thirty_min_customer_cnt, 0)) as replied_within_thirty_min_customer_cnt,
+        SUM(IFNULL(ubd.all_chat_cnt, 0)) as all_chat_cnt,
+        IFNULL(sum(ubd.user_active_chat_cnt),0) as userActiveChatCnt,
+        <if test="newContactRetentionRateSort != null and newContactRetentionRateSort != ''">
+            IF(IFNULL(SUM(ubd.new_contact_cnt), 0) = 0, 100, CAST((SUM(ubd.new_contact_cnt) - IFNULL(SUM(ubd.new_customer_loss_cnt), 0)) *1./ SUM(ubd.new_contact_cnt) as decimal(8,2))) as newContactRetentionRate,
+        </if>
+        <if test="newContactStartTalkRateSort != null and newContactStartTalkRateSort != ''">
+            IF(IFNULL(SUM(ubd.new_contact_cnt), 0) = 0, 0, CAST(IFNULL(SUM(ubd.new_contact_speak_cnt), 0) *1./ SUM(ubd.new_contact_cnt) as decimal(8,2))) as newContactStartTalkRate,
+        </if>
+        <if test="serviceResponseRateSort != null and serviceResponseRateSort != ''">
+            IF(IFNULL(SUM(ubd.user_active_chat_cnt), 0) = 0, 0, CAST(IFNULL(SUM(ubd.replied_within_thirty_min_customer_cnt), 0) *1./ SUM(ubd.user_active_chat_cnt) as decimal(8,2))) as serviceResponseRate,
+        </if>
+        wu.`user_name`,
+        wd.`name` departmentName,
+        wu.`head_image_url` userHeadImage
+        from we_user_behavior_data ubd
+        LEFT JOIN we_user wu ON wu.user_id = ubd.user_id AND wu.corp_id = ubd.corp_id
+        LEFT JOIN we_department wd ON wd.id = wu.main_department AND wd.corp_id = wu.corp_id
+        <where>
+            ubd.corp_id = #{corpId}
+            ${params.dataScope}
+            AND wu.is_activate = ${@com.easyink.common.constant.WeConstans@WE_USER_IS_ACTIVATE}
+            AND wu.`user_name` IS NOT NULL
+            <if test="beginTime !=null">
+                AND ubd.stat_time &gt;= #{beginTime}
+            </if>
+            <if test="endTime !=null">
+                AND ubd.stat_time &lt;= #{endTime}
+            </if>
+            <if test="userIds != null and userIds.size() > 0">
+                AND ubd.user_id IN
+                <foreach collection="userIds" item="userId" open="(" separator="," close=")">
+                    #{userId}
+                </foreach>
+            </if>
+        </where>
+        GROUP BY ubd.user_id
+        <if test="totalContactCntSort != null and totalContactCntSort != ''">
+            ORDER BY totalContactCnt ${totalContactCntSort}
+        </if>
+        <if test="contactLossCntSort != null and contactLossCntSort != ''">
+            ORDER BY contactLossCnt ${contactLossCntSort}
+        </if>
+        <if test="newContactCntSort != null and newContactCntSort != ''">
+            ORDER BY newContactCnt ${newContactCntSort}
+        </if>
+        <if test="newContactRetentionRateSort != null and newContactRetentionRateSort != ''">
+            ORDER BY newContactRetentionRate ${newContactRetentionRateSort}
+        </if>
+        <if test="newContactStartTalkRateSort != null and newContactStartTalkRateSort != ''">
+            ORDER BY newContactStartTalkRate ${newContactStartTalkRateSort}
+        </if>
+        <if test="serviceResponseRateSort != null and serviceResponseRateSort != ''">
+            ORDER BY serviceResponseRate ${serviceResponseRateSort}
+        </if>
+    </select>
+
+    <select id="getCountDataByDayNew" resultType="com.easyink.wecom.domain.dto.WePageCountDTO">
+        select
+        date_format(stat_time, '%Y-%m-%d') as x_time,
+        IFNULL(sum(new_apply_cnt),0) as new_apply_cnt,
+        IFNULL(sum(new_contact_cnt),0) as new_contact_cnt,
+        IFNULL(sum(chat_cnt),0) as chat_cnt,
+        IFNULL(sum(message_cnt),0) as message_cnt,
+        IFNULL(sum(reply_percentage),0) as reply_percentage,
+        IFNULL(sum(avg_reply_time),0) as avg_reply_time,
+        IFNULL(sum(negative_feedback_cnt),0) as negative_feedback_cnt,
+        IFNULL(max(total_contact_cnt),0) as total_contact_cnt,
+        IFNULL(max(new_customer_loss_cnt),0) as new_contact_loss_cnt
+        from we_user_behavior_data
+        <where>
+            corp_id = #{corpId}
+            <if test="beginTime !=null">
+                AND stat_time &gt;= #{beginTime}
+            </if>
+            <if test="endTime !=null">
+                AND stat_time &lt;= #{endTime}
+            </if>
+        </where>
+
+    </select>
+
+    <!--获取客户概况-数据总览-->
+    <select id="getCustomerOverViewOfTotal"
+            resultType="com.easyink.wecom.domain.vo.statistics.CustomerOverviewVO">
+        select
+        IFNULL( (SELECT
+        SUM(bd.contact_total_cnt)
+        FROM we_user_behavior_data bd
+        LEFT JOIN we_user wu ON wu.corp_id = bd.corp_id AND wu.user_id = bd.user_id
+        WHERE bd.corp_id = #{corpId}
+        AND bd.stat_time = #{beginTime}
+        <if test="userIds != null and userIds.size() > 0">
+            AND bd.user_id IN
+            <foreach collection="userIds" item="userId" open="(" separator="," close=")">
+                #{userId}
+            </foreach>
+        </if>
+        ${params.dataScope}
+        AND wu.is_activate = ${@com.easyink.common.constant.WeConstans@WE_USER_IS_ACTIVATE}
+        ) ,0) as totalContactCnt,
+        IFNULL(sum(wube.new_apply_cnt),0) as newContactCnt,
+        IFNULL(sum(wube.negative_feedback_cnt),0) as contactLossCnt,
+        IFNULL(sum(wube.new_contact_cnt),0) as new_contact_cnt,
+        IFNULL(sum(wube.new_customer_loss_cnt),0) as newContactLossCnt,
+        IFNULL(sum(wube.new_contact_speak_cnt), 0) as newContactSpeakCnt,
+        IFNULL(sum(wube.replied_within_thirty_min_customer_cnt), 0) as replied_within_thirty_min_customer_cnt,
+        IFNULL(sum(wube.all_chat_cnt), 0) as all_chat_cnt,
+        IFNULL(sum(wube.user_active_chat_cnt),0) as userActiveChatCnt
+        from we_user_behavior_data wube
+        LEFT JOIN we_user wu ON wu.corp_id = wube.corp_id AND wu.user_id = wube.user_id
+        <where>
+            wube.corp_id = #{corpId}
+            ${params.dataScope}
+            AND wu.is_activate = ${@com.easyink.common.constant.WeConstans@WE_USER_IS_ACTIVATE}
+            <if test="beginTime !=null">
+                AND wube.stat_time &gt;= #{beginTime}
+            </if>
+            <if test="endTime !=null">
+                AND wube.stat_time &lt;= #{endTime}
+            </if>
+            <if test="userIds != null and userIds.size() > 0">
+                AND wube.user_id IN
+                <foreach collection="userIds" item="userId" open="(" separator="," close=")">
+                    #{userId}
+                </foreach>
+            </if>
+        </where>
+    </select>
+
+    <select id="getDayCountData" resultType="com.easyink.wecom.domain.dto.WePageCountDTO">
+        SELECT tbl._date AS                            x_time,
+               IFNULL(tbr.new_apply_cnt, 0)         as new_apply_cnt,
+               IFNULL(tbr.new_contact_cnt, 0)       as new_contact_cnt,
+               IFNULL(tbr.chat_cnt, 0)              as chat_cnt,
+               IFNULL(tbr.message_cnt, 0)           as message_cnt,
+               IFNULL(tbr.reply_percentage, 0)      as reply_percentage,
+               IFNULL(tbr.avg_reply_time, 0)        as avg_reply_time,
+               IFNULL(tbr.negative_feedback_cnt, 0) as negative_feedback_cnt ,
+               IFNULL(tbr.total_contact_cnt, 0 ) as total_contact_cnt,
+               IFNULL (tbr.new_contact_loss_cnt , 0 ) as new_contact_loss_cnt
+        FROM (SELECT (@s:=@s+1) AS _index,STR_TO_DATE(DATE(DATE_SUB(CURRENT_DATE,INTERVAL @s DAY)),'%Y-%m-%d') AS _date
+              FROM information_schema.CHARACTER_SETS, (SELECT @s := -1) AS init
+              WHERE
+                  @s &lt; #{few}
+              ORDER BY _date) AS tbl
+                 LEFT JOIN(SELECT sum(ifnull(wubd.new_apply_cnt, 0))                                  new_apply_cnt,
+                                  sum(ifnull(wubd.new_contact_cnt, 0))                                new_contact_cnt,
+                                  sum(ifnull(wubd.chat_cnt, 0))                                       chat_cnt,
+                                  sum(ifnull(wubd.message_cnt, 0))                                    message_cnt,
+                                  sum(ifnull(wubd.reply_percentage, 0))                               reply_percentage,
+                                  sum(ifnull(wubd.avg_reply_time, 0))                                 avg_reply_time,
+                                  sum(ifnull(wubd.negative_feedback_cnt, 0))                          negative_feedback_cnt,
+                                  sum(ifnull(wubd.total_contact_cnt, 0 ))                                  total_contact_cnt ,
+                                  sum(ifnull(wubd.new_customer_loss_cnt,0 ))             new_contact_loss_cnt ,
+                                  STR_TO_DATE(DATE_FORMAT(wubd.stat_time, '%Y-%m-%d'), '%Y-%m-%d') AS finish_date
+                           FROM we_user_behavior_data wubd
+                           where wubd.corp_id = #{corpId}
+                             AND wubd.stat_time &gt;= #{startTime}
+                             AND wubd.stat_time &lt;= #{endTime}
+
+                           GROUP BY finish_date
+
+                           ORDER BY finish_date
+        ) AS tbr ON tbl._date = tbr.finish_date
+        GROUP BY tbl._date;
+    </select>
+
+    <select id="getWeekCountData" resultType="com.easyink.wecom.domain.dto.WePageCountDTO">
+        select CONCAT(left(tbl._date,4),'年', right(tbl._date,2),'周') as x_time,
+               IFNULL(tbr.new_apply_cnt, 0)                          as new_apply_cnt,
+               IFNULL(tbr.new_contact_cnt, 0)                        as new_contact_cnt,
+               IFNULL(tbr.chat_cnt, 0)                               as chat_cnt,
+               IFNULL(tbr.message_cnt, 0)                            as message_cnt,
+               IFNULL(tbr.reply_percentage, 0)                       as reply_percentage,
+               IFNULL(tbr.avg_reply_time, 0)                         as avg_reply_time,
+               IFNULL(tbr.negative_feedback_cnt, 0)                  as negative_feedback_cnt ,
+               IFNULL(tbr.total_contact_cnt , 0)                       as total_contact_cnt ,
+               IFNULL(tbr.new_contact_loss_cnt , 0 )        as new_contact_loss_cnt
+        from (select (@s := @s + 1) as _index,
+        yearweek(date(date_sub(date_format(current_date, '%Y-%m-%d'), interval @s week))) as _date
+              from information_schema.character_sets,
+                  (select @s := -1) as init
+              where @s &lt; #{few}
+              order by _date)
+                 as tbl
+                 left join(select sum(ifnull(wubd.new_apply_cnt, 0))                   new_apply_cnt,
+                                  sum(ifnull(wubd.new_contact_cnt, 0))                 new_contact_cnt,
+                                  sum(ifnull(wubd.chat_cnt, 0))                        chat_cnt,
+                                  sum(ifnull(wubd.message_cnt, 0))                     message_cnt,
+                                  sum(ifnull(wubd.reply_percentage, 0))                reply_percentage,
+                                  sum(ifnull(wubd.avg_reply_time, 0))                  avg_reply_time,
+                                  sum(ifnull(wubd.negative_feedback_cnt, 0))           negative_feedback_cnt,
+                                  max(ifnull(wubd.total_contact_cnt,0))                    total_contact_cnt,
+                                  max(ifnull(wubd.new_customer_loss_cnt,0 ))      new_contact_loss_cnt ,
+                                  yearweek(date_format(wubd.stat_time, '%Y-%m-%d')) as finish_date
+
+                           from we_user_behavior_data wubd
+
+                           where
+                            wubd.corp_id = #{corpId}
+                             AND wubd.stat_time between #{startTime} and #{endTime}
+
+                           group by finish_date
+                           order by finish_date
+        ) as tbr on tbl._date = tbr.finish_date
+        group by tbl._date;
+    </select>
+
+    <select id="getMonthCountData" resultType="com.easyink.wecom.domain.dto.WePageCountDTO">
+        select tbl._date as                            x_time,
+               IFNULL(tbr.new_apply_cnt, 0)         as new_apply_cnt,
+               IFNULL(tbr.new_contact_cnt, 0)       as new_contact_cnt,
+               IFNULL(tbr.chat_cnt, 0)              as chat_cnt,
+               IFNULL(tbr.message_cnt, 0)           as message_cnt,
+               IFNULL(tbr.reply_percentage, 0)      as reply_percentage,
+               IFNULL(tbr.avg_reply_time, 0)        as avg_reply_time,
+               IFNULL(tbr.negative_feedback_cnt, 0) as negative_feedback_cnt ,
+               IFNULL(tbr.total_contact_cnt, 0)     as total_contact_cnt,
+               IFNULL(tbr.new_contact_loss_cnt , 0) as new_contact_loss_cnt
+        from (select (@s := @s + 1) as _index, date_format(date_sub(current_date, interval @s month), '%Y-%m') as _date
+              from information_schema.character_sets,
+                  (select @s := -1) as init
+              where @s &lt; #{few}
+              order by _date) as tbl
+                 left join(select sum(ifnull(wubd.new_apply_cnt, 0))         new_apply_cnt,
+                                  sum(ifnull(wubd.new_contact_cnt, 0))       new_contact_cnt,
+                                  sum(ifnull(wubd.chat_cnt, 0))              chat_cnt,
+                                  sum(ifnull(wubd.message_cnt, 0))           message_cnt,
+                                  sum(ifnull(wubd.reply_percentage, 0))      reply_percentage,
+                                  sum(ifnull(wubd.avg_reply_time, 0))        avg_reply_time,
+                                  sum(ifnull(wubd.negative_feedback_cnt, 0)) negative_feedback_cnt,
+                                  max(ifnull(wubd.total_contact_cnt, 0 ))    total_contact_cnt ,
+                                  max(ifnull(wubd.new_customer_loss_cnt , 0 )) new_contact_loss_cnt ,
+                                  date_format(wubd.stat_time, '%Y-%m') as    finish_date
+                           from we_user_behavior_data wubd
+                           where wubd.corp_id = #{corpId}
+                           group by finish_date
+                           order by finish_date
+        ) as tbr on tbl._date = tbr.finish_date
+        group by tbl._date;
+    </select>
+
+    <!-- 获取客户概况-数据总览-日期维度 -->
+    <select id="getCustomerOverViewOfDate" resultType="com.easyink.wecom.domain.WeUserBehaviorData">
+        select
+        ubd.user_id,
+        ubd.stat_time as statTime,
+        IFNULL(ubd.contact_total_cnt,0) as contactTotalCnt,
+        IFNULL(ubd.new_contact_cnt,0) as newContactCnt,
+        IFNULL(ubd.negative_feedback_cnt,0) as negativeFeedbackCnt,
+        IFNULL(ubd.new_customer_loss_cnt,0) as newCustomerLossCnt,
+        IFNULL(ubd.new_contact_speak_cnt, 0) as newContactSpeakCnt,
+        IFNULL(ubd.replied_within_thirty_min_customer_cnt, 0) as repliedWithinThirtyMinCustomerCnt,
+        IFNULL(ubd.all_chat_cnt, 0) as all_chat_cnt,
+        IFNULL(ubd.chat_cnt, 0) as chatCnt
+        from we_user_behavior_data ubd
+        LEFT JOIN we_user wu ON wu.user_id = ubd.user_id AND wu.corp_id = ubd.corp_id
+        LEFT JOIN we_department wd ON wd.id = wu.main_department AND wd.corp_id = wu.corp_id
+        <where>
+            ubd.corp_id = #{corpId}
+            ${params.dataScope}
+            AND wu.is_activate = ${@com.easyink.common.constant.WeConstans@WE_USER_IS_ACTIVATE}
+            <if test="beginTime !=null">
+                AND ubd.stat_time &gt;= #{beginTime}
+            </if>
+            <if test="endTime !=null">
+                AND ubd.stat_time &lt;= #{endTime}
+            </if>
+            <if test="userIds != null and userIds.size() > 0">
+                AND ubd.user_id IN
+                <foreach collection="userIds" item="userId" open="(" separator="," close=")">
+                    #{userId}
+                </foreach>
+            </if>
+        </where>
+        GROUP BY ubd.user_id, stat_time ORDER BY stat_time
+    </select>
+
+</mapper>

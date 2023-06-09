@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <contextName>logback-spring</contextName>
+
+    <contextListener class="com.ofpay.logback.TtlMdcListener"/>
+    <springProperty scope="context" name="LOG_MAX_SIZE" source="logging.file.max-size"/>
+    <springProperty scope="context" name="LOG_NAME" source="logging.file.name"/>
+    <springProperty scope="context" name="LOG_MAX_HISTORY" source="logging.file.max-history"/>
+
+    <include resource="org/springframework/boot/logging/logback/defaults.xml" />
+    <include resource="logback-file.xml" />
+    <include resource="logback-console.xml"/>
+
+
+
+    <logger name="com.easyink" level="${logging.level.com.ruoyi:-info}" additivity="false" >
+        <appender-ref ref="GenConsole"/>
+        <appender-ref ref="GenAsync"/>
+    </logger>
+
+    <root level="INFO">
+        <appender-ref ref="GenAsync"/>
+    </root>
+
+</configuration>

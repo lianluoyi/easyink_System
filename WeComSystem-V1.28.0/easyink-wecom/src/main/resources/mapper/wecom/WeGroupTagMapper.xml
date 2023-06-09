@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.easyink.wecom.mapper.WeGroupTagMapper">
+
+    <insert id="batchInsert">
+        INSERT IGNORE INTO we_group_tag
+        (
+        `corp_id`
+        ,`group_id`
+        ,`name`
+        )
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+            #{item.corpId}
+            ,#{item.groupId}
+            ,#{item.name}
+            )
+        </foreach>
+    </insert>
+
+    <delete id="delTag">
+        DELETE FROM we_group_tag
+        WHERE `corp_id` = #{corpId}
+        AND `id` IN
+        <foreach collection="list" index="index" item="item" separator="," open="(" close=")">
+            #{item}
+        </foreach>
+    </delete>
+
+
+    <delete id="delByGroupId">
+        DELETE FROM we_group_tag
+        WHERE `corp_id` = #{corpId}
+        AND `group_id` IN
+        <foreach collection="groupIdList" index="index" item="item" separator="," open="(" close=")">
+            #{item}
+        </foreach>
+    </delete>
+
+    <select id="findByGroupId" resultType="com.easyink.wecom.domain.WeGroupTag">
+        SELECT
+            `id`,
+            `corp_id`,
+            `group_id`,
+            `name`
+        FROM
+            we_group_tag
+        WHERE
+            corp_id = #{corpId}
+            AND group_id = #{groupId}
+        ORDER BY id DESC
+    </select>
+
+
+    <select id="findPageByGroupId" resultType="com.easyink.wecom.domain.vo.wegrouptag.PageWeGroupTagVO">
+        SELECT
+            `id` AS `tagId`,
+            `corp_id`,
+            `group_id`,
+            `name`
+        FROM
+            we_group_tag
+        WHERE
+            corp_id = #{corpId}
+            AND group_id = #{groupId}
+        ORDER BY id DESC
+    </select>
+
+    <select id="getTagIdByGroupId" resultType="java.lang.Long">
+        SELECT
+            `id`
+        FROM
+            we_group_tag
+        WHERE
+            corp_id = #{corpId}
+            AND group_id IN
+            <foreach collection="groupIdList" index="index" item="item" separator="," open="(" close=")">
+                #{item}
+            </foreach>
+    </select>
+
+    <select id="getTagList" resultType="com.easyink.wecom.domain.vo.statistics.WeTagGroupStatisticsVO">
+        SELECT
+        wgt.`id` as tagId ,
+        wgt.`name` as tagName,
+        wgtc.`name` as groupTagName,
+        wgtc.`id` as tagGroupId,
+        wgt.create_time
+        FROM we_group_tag wgt
+        LEFT JOIN we_group_tag_category wgtc ON wgtc.`id`=wgt.group_id AND wgt.corp_id=wgtc.corp_id
+        WHERE
+        wgt.corp_id = #{corpId}
+        <if test="tagGroupIds != null and tagGroupIds.size()>0">
+            AND wgt.group_id IN
+            <foreach item="item" index="index" collection="tagGroupIds" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+    </select>
+
+
+
+</mapper>

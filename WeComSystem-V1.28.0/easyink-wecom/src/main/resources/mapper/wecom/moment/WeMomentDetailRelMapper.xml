@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.easyink.wecom.mapper.moment.WeMomentDetailRelMapper">
+
+    <sql id="allColumns">
+      id
+     ,moment_task_id
+     ,detail_id
+    </sql>
+
+    <select id="listOfAttachment" resultType="com.easyink.wecom.domain.WeWordsDetailEntity">
+        SELECT
+            wwd.*
+        FROM
+            we_moment_detail_rel wmdr
+            LEFT JOIN we_words_detail wwd ON wmdr.detail_id = wwd.id
+            WHERE
+            wmdr.moment_task_id = #{momentTaskId}
+    </select>
+
+</mapper>

@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.easyink.wecom.mapper.form.WeFormGroupMapper">
+
+    <resultMap type="com.easyink.wecom.domain.entity.form.WeFormGroup" id="WeFormGroupMap">
+        <result property="id" column="id" jdbcType="INTEGER"/>
+        <result property="pId" column="p_id" jdbcType="INTEGER"/>
+        <result property="name" column="name" jdbcType="VARCHAR"/>
+        <result property="sourceType" column="source_type" jdbcType="INTEGER"/>
+        <result property="departmentId" column="department_id" jdbcType="INTEGER"/>
+        <result property="delFlag" column="del_flag" jdbcType="INTEGER"/>
+        <result property="corpId" column="corp_id" jdbcType="VARCHAR"/>
+        <result property="deleteId" column="delete_id" jdbcType="INTEGER"/>
+        <result property="sort" column="sort" jdbcType="INTEGER"/>
+        <result property="createBy" column="create_by" jdbcType="VARCHAR"/>
+        <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+        <result property="updateBy" column="update_by" jdbcType="VARCHAR"/>
+        <result property="updateTime" column="update_time" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <!-- 批量插入 -->
+    <insert id="insertBatch" keyProperty="id" useGeneratedKeys="true">
+        insert into we_form_group(p_id, name, source_type, department_id, del_flag, corp_id, delete_id, sort, create_by, create_time,
+        update_by, update_time)
+        values
+        <foreach collection="entities" item="entity" separator=",">
+            (#{entity.pId}, #{entity.name}, #{entity.sourceType}, #{entity.delFlag}, #{entity.departmentId}, #{entity.corpId},
+            #{entity.deleteId}, #{entity.sort}, #{entity.createBy},
+            #{entity.createTime}, #{entity.updateBy}, #{entity.updateTime})
+        </foreach>
+    </insert>
+    <!-- 批量插入或按主键更新 -->
+    <insert id="insertOrUpdateBatch" keyProperty="id" useGeneratedKeys="true">
+        insert into we_form_group(p_id, name, source_type, department_id, del_flag, corp_id, delete_id, sort, create_by, create_time,
+        update_by, update_time)
+        values
+        <foreach collection="entities" item="entity" separator=",">
+            (#{entity.pId}, #{entity.name}, #{entity.sourceType}, #{entity.delFlag}, #{entity.departmentId}, #{entity.corpId},
+            #{entity.deleteId}, #{entity.sort}, #{entity.createBy},
+            #{entity.createTime}, #{entity.updateBy}, #{entity.updateTime})
+        </foreach>
+        on duplicate key update
+        p_id = values(p_id) , name = values(name) , source_type = values(source_type) , department_id = values(department_id) , del_flag = values(del_flag) ,
+        corp_id = values(corp_id) , delete_id
+        = values(delete_id) , sort = values(sort) create_by = values(create_by) , create_time = values(create_time) ,
+        update_by =
+        values(update_by) , update_time = values(update_time)
+    </insert>
+    <!--变更排序-->
+    <update id="changeSort">
+        UPDATE we_form_group
+        SET `sort` = CASE `id`
+        <foreach collection="sortList" item="item">
+            WHEN #{item.id} THEN #{item.sort}
+        </foreach>
+        END
+        WHERE corp_id = #{corpId}
+        AND id IN
+        <foreach item="item" collection="sortList" open="(" separator="," close=")">
+            #{item.id}
+        </foreach>
+    </update>
+    <!--批量删除分组-->
+    <delete id="deleteBatchByIdList">
+        UPDATE we_form_group
+        SET del_flag = ${@com.easyink.common.enums.DelFlag@DEL.code},
+        delete_id = id
+        WHERE id IN
+        <foreach collection="groupIdList" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+    <!--查询分组-->
+    <select id="selectByCorpIdAndSourceType" resultType="com.easyink.wecom.domain.entity.form.WeFormGroup">
+        SELECT *
+        FROM we_form_group
+        WHERE corp_id = #{corpId}
+        AND source_type = #{sourceType}
+        AND del_flag = ${@com.easyink.common.enums.DelFlag@UN_DEL.code}
+        <choose>
+            <when test="sourceType == 2 and departmentId != null">
+                AND department_id = #{departmentId}
+            </when>
+            <when test="sourceType == 3 and createBy != null and createBy != ''">
+                AND create_by = #{createBy}
+            </when>
+        </choose>
+        ORDER BY p_id DESC, sort DESC
+    </select>
+    <!--统计相同名称数量-->
+    <select id="countSameNameNum" resultType="java.lang.Integer">
+        SELECT COUNT(1)
+        FROM we_form_group
+        WHERE corp_id = #{corpId}
+          AND del_flag = ${@com.easyink.common.enums.DelFlag@UN_DEL.code}
+          AND name = #{name}
+    </select>
+    <!--查询子分组id列表-->
+    <select id="selectChildGroupIdList" resultType="java.lang.Integer">
+        SELECT sub.id
+        FROM we_form_group par
+                 LEFT JOIN we_form_group sub ON sub.p_id = par.id AND sub.corp_id = #{corpId}
+        WHERE par.id = #{groupId}
+          AND par.corp_id = #{corpId}
+    </select>
+    <select id="selectGroupIdListContainChildById" resultType="java.lang.Integer">
+        SELECT
+            id
+        FROM
+            we_form_group
+        WHERE
+            p_id = #{id}
+        UNION
+        SELECT #{id}
+    </select>
+
+</mapper>
+

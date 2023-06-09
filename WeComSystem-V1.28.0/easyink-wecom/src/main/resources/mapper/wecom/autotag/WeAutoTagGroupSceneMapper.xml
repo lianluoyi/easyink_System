@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.easyink.wecom.mapper.autotag.WeAutoTagGroupSceneMapper">
+
+    <resultMap type="com.easyink.wecom.domain.entity.autotag.WeAutoTagGroupScene" id="WeAutoTagGroupSceneMap">
+        <result property="id" column="id" jdbcType="INTEGER"/>
+        <result property="ruleId" column="rule_id" jdbcType="INTEGER"/>
+    </resultMap>
+
+
+    <resultMap type="com.easyink.wecom.domain.vo.autotag.group.GroupSceneVO" id="groupSceneMap">
+        <result property="id" column="id"/>
+        <collection property="groupList" ofType="com.easyink.wecom.domain.vo.autotag.GroupInfoVO"
+                    column="{groupSceneId=id,corpId=corp_id}"
+                    select="com.easyink.wecom.mapper.autotag.WeAutoTagGroupSceneGroupRelMapper.listGroupListByGroupSceneId">
+        </collection>
+        <collection property="tagList" ofType="com.easyink.wecom.domain.vo.autotag.TagInfoVO"
+                    column="{groupSceneId=id,corpId=corp_id}"
+                    select="com.easyink.wecom.mapper.autotag.WeAutoTagGroupSceneTagRelMapper.listTagListByGroupSceneId">
+        </collection>
+    </resultMap>
+
+    <!-- 批量插入 -->
+    <insert id="insertBatch" keyProperty="id" useGeneratedKeys="true">
+        insert into we_auto_tag_group_scene(id,corp_id,rule_id)
+        values
+        <foreach collection="entities" item="entity" separator=",">
+            (#{entity.id},#{entity.corpId},#{entity.ruleId})
+        </foreach>
+    </insert>
+    <!-- 批量插入或按主键更新 -->
+    <insert id="insertOrUpdateBatch" keyProperty="id" useGeneratedKeys="true">
+        insert into we_auto_tag_group_scene(id,corp_id,rule_id)
+        values
+        <foreach collection="entities" item="entity" separator=",">
+            (#{entity.id},#{entity.corpId},#{entity.ruleId})
+        </foreach>
+        on duplicate key update
+        id = values(id),corp_id = values(corp_id),rule_id = values(rule_id)
+    </insert>
+    <select id="listGroupSceneListByRuleId"
+            resultMap="groupSceneMap">
+        SELECT gs.id, gs.corp_id
+        FROM we_auto_tag_group_scene gs
+        WHERE gs.rule_id = #{ruleId}
+    </select>
+
+</mapper>
+

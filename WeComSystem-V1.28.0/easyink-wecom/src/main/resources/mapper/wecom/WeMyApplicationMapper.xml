@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.easyink.wecom.mapper.WeMyApplicationMapper">
+
+    <select id="listOfMyApplication" resultType="com.easyink.wecom.domain.vo.MyApplicationIntroductionVO">
+        SELECT
+        myapp.appid,
+        myapp.config,
+            myapp.enable,
+            myapp.install_time,
+        myapp.expire_time,
+            app.name,
+            app.description,
+            app.logo_url,
+        app.create_time,
+            app.development_type,
+            app.sidebar_redirect_url,
+            app.application_entrance_url
+        FROM
+            we_my_application myapp
+            LEFT JOIN we_application_center app ON myapp.appid = app.appid
+        WHERE
+            myapp.corp_id = #{corpId} AND myapp.enable = ${@com.easyink.common.enums.BaseStatusEnum@OPEN.getCode()}
+    </select>
+
+    <select id="listOfMyApplication2Sidebar" resultType="com.easyink.wecom.domain.vo.MyApplicationIntroductionVO">
+        SELECT
+            myapp.appid,
+            myapp.config,
+            myapp.enable,
+            myapp.install_time,
+            myapp.expire_time,
+            app.name,
+            app.description,
+            app.logo_url,
+            app.create_time,
+            app.development_type,
+            app.sidebar_redirect_url,
+            app.application_entrance_url
+        FROM
+            we_my_application myapp
+            LEFT JOIN we_application_center app ON myapp.appid = app.appid
+        WHERE
+            myapp.corp_id = #{corpId} AND myapp.enable = ${@com.easyink.common.enums.BaseStatusEnum@OPEN.getCode()}
+            AND app.sidebar_redirect_url != ''
+    </select>
+
+
+    <select id="getMyApplication" resultType="com.easyink.wecom.domain.vo.MyApplicationIntroductionVO">
+        SELECT
+            myapp.appid,
+            myapp.config,
+            myapp.enable,
+            myapp.install_time,
+            myapp.expire_time,
+            app.name,
+            app.description,
+            app.logo_url,
+            app.create_time,
+            app.development_type,
+            app.sidebar_redirect_url,
+            app.application_entrance_url
+        FROM
+            we_my_application myapp
+            LEFT JOIN we_application_center app ON myapp.appid = app.appid
+        WHERE
+            myapp.corp_id = #{corpId} AND myapp.enable = ${@com.easyink.common.enums.BaseStatusEnum@OPEN.getCode()}
+            AND app.appid = #{appid}
+        LIMIT 1
+    </select>
+
+    <select id="listOfMyApplicationByAppid" resultType="com.easyink.wecom.domain.vo.MyApplicationIntroductionVO">
+        SELECT
+            myapp.appid,
+            myapp.config,
+            myapp.enable,
+            myapp.install_time,
+            myapp.expire_time,
+            app.name,
+            app.description,
+            app.logo_url,
+            app.create_time,
+            app.development_type,
+            app.sidebar_redirect_url,
+        app.application_entrance_url,
+        ca.company_name,
+        ca.corp_id
+        FROM
+            we_my_application myapp
+            LEFT JOIN we_application_center app ON myapp.appid = app.appid
+        LEFT JOIN we_corp_account ca ON myapp.corp_id = ca.corp_id
+        WHERE
+            myapp.appid = #{appid} AND myapp.enable = ${@com.easyink.common.enums.BaseStatusEnum@OPEN.getCode()}
+    </select>
+</mapper>
