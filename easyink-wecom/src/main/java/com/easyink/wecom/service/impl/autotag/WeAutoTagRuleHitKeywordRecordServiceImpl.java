@@ -2,6 +2,7 @@ package com.easyink.wecom.service.impl.autotag;
 
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.easyink.common.config.RuoYiConfig;
 import com.easyink.common.constant.WeConstans;
 import com.easyink.common.core.domain.conversation.ChatInfoVO;
 import com.easyink.common.core.domain.conversation.msgtype.TextVO;
@@ -10,9 +11,7 @@ import com.easyink.common.enums.autotag.AutoTagLabelTypeEnum;
 import com.easyink.common.enums.autotag.AutoTagMatchTypeEnum;
 import com.easyink.common.utils.StringUtils;
 import com.easyink.wecom.domain.WeTag;
-import com.easyink.wecom.domain.entity.autotag.WeAutoTagKeyword;
-import com.easyink.wecom.domain.entity.autotag.WeAutoTagRuleHitKeywordRecord;
-import com.easyink.wecom.domain.entity.autotag.WeAutoTagRuleHitKeywordRecordTagRel;
+import com.easyink.wecom.domain.entity.autotag.*;
 import com.easyink.wecom.domain.query.autotag.TagRuleRecordKeywordDetailQuery;
 import com.easyink.wecom.domain.query.autotag.TagRuleRecordQuery;
 import com.easyink.wecom.domain.vo.autotag.record.CustomerCountVO;
@@ -21,8 +20,10 @@ import com.easyink.wecom.domain.vo.autotag.record.keyword.KeywordTagRuleRecordVO
 import com.easyink.wecom.mapper.autotag.WeAutoTagRuleHitKeywordRecordMapper;
 import com.easyink.wecom.mapper.autotag.WeAutoTagRuleHitKeywordRecordTagRelMapper;
 import com.easyink.wecom.service.WeCustomerService;
+import com.easyink.wecom.service.WeCustomerTrajectoryService;
 import com.easyink.wecom.service.WeUserService;
 import com.easyink.wecom.service.autotag.*;
+import com.easyink.wecom.service.idmapping.WeUserIdMappingService;
 import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -54,8 +55,14 @@ public class WeAutoTagRuleHitKeywordRecordServiceImpl extends ServiceImpl<WeAuto
     private WeAutoTagRuleHitKeywordRecordTagRelService weAutoTagRuleHitKeywordRecordTagRelService;
     @Autowired
     private WeAutoTagRuleHitKeywordRecordTagRelMapper weAutoTagRuleHitKeywordRecordTagRelMapper;
+    @Autowired
+    private RuoYiConfig ruoyiConfig ;
+    @Autowired
+    private WeUserIdMappingService weUserIdMappingService;
 
     private final WeUserService weUserService;
+    @Autowired
+    private WeCustomerTrajectoryService weCustomerTrajectoryService;
 
     @Autowired
     public WeAutoTagRuleHitKeywordRecordServiceImpl(WeUserService weUserService) {
@@ -125,11 +132,17 @@ public class WeAutoTagRuleHitKeywordRecordServiceImpl extends ServiceImpl<WeAuto
         // k:员工和用户拼接key v:缓存的标签集合
         Map<String, Set<WeTag>> userCustomerTagMap = new HashMap<>();
         Map<String, Map<Long, List<WeAutoTagKeyword>>> userCacheMap = new HashMap<>();
+        //记录规则id列表
+        List<Long> ruleIdList = new ArrayList<>();
         for (ChatInfoVO chatInfoVO : textDataList) {
             TextVO text = chatInfoVO.getText();
             String customerId = chatInfoVO.getFrom();
             // 单聊列表只有一个toList
             String userId = chatInfoVO.getTolist().get(0);
+            // 如果是代开发应用进行 userId的转换
+            if(ruoyiConfig.isThirdServer()) {
+                userId = weUserIdMappingService.getOpenUserIdByUserId(corpId, userId) ;
+            }
             final String userCustomerkey = userId + StrUtil.COLON + customerId;
             // k: 规则id, v: 触发的关键词列表
             Map<Long, List<String>> ruleKeywordMap = new HashMap<>();
@@ -156,6 +169,7 @@ public class WeAutoTagRuleHitKeywordRecordServiceImpl extends ServiceImpl<WeAuto
                 String keywordJoin = String.join(StrUtil.COMMA, keywordList);
                 batchAddRecord.add(new WeAutoTagRuleHitKeywordRecord(corpId, ruleId, customerId, userId, keywordJoin,
                         text.getContent(), new Date()));
+                ruleIdList.add(ruleId);
             }
 
             // 根据规则id列表组装标签记录
@@ -199,6 +213,7 @@ public class WeAutoTagRuleHitKeywordRecordServiceImpl extends ServiceImpl<WeAuto
                 List<String> weTagIdList = new ArrayList<>(userCustomerTagEntry.getValue()).stream().map(WeTag::getTagId).collect(Collectors.toList());
                 log.info("关键词打标签: 员工: {}, 客户: {}, 标签列表: {}", userId, customerId,weTagIdList);
                 weCustomerService.singleMarkLabel(corpId, userId, customerId, weTagIdList, weUser.getName());
+                weCustomerTrajectoryService.recordAutoKeyWordTag(corpId,userId,customerId,ruleIdList);
             }
         }
     }

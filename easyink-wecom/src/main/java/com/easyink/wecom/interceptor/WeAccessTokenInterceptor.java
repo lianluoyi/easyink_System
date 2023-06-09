@@ -101,6 +101,10 @@ public class WeAccessTokenInterceptor implements Interceptor<Object> {
         log.error("请求失败url:【{}】,result:【{}】", forestRequest.getUrl(), forestResponse.getContent());
     }
 
+    @Override
+    public void onRetry(ForestRequest request, ForestResponse response) {
+        log.error("准备重试, url:【{}】,result:【{}】,retryCnt:【{}】", request.getUrl(), response.getContent() ,request.getCurrentRetryCount());
+    }
 
     /**
      * 请求成功调用(微信端错误异常统一处理)

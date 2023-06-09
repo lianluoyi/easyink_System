@@ -22,7 +22,6 @@ import com.easyink.common.core.redis.RedisCache;
 import com.easyink.common.enums.*;
 import com.easyink.common.exception.CustomException;
 import com.easyink.common.utils.DateUtils;
-import com.easyink.common.utils.MyDateUtil;
 import com.easyink.common.utils.bean.BeanUtils;
 import com.easyink.common.utils.file.FileUploadUtils;
 import com.easyink.wecom.annotation.Convert2Cipher;
@@ -61,9 +60,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -1120,7 +1116,9 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
         if (StringUtils.isAnyBlank(corpId, userId)) {
             return StringUtils.EMPTY;
         }
-        WeUserIdMapping weUserIdMapping = weUserIdMappingMapper.selectOne(new LambdaUpdateWrapper<WeUserIdMapping>().eq(WeUserIdMapping::getCorpId, corpId).eq(WeUserIdMapping::getUserId, userId).last(GenConstants.LIMIT_1));
+        WeUserIdMapping weUserIdMapping = weUserIdMappingMapper.selectOne(new LambdaUpdateWrapper<WeUserIdMapping>().eq(WeUserIdMapping::getCorpId, corpId)
+                                                                                                                    .eq(WeUserIdMapping::getUserId, userId)
+                                                                                                                    .last(GenConstants.LIMIT_1));
         if (weUserIdMapping == null) {
             String openUserId = getOpenUserIdByClient(corpId, userId);
             weUserIdMapping = new WeUserIdMapping(corpId, userId, openUserId);
@@ -1129,17 +1127,19 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
         return weUserIdMapping.getOpenUserId();
     }
 
+
+
     /**
      * 通过接口将userId转化为密文
      *
-     * @param corpId    企业id
-     * @param userId    员工userId
+     * @param corpId 企业id
+     * @param userId 员工userId
      * @return
      */
     protected String getOpenUserIdByClient(String corpId, String userId) {
         List<String> users = new ArrayList<>();
         users.add(userId);
-        Map<String,String> openUserIdMap = convertIDClient.getNewUserId(corpId, users).getOpen_userid_list().stream().collect(Collectors.toMap(CorpIdToOpenCorpIdResp.UserIdMapping::getUserid, CorpIdToOpenCorpIdResp.UserIdMapping::getOpen_userid));
+        Map<String,String> openUserIdMap = convertIDClient.getUserIdMapping(corpId, users).getOpen_userid_list().stream().collect(Collectors.toMap(CorpIdToOpenCorpIdResp.UserIdMapping::getUserid, CorpIdToOpenCorpIdResp.UserIdMapping::getOpen_userid));
         return openUserIdMap.getOrDefault(userId, StringUtils.EMPTY);
     }
 

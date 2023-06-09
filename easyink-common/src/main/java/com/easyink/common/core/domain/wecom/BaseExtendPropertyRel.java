@@ -32,6 +32,7 @@ public class BaseExtendPropertyRel {
     @TableField("extend_property_id")
     @ApiModelProperty(value = "扩展属性id")
     private Long extendPropertyId;
+
     /**
      * 自定义属性的值
      */

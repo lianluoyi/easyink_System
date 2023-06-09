@@ -203,6 +203,13 @@ public class WeCustomer extends BaseEntity {
     @TableField(exist = false)
     private List<WeCustomerExtend> extendList;
 
+    /**
+     * 匹配的标签，使用","分隔。
+     */
+    @ApiModelProperty(value = "匹配的标签")
+    @TableField(exist = false)
+    private String markTagIds;
+
 
     /**
      * 根据API返回的客户详情实体 构建数据交互的企微客户实体

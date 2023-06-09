@@ -77,7 +77,7 @@ public class RyTask {
             try {
                 corpId = wxCorpAccount.getCorpId();
                 if (StringUtils.isAnyBlank(corpId, wxCorpAccount.getChatSecret())) {
-                    log.error("公司ID:{},会话存档Secret:{}", corpId, wxCorpAccount.getChatSecret());
+                    log.info("未配置会话存档 公司ID:{},会话存档Secret:{}", corpId, wxCorpAccount.getChatSecret());
                     return;
                 }
                 String chatDataIndex = WeConstans.getChatDataIndex(corpId);

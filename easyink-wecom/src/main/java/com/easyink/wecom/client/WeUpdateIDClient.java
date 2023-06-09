@@ -34,11 +34,11 @@ public interface WeUpdateIDClient {
      * 将企业主体下的明文userid转换为服务商主体下的密文userid。
      *
      * @param corpId        用来获取accessToken
-     * @param userIdList    需要转换的userIdList
+     * @param userIdList    需要转换的userIdList (明文)
      * @return
      */
     @Post(url = "batch/userid_to_openuserid", interceptor = WeAccessTokenInterceptor.class)
-    CorpIdToOpenCorpIdResp getNewUserId(@Header("corpid") String corpId, @Body("userid_list") List<String>  userIdList);
+    CorpIdToOpenCorpIdResp getUserIdMapping(@Header("corpid") String corpId, @Body("userid_list") List<String>  userIdList);
 
     /**
      * 将企业主体下的external_userid转换为服务商主体下的external_userid。

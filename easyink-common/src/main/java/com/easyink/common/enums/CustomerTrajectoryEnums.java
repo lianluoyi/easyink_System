@@ -244,4 +244,62 @@ public class CustomerTrajectoryEnums {
 
 
     }
+
+    @AllArgsConstructor
+    public enum TagType{
+
+        /**
+         * 通过员工活码打标签
+         */
+        CODE_TAG("code_tag","客户扫描活码\"${activityScene}\"添加员工${userName}，被打上标签："),
+        /**
+         * 新客进群打标签
+         */
+        NEW_CUSTOMER_GROUP("newCustomer_group","客户扫描活码\"${codeName}\"添加员工${userName}，被打上标签："),
+        /**
+         * 查看雷达打标签
+         */
+        VIEW_RADAR("view_radar","客户查看了雷达链接\"${radarTitle}\"，被打上标签："),
+        /**
+         * 点击表单打标签
+         */
+        CLICK_FORM("click_form","客户点击了表单\"${formName}\"，被打上标签："),
+        /**
+         * 提交表单打标签
+         */
+        SUBMIT_FORM("submit_form","客户提交了表单\"${formName}\"，被打上标签："),
+        /**
+         * 自动打标签
+         */
+        AUTO_TAG("auto_tag","客户触发了自动标签规则\"${ruleName}\"，被打上标签："),
+        /**
+         * 流失打标签
+         */
+        LOSS_TAG("loss_tag","客户删除员工${userName}，被打上标签："),
+        /**
+         * 侧边栏、客户详情页修改标签
+         */
+        EDIT_TAG("edit_tag","${operator}修改了客户标签为："),
+        /**
+         * 批量移除标签
+         */
+        BATCH_REMOVE_TAG("batch_remove_tag","${operator}移除了标签："),
+        /**
+         * 批量增加标签
+         */
+        BATCH_ADD_TAG("batch_add_tag","${operator}给客户打上标签：")
+        ;
+        /**
+         * 子类型标识
+         */
+        @Getter
+        private final String type;
+        /**
+         * 对应的客户轨迹记录描述
+         */
+        @Getter
+        private final String desc;
+
+
+    }
 }

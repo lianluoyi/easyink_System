@@ -12,12 +12,14 @@ import com.easyink.wecom.domain.entity.autotag.WeAutoTagUserRel;
 import com.easyink.wecom.mapper.autotag.WeAutoTagKeywordMapper;
 import com.easyink.wecom.service.autotag.WeAutoTagKeywordService;
 import com.easyink.wecom.service.autotag.WeAutoTagUserRelService;
+import com.easyink.wecom.service.idmapping.WeUserIdMappingService;
 import com.google.common.collect.Maps;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -34,6 +36,9 @@ public class WeAutoTagKeywordServiceImpl extends ServiceImpl<WeAutoTagKeywordMap
 
     @Autowired
     private WeAutoTagUserRelService weAutoTagUserRelService;
+
+    @Autowired
+    private WeUserIdMappingService weUserIdMappingService;
 
     /**
      * 批量添加
@@ -184,12 +189,15 @@ public class WeAutoTagKeywordServiceImpl extends ServiceImpl<WeAutoTagKeywordMap
                 .eq(WeAutoTagUserRel::getType, WeConstans.AUTO_TAG_ADD_USER_TYPE)
                 );
         //查询部门下的员工
+
         List<WeAutoTagUserRel> listFromDepartment = weAutoTagUserRelService.getInfoByUserIdFromDepartment(corpId, userId,hadUserScopeRuleIdList);
         if(CollectionUtils.isNotEmpty(listFromDepartment)){
             list.addAll(listFromDepartment);
         }
         Set<Long> ruleIdSet = list.stream().map(WeAutoTagUserRel::getRuleId).collect(Collectors.toSet());
-
+        if(CollectionUtils.isEmpty(ruleIdSet)) {
+            return Collections.emptyMap();
+        }
         return this.list(new LambdaQueryWrapper<WeAutoTagKeyword>()
                 .in(WeAutoTagKeyword::getRuleId, ruleIdSet)).stream().collect(Collectors.groupingBy(WeAutoTagKeyword::getRuleId));
     }

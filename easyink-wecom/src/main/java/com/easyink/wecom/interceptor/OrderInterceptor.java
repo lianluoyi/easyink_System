@@ -6,7 +6,7 @@ import com.dtflys.forest.exceptions.ForestRuntimeException;
 import com.dtflys.forest.http.ForestRequest;
 import com.dtflys.forest.http.ForestRequestBody;
 import com.dtflys.forest.http.ForestResponse;
-import com.dtflys.forest.http.NameValueRequestBody;
+import com.dtflys.forest.http.body.NameValueRequestBody;
 import com.dtflys.forest.interceptor.Interceptor;
 import com.easyink.common.constant.GenConstants;
 import com.easyink.common.constant.WeConstans;

@@ -68,8 +68,7 @@ public class WeOperationsCenterSopScopeServiceImpl extends ServiceImpl<WeOperati
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void updateSopScope(String corpId, Long sopId, List<String> userIdList, List<String> departmentIdList) {
-        boolean isHaveNotTargetList = CollectionUtils.isEmpty(userIdList) && CollectionUtils.isEmpty(departmentIdList);
-        if (StringUtils.isBlank(corpId) || sopId == null || isHaveNotTargetList) {
+        if (StringUtils.isBlank(corpId) || sopId == null) {
             throw new CustomException(ResultTip.TIP_GENERAL_BAD_REQUEST);
         }
         //先删除数据 再重新插入
@@ -77,14 +76,22 @@ public class WeOperationsCenterSopScopeServiceImpl extends ServiceImpl<WeOperati
         wrapper.eq(WeOperationsCenterSopScopeEntity::getCorpId, corpId)
                 .eq(WeOperationsCenterSopScopeEntity::getSopId, sopId);
         baseMapper.delete(wrapper);
-        //插入更新员工
-        List<WeOperationsCenterSopScopeEntity> addList = buildSopScopeDate(corpId, sopId, userIdList, WeConstans.SOP_USE_EMPLOYEE);
-        //插入更新部门
-        List<WeOperationsCenterSopScopeEntity> departmentRelInfoList = buildSopScopeDate(corpId, sopId, departmentIdList, WeConstans.SOP_USE_DEPARTMENT);
+        List<WeOperationsCenterSopScopeEntity> addList = new ArrayList<>();
+        List<WeOperationsCenterSopScopeEntity> departmentRelInfoList = new ArrayList<>();
+        if (CollectionUtils.isNotEmpty(userIdList)){
+            //插入更新员工
+            addList = buildSopScopeDate(corpId, sopId, userIdList, WeConstans.SOP_USE_EMPLOYEE);
+        }
+        if (CollectionUtils.isNotEmpty(departmentIdList)) {
+            //插入更新部门
+            departmentRelInfoList = buildSopScopeDate(corpId, sopId, departmentIdList, WeConstans.SOP_USE_DEPARTMENT);
+        }
         if(CollectionUtils.isNotEmpty(departmentRelInfoList)){
             addList.addAll(departmentRelInfoList);
         }
-        baseMapper.batchSave(addList);
+        if (CollectionUtils.isNotEmpty(addList)) {
+            baseMapper.batchSave(addList);
+        }
     }
 
     @Override

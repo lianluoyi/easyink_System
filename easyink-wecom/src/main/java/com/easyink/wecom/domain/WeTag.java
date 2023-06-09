@@ -62,5 +62,4 @@ public class WeTag implements Serializable {
     @TableField("seq_id")
     private Long seqId;
 
-
 }

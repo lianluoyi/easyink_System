@@ -4,6 +4,7 @@ import cn.hutool.core.collection.CollUtil;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.easyink.common.config.RuoYiConfig;
 import com.easyink.common.constant.GenConstants;
 import com.easyink.common.constant.GroupConstants;
 import com.easyink.common.constant.WeConstans;
@@ -23,6 +24,7 @@ import com.easyink.wecom.domain.WeGroup;
 import com.easyink.wecom.domain.dto.WeGroupMemberDTO;
 import com.easyink.wecom.domain.vo.ConversationArchiveVO;
 import com.easyink.wecom.service.*;
+import com.easyink.wecom.service.idmapping.WeUserIdMappingService;
 import com.github.pagehelper.PageInfo;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
@@ -61,6 +63,10 @@ public class WeConversationArchiveServiceImpl implements WeConversationArchiveSe
     private WeGroupService weGroupService;
     @Autowired
     private WeGroupMemberService weGroupMemberService;
+    @Autowired
+    private WeUserIdMappingService weUserIdMappingService ;
+    @Autowired
+    private RuoYiConfig ruoyiConfig ;
 
     private static final int LENGTH = 3;
 
@@ -224,7 +230,8 @@ public class WeConversationArchiveServiceImpl implements WeConversationArchiveSe
             return null;
         }
         //权限下的员工
-        List<String> userIds = weUserService.listOfUserId(loginUser.getCorpId(), loginUser.getDepartmentDataScope().split(WeConstans.COMMA));
+        List<String> userIds = weUserService.listOfUserId(loginUser.getCorpId(), loginUser.getDepartmentDataScope()
+                                                                                          .split(WeConstans.COMMA));
         //若为空则只能看本人的数据 (admin不存在会话存档)
         if (CollectionUtils.isEmpty(userIds) && !loginUser.isSuperAdmin()) {
             userIds.add(loginUser.getWeUser().getUserId());

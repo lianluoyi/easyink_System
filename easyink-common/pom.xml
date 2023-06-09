@@ -68,6 +68,12 @@
             <artifactId>commons-lang3</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>commons-lang</groupId>
+            <artifactId>commons-lang</artifactId>
+            <version>${commons.lang.version}</version>
+        </dependency>
+
         <!-- JSON工具类 -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
@@ -149,7 +155,7 @@
         <dependency>
             <groupId>com.dtflys.forest</groupId>
             <artifactId>forest-spring-boot-starter</artifactId>
-            <version>1.5.0-RC7</version>
+            <version>1.5.31</version>
         </dependency>
 
         <dependency>

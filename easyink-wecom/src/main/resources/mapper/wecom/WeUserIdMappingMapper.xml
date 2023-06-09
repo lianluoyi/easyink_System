@@ -1,5 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.easyink.wecom.mapper.WeUserIdMappingMapper">
+
+    <!--    批量插入/更新-->
+    <insert id="batchInsertOrUpdate">
+        INSERT INTO
+        we_user_id_mapping
+        (
+        corp_id, user_id,open_user_id
+        )
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+            #{item.corpId},
+            #{item.userId},
+            #{item.openUserId}
+            )
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+        open_user_id = VALUES(open_user_id )
+    </insert>
 </mapper>
 

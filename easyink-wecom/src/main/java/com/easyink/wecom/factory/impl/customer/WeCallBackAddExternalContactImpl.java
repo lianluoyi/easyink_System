@@ -1,6 +1,8 @@
 package com.easyink.wecom.factory.impl.customer;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.thread.ThreadUtil;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -15,6 +17,7 @@ import com.easyink.common.enums.*;
 import com.easyink.common.enums.code.WelcomeMsgTypeEnum;
 import com.easyink.common.exception.CustomException;
 import com.easyink.common.lock.LockUtil;
+import com.easyink.common.utils.TagRecordUtil;
 import com.easyink.wecom.domain.*;
 import com.easyink.wecom.domain.dto.AddWeMaterialDTO;
 import com.easyink.wecom.domain.dto.WeMediaDTO;
@@ -26,6 +29,8 @@ import com.easyink.wecom.domain.dto.common.*;
 import com.easyink.wecom.domain.vo.SelectWeEmplyCodeWelcomeMsgVO;
 import com.easyink.wecom.domain.vo.WxCpXmlMessageVO;
 import com.easyink.wecom.factory.WeEventStrategy;
+import com.easyink.wecom.mapper.WeCustomerTrajectoryMapper;
+import com.easyink.wecom.mapper.WeEmpleCodeMapper;
 import com.easyink.wecom.service.*;
 import com.easyink.wecom.service.autotag.WeAutoTagRuleHitCustomerRecordService;
 import com.easyink.wecom.service.redeemcode.WeRedeemCodeService;
@@ -38,10 +43,8 @@ import org.redisson.api.RLock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.sql.Time;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -86,6 +89,10 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
     private WeAutoTagRuleHitCustomerRecordService weAutoTagRuleHitCustomerRecordService;
     @Autowired
     private WeRedeemCodeService weRedeemCodeService;
+    @Autowired
+    private WeEmpleCodeMapper weEmpleCodeMapper;
+    @Autowired
+    private WeCustomerTrajectoryMapper weCustomerTrajectoryMapper;
 
     private final WeUserService weUserService;
 
@@ -241,7 +248,8 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
                 }
                 //为外部联系人添加员工活码标签
                 setEmplyCodeTag(weFlowerCustomerRel, empleCodeId, messageMap.getTagFlag());
-
+                // 打标签后休眠1S , 避免出现打标签后又打备注提示接口调用频繁 Tower 任务: 客户扫活码加好友之后没有自动备注 ( https://tower.im/teams/636204/todos/69053 )
+                ThreadUtil.safeSleep(1000L);
                 //判断是否需要设置备注
                 setEmplyCodeExternalUserRemark(state, userId, externalUserId, corpId, messageMap.getRemarkType(), messageMap.getRemarkName(), weFlowerCustomerRel.getRemark());
             }
@@ -280,7 +288,7 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
         } catch (Exception e) {
             log.error("[欢迎语回调]拼装活动欢迎语 或 同步发送欢迎语消息异常,e:{},活动id:{},corpId:{}", ExceptionUtils.getStackTrace(e), messageMap.getCodeActivityId(), corpId);
         } finally {
-            if(rLock != null){
+            if(rLock != null && rLock.isHeldByCurrentThread()){
                 rLock.unlock();
             }
         }
@@ -361,11 +369,40 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
                 log.info("setEmplyCodeTag 员工活码 开始批量打标签！");
                 //查询这个tagId对应的groupId
                 List<String> tagIdList = tagList.stream().map(WeEmpleCodeTag::getTagId).filter(Objects::nonNull).collect(Collectors.toList());
+                //获取标签名字
+                List<String> tagNameList = tagList.stream().map(WeEmpleCodeTag::getTagName).filter(Objects::nonNull).collect(Collectors.toList());
                 weCustomerService.singleMarkLabel(weFlowerCustomerRel.getCorpId(), weFlowerCustomerRel.getUserId(), weFlowerCustomerRel.getExternalUserid(), tagIdList, weUser.getName());
+                recordCodeTag(weFlowerCustomerRel.getCorpId(),weUser,weFlowerCustomerRel.getExternalUserid(),tagNameList,empleCodeId);
             }
         } catch (Exception e) {
             log.error("setEmplyCodeTag error!! empleCodeId={},e={}", empleCodeId, ExceptionUtils.getStackTrace(e));
         }
+    }
+
+    /**
+     * 记录扫描员工活码打标签的信息动态
+     *
+     * @param corpId 公司id
+     * @param weUser 员工信息
+     * @param externalUserId 客户id
+     * @param tagNameList 标签列表
+     * @param empleCodeId 活码id
+     */
+    public void recordCodeTag(String corpId, WeUser weUser, String externalUserId, List<String> tagNameList,String empleCodeId){
+        if (StringUtils.isAnyBlank(corpId, externalUserId) || CollUtil.isEmpty(tagNameList)||Objects.isNull(weUser)) {
+            log.info("记录工活码打标签的信息动态时员工，客户id，公司id,标签列表,活码id不能为空，userId：{}，externalUserId：{}，corpId：{}，addTagIds: {},empleCodeId:{}", weUser, externalUserId, corpId, tagNameList,empleCodeId);
+            return;
+        }
+        WeEmpleCode weEmpleCode=weEmpleCodeMapper.selectById(empleCodeId);
+        if (Objects.isNull(weEmpleCode)){
+            log.info("记录工活码打标签的信息动态时,查询员工活码信息异常");
+            return;
+        }
+        TagRecordUtil tagRecordUtil=new TagRecordUtil();
+        String content = tagRecordUtil.buildCodeContent(weEmpleCode.getScenario(),weUser.getName());
+        String detail = String.join(",", tagNameList);
+        //保存信息动态
+        weCustomerTrajectoryService.saveCustomerTrajectory(corpId,weUser.getUserId(),externalUserId,content,detail);
     }
 
     /**

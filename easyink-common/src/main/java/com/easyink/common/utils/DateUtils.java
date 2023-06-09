@@ -172,6 +172,26 @@ public class DateUtils extends org.apache.commons.lang3.time.DateUtils {
     }
 
     /**
+     * 判断日期是否在输入的时间范围内 格式：YYYY-MM-DD HH:MM
+     *
+     * @param startDateStr 开始时间
+     * @param endDateStr 结束时间
+     * @param dateStr 日期
+     * @return true 是, false 不是
+     */
+    public static Boolean isDateRange(String startDateStr, String endDateStr, String dateStr) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(YYYY_MM_DD_HH_MM);
+        LocalDateTime startDate = LocalDateTime.parse(startDateStr, formatter);
+        LocalDateTime endDate = LocalDateTime.parse(endDateStr, formatter);
+        LocalDateTime date = LocalDateTime.parse(dateStr, formatter);
+        if (date.isAfter(startDate) && date.isBefore(endDate)) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    /**
      * 获取服务器启动时间
      */
     public static Date getServerStartDate() {
@@ -340,6 +360,25 @@ public class DateUtils extends org.apache.commons.lang3.time.DateUtils {
             }
         }
         return getTargetDate(dayTime, END_TIME_SUFFIX);
+    }
+
+    /**
+     * 传入Date类型 YYYY-MM-DD HH:MM:SS，计算当前日期的结束时间
+     *
+     * @param date 当前日期
+     * @return 结束时间
+     */
+    public static Date getEndOfDay(Date date) {
+        if (date == null){
+            return null;
+        }
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        calendar.set(Calendar.HOUR_OF_DAY, 23);
+        calendar.set(Calendar.MINUTE, 59);
+        calendar.set(Calendar.SECOND, 59);
+        date = calendar.getTime();
+        return date;
     }
 
     /**

@@ -166,11 +166,12 @@ public class WeAutoTagGroupSceneGroupRelServiceImpl extends ServiceImpl<WeAutoTa
     /**
      * 查询标签列表根据群id
      *
+     * @param corpId
      * @param chatId 群id
      * @return
      */
     @Override
-    public Map<Long, List<WeTag>> getTagListGroupByRuleIdByChatId(String chatId) {
+    public Map<Long, List<WeTag>> getTagListGroupByRuleIdByChatId(String corpId, String chatId) {
         Map<Long, List<WeTag>> ruleTagMap = new HashMap<>();
         if (StringUtils.isBlank(chatId)) {
             log.error("参数异常,跳过打标签,chatId: {}", chatId);
@@ -179,7 +180,7 @@ public class WeAutoTagGroupSceneGroupRelServiceImpl extends ServiceImpl<WeAutoTa
 
 
         // 查询包含该群的规则id列表与场景id的映射
-        List<GroupSceneRuleVO> sceneIdAndRuleIdMapping = this.baseMapper.selectRuleIdAndSceneIdMappingByChatId(chatId);
+        List<GroupSceneRuleVO> sceneIdAndRuleIdMapping = this.baseMapper.selectRuleIdAndSceneIdMappingByChatId(corpId,chatId);
         if (CollectionUtils.isEmpty(sceneIdAndRuleIdMapping)) {
             return ruleTagMap;
         }

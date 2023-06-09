@@ -2,6 +2,7 @@ package com.easyink.wecom.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.easyink.common.core.domain.sop.CustomerSopPropertyRel;
 import com.easyink.common.core.domain.wecom.BaseExtendPropertyRel;
 import com.easyink.common.enums.ResultTip;
 import com.easyink.common.exception.CustomException;
@@ -74,6 +75,17 @@ public class WeCustomerExtendPropertyRelServiceImpl extends ServiceImpl<WeCustom
     @Override
     public List<String> listOfPropertyIdAndValue(List<Column> columnList) {
         return weCustomerExtendPropertyRelMapper.listOfPropertyIdAndValue(columnList);
+    }
+
+    /**
+     * 根据extend_property_id查询所有符合条件的客户额外字段关系
+     *
+     * @param columnList 字段属性值
+     * @return {@link BaseExtendPropertyRel}
+     */
+    @Override
+    public List<CustomerSopPropertyRel> selectBaseExtendValue(List<Column> columnList) {
+        return weCustomerExtendPropertyRelMapper.selectBaseExtendValue(columnList);
     }
 
 }

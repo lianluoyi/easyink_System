@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.easyink.common.constant.Constants;
 import com.easyink.common.constant.UserConstants;
 import com.easyink.common.constant.form.FormConstants;
 import com.easyink.common.core.domain.AjaxResult;
@@ -11,16 +12,18 @@ import com.easyink.common.core.domain.entity.SysUser;
 import com.easyink.common.core.domain.entity.WeCorpAccount;
 import com.easyink.common.core.domain.wecom.WeUser;
 import com.easyink.common.enums.CustomerStatusEnum;
+import com.easyink.common.enums.CustomerTrajectoryEnums;
 import com.easyink.common.enums.MessageType;
 import com.easyink.common.enums.ResultTip;
 import com.easyink.common.exception.CustomException;
 import com.easyink.common.service.ISysUserService;
 import com.easyink.common.utils.DateUtils;
+import com.easyink.common.utils.TagRecordUtil;
 import com.easyink.common.utils.poi.ExcelUtil;
 import com.easyink.wecom.client.WeMessagePushClient;
 import com.easyink.wecom.domain.WeCustomer;
+import com.easyink.wecom.domain.WeCustomerTrajectory;
 import com.easyink.wecom.domain.WeFlowerCustomerRel;
-import com.easyink.wecom.domain.WeTag;
 import com.easyink.wecom.domain.dto.WeMessagePushDTO;
 import com.easyink.wecom.domain.dto.form.FormCommitDTO;
 import com.easyink.wecom.domain.dto.message.TextMessageDTO;
@@ -30,12 +33,13 @@ import com.easyink.wecom.domain.entity.form.WeFormOperRecord;
 import com.easyink.wecom.domain.enums.form.FormOperEnum;
 import com.easyink.wecom.domain.model.form.CustomerLabelSettingModel;
 import com.easyink.wecom.domain.model.form.FormResultModel;
-import com.easyink.wecom.domain.vo.WeMakeCustomerTagVO;
+import com.easyink.wecom.domain.vo.autotag.TagInfoVO;
 import com.easyink.wecom.domain.vo.form.FormCustomerOperRecordExportVO;
 import com.easyink.wecom.domain.vo.form.FormCustomerOperRecordVO;
 import com.easyink.wecom.domain.vo.form.FormOperRecordDetailVO;
 import com.easyink.wecom.domain.vo.form.FormUserSendRecordVO;
 import com.easyink.wecom.login.util.LoginTokenService;
+import com.easyink.wecom.mapper.WeCustomerTrajectoryMapper;
 import com.easyink.wecom.mapper.form.WeFormMapper;
 import com.easyink.wecom.mapper.form.WeFormOperRecordMapper;
 import com.easyink.wecom.service.*;
@@ -46,12 +50,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.sql.Time;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -79,6 +85,12 @@ public class WeFormOperRecordServiceImpl extends ServiceImpl<WeFormOperRecordMap
     private final ISysUserService iSysUserService;
     private final WeFlowerCustomerRelService weFlowerCustomerRelService;
     private final WechatOpenService wechatOpenService;
+
+    @Autowired
+    private WeCustomerTrajectoryMapper weCustomerTrajectoryMapper;
+
+    @Autowired
+    private WeTagService weTagService;
 
     @Override
     @Async(value = "formTaskExecutor")
@@ -225,6 +237,7 @@ public class WeFormOperRecordServiceImpl extends ServiceImpl<WeFormOperRecordMap
                     weFormOperRecord.getUserId(),
                     weFormOperRecord.getUserName(),
                     weFormOperRecord.getExternalUserId());
+            recordFormTag(weForm,corpId,weUser,customer,CustomerTrajectoryEnums.TagType.SUBMIT_FORM.getType(),customerLabelSettingModel.getSubmitLabelIdList());
         }
     }
 
@@ -263,7 +276,35 @@ public class WeFormOperRecordServiceImpl extends ServiceImpl<WeFormOperRecordMap
                     weFormOperRecord.getUserId(),
                     weFormOperRecord.getUserName(),
                     weFormOperRecord.getExternalUserId());
+            recordFormTag(weForm,corpId,weUser,customer,CustomerTrajectoryEnums.TagType.CLICK_FORM.getType(),customerLabelSettingModel.getClickLabelIdList());
         }
+    }
+
+    /**
+     * 记录表单点击或提交打标签信息动态
+     *
+     * @param weForm 表单详情
+     * @param corpId 公司id
+     * @param weUser 员工信息
+     * @param customer 客户信息
+     * @param type 类型（区分点击还是提交）
+     * @param tagIdList 标签id列表
+     */
+    public void recordFormTag(WeForm weForm,String corpId, WeUser weUser, WeCustomer customer,String type,List<String> tagIdList){
+        if (Objects.isNull(weForm)||Objects.isNull(weUser)||Objects.isNull(customer)||StringUtils.isBlank(corpId)||CollectionUtils.isEmpty(tagIdList)) {
+            log.info("记录表单操作信息动态时，表单，公司id，员工，客户,标签不能为空，weForm：{}，corpId：{}，weUser：{}，customer：{}，tagIdList：{}", weForm, corpId, weUser,customer,tagIdList);
+            return;
+        }
+        TagRecordUtil tagRecordUtil=new TagRecordUtil();
+        String content=tagRecordUtil.buildFormContent(weForm.getFormName(),type);
+        List<String> tagName = weTagService.selectTagByIds(tagIdList).stream().map(TagInfoVO::getTagName).collect(Collectors.toList());
+        if (CollectionUtils.isEmpty(tagName)){
+            log.info("记录表单操作信息动态时,获取标签名列表异常");
+            return;
+        }
+        String detail = String.join(",", tagName);
+        //保存信息动态
+        weCustomerTrajectoryService.saveCustomerTrajectory(corpId,weUser.getUserId(),customer.getExternalUserid(),content,detail);
     }
 
     /**

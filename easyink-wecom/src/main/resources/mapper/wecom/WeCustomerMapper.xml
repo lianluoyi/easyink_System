@@ -49,7 +49,8 @@
         wfcr.status,
         wu.user_name,
         (SELECT wd.`name` FROM we_department wd WHERE wd.id=wu.main_department and wd.corp_id = #{corpId}
-        ${@com.easyink.common.constant.GenConstants@LIMIT_1}) as department
+        ${@com.easyink.common.constant.GenConstants@LIMIT_1}) as department,
+        GROUP_CONCAT(wt.tag_id) AS markTagIds
         FROM
         we_customer wc
         LEFT JOIN we_flower_customer_rel wfcr ON wfcr.corp_id = wc.corp_id and wc.external_userid=wfcr.external_userid
@@ -105,6 +106,15 @@
             </if>
             <if test="customerStartTime != null and customerEndTime != null">
                 AND wfcr.create_time between #{customerStartTime} and #{customerEndTime}
+            </if>
+            <if test="addWay != null">
+                AND wfcr.add_way = #{addWay}
+            </if>
+            <if test="birthdayStr != null">
+                AND wc.birthday BETWEEN
+                <foreach item="item" index="index" collection="birthdayStr.split(',')" separator=" AND ">
+                    #{item}
+                </foreach>
             </if>
             AND wu.is_activate = '${@com.easyink.common.constant.WeConstans@WE_USER_IS_ACTIVATE}'
         </where>

@@ -14,6 +14,7 @@ import com.easyink.wecom.domain.dto.customersop.AddWeCustomerSopDTO;
 import com.easyink.wecom.domain.dto.customersop.Column;
 import com.easyink.wecom.domain.dto.groupsop.*;
 import com.easyink.wecom.domain.vo.customer.WeCustomerVO;
+import com.easyink.wecom.mapper.WeUserMapper;
 import com.easyink.wecom.service.*;
 import joptsimple.internal.Strings;
 import org.apache.commons.collections4.CollectionUtils;
@@ -22,10 +23,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -46,9 +44,10 @@ public class WeGroupSopV2ServiceImpl implements WeGroupSopV2Service {
     private final WeOperationsCenterCustomerSopFilterService customerSopFilterService;
     private final WeCustomerExtendPropertyRelService propertyRelService;
     private final WeCustomerService weCustomerService;
+    private final WeUserMapper weUserMapper;
 
     @Autowired
-    public WeGroupSopV2ServiceImpl(WeOperationsCenterSopService sopService, WeOperationsCenterSopRulesService sopRulesService, WeOperationsCenterSopScopeService sopScopeService, WeOperationsCenterGroupSopFilterService sopFilterService, WeOperationsCenterGroupSopFilterCycleService sopFilterCycleService, WeOperationsCenterCustomerSopFilterService customerSopFilterService, WeCustomerExtendPropertyRelService propertyRelService, WeCustomerService weCustomerService) {
+    public WeGroupSopV2ServiceImpl(WeOperationsCenterSopService sopService, WeOperationsCenterSopRulesService sopRulesService, WeOperationsCenterSopScopeService sopScopeService, WeOperationsCenterGroupSopFilterService sopFilterService, WeOperationsCenterGroupSopFilterCycleService sopFilterCycleService, WeOperationsCenterCustomerSopFilterService customerSopFilterService, WeCustomerExtendPropertyRelService propertyRelService, WeCustomerService weCustomerService, WeUserMapper weUserMapper) {
         this.sopService = sopService;
         this.sopRulesService = sopRulesService;
         this.sopScopeService = sopScopeService;
@@ -57,6 +56,7 @@ public class WeGroupSopV2ServiceImpl implements WeGroupSopV2Service {
         this.customerSopFilterService = customerSopFilterService;
         this.propertyRelService = propertyRelService;
         this.weCustomerService = weCustomerService;
+        this.weUserMapper = weUserMapper;
     }
 
 
@@ -67,11 +67,9 @@ public class WeGroupSopV2ServiceImpl implements WeGroupSopV2Service {
             throw new CustomException(ResultTip.TIP_GENERAL_BAD_REQUEST);
         }
         boolean isCustomer = (WeOperationsCenterSop.SopTypeEnum.NEW_CUSTOMER.getSopType().equals(addWeGroupSopDTO.getSopType()) || WeOperationsCenterSop.SopTypeEnum.ACTIVITY.getSopType().equals(addWeGroupSopDTO.getSopType()) || WeOperationsCenterSop.SopTypeEnum.BIRTH_DAT.getSopType().equals(addWeGroupSopDTO.getSopType()));
-        if (isCustomer) {
-            checkCustomerParam(addWeGroupSopDTO.getSopType(), addWeGroupSopDTO.getUserIdList(), addWeGroupSopDTO.getDepartmentIdList());
-        } else if (WeOperationsCenterSop.SopTypeEnum.GROUP_CALENDAR.getSopType().equals(addWeGroupSopDTO.getSopType())) {
+        if (WeOperationsCenterSop.SopTypeEnum.GROUP_CALENDAR.getSopType().equals(addWeGroupSopDTO.getSopType())) {
             checkGroupCalendar(addWeGroupSopDTO.getChatIdList(), addWeGroupSopDTO.getName(), addWeGroupSopDTO.getRuleList());
-        } else {
+        } else if (WeOperationsCenterSop.SopTypeEnum.TIME_TASK.getSopType().equals(addWeGroupSopDTO.getSopType())){
             //校验群sop
             checkParam(addWeGroupSopDTO.getName(), addWeGroupSopDTO.getSopType(), addWeGroupSopDTO.getFilterType(), addWeGroupSopDTO.getSopFilter(), addWeGroupSopDTO.getChatIdList());
         }
@@ -124,11 +122,9 @@ public class WeGroupSopV2ServiceImpl implements WeGroupSopV2Service {
             throw new CustomException(ResultTip.TIP_GENERAL_BAD_REQUEST);
         }
         boolean isCustomer = (WeOperationsCenterSop.SopTypeEnum.NEW_CUSTOMER.getSopType().equals(updateWeSopDTO.getSopType()) || WeOperationsCenterSop.SopTypeEnum.ACTIVITY.getSopType().equals(updateWeSopDTO.getSopType()) || WeOperationsCenterSop.SopTypeEnum.BIRTH_DAT.getSopType().equals(updateWeSopDTO.getSopType()));
-        if (isCustomer) {
-            checkCustomerParam(updateWeSopDTO.getSopType(), updateWeSopDTO.getUserIdList(), updateWeSopDTO.getDepartmentIdList());
-        } else if (WeOperationsCenterSop.SopTypeEnum.GROUP_CALENDAR.getSopType().equals(updateWeSopDTO.getSopType())) {
+        if (WeOperationsCenterSop.SopTypeEnum.GROUP_CALENDAR.getSopType().equals(updateWeSopDTO.getSopType())) {
             checkGroupCalendar(updateWeSopDTO.getChatIdList(), updateWeSopDTO.getName(), updateWeSopDTO.getRuleList());
-        } else {
+        } else if (WeOperationsCenterSop.SopTypeEnum.TIME_TASK.getSopType().equals(updateWeSopDTO.getSopType())){
             checkParam(updateWeSopDTO.getName(), updateWeSopDTO.getSopType(), updateWeSopDTO.getFilterType(), updateWeSopDTO.getSopFilter(), updateWeSopDTO.getChatIdList());
         }
         String corpId = updateWeSopDTO.getCorpId();
@@ -138,9 +134,18 @@ public class WeGroupSopV2ServiceImpl implements WeGroupSopV2Service {
         sopService.updateSop(corpId, sopId, updateWeSopDTO.getName(), filterType);
         //更新条件或作用范围
         if (isCustomer){
-            //客户sop
+            // 客户sop
+            List<String> userIds;
+            if(StringUtils.isNotBlank(updateWeSopDTO.getSopCustomerFilter().getUsers())) {
+                userIds = Arrays.asList(updateWeSopDTO.getSopCustomerFilter().getUsers().split(","));
+                updateWeSopDTO.setUserIdList(userIds);
+            }
+            if(StringUtils.isNotBlank(updateWeSopDTO.getSopCustomerFilter().getDepartments())) {
+                List<String> departmentIds = Arrays.asList(updateWeSopDTO.getSopCustomerFilter().getDepartments().split(","));
+                updateWeSopDTO.setDepartmentIdList(departmentIds);
+            }
             updateCustomerFilter(updateWeSopDTO.getCreateTime(),corpId, sopId,updateWeSopDTO.getSopType(),updateWeSopDTO.getUserIdList(),updateWeSopDTO.getDepartmentIdList(),updateWeSopDTO.getSopCustomerFilter());
-        }else {
+        } else {
             updateSopFilter(corpId, sopId, updateWeSopDTO.getSopType(), filterType, updateWeSopDTO.getSopFilter(), updateWeSopDTO.getChatIdList());
         }
         //更新规则
@@ -154,7 +159,7 @@ public class WeGroupSopV2ServiceImpl implements WeGroupSopV2Service {
         //指定范围
         if (!WeOperationsCenterSop.SopTypeEnum.ACTIVITY.getSopType().equals(sopType)) {
             sopScopeService.updateSopScope(corpId, sopId, userIdList, departmentIdList);
-        }else{
+        } else{
             WeOperationsCenterSopScopeEntity sopScopeEntity= new WeOperationsCenterSopScopeEntity();
             sopScopeEntity.setCorpId(corpId);
             sopScopeEntity.setCreateTime(createTime);
@@ -356,11 +361,12 @@ public class WeGroupSopV2ServiceImpl implements WeGroupSopV2Service {
         sopScopeEntity.setSopId(sopId);
         List<WeOperationsCenterSopScopeEntity> weOperationsCenterSopScopeEntities = new ArrayList<>();
         AddWeCustomerSopDTO sopCustomerFilter = addWeGroupSopDTO.getSopCustomerFilter();
-        //除了活动sop都要保存员工id
+        // 除了活动sop都要保存员工id
         if (!WeOperationsCenterSop.SopTypeEnum.ACTIVITY.getSopType().equals(addWeGroupSopDTO.getSopType())) {
             //保存sop作用员工
-            if(CollectionUtils.isNotEmpty(addWeGroupSopDTO.getUserIdList())) {
-                addWeGroupSopDTO.getUserIdList().forEach(userId -> {
+            if(StringUtils.isNotBlank(addWeGroupSopDTO.getSopCustomerFilter().getUsers())) {
+                List<String> userIds = Arrays.asList(addWeGroupSopDTO.getSopCustomerFilter().getUsers().split(","));
+                userIds.forEach(userId -> {
                     WeOperationsCenterSopScopeEntity sopScope = new WeOperationsCenterSopScopeEntity();
                     BeanUtils.copyProperties(sopScopeEntity, sopScope);
                     sopScope.setType(WeConstans.SOP_USE_EMPLOYEE);
@@ -369,8 +375,9 @@ public class WeGroupSopV2ServiceImpl implements WeGroupSopV2Service {
                 });
             }
             //保存sop作用部门
-            if(CollectionUtils.isNotEmpty(addWeGroupSopDTO.getDepartmentIdList())) {
-                addWeGroupSopDTO.getDepartmentIdList().forEach(departmentId -> {
+            if(StringUtils.isNotBlank(addWeGroupSopDTO.getSopCustomerFilter().getDepartments())) {
+                List<String> departmentIds = Arrays.asList(addWeGroupSopDTO.getSopCustomerFilter().getDepartments());
+                departmentIds.forEach(departmentId -> {
                     WeOperationsCenterSopScopeEntity sopScope = new WeOperationsCenterSopScopeEntity();
                     BeanUtils.copyProperties(sopScopeEntity, sopScope);
                     sopScope.setType(WeConstans.SOP_USE_DEPARTMENT);
@@ -418,7 +425,8 @@ public class WeGroupSopV2ServiceImpl implements WeGroupSopV2Service {
     }
 
     /**
-     * 活动sop保存客户id
+     * 活动sop客户id
+     *
      * @param corpId 企业id
      * @param sopCustomerFilter 过滤条件
      * @param weOperationsCenterSopScopeEntities 列表

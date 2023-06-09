@@ -4,6 +4,8 @@ import com.easyink.common.core.page.TableDataInfo;
 import com.easyink.common.enums.ResultTip;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
+
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -81,6 +83,38 @@ public class PageInfoUtil {
      */
     public static  <T> TableDataInfo<T> getDataTable(List<T> arrayList, Integer pageNum) {
         return getDataTable(arrayList,pageNum,DEFAULT_PAGE_SIZE);
+    }
+
+    /**
+     * 封装成前端所需分页数据
+     *
+     * @param arrayList 返回的数据列表
+     * @param total 数据总数
+     * @return
+     * @param <T>
+     */
+    public static <T> TableDataInfo<T> getDataTable(List<T> arrayList, Long total) {
+        TableDataInfo rspData = new TableDataInfo();
+        rspData.setCode(ResultTip.TIP_GENERAL_SUCCESS.getCode());
+        rspData.setMsg("查询成功");
+        rspData.setRows(arrayList);
+        rspData.setTotal(total.intValue());
+        return rspData;
+    }
+
+    /**
+     * 默认查询成功响应方法
+     *
+     * @return 结果
+     * @param <T>
+     */
+    public static <T> TableDataInfo<T> emptyData(){
+        TableDataInfo respData = new TableDataInfo();
+        respData.setCode(ResultTip.TIP_GENERAL_SUCCESS.getCode());
+        respData.setMsg("查询成功");
+        respData.setRows(new ArrayList<>());
+        respData.setTotal(0);
+        return respData;
     }
 
     /**

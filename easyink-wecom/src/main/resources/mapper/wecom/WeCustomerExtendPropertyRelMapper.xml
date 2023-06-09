@@ -44,5 +44,18 @@
         GROUP BY
         wcepr.external_userid
     </select>
+    <!--  根据extend_property_id查询所有符合条件的客户额外字段关系  -->
+    <select id="selectBaseExtendValue" resultType="com.easyink.common.core.domain.sop.CustomerSopPropertyRel">
+        SELECT
+            wcepr.external_userid, wcepr.extend_property_id, wcepr.property_value
+        FROM
+            we_customer wc
+                LEFT JOIN we_customer_extend_property_rel wcepr ON wcepr.external_userid = wc.external_userid
+        WHERE
+            wcepr.extend_property_id IN
+        <foreach collection="list" item="item" open="(" separator="," close=")" index="index">
+            #{item.extendPropertyId}
+        </foreach>
+    </select>
 
 </mapper>

@@ -1,6 +1,8 @@
 package com.easyink.wecom.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.easyink.common.core.domain.sop.CustomerSopPropertyRel;
+import com.easyink.common.core.domain.wecom.BaseExtendPropertyRel;
 import com.easyink.wecom.domain.dto.customersop.Column;
 import com.easyink.wecom.domain.entity.customer.WeCustomerExtendPropertyRel;
 import org.apache.ibatis.annotations.Param;
@@ -42,4 +44,12 @@ public interface WeCustomerExtendPropertyRelMapper extends BaseMapper<WeCustomer
      * @return {@link List<WeCustomerExtendPropertyRel>}
      */
     List<String> listOfPropertyIdAndValue(@Param("list") List<Column> columnList);
+
+    /**
+     * 根据extend_property_id查询所有符合条件的客户额外字段关系
+     *
+     * @param columnList 字段属性值
+     * @return {@link BaseExtendPropertyRel}
+     */
+    List<CustomerSopPropertyRel> selectBaseExtendValue(List<Column> columnList);
 }

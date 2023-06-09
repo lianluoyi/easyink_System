@@ -73,7 +73,7 @@ public class StatisticsController extends BaseController {
     @ApiOperation("获取标签统计-客户标签-图表视图")
     public TableDataInfo<WeTagCustomerStatisticsChartVO> getCustomerTagChartView(@RequestBody @Validated WeTagStatisticsDTO dto){
         dto.setCorpId(LoginTokenService.getLoginUser().getCorpId());
-        return weTagService.selectTagStatisticsByChart(dto);
+        return weTagService.getCustomerTagTableChartView(dto);
     }
 
     @PreAuthorize("@ss.hasPermi('statistic:labelStatistics:export')")
