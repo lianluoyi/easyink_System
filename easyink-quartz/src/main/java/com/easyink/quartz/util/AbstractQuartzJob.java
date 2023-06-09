@@ -9,6 +9,7 @@ import com.easyink.common.utils.spring.SpringUtils;
 import com.easyink.quartz.domain.SysJob;
 import com.easyink.quartz.domain.SysJobLog;
 import com.easyink.quartz.service.ISysJobLogService;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
 import org.slf4j.Logger;
@@ -39,7 +40,7 @@ public abstract class AbstractQuartzJob implements Job {
                doExecute(context, sysJob);
                after(context, sysJob, null);
            } catch (Exception e) {
-               log.error("任务执行异常  - ：", e);
+               log.error("任务执行异常  - ：", ExceptionUtils.getStackTrace(e));
                after(context, sysJob, e);
            }
        }

@@ -1,5 +1,6 @@
 package com.easyink.wecom.service.impl.autotag;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.easyink.common.core.domain.wecom.WeUser;
 import com.easyink.common.enums.ResultTip;
@@ -7,14 +8,19 @@ import com.easyink.common.exception.CustomException;
 import com.easyink.common.utils.DateUtils;
 import com.easyink.common.utils.StringUtils;
 import com.easyink.wecom.domain.WeTag;
+import com.easyink.wecom.domain.entity.autotag.WeAutoTagRule;
 import com.easyink.wecom.domain.entity.autotag.WeAutoTagRuleHitCustomerRecord;
 import com.easyink.wecom.domain.entity.autotag.WeAutoTagRuleHitCustomerRecordTagRel;
 import com.easyink.wecom.domain.query.autotag.CustomerTagRuleRecordQuery;
+import com.easyink.wecom.domain.query.autotag.TagRuleQuery;
+import com.easyink.wecom.domain.vo.autotag.TagRuleListVO;
 import com.easyink.wecom.domain.vo.autotag.record.CustomerCountVO;
 import com.easyink.wecom.domain.vo.autotag.record.customer.CustomerTagRuleRecordVO;
 import com.easyink.wecom.mapper.autotag.WeAutoTagRuleHitCustomerRecordMapper;
 import com.easyink.wecom.mapper.autotag.WeAutoTagRuleHitCustomerRecordTagRelMapper;
+import com.easyink.wecom.mapper.autotag.WeAutoTagRuleMapper;
 import com.easyink.wecom.service.WeCustomerService;
+import com.easyink.wecom.service.WeCustomerTrajectoryService;
 import com.easyink.wecom.service.WeUserService;
 import com.easyink.wecom.service.autotag.*;
 import lombok.extern.slf4j.Slf4j;
@@ -50,6 +56,10 @@ public class WeAutoTagRuleHitCustomerRecordServiceImpl extends ServiceImpl<WeAut
     private WeAutoTagRuleHitCustomerRecordTagRelService weAutoTagRuleHitCustomerRecordTagRelService;
     @Autowired
     private WeAutoTagRuleHitCustomerRecordTagRelMapper weAutoTagRuleHitCustomerRecordTagRelMapper;
+    @Autowired
+    private WeCustomerTrajectoryService weCustomerTrajectoryService;
+    @Autowired
+    private WeAutoTagRuleMapper weAutoTagRuleMapper;
 
     private final WeUserService weUserService;
 
@@ -112,11 +122,16 @@ public class WeAutoTagRuleHitCustomerRecordServiceImpl extends ServiceImpl<WeAut
         List<WeAutoTagRuleHitCustomerRecord> batchAddRecordList = new ArrayList<>();
         List<WeAutoTagRuleHitCustomerRecordTagRel> batchAddTagRelList = new ArrayList<>();
         List<String> allTagIdList = new ArrayList<>();
+        List<TagRuleListVO> ruleNameList = new ArrayList<>();
         Date date = new Date();
         for (Map.Entry<Long, List<Long>> sceneEntry : availableSceneIdListGroupByRuleIdMap.entrySet()) {
             Long ruleId = sceneEntry.getKey();
             List<Long> sceneIdList = sceneEntry.getValue();
-
+            //查询规则名
+            TagRuleQuery tagRuleQuery =new TagRuleQuery();
+            tagRuleQuery.setTagIdList(sceneIdList.stream().map(String::valueOf).collect(Collectors.toList()));
+            tagRuleQuery.setCorpId(corpId);
+            List<TagRuleListVO> sceneRuleName = weAutoTagRuleMapper.listCustomer(tagRuleQuery);
             // 组装记录数据
             batchAddRecordList.add(new WeAutoTagRuleHitCustomerRecord(ruleId, corpId, customerId, userId, date));
             // 组装标签记录数据
@@ -124,6 +139,7 @@ public class WeAutoTagRuleHitCustomerRecordServiceImpl extends ServiceImpl<WeAut
             allTagIdList.addAll(tagList.stream().map(WeTag::getTagId).collect(Collectors.toList()));
             List<WeAutoTagRuleHitCustomerRecordTagRel> tagRelList = weAutoTagRuleHitCustomerRecordTagRelService.buildTagRecord(ruleId, customerId, userId, tagList);
             batchAddTagRelList.addAll(tagRelList);
+            ruleNameList.addAll(sceneRuleName);
         }
         // 4.添加记录和标签记录
         // 添加数据
@@ -145,6 +161,7 @@ public class WeAutoTagRuleHitCustomerRecordServiceImpl extends ServiceImpl<WeAut
         if (CollectionUtils.isNotEmpty(allTagIdList)) {
             log.info(">>>>>>>>>>>>>>>准备进行打标签,标签列表: {}", allTagIdList);
             weCustomerService.singleMarkLabel(corpId, userId, customerId, allTagIdList, weUser.getName());
+            weCustomerTrajectoryService.recordAutoCustomerTag(corpId,userId,customerId,ruleNameList);
         }
 
 

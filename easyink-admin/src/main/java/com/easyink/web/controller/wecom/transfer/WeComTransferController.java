@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @Api(value = "WeComTransferController", tags = "数据迁移接口")
-@RequestMapping("/wecom/transfer")
+@RequestMapping("/wecom/transferData")
 @RequiredArgsConstructor
 public class WeComTransferController {
 

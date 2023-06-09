@@ -108,16 +108,8 @@ public interface WeTagService extends IService<WeTag> {
      * 获取标签统计-客户标签-图表视图-分页数据
      *
      * @param dto {@link WeTagStatisticsDTO}
-     * @return 结果
-     */
-    TableDataInfo<WeTagCustomerStatisticsChartVO> selectTagStatisticsByChart(WeTagStatisticsDTO dto);
-
-    /**
-     * 获取标签统计-客户标签-图表视图
-     *
-     * @param dto {@link WeTagStatisticsDTO}
      * @return 结果集 {@link WeTagCustomerStatisticsChartVO}
      */
-    List<WeTagCustomerStatisticsChartVO> getCustomerTagTableChartView(WeTagStatisticsDTO dto);
+    TableDataInfo<WeTagCustomerStatisticsChartVO> getCustomerTagTableChartView(WeTagStatisticsDTO dto);
 
 }

@@ -2,6 +2,7 @@ package com.easyink.wecom.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.easyink.wecom.domain.WeTag;
+import com.easyink.wecom.domain.WeTagStatistic;
 import com.easyink.wecom.domain.dto.statistics.WeTagStatisticsDTO;
 import com.easyink.wecom.domain.vo.statistics.WeTagCustomerStatisticsVO;
 import org.apache.ibatis.annotations.Param;
@@ -66,12 +67,29 @@ public interface WeTagMapper extends BaseMapper<WeTag> {
     List<WeTagCustomerStatisticsVO> selectTagStatistics(@Param("dto") WeTagStatisticsDTO dto, @Param("tagIdList") List<String> tagIdList);
 
     /**
-     * 获取所有标签和客户信息
+     * 获取企业下有打的标签（去重）
      *
      * @param dto {@link WeTagStatisticsDTO}
+     * @return 标签信息
+     */
+    List<WeTag> selectTagIds(WeTagStatisticsDTO dto);
+
+    /**
+     * 获取所有标签和客户信息
+     *
+     * @param dto    {@link WeTagStatisticsDTO}
+     * @param tagIds 标签ID列表
      * @return 标签和客户ID
      */
-    List<WeTag> getWeTagList(WeTagStatisticsDTO dto);
+    List<WeTagStatistic> getWeTagList(@Param("dto") WeTagStatisticsDTO dto, @Param("tagIds") List<WeTag> tagIds);
+
+    /**
+     * 查询企业下有效的标签总数（去重）
+     *
+     * @param dto {@link WeTagStatisticsDTO}
+     * @return 总数
+     */
+    Integer selectCount(WeTagStatisticsDTO dto);
 
     /**
      * 获取所有标签下的客户数量(去重)

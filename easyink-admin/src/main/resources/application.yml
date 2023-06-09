@@ -143,7 +143,7 @@ ruoyi:
       - /test/**
       - /getPublicKey
       - /url
-      - /wecom/transfer/*
+      - /wecom/transferData/*
 
 
 # 开发环境配置

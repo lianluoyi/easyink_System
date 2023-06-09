@@ -29,6 +29,8 @@ public class WeCustomerPushMessageDTO extends WeCustomer {
     private Date customerEndTime;
     @ApiModelProperty(value = "使用范围，全部客户0，指定客户1")
     private String pushRange;
+    @ApiModelProperty(value = "来源")
+    private String addWay;
 
     public WeCustomerPushMessageDTO(String users, String tags, String corpId, String departmentIds, String pushRange) {
         this.setUserIds(users);

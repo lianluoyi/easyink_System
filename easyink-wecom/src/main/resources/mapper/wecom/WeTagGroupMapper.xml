@@ -135,5 +135,24 @@
             wtg.status=${@com.easyink.common.constant.Constants@NORMAL_CODE}
         ORDER BY wtg.create_time DESC
     </select>
+    <!--查询符合条件的标签组列表（数据统计）-->
+    <select id="selectWeTagGroupListByStatistic" resultType="com.easyink.wecom.domain.WeTagGroup">
+        SELECT
+        group_id AS groupId,
+        group_name AS groupName,
+        create_time AS createTime
+        FROM
+        we_tag_group
+        WHERE
+        corp_id = #{corpId} AND
+        status=${@com.easyink.common.constant.Constants@NORMAL_CODE}
+        <if test="tagGroupIds != null and tagGroupIds.size() > 0">
+            AND group_id IN
+            <foreach collection="tagGroupIds" item="groupId" open="(" separator="," close=")">
+                #{groupId}
+            </foreach>
+        </if>
+        ORDER BY create_time
+    </select>
 
 </mapper>

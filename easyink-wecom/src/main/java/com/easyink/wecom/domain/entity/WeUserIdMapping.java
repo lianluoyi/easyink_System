@@ -4,6 +4,7 @@ import java.io.Serializable;
 
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.easyink.wecom.domain.dto.CorpIdToOpenCorpIdResp;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -36,5 +37,10 @@ public class WeUserIdMapping implements Serializable {
     private String openUserId;
 
 
+    public WeUserIdMapping(String corpId, CorpIdToOpenCorpIdResp.UserIdMapping mapping) {
+        this.corpId = corpId;
+        this.userId = mapping.getUserid();
+        this.openUserId = mapping.getOpen_userid() ;
+    }
 }
 

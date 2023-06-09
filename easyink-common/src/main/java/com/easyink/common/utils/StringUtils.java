@@ -1,11 +1,16 @@
 package com.easyink.common.utils;
 
+import com.easyink.common.config.RuoYiConfig;
 import com.easyink.common.constant.WeConstans;
 import com.easyink.common.core.text.StrFormatter;
 import com.easyink.common.enums.ResultTip;
 import com.easyink.common.exception.CustomException;
+import com.easyink.common.utils.spring.SpringUtils;
 
 import java.util.*;
+
+import static com.easyink.common.constant.WeConstans.EXTERNAL_USER_ID_PREFIX;
+import static com.easyink.common.constant.WeConstans.USER_ID_PREFIX;
 
 /**
  * 字符串工具类
@@ -428,8 +433,9 @@ public class StringUtils extends org.apache.commons.lang3.StringUtils {
 
     }
 
+
     /**
-     * 企微用户客户机器判断
+     * 企微用户客户机器判断 (自建/明文)
      *
      * @param str
      * @return

@@ -104,7 +104,7 @@ public class UpdateIDSecurityServiceImpl extends ServiceImpl<UpdateIDSecurityMap
         //获取open_userIdList
         final List<String> users = weUserService.list(new LambdaQueryWrapper<WeUser>().eq(WeUser::getCorpId, corpId)).stream().map(WeUser::getUserId).collect(Collectors.toList());
         //userId：openUserId
-        Map<String,String> openUserIdMap = weUpdateIDClient.getNewUserId(corpId, users).getOpen_userid_list().stream().collect(Collectors.toMap(CorpIdToOpenCorpIdResp.UserIdMapping::getUserid, CorpIdToOpenCorpIdResp.UserIdMapping::getOpen_userid));
+        Map<String,String> openUserIdMap = weUpdateIDClient.getUserIdMapping(corpId, users).getOpen_userid_list().stream().collect(Collectors.toMap(CorpIdToOpenCorpIdResp.UserIdMapping::getUserid, CorpIdToOpenCorpIdResp.UserIdMapping::getOpen_userid));
 
         //获取open_external_userIdList
         final List<WeCustomer> weCustomers = weCustomerMapper.selectList(new LambdaQueryWrapper<WeCustomer>().eq(WeCustomer::getCorpId, corpId));

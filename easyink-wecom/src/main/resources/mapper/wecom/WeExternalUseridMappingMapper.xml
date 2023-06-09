@@ -13,5 +13,20 @@
         `external_userid` = VALUES(`external_userid`),
         `open_external_userid` = VALUES(`open_external_userid`)
     </insert>
+    <!--    批量插入 -->
+    <insert id="batchInsertOrUpdate">
+        INSERT INTO `we_external_userid_mapping`
+        (`corp_id`, `external_userid`, `open_external_userid`)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+            #{item.corpId}, #{item.externalUserid}, #{item.openExternalUserid}
+            )
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+        `corp_id` = VALUES(`corp_id`),
+        `external_userid` = VALUES(`external_userid`),
+        `open_external_userid` = VALUES(`open_external_userid`)
+    </insert>
 </mapper>
 

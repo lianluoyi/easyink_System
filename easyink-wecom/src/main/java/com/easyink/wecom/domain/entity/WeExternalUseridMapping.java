@@ -1,13 +1,14 @@
 package com.easyink.wecom.domain.entity;
 
-import java.io.Serializable;
-
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.easyink.wecom.domain.dto.CorpIdToOpenCorpIdResp;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.io.Serializable;
 
 /**
  * 外部联系人externalUserId明密文映射表(WeExternalUseridMapping)实体类
@@ -35,5 +36,11 @@ public class WeExternalUseridMapping implements Serializable {
     @TableField("open_external_userid")
     private String openExternalUserid;
 
+    public WeExternalUseridMapping(String corpId, CorpIdToOpenCorpIdResp.ExternalUserMapping mapping) {
+        this.corpId = corpId;
+        this.externalUserid = mapping.getExternal_userid();
+        this.openExternalUserid = mapping.getNew_external_userid();
+
+    }
 }
 

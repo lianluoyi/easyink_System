@@ -1,5 +1,6 @@
 package com.easyink.wecom.service.impl.autotag;
 
+import cn.hutool.core.thread.ThreadUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.easyink.common.core.domain.wecom.WeUser;
@@ -8,21 +9,19 @@ import com.easyink.common.utils.StringUtils;
 import com.easyink.wecom.domain.WeFlowerCustomerRel;
 import com.easyink.wecom.domain.WeGroup;
 import com.easyink.wecom.domain.WeTag;
+import com.easyink.wecom.domain.entity.autotag.WeAutoTagRule;
 import com.easyink.wecom.domain.entity.autotag.WeAutoTagRuleHitGroupRecord;
 import com.easyink.wecom.domain.entity.autotag.WeAutoTagRuleHitGroupRecordTagRel;
+import com.easyink.wecom.domain.query.autotag.TagRuleQuery;
 import com.easyink.wecom.domain.query.autotag.TagRuleRecordQuery;
+import com.easyink.wecom.domain.vo.autotag.TagRuleListVO;
 import com.easyink.wecom.domain.vo.autotag.record.CustomerCountVO;
 import com.easyink.wecom.domain.vo.autotag.record.group.GroupTagRuleRecordVO;
 import com.easyink.wecom.mapper.autotag.WeAutoTagRuleHitGroupRecordMapper;
 import com.easyink.wecom.mapper.autotag.WeAutoTagRuleHitGroupRecordTagRelMapper;
-import com.easyink.wecom.service.WeCustomerService;
-import com.easyink.wecom.service.WeFlowerCustomerRelService;
-import com.easyink.wecom.service.WeGroupService;
-import com.easyink.wecom.service.WeUserService;
-import com.easyink.wecom.service.autotag.WeAutoTagGroupSceneGroupRelService;
-import com.easyink.wecom.service.autotag.WeAutoTagGroupSceneTagRelService;
-import com.easyink.wecom.service.autotag.WeAutoTagRuleHitGroupRecordService;
-import com.easyink.wecom.service.autotag.WeAutoTagRuleHitGroupRecordTagRelService;
+import com.easyink.wecom.mapper.autotag.WeAutoTagRuleMapper;
+import com.easyink.wecom.service.*;
+import com.easyink.wecom.service.autotag.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,6 +56,12 @@ public class WeAutoTagRuleHitGroupRecordServiceImpl extends ServiceImpl<WeAutoTa
 
     @Autowired
     private WeAutoTagRuleHitGroupRecordTagRelMapper weAutoTagRuleHitGroupRecordTagRelMapper;
+    @Autowired
+    private WeAutoTagRuleService weAutoTagRuleService;
+    @Autowired
+    private WeCustomerTrajectoryService weCustomerTrajectoryService;
+    @Autowired
+    private WeAutoTagRuleMapper weAutoTagRuleMapper;
 
     private final WeUserService weUserService;
 
@@ -111,7 +116,8 @@ public class WeAutoTagRuleHitGroupRecordServiceImpl extends ServiceImpl<WeAutoTa
         List<WeAutoTagRuleHitGroupRecordTagRel> batchAddTagRelList = new ArrayList<>();
         List<String> allTagIdList = new ArrayList<>();
         // 获取命中的规则对应的标签列表
-        Map<Long, List<WeTag>> tagListGroupByRuleIdMap = weAutoTagGroupSceneGroupRelService.getTagListGroupByRuleIdByChatId(chatId);
+        Map<Long, List<WeTag>> tagListGroupByRuleIdMap = weAutoTagGroupSceneGroupRelService.getTagListGroupByRuleIdByChatId(corpId,chatId);
+        List<Long> ruleIdList=new ArrayList<>();
         if (ObjectUtils.isEmpty(tagListGroupByRuleIdMap)) {
             log.info("当前群没有设置标签规则,跳过打标签, chatId: {}", chatId);
             return;
@@ -122,7 +128,10 @@ public class WeAutoTagRuleHitGroupRecordServiceImpl extends ServiceImpl<WeAutoTa
             allTagIdList.addAll(tagList.stream().map(WeTag::getTagId).collect(Collectors.toList()));
             batchAddRecordList.addAll(recordList);
             batchAddTagRelList.addAll(tagRelList);
+            ruleIdList.add(ruleId);
         });
+        //获取规则名
+        List<WeAutoTagRule> weAutoTagRules = weAutoTagRuleService.list(new LambdaQueryWrapper<WeAutoTagRule>().in(WeAutoTagRule::getId,ruleIdList));
         // 2.添加记录
         if (CollectionUtils.isNotEmpty(batchAddRecordList)) {
             this.baseMapper.insertOrUpdateBatch(batchAddRecordList);
@@ -141,6 +150,9 @@ public class WeAutoTagRuleHitGroupRecordServiceImpl extends ServiceImpl<WeAutoTa
                 for (WeUser weUser : weUserList) {
                     log.info("入群打标签: 员工: {}, 客户: {}", weUser.getUserId(), customerId);
                     weCustomerService.singleMarkLabel(corpId, weUser.getUserId(), customerId, allTagIdList, weUser.getName());
+                    weCustomerTrajectoryService.recordAutoGroupTag(corpId,customerId,weUser,weAutoTagRules,chatId);
+                    // 增加间隔,避免时间过短导致的调用频繁报错
+                    ThreadUtil.safeSleep(800L);
                 }
             }
         }

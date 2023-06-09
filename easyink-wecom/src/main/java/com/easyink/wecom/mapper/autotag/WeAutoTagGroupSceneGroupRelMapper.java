@@ -49,9 +49,10 @@ public interface WeAutoTagGroupSceneGroupRelMapper extends BaseMapper<WeAutoTagG
     /**
      * 查询包含该群的规则id列表
      *
+     * @param corpId 企业id
      * @param chatId 群id
      * @return
      */
-    List<GroupSceneRuleVO> selectRuleIdAndSceneIdMappingByChatId(@Param("chatId") String chatId);
+    List<GroupSceneRuleVO> selectRuleIdAndSceneIdMappingByChatId(@Param("corpId") String corpId, @Param("chatId") String chatId);
 }
 

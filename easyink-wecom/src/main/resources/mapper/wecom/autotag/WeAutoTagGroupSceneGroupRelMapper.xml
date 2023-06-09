@@ -39,6 +39,7 @@
                  LEFT JOIN we_auto_tag_rule r ON r.id = gsgr.rule_id
         WHERE r.`status` = 1
           AND gsgr.group_id = #{chatId}
+        AND r.corp_id =#{corpId}
     </select>
 
 </mapper>

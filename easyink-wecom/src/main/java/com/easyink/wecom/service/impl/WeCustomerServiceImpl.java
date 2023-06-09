@@ -12,10 +12,13 @@ import com.easyink.common.annotation.DataScope;
 import com.easyink.common.constant.Constants;
 import com.easyink.common.constant.GenConstants;
 import com.easyink.common.constant.WeConstans;
+import com.easyink.common.constant.sop.CustomerSopConstants;
 import com.easyink.common.core.domain.AjaxResult;
+import com.easyink.common.core.domain.sop.CustomerSopPropertyRel;
 import com.easyink.common.core.domain.wecom.BaseExtendPropertyRel;
 import com.easyink.common.core.domain.wecom.WeUser;
 import com.easyink.common.enums.CustomerExtendPropertyEnum;
+import com.easyink.common.enums.CustomerTrajectoryEnums;
 import com.easyink.common.enums.MethodParamType;
 import com.easyink.common.enums.ResultTip;
 import com.easyink.common.enums.customer.SubjectTypeEnum;
@@ -23,6 +26,8 @@ import com.easyink.common.enums.wecom.ServerTypeEnum;
 import com.easyink.common.exception.CustomException;
 import com.easyink.common.exception.wecom.WeComException;
 import com.easyink.common.utils.DateUtils;
+import com.easyink.common.utils.DictUtils;
+import com.easyink.common.utils.TagRecordUtil;
 import com.easyink.common.utils.bean.BeanUtils;
 import com.easyink.common.utils.poi.ExcelUtil;
 import com.easyink.common.utils.sql.BatchInsertUtil;
@@ -56,11 +61,13 @@ import com.easyink.wecom.domain.vo.sop.CustomerSopVO;
 import com.easyink.wecom.domain.vo.unionid.GetUnionIdVO;
 import com.easyink.wecom.login.util.LoginTokenService;
 import com.easyink.wecom.mapper.WeCustomerMapper;
+import com.easyink.wecom.mapper.WeCustomerTrajectoryMapper;
 import com.easyink.wecom.mapper.WeExternalUseridMappingMapper;
 import com.easyink.wecom.service.*;
 import com.easyink.wecom.service.wechatopen.WechatOpenService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.aop.framework.AopContext;
@@ -71,6 +78,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.validation.constraints.NotBlank;
+import java.sql.Time;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -129,6 +137,12 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
 
     @Autowired
     private WeUpdateIDClient convertIDClient;
+
+    @Autowired
+    private WeCustomerTrajectoryMapper weCustomerTrajectoryMapper;
+
+    @Autowired
+    private WeTagService weTagService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -447,6 +461,9 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
         weCustomer.setStatus(weCustomerSearchDTO.getStatus());
         weCustomer.setWeFlowerCustomerRels(weFlowerCustomerRels);
 
+        if (MapUtils.isNotEmpty(weCustomerSearchDTO.getParams())){
+            weCustomer.setParams(weCustomerSearchDTO.getParams());
+        }
         if (!StringUtils.isBlank(weCustomerSearchDTO.getName())){
             weCustomer.setName(weCustomerSearchDTO.getName());
             weCustomer.setRemark(weCustomerSearchDTO.getName());
@@ -484,7 +501,6 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
         if (weCustomerSearchDTO.getExtendProperties().size()>0){
             weCustomer.setExtendProperties(weCustomerSearchDTO.getExtendProperties());
         }
-
         return weCustomer;
     }
 
@@ -498,23 +514,89 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
         }
         weCustomerPushMessageDTO.setTagIds(sopFilter.getTagId());
         weCustomerPushMessageDTO.setCustomerStartTime(sopFilter.getStartTime());
-        weCustomerPushMessageDTO.setCustomerEndTime(sopFilter.getEndTime());
+        weCustomerPushMessageDTO.setCustomerEndTime(DateUtils.getEndOfDay(sopFilter.getEndTime()));
         weCustomerPushMessageDTO.setUserIds(sopFilter.getUsers());
         weCustomerPushMessageDTO.setDepartmentIds(sopFilter.getDepartments());
         weCustomerPushMessageDTO.setFilterTags(sopFilter.getFilterTagId());
-        //普通属性查询客户
+        List<Column> columns = JSONArray.parseArray(sopFilter.getCloumnInfo(), Column.class);
+        // 来源
+        String addWay = null;
+        if (CollectionUtils.isNotEmpty(columns)) {
+            Iterator<Column> iterator = columns.iterator();
+            while (iterator.hasNext()) {
+                Column column = iterator.next();
+                // type 为 "addWay"，表示该过滤条件为来源
+                if (CustomerSopConstants.CUSTOMER_SOP_ADD_WAY.equals(column.getType())) {
+                    // 获取来源的值
+                    addWay = column.getPropertyValue();
+                    weCustomerPushMessageDTO.setAddWay(addWay);
+                    // 因是普通属性查询，不需要到额外字段关系表查询，故删除
+                    iterator.remove();
+                }
+                // type 为 "1" 表示该过滤条件为出生日期范围
+                if (CustomerSopConstants.CUSTOMER_SOP_BIRTHDAY_RANGE.equals(column.getType())) {
+                    weCustomerPushMessageDTO.setBirthdayStr(column.getPropertyValue());
+                    // 因是普通属性查询，不需要到额外字段关系表查询，故删除
+                    iterator.remove();
+                }
+            }
+        }
+        // 普通属性查询客户
         List<WeCustomer> weCustomers = selectWeCustomerListNoRel(weCustomerPushMessageDTO);
+        // 若标签条件不为空，筛选出包含有所有标签条件的客户
+        if (StringUtils.isNotBlank(weCustomerPushMessageDTO.getTagIds())) {
+            weCustomers = weCustomers.stream().filter(customer -> {
+                        if (StringUtils.isBlank(customer.getMarkTagIds()) || StringUtils.isBlank(weCustomerPushMessageDTO.getTagIds())) {
+                            return false;
+                        }
+                        return Arrays.asList(customer.getMarkTagIds().split(DictUtils.SEPARATOR))
+                                .containsAll(Arrays.asList(weCustomerPushMessageDTO.getTagIds().split(DictUtils.SEPARATOR)));
+                    }
+            ).collect(Collectors.toList());
+        }
         if (StringUtils.isNotEmpty(sopFilter.getCloumnInfo())) {
-            List<Column> columns = JSONArray.parseArray(sopFilter.getCloumnInfo(), Column.class);
             if (CollectionUtils.isNotEmpty(columns)) {
                 //自定义属性查询客户
-                List<String> customers = weCustomerExtendPropertyRelService.listOfPropertyIdAndValue(columns);
+                HashSet<String> customerIdSet = new HashSet<>();
+                // 所有符合条件的额外字段关系
+                List<CustomerSopPropertyRel> customerSopPropertyRels = weCustomerExtendPropertyRelService.selectBaseExtendValue(columns);
+                // 获取筛选条件中的额外字段值
+                List<String> allExtendPropertyByFilter = columns.stream().map(Column::getPropertyValue).collect(Collectors.toList());
+                for (CustomerSopPropertyRel customerSopPropertyRel : customerSopPropertyRels) {
+                    for (Column column : columns) {
+                        // extend_property_id相同，判断type类型
+                        if (customerSopPropertyRel.getExtendPropertyId().equals(column.getExtendPropertyId())) {
+                            // type 为 "7" 表示该过滤条件为日期范围选择器
+                            if (CustomerSopConstants.CUSTOMER_SOP_DATE_RANGE.equals(column.getType())) {
+                                // 判断当前的值是否在日期范围内，若在则存入external_userid
+                                if (DateUtils.isDateRange(column.getPropertyValue().split(DictUtils.SEPARATOR)[0], column.getPropertyValue().split(DictUtils.SEPARATOR)[1], customerSopPropertyRel.getPropertyValue())) {
+                                    customerIdSet.add(customerSopPropertyRel.getExternalUserid());
+                                }
+                            }
+                        }
+                    }
+                }
+                // 是否有其他属性值
+                if (CollectionUtils.isNotEmpty(allExtendPropertyByFilter)) {
+                    for (WeCustomer weCustomer : weCustomers) {
+                        // 获取客户对应的所有的额外字段值
+                        List<String> allExtendProperty = customerSopPropertyRels.stream().filter(item -> item.getExternalUserid().equals(weCustomer.getExternalUserid())).map(CustomerSopPropertyRel::getPropertyValue).collect(Collectors.toList());
+                        // 客户的其他类型值包含所有的过滤条件，才进行判断
+                        if (allExtendProperty.containsAll(allExtendPropertyByFilter)) {
+                            // 其他类型（单选、多选、下拉框）可以直接获取到对应的值进行比较，相同则存入external_userid
+                            customerIdSet.add(weCustomer.getExternalUserid());
+                        }
+                    }
+                }
+
+                List<String> customers = new ArrayList<>(customerIdSet);
                 //求两个集合交集
                 weCustomers = weCustomers.stream().filter(customer -> customers.contains(customer.getExternalUserid())).collect(Collectors.toList());
             }
         }
-        return weCustomers;
+            return weCustomers;
     }
+
 
     /**
      * 查询去重客户去重后企业微信客户列表
@@ -735,11 +817,33 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
             IncrementalMarkTag(item);
             // 有操作人才需要记录信息动态 且 修改了标签
             if (StringUtils.isNotBlank(updateBy) && !(CollUtil.isEmpty(item.getAddTag()) && CollUtil.isEmpty(item.getRemoveTags()))) {
-                weCustomerTrajectoryService.recordEditTagOperation(item.getCorpId(), item.getUserId(), item.getExternalUserid(), updateBy);
+                recordBatchTag(item.getCorpId(),item.getUserId(),item.getExternalUserid(),updateBy,item.getAddTag().stream().map(WeTag::getName).collect(Collectors.toList()), CustomerTrajectoryEnums.TagType.BATCH_ADD_TAG.getType());
             }
 
         }
 
+    }
+
+    /**
+     * 记录批量操作标签信息动态
+     *
+     * @param corpId 公司id
+     * @param userId 员工id
+     * @param externalUserid 客户id
+     * @param updateBy 操作人
+     * @param editTag 进行修改标签
+     * @param type 操作类型
+     */
+    public void recordBatchTag(String corpId,String userId,String externalUserid,String updateBy,List<String> editTag,String type){
+        if (CollectionUtils.isEmpty(editTag)||StringUtils.isAnyBlank(corpId,updateBy,userId,externalUserid)){
+            log.info("记录批量操作标签信息动态时，公司id，员工id，客户id,操作人,标签列表不能为空，corpId：{}，userId：{}，externalUserid：{}，updateBy：{}，addTag：{}", corpId, userId, externalUserid,updateBy,editTag);
+            return;
+        }
+        TagRecordUtil tagRecordUtil=new TagRecordUtil();
+        String content=tagRecordUtil.buildEditTagContent(updateBy,type);
+        editTag.removeAll(Collections.singleton(null));
+        String detail = String.join(",", editTag);
+        weCustomerTrajectoryService.saveCustomerTrajectory(corpId,userId,externalUserid,content,detail);
     }
 
     @Override
@@ -751,10 +855,6 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
         }
         WeCustomerService weCustomerService = (WeCustomerService)AopContext.currentProxy();
         weCustomerService.batchMarkCustomTagWithTagIds(corpId, userId, externalUserId, addTagIds, null);
-        // 有操作人才需要记录信息动态 且 修改了标签
-        if (StringUtils.isNotBlank(oprUserName) && CollUtil.isNotEmpty(addTagIds)) {
-            weCustomerTrajectoryService.recordEditTagOperation(corpId, userId, externalUserId, oprUserName);
-        }
     }
 
     /**
@@ -837,6 +937,8 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
                 if (response != null && response.isSuccess()) {
                     weFlowerCustomerTagRelService.removeByCustomerIdAndUserId(userCustomer.getExternalUserid(), userCustomer.getUserId(), userCustomer.getCorpId(), removeTagList);
                 }
+                List<String> removeTagName = weTagService.list(new LambdaQueryWrapper<WeTag>().in(WeTag::getTagId,removeTagList)).stream().map(WeTag::getName).collect(Collectors.toList());
+                recordBatchTag(userCustomer.getCorpId(),userCustomer.getUserId(),userCustomer.getExternalUserid(),LoginTokenService.getUsername(),removeTagName,CustomerTrajectoryEnums.TagType.BATCH_REMOVE_TAG.getType());
             } catch (ForestRuntimeException e) {
                 log.error("获取客户数据失败 e:{}", ExceptionUtils.getStackTrace(e));
             }
@@ -1049,6 +1151,7 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
     }
 
     @Override
+    @DataScope
     public <T> AjaxResult<T> export(WeCustomerExportDTO dto) {
         List<String> selectProperties=dto.getSelectedProperties();
         WeCustomerSearchDTO weCustomerSearchDTO=new WeCustomerSearchDTO();

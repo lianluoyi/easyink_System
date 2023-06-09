@@ -1170,7 +1170,7 @@ CREATE TABLE `sys_oper_log`
     `oper_ip`        varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '主机地址',
     `oper_location`  varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '操作地点',
     `oper_param`     varchar(2000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '请求参数',
-    `json_result`    varchar(2000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '返回参数',
+    `json_result`    text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '返回参数',
     `status`         int(11) NULL DEFAULT 0 COMMENT '操作状态（0正常 1异常）',
     `error_msg`      varchar(2000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '错误消息',
     `oper_time`      datetime(0) NULL DEFAULT NULL COMMENT '操作时间',
@@ -2041,7 +2041,8 @@ CREATE TABLE `we_tag`
     `status`      char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci      NOT NULL DEFAULT '0' COMMENT '状态（0正常 1删除）',
     `seq_id`      BIGINT ( 20 ) NOT NULL AUTO_INCREMENT COMMENT '非主键自增序列号',
     PRIMARY KEY (`tag_id`) USING BTREE,
-    KEY           `idx_seq_id` ( `seq_id` ) USING BTREE
+    KEY           `idx_seq_id` ( `seq_id` ) USING BTREE,
+    KEY `status_corpid` (`status`,`corp_id`)
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '企业微信标签' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
@@ -2056,7 +2057,8 @@ CREATE TABLE `we_tag_group`
     `create_by`   varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '创建人',
     `create_time` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `status`      char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci      NOT NULL DEFAULT '0' COMMENT '帐号状态（0正常 2删除）',
-    PRIMARY KEY (`group_id`) USING BTREE
+    PRIMARY KEY (`group_id`) USING BTREE,
+    KEY `status_corpid` (`status`,`corp_id`)
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '标签组' ROW_FORMAT = Dynamic;
 
 

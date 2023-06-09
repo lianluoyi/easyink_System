@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.easyink.common.constant.GenConstants;
 import com.easyink.common.core.domain.entity.WeCorpAccount;
 import com.easyink.common.core.domain.wecom.WeUser;
+import com.easyink.wecom.client.WeUserClient;
+import com.easyink.wecom.domain.dto.WeUserDTO;
 import com.easyink.wecom.domain.vo.WxCpXmlMessageVO;
 import com.easyink.wecom.factory.WeEventStrategy;
 import com.easyink.wecom.service.WeCorpAccountService;
@@ -14,6 +16,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import java.util.Objects;
 
 /**
  * @author admin
@@ -31,6 +35,9 @@ public class WeCallBackUpdateUserImpl extends WeEventStrategy {
     @Autowired
     private WeCorpAccountService weCorpAccountService;
 
+    @Autowired
+    private WeUserClient weUserClient;
+
     @Override
     public void eventHandle(WxCpXmlMessageVO message) {
         if (message == null) {
@@ -47,7 +54,14 @@ public class WeCallBackUpdateUserImpl extends WeEventStrategy {
                     log.error("corpId不能为空");
                     return;
                 }
-                WeUser weUser = setWeUserData(message);
+                //从后台重新拉取员工信息
+                WeUserDTO weUserDTO=weUserClient.getUserByUserId(message.getUserId(),message.getToUserName());
+                if (Objects.isNull(weUserDTO)){
+                    log.error("根据员工变更回调拉取员工信息失败,corpId:{}",message.getToUserName());
+                    return;
+                }
+                WeUser weUser=weUserDTO.transferToWeUser();
+                weUser.setCorpId(message.getToUserName());
                 weUserService.updateWeUserNoToWeCom(weUser);
                 weExternalUserMappingUserService.createMapping(weUser.getCorpId(), weUser.getUserId());
             }

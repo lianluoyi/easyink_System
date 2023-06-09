@@ -1,6 +1,7 @@
 package com.easyink.wecom.client;
 
 import com.dtflys.forest.annotation.*;
+import com.easyink.wecom.client.retry.OprFreqRetryWhen;
 import com.easyink.wecom.domain.dto.*;
 import com.easyink.wecom.domain.dto.customer.*;
 import com.easyink.wecom.domain.dto.customer.req.GetByUserReq;
@@ -77,6 +78,7 @@ public interface WeCustomerClient {
      * @return
      */
     @Post(url = "/externalcontact/mark_tag")
+    @Retry(maxRetryInterval = "500" ,maxRetryCount =  "3" , condition = OprFreqRetryWhen.class)
     WeResultDTO makeCustomerLabel(@Body CustomerTagEdit customerTagEdit, @Header("corpid") String corpId);
 
 

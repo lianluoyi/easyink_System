@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.easyink.common.annotation.DataScope;
 import com.easyink.common.constant.GenConstants;
+import com.easyink.common.constant.tag.TagStatisticConstants;
 import com.easyink.common.core.domain.AjaxResult;
 import com.easyink.common.core.page.TableDataInfo;
 import com.easyink.common.exception.BaseException;
@@ -15,6 +16,7 @@ import com.easyink.common.utils.poi.ExcelUtil;
 import com.easyink.wecom.client.WeCropTagClient;
 import com.easyink.wecom.domain.WeTag;
 import com.easyink.wecom.domain.WeTagGroup;
+import com.easyink.wecom.domain.WeTagStatistic;
 import com.easyink.wecom.domain.dto.statistics.WeTagStatisticsDTO;
 import com.easyink.wecom.domain.dto.tag.WeCropGroupTagDTO;
 import com.easyink.wecom.domain.dto.tag.WeCropGroupTagListDTO;
@@ -28,6 +30,7 @@ import com.easyink.wecom.mapper.WeTagGroupMapper;
 import com.easyink.wecom.mapper.WeTagMapper;
 import com.easyink.wecom.mapper.WeUserMapper;
 import com.easyink.wecom.service.WeTagService;
+import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -37,6 +40,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static org.apache.commons.lang3.math.NumberUtils.min;
 
 /**
  * 企业微信标签Service业务层处理
@@ -229,9 +234,12 @@ public class WeTagServiceImpl extends ServiceImpl<WeTagMapper, WeTag> implements
     @Override
     @DataScope
     public AjaxResult exportCustomerTagsView(WeTagStatisticsDTO dto) {
+        // 导出不分页
+        dto.setPageNum(null);
+        dto.setPageSize(null);
         List<WeTagCustomerStatisticsVO> list = getCustomerTagTableView(dto);
-        // 处理返回的数据
-        handleVOData(list, dto);
+        // 设置要返回的分页数据下对应的标签组信息
+        setTagGroupInfo(list, dto);
         // 导出
         ExcelUtil<WeTagCustomerStatisticsVO> util = new ExcelUtil<>(WeTagCustomerStatisticsVO.class);
         return util.exportExcel(list, CUSTOMER_TAG_REPORT_FORMS);
@@ -251,22 +259,19 @@ public class WeTagServiceImpl extends ServiceImpl<WeTagMapper, WeTag> implements
     public TableDataInfo<WeTagCustomerStatisticsVO> selectTagStatistics(WeTagStatisticsDTO dto) {
         // 要返回的数据
         List<WeTagCustomerStatisticsVO> resultList = getCustomerTagTableView(dto);
-        // 分页数据
-        PageInfo<WeTagCustomerStatisticsVO> pageInfo = PageInfoUtil.list2PageInfo(resultList, dto.getPageNum(), dto.getPageSize());
-        // 当前页数据
-        List<WeTagCustomerStatisticsVO> currentList = pageInfo.getList();
-        // 处理返回的数据
-        handleVOData(currentList, dto);
-        return PageInfoUtil.getDataTable(resultList, dto.getPageNum(), dto.getPageSize());
+        long total = getTotalCnt(dto);
+        // 设置要返回的分页数据下对应的标签组信息
+        setTagGroupInfo(resultList, dto);
+        return PageInfoUtil.getDataTable(resultList, total);
     }
 
     /**
-     * 处理返回的数据
+     * 设置要返回的分页数据下对应的标签组信息
      *
      * @param resultList 要返回的数据
      * @param dto {@link WeTagStatisticsDTO}
      */
-    public void handleVOData(List<WeTagCustomerStatisticsVO> resultList, WeTagStatisticsDTO dto) {
+    public void setTagGroupInfo(List<WeTagCustomerStatisticsVO> resultList, WeTagStatisticsDTO dto) {
         if (CollectionUtils.isEmpty(resultList) || dto == null) {
             return;
         }
@@ -286,6 +291,25 @@ public class WeTagServiceImpl extends ServiceImpl<WeTagMapper, WeTag> implements
     }
 
     /**
+     * 获取查询条件下企业数据标签总数（去重）
+     *
+     * @param dto {@link WeTagStatisticsDTO}
+     * @return 总数
+     */
+    @DataScope
+    public long getTotalCnt(WeTagStatisticsDTO dto) {
+        if (dto == null || StringUtils.isEmpty(dto.getCorpId()) || !checkDepartmentAndUpdateUserIds(dto)) {
+            return 0;
+        }
+        // 获取选中员工所属的客户-员工关系id列表
+        setFlowerCustomerRelIdList(dto);
+        if (CollectionUtils.isEmpty(dto.getFlowerCustomerRelIdList())) {
+            return 0;
+        }
+        return weTagMapper.selectCount(dto);
+    }
+
+    /**
      * 获取标签统计-客户标签-表格视图
      *
      * @param dto {@link WeTagStatisticsDTO}
@@ -302,13 +326,56 @@ public class WeTagServiceImpl extends ServiceImpl<WeTagMapper, WeTag> implements
         if (CollectionUtils.isEmpty(dto.getFlowerCustomerRelIdList())) {
             return new ArrayList<>();
         }
-        // 获取有效的标签下客户信息，去重
-        List<WeTag> weTagList = weTagMapper.getWeTagList(dto);
+        // 当为标签下客户数排序时，不分页
+        boolean isPage = TagStatisticConstants.CUSTOMER_CNT_SORT.equals(dto.getSortName());
+        // 除标签下客户数排序条件下，其他条件根据分页情况，获取企业下有打的标签（去重）
+        if (dto.getPageNum() != null && dto.getPageSize() != null && !isPage) {
+            PageHelper.startPage(dto.getPageNum(), dto.getPageSize());
+        }
+        List<WeTag> filterWeTags = weTagMapper.selectTagIds(dto);
+        if (CollectionUtils.isEmpty(filterWeTags)) {
+            return new ArrayList<>();
+        }
+        // 获取有效的标签ID列表下客户信息
+        List<WeTagStatistic> weTagList = weTagMapper.getWeTagList(dto, filterWeTags);
         if (CollectionUtils.isEmpty(weTagList)) {
             return new ArrayList<>();
         }
-        // 根据查询出来的标签信息，去重
-        List<WeTagCustomerStatisticsVO> resultList = weTagList.stream().distinct().map(weTag -> {
+        // 过滤重复的客户-标签关系，并为标签设置对应的客户数量
+        List<WeTagCustomerStatisticsVO> resultList = filterAndSetCustomerCnt(weTagList, filterWeTags);
+        if (CollectionUtils.isEmpty(resultList)) {
+            return new ArrayList<>();
+        }
+        // 排序
+        StatisticsEnum.CustomerTagSortEnum.sort(dto, resultList);
+        // 当为标签下客户数排序时，排序结束后，按分页情况截取返回数据
+        if (isPage) {
+            PageInfo pageInfo = PageInfoUtil.list2PageInfo(resultList, dto.getPageNum(), dto.getPageSize());
+            return pageInfo.getList();
+        }
+        return resultList;
+    }
+
+    /**
+     * 过滤重复的客户-标签关系，并为标签设置对应的客户数量
+     *
+     * @param weTagList 有效的标签ID列表下客户信息
+     * @param filterWeTags 关系表中企业下有打的标签（去重）
+     * @return 结果
+     */
+    public List<WeTagCustomerStatisticsVO> filterAndSetCustomerCnt(List<WeTagStatistic> weTagList, List<WeTag> filterWeTags) {
+        if (CollectionUtils.isEmpty(weTagList) || CollectionUtils.isEmpty(filterWeTags)) {
+            return new ArrayList<>();
+        }
+        // 过滤tagId和external_userid相同的数据
+        List<WeTag> filterWeTagList = weTagList.stream().collect(
+                Collectors. collectingAndThen(
+                        Collectors.toCollection(() -> new TreeSet<>(Comparator.comparing(o -> o.getTagId() + ";" + o.getExternalUserid()))), ArrayList::new));
+        if (CollectionUtils.isEmpty(filterWeTagList)) {
+            return new ArrayList<>();
+        }
+        // 转换查询出来的标签信息
+        List<WeTagCustomerStatisticsVO> resultList = filterWeTags.stream().distinct().map(weTag -> {
             WeTagCustomerStatisticsVO weTagCustomerStatisticsVO = new WeTagCustomerStatisticsVO();
             weTagCustomerStatisticsVO.setTagId(weTag.getTagId());
             weTagCustomerStatisticsVO.setTagName(weTag.getName());
@@ -320,22 +387,12 @@ public class WeTagServiceImpl extends ServiceImpl<WeTagMapper, WeTag> implements
         }
         // 统计每个标签对应的客户数量，为对应的标签设置客户数量
         for (WeTagCustomerStatisticsVO weTagData : resultList) {
-            for (WeTag item : weTagList) {
+            for (WeTag item : filterWeTagList) {
                 if (item.getTagId().equals(weTagData.getTagId())) {
                     weTagData.addCustomerCnt();
                 }
             }
         }
-        // 去除标签下客户数为0的标签
-        Iterator<WeTagCustomerStatisticsVO> iterator = resultList.iterator();
-        while (iterator.hasNext()) {
-            WeTagCustomerStatisticsVO weTagData = iterator.next();
-            if (weTagData != null && weTagData.getCustomerCnt() == 0) {
-                iterator.remove();
-            }
-        }
-        // 排序
-        StatisticsEnum.CustomerTagSortEnum.sort(dto, resultList);
         return resultList;
     }
 
@@ -358,57 +415,73 @@ public class WeTagServiceImpl extends ServiceImpl<WeTagMapper, WeTag> implements
      * 获取标签统计-客户标签-图表视图-分页数据
      *
      * @param dto {@link WeTagStatisticsDTO}
-     * @return 结果
-     */
-    @Override
-    @DataScope
-    public TableDataInfo<WeTagCustomerStatisticsChartVO> selectTagStatisticsByChart(WeTagStatisticsDTO dto) {
-        List<WeTagCustomerStatisticsChartVO> resultList = getCustomerTagTableChartView(dto);
-        if (dto.getPageNum() == null || dto.getPageSize() == null) {
-            return PageInfoUtil.getDataTable(resultList);
-        }
-        return PageInfoUtil.getDataTable(resultList, dto.getPageNum(), dto.getPageSize());
-    }
-
-    /**
-     * 获取标签统计-客户标签-图表视图
-     *
-     * @param dto {@link WeTagStatisticsDTO}
      * @return 结果集 {@link WeTagCustomerStatisticsChartVO}
      */
     @Override
     @DataScope
-    public List<WeTagCustomerStatisticsChartVO> getCustomerTagTableChartView(WeTagStatisticsDTO dto) {
+    public TableDataInfo<WeTagCustomerStatisticsChartVO>  getCustomerTagTableChartView(WeTagStatisticsDTO dto) {
         if (dto == null || StringUtils.isEmpty(dto.getCorpId()) || !checkDepartmentAndUpdateUserIds(dto)) {
-            return new ArrayList<>();
+            return PageInfoUtil.emptyData();
         }
-        // 查出所有的标签组列表
-        WeTagGroup weTagGroup = new WeTagGroup();
-        weTagGroup.setCorpId(dto.getCorpId());
-        List<WeTagGroup> weTagGroupList = weTagGroupMapper.selectWeTagGroupList(weTagGroup);
+        // 查出符合条件的flower_customer_rel_id
+        setFlowerCustomerRelIdList(dto);
+        if (CollectionUtils.isEmpty(dto.getFlowerCustomerRelIdList())) {
+            return PageInfoUtil.emptyData();
+        }
+        // 获取企业下有打的标签（去重）
+        List<WeTag> filterWeTags = weTagMapper.selectTagIds(dto);
+        if (CollectionUtils.isEmpty(filterWeTags)) {
+            return PageInfoUtil.emptyData();
+        }
+        // 获取有效的标签ID
+        List<String> tagIds = filterWeTags.stream().map(WeTag::getTagId).collect(Collectors.toList());
+        // 根据有效的标签ID，设置对应的标签组总数
+        HashSet<String> tagGroupIdList = new HashSet<>(filterWeTags.stream().map(WeTag::getGroupId).collect(Collectors.toList()));
+        long tagGroupCnt = tagGroupIdList.size();
+        // 设置标签ID列表
+        dto.setTagIdList(tagIds);
+        // 设置标签组ID列表
+        dto.setTagGroupIds(new ArrayList<>(tagGroupIdList));
+        if (dto.getPageSize() != null && dto.getPageNum() != null) {
+            PageHelper.startPage(dto.getPageNum(), dto.getPageSize());
+        }
+        // 根据标签组ID列表查出标签组信息列表
+        List<WeTagGroup> weTagGroupList = weTagGroupMapper.selectWeTagGroupListByStatistic(dto);
+        if (CollectionUtils.isEmpty(weTagGroupList)) {
+            return PageInfoUtil.emptyData();
+        }
+        // 获取标签组对应的标签列表
+        List<WeTag> tagListByTagGroup = new ArrayList<>();
+        for (WeTag filterWeTag : filterWeTags) {
+            for (WeTagGroup weTagGroup : weTagGroupList) {
+                if (filterWeTag.getGroupId().equals(weTagGroup.getGroupId())) {
+                    tagListByTagGroup.add(filterWeTag);
+                }
+            }
+        }
+        // 获取标签列表下客户信息
+        List<WeTagStatistic> weTagList = weTagMapper.getWeTagList(dto, tagListByTagGroup);
+        if (CollectionUtils.isEmpty(weTagList)) {
+            return PageInfoUtil.emptyData();
+        }
         // 标签组信息结果集
         List<WeTagCustomerStatisticsChartVO> resultList = new ArrayList<>();
         // 所有的标签组和标签信息
-        List<WeTagCustomerStatisticsVO> weTagList = getCustomerTagTableView(dto);
-        if (CollectionUtils.isEmpty(weTagList)) {
-            return new ArrayList<>();
+        List<WeTagCustomerStatisticsVO> allWeTagList = filterAndSetCustomerCnt(weTagList, tagListByTagGroup);
+        if (CollectionUtils.isEmpty(allWeTagList)) {
+            return PageInfoUtil.emptyData();
         }
-        // 处理返回的数据
-        handleVOData(weTagList, dto);
-        // 获取有效的标签下客户信息，去重
-        List<WeTagCustomerStatisticsVO> customerTagList = weTagMapper.getCustomerTagCnt(dto);
-        if (CollectionUtils.isEmpty(customerTagList)) {
-            return new ArrayList<>();
-        }
+        // 设置要返回的分页数据下对应的标签组信息
+        setTagGroupInfo(allWeTagList, dto);
         // 单个标签组下的所有标签和客户信息
         List<WeTagCustomerStatisticsVO> singleGroupTagList;
         // 将标签组对应的标签合并到一起
         for (WeTagGroup tagGroup : weTagGroupList) {
             // 过滤不存在的标签组
-            singleGroupTagList = weTagList.stream().filter(WeTagStatisticsVO -> WeTagStatisticsVO.getTagGroupId().equals(tagGroup.getGroupId())).collect(Collectors.toList());
+            singleGroupTagList = allWeTagList.stream().filter(WeTagStatisticsVO -> WeTagStatisticsVO.getTagGroupId().equals(tagGroup.getGroupId())).collect(Collectors.toList());
             if (CollectionUtils.isNotEmpty(singleGroupTagList)) {
                 // 组装标签组信息和标签组内的标签信息
-                resultList.add(new WeTagCustomerStatisticsChartVO(tagGroup, singleGroupTagList, customerTagList));
+                resultList.add(new WeTagCustomerStatisticsChartVO(tagGroup, singleGroupTagList, weTagList));
             }
         }
         // 默认按标签组时间正序排序
@@ -416,10 +489,12 @@ public class WeTagServiceImpl extends ServiceImpl<WeTagMapper, WeTag> implements
         // 超过十条标签数据，只返回前十条数据
         resultList.forEach(item -> {
             if (item.getGroupTagList().size() > DEFAULT_TAG_LIST_NUM) {
+                // 根据标签下客户数倒序排序
+                item.getGroupTagList().sort(Comparator.comparing(WeTagCustomerStatisticsVO::getCustomerCnt).reversed());
                 item.setGroupTagList(item.getGroupTagList().subList(DEFAULT_TAG_LIST_START, DEFAULT_TAG_LIST_NUM));
             }
         });
-        return resultList;
+        return PageInfoUtil.getDataTable(resultList, tagGroupCnt);
     }
 
     /**
@@ -445,4 +520,5 @@ public class WeTagServiceImpl extends ServiceImpl<WeTagMapper, WeTag> implements
         }
         return true;
     }
+
 }

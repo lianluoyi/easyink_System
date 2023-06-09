@@ -64,14 +64,6 @@ public interface WeSensitiveService {
      */
     int destroyWeSensitiveByIds(Long[] ids);
 
-    /**
-     * 敏感词命中
-     *
-     * @param corpId
-     * @param entityList
-     */
-    void hitSensitive(String corpId, List<JSONObject> entityList);
-
     PageInfo<JSONObject> getHitSensitiveList(WeSensitiveHitQuery weSensitiveHitQuery, LoginUser loginUser);
 
     void hitSensitive1(String corpId, List<ChatInfoVO> elasticSearchEntities);

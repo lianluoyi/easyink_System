@@ -8,12 +8,17 @@ import com.easyink.wecom.domain.WeCustomerTrajectory;
 import com.easyink.wecom.domain.WeGroupMember;
 import com.easyink.wecom.domain.WeTag;
 import com.easyink.wecom.domain.dto.customer.EditCustomerDTO;
+import com.easyink.wecom.domain.entity.autotag.WeAutoTagRule;
+import com.easyink.wecom.domain.entity.autotag.WeAutoTagRuleHitKeywordRecordTagRel;
 import com.easyink.wecom.domain.entity.form.WeForm;
 import com.easyink.wecom.domain.entity.form.WeFormOperRecord;
 import com.easyink.wecom.domain.entity.radar.WeRadar;
+import com.easyink.wecom.domain.vo.autotag.TagRuleListVO;
 import io.swagger.annotations.ApiModel;
 
 import java.util.List;
+import java.util.Map;
+
 @ApiModel("活动轨迹相关Service")
 public interface WeCustomerTrajectoryService extends IService<WeCustomerTrajectory> {
 
@@ -116,4 +121,45 @@ public interface WeCustomerTrajectoryService extends IService<WeCustomerTrajecto
      * @param customer         客户 {@link WeCustomer}
      */
     void recordFormClickOperation(WeForm weForm, WeFormOperRecord weFormOperRecord, WeUser user, WeCustomer customer);
+
+    /**
+     * 记录新客打标签活动轨迹
+     *
+     * @param corpId 公司id
+     * @param userId 员工id
+     * @param customerId 客户id
+     * @param ruleNameList 规则名列表
+     */
+    void recordAutoCustomerTag(String corpId,String userId,String customerId,List<TagRuleListVO> ruleNameList);
+
+    /**
+     * 记录新客进群打标签活动轨迹
+     *
+     * @param corpId 公司id
+     * @param customerId 客户id
+     * @param weUser 员工信息
+     * @param weAutoTagRules 自动打标签规则列表
+     */
+    void recordAutoGroupTag(String corpId, String customerId, WeUser weUser, List<WeAutoTagRule> weAutoTagRules,String chatId);
+
+    /**
+     * 记录关键词打标签活动轨迹
+     *
+     * @param corpId 公司id
+     * @param userId 员工id
+     * @param customerId 客户id
+     * @param ruleIdList 规则id列表
+     */
+    void recordAutoKeyWordTag(String corpId, String userId, String customerId, List<Long> ruleIdList);
+
+    /**
+     * 保存信息动态
+     *
+     * @param corpId 公司id
+     * @param userId 员工id
+     * @param customerId 客户id
+     * @param content 操作详情
+     * @param detail 标签详情
+     */
+    void saveCustomerTrajectory(String corpId,String userId,String customerId,String content,String detail);
 }

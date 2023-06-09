@@ -60,6 +60,26 @@ public class GenConstants {
     public static final String FORM_NAME = "${formName}";
 
     /**
+     * 活动场景占位符
+     */
+    public static final String ACTIVITY_SCENE = "${activityScene}";
+
+    /**
+     * 活码名称占位符
+     */
+    public static final String CODE_NAME = "${codeName}";
+
+    /**
+     * 规则名称占位符
+     */
+    public static final String RULE_NAME = "${ruleName}";
+
+    /**
+     * 操作人占位符
+     */
+    public static final String OPERATOR = "${operator}";
+
+    /**
      * 客户信息动态记录模板
      */
     public static final String EDIT_CUSTOMER_RECORD_MSG = "${userName}修改了${propertyName}为：";

@@ -56,33 +56,38 @@
     </select>
 
     <!-- 获取所有标签和客户信息 -->
-    <select id="getWeTagList" resultType="com.easyink.wecom.domain.WeTag">
+    <select id="getWeTagList" resultType="com.easyink.wecom.domain.WeTagStatistic">
         SELECT
-            wfctr.`tag_id`,
-            wt.`name`,
-            wt.create_time
+        wfctr.`tag_id`,
+        wt.`name`,
+        wt.create_time,
+        wfctr.external_userid AS externalUserid
         FROM
-            we_flower_customer_tag_rel wfctr
-                INNER JOIN we_tag wt ON wfctr.tag_id = wt.tag_id
-                INNER JOIN we_tag_group wtg ON wt.group_id = wtg.group_id
-                AND wt.`status` = wtg.`status`
+        we_tag wt
+        INNER JOIN we_flower_customer_tag_rel wfctr ON wfctr.tag_id = wt.tag_id
+        INNER JOIN we_tag_group wtg ON wt.group_id = wtg.group_id
+        AND wt.`status` = wtg.`status`
         WHERE
-            wtg.corp_id = #{corpId}
-            AND wt.`status` = ${@com.easyink.common.constant.Constants@NORMAL_CODE}
-        <if test="flowerCustomerRelIdList != null and flowerCustomerRelIdList.size() > 0">
+        wtg.corp_id = #{dto.corpId}
+        AND wtg.`status` = ${@com.easyink.common.constant.Constants@NORMAL_CODE}
+        <if test="dto.flowerCustomerRelIdList != null and dto.flowerCustomerRelIdList.size() > 0">
             AND wfctr.flower_customer_rel_id IN
-            <foreach collection="flowerCustomerRelIdList" item="flowerCustomerRelId" open="(" separator="," close=")">
+            <foreach collection="dto.flowerCustomerRelIdList" item="flowerCustomerRelId" open="(" separator="," close=")">
                 #{flowerCustomerRelId}
             </foreach>
         </if>
-        <if test="tagGroupIds != null and tagGroupIds.size > 0">
-            AND wt.group_id IN
-            <foreach collection="tagGroupIds" item="tagGroupId" open="(" separator="," close=")">
+        <if test="tagIds != null and tagIds.size > 0">
+            AND wt.tag_id IN
+            <foreach collection="tagIds" item="weTag" open="(" separator="," close=")">
+                #{weTag.tagId}
+            </foreach>
+        </if>
+        <if test="dto.tagGroupIds != null and dto.tagGroupIds.size > 0">
+            AND wtg.group_id IN
+            <foreach collection="dto.tagGroupIds" item="tagGroupId" open="(" separator="," close=")">
                 #{tagGroupId}
             </foreach>
         </if>
-        GROUP BY
-            external_userid, tag_id
     </select>
 
     <!-- 获取所有标签下的客户数量(去重) -->
@@ -96,8 +101,8 @@
         INNER JOIN we_tag_group wtg ON wt.group_id = wtg.group_id
         AND wt.`status` = wtg.`status`
         WHERE
-        wtg.corp_id = #{corpId}
-        AND wt.`status` = ${@com.easyink.common.constant.Constants@NORMAL_CODE}
+        wt.`status` = ${@com.easyink.common.constant.Constants@NORMAL_CODE}
+        AND  wtg.corp_id = #{corpId}
         <if test="flowerCustomerRelIdList != null and flowerCustomerRelIdList.size() > 0">
             AND wfctr.flower_customer_rel_id IN
             <foreach collection="flowerCustomerRelIdList" item="flowerCustomerRelId" open="(" separator="," close=")">
@@ -110,8 +115,61 @@
                 #{tagGroupId}
             </foreach>
         </if>
+        <if test="tagIdList != null and tagIdList.size > 0">
+            AND wt.tag_id IN
+            <foreach collection="tagIdList" item="tagId" open="(" separator="," close=")">
+                #{tagId}
+            </foreach>
+        </if>
         GROUP BY
         external_userid, tag_id
+    </select>
+    <!--  获取企业下有打的标签（去重）  -->
+    <select id="selectTagIds" resultType="com.easyink.wecom.domain.WeTag">
+        SELECT DISTINCT wt.tag_id, wt.`name`, wt.create_time, wt.group_id
+        FROM we_tag wt
+        INNER JOIN we_flower_customer_tag_rel wfctr ON wt.tag_id = wfctr.tag_id
+        INNER JOIN we_tag_group wtg ON wt.group_id = wtg.group_id
+        AND wt.`status` = wtg.`status`
+        WHERE wt.`status` = ${@com.easyink.common.constant.Constants@NORMAL_CODE}
+        AND wtg.corp_id = #{corpId}
+        <if test="flowerCustomerRelIdList != null and flowerCustomerRelIdList.size() > 0">
+            AND wfctr.flower_customer_rel_id IN
+            <foreach collection="flowerCustomerRelIdList" item="flowerCustomerRelId" open="(" separator="," close=")">
+                #{flowerCustomerRelId}
+            </foreach>
+        </if>
+        <if test="tagGroupIds != null and tagGroupIds.size > 0">
+            AND wtg.group_id IN
+            <foreach collection="tagGroupIds" item="tagGroupId" open="(" separator="," close=")">
+                #{tagGroupId}
+            </foreach>
+        </if>
+        <if test="sortType != null and sortType != ''">
+            ORDER BY wt.create_time ${sortType}
+        </if>
+    </select>
+    <!--查询企业下有效的标签总数（去重）-->
+    <select id="selectCount" resultType="java.lang.Integer">
+        SELECT COUNT(DISTINCT wt.tag_id)
+        FROM we_tag wt
+        INNER JOIN we_flower_customer_tag_rel wfctr ON wt.tag_id = wfctr.tag_id
+        INNER JOIN we_tag_group wtg ON wt.group_id = wtg.group_id
+        AND wt.`status` = wtg.`status`
+        WHERE wt.`status` = ${@com.easyink.common.constant.Constants@NORMAL_CODE}
+        AND wtg.corp_id = #{corpId}
+        <if test="flowerCustomerRelIdList != null and flowerCustomerRelIdList.size() > 0">
+            AND wfctr.flower_customer_rel_id IN
+            <foreach collection="flowerCustomerRelIdList" item="flowerCustomerRelId" open="(" separator="," close=")">
+                #{flowerCustomerRelId}
+            </foreach>
+        </if>
+        <if test="tagGroupIds != null and tagGroupIds.size > 0">
+            AND wtg.group_id IN
+            <foreach collection="tagGroupIds" item="tagGroupId" open="(" separator="," close=")">
+                #{tagGroupId}
+            </foreach>
+        </if>
     </select>
 
     <update id="updateWeTag" parameterType="WeTag">

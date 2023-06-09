@@ -2,10 +2,10 @@ package com.easyink.wecom.domain.vo.statistics;
 
 import com.easyink.common.utils.DateUtils;
 import com.easyink.wecom.domain.WeTagGroup;
+import com.easyink.wecom.domain.WeTagStatistic;
 import lombok.Data;
 import org.apache.commons.collections4.CollectionUtils;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
@@ -33,8 +33,8 @@ public class WeTagCustomerStatisticsChartVO extends WeTagStatisticsChartBaseVO {
      * @param singleGroupTagList 单个标签组下的所有标签和客户信息
      * @param weTagList 去重后的标签-客户关系列表
      */
-    public WeTagCustomerStatisticsChartVO(WeTagGroup weTagGroup, List<WeTagCustomerStatisticsVO> singleGroupTagList, List<WeTagCustomerStatisticsVO> weTagList) {
-        this.groupTagList =singleGroupTagList;
+    public WeTagCustomerStatisticsChartVO(WeTagGroup weTagGroup, List<WeTagCustomerStatisticsVO> singleGroupTagList, List<WeTagStatistic> weTagList) {
+        this.groupTagList = singleGroupTagList;
         super.setTagGroupId(weTagGroup.getGroupId());
         super.setGroupTagName(weTagGroup.getGroupName());
         super.setGroupTagCreateTime(DateUtils.getDateTime(weTagGroup.getCreateTime()));
@@ -49,16 +49,16 @@ public class WeTagCustomerStatisticsChartVO extends WeTagStatisticsChartBaseVO {
      * @param singleGroupTagList 单个标签组下的所有标签和客户信息
      * @param weTagList 去重后的标签-客户关系列表
      */
-    public void handleTagGroupCustomerCnt(List<WeTagCustomerStatisticsVO> singleGroupTagList, List<WeTagCustomerStatisticsVO> weTagList) {
+    public void handleTagGroupCustomerCnt(List<WeTagCustomerStatisticsVO> singleGroupTagList, List<WeTagStatistic> weTagList) {
         if (CollectionUtils.isEmpty(singleGroupTagList)) {
             return;
         }
         // 客户ID信息
         HashSet externalUserIdSet = new HashSet();
         for (WeTagCustomerStatisticsVO singleList : singleGroupTagList) {
-            for (WeTagCustomerStatisticsVO allWeTagList: weTagList) {
+            for (WeTagStatistic allWeTagList: weTagList) {
                 if (singleList.getTagId().equals(allWeTagList.getTagId())) {
-                    externalUserIdSet.add(allWeTagList.getExternalUserId());
+                    externalUserIdSet.add(allWeTagList.getExternalUserid());
                 }
             }
         }

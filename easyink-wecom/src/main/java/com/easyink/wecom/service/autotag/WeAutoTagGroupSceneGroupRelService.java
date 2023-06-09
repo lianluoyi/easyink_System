@@ -79,9 +79,10 @@ public interface WeAutoTagGroupSceneGroupRelService extends IService<WeAutoTagGr
     /**
      * 查询标签列表根据群id
      *
-     * @param chatId
+     * @param corpId 企业id
+     * @param chatId 群id
      * @return
      */
-    Map<Long, List<WeTag>> getTagListGroupByRuleIdByChatId(String chatId);
+    Map<Long, List<WeTag>> getTagListGroupByRuleIdByChatId(String corpId, String chatId);
 }
 
