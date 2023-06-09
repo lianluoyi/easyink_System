@@ -80,6 +80,11 @@ public class GenConstants {
     public static final String OPERATOR = "${operator}";
 
     /**
+     * 创建人占位符
+     */
+    public static final String CREATE_BY = "${createBy}";
+
+    /**
      * 客户信息动态记录模板
      */
     public static final String EDIT_CUSTOMER_RECORD_MSG = "${userName}修改了${propertyName}为：";

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.easyink.wecom.mapper.autotag.WeBatchTagTaskRelMapper">
+    <!--批量保存批量打标签任务标签关联信息-->
+    <insert id="saveBatch">
+        INSERT INTO we_batch_tag_task_rel (task_id, tag_id) VALUES
+        <foreach collection="tagIds" item="tagId" separator=",">
+            (#{taskId}, #{tagId})
+        </foreach>
+    </insert>
+</mapper>

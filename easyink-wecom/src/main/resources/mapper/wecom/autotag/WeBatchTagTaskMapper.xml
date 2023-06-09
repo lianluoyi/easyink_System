@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.easyink.wecom.mapper.autotag.WeBatchTagTaskMapper">
+    <!--查询任务列表-->
+    <select id="selectBatchTaskList" resultType="com.easyink.wecom.domain.vo.autotag.BatchTagTaskVO">
+        SELECT wbtt.id, wbtt.name, wbtt.execute_flag, wbtt.create_time, IF(wbtt.create_by = 'admin', wbtt.create_by, wu.user_name) AS create_by, wd.`name` AS department, wbtt.tag_name, wbtt.del_flag
+        FROM we_batch_tag_task wbtt
+        LEFT JOIN we_user wu ON wbtt.create_by = wu.user_id and wbtt.corp_id = wu.corp_id
+        LEFT JOIN we_department wd ON wu.main_department = wd.id and wd.corp_id = wbtt.corp_id
+        WHERE wbtt.corp_id = #{dto.corpId}
+        ${dto.params.dataScope}
+        AND wbtt.del_flag != ${@com.easyink.common.constant.autotag.AutoTagConstants@TASK_IS_DEL}
+        <if test="dto.executeFlag != null">
+            AND wbtt.execute_flag = #{dto.executeFlag}
+        </if>
+        <if test="dto.taskName != null and dto.taskName != ''">
+            AND wbtt.`name` LIKE CONCAT("%",#{dto.taskName},"%")
+        </if>
+        <if test="dto.beginTime != null and dto.beginTime != ''"><!-- 开始时间检索 -->
+            AND wbtt.create_time &gt;= #{dto.beginTime}
+        </if>
+        <if test="dto.endTime != null and dto.endTime != ''"><!-- 结束时间检索 -->
+            AND wbtt.create_time &lt;= #{dto.endTime}
+        </if>
+        <if test="taskIds != null and taskIds.size() > 0 ">
+            AND wbtt.id IN
+            <foreach collection="taskIds" separator="," open="(" close=")" item="taskId">
+                #{taskId}
+            </foreach>
+        </if>
+        <if test="dto.createBy != null and dto.createBy != ''">
+            AND (wu.user_name LIKE CONCAT("%",#{dto.createBy},"%") OR wbtt.create_by LIKE CONCAT("%",#{dto.createBy},"%"))
+        </if>
+        ORDER BY wbtt.create_time DESC
+    </select>
+    <!--根据任务ID批量删除任务（逻辑删除）-->
+    <update id="deleteBatchTaskByIds">
+        UPDATE we_batch_tag_task SET del_flag = ${@com.easyink.common.constant.autotag.AutoTagConstants@TASK_IS_DEL}
+        WHERE corp_id = #{corpId}
+        AND id IN
+        <if test="taskIds != null and taskIds.length > 0 ">
+            <foreach collection="taskIds" item="taskId" open="(" separator="," close=")">
+                #{taskId}
+            </foreach>
+        </if>
+    </update>
+</mapper>

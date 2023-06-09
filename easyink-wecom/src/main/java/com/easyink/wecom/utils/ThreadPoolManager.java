@@ -35,7 +35,6 @@ public class ThreadPoolManager {
      * @return executor
      */
     @Bean("formTaskExecutor")
-    @Primary
     public ThreadPoolTaskExecutor formTaskExecutor() {
         ThreadPoolTaskExecutor executor = init(CORE_POOL_SIZE, MAX_POOL_SIZE, QUEUE_CAPACITY, KEEP_ALIVE_SECOND);
         return construct(executor, "formTask");

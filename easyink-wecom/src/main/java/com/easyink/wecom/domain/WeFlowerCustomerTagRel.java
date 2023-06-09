@@ -68,4 +68,13 @@ public class WeFlowerCustomerTagRel {
         this.tagId = tagId;
         this.externalUserid = externalUserid;
     }
+
+    public WeFlowerCustomerTagRel(String tagId, WeFlowerCustomerRel rel) {
+        this.tagId =tagId;
+        this.createTime = new Date();
+        if(rel != null ) {
+            this.flowerCustomerRelId = rel.getId() ;
+            this.externalUserid = rel.getExternalUserid();
+        }
+    }
 }

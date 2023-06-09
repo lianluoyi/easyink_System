@@ -98,4 +98,12 @@ public interface WeTagMapper extends BaseMapper<WeTag> {
      * @return 标签和客户ID
      */
     List<WeTagCustomerStatisticsVO> getCustomerTagCnt(WeTagStatisticsDTO dto);
+
+    /**
+     * 统计当前企业下所有未删除的企业标签的数量
+     *
+     * @param dto {@link WeTagStatisticsDTO}
+     * @return 标签数量
+     */
+    Integer totalTagCnt(WeTagStatisticsDTO dto);
 }

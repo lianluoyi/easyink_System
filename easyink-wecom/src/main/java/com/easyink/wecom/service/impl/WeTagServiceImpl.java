@@ -1,6 +1,7 @@
 package com.easyink.wecom.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.util.ArrayUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.easyink.common.annotation.DataScope;
@@ -8,15 +9,18 @@ import com.easyink.common.constant.GenConstants;
 import com.easyink.common.constant.tag.TagStatisticConstants;
 import com.easyink.common.core.domain.AjaxResult;
 import com.easyink.common.core.page.TableDataInfo;
+import com.easyink.common.enums.ResultTip;
 import com.easyink.common.exception.BaseException;
+import com.easyink.common.exception.CustomException;
 import com.easyink.common.utils.DateUtils;
 import com.easyink.common.utils.PageInfoUtil;
 import com.easyink.common.utils.StringUtils;
 import com.easyink.common.utils.poi.ExcelUtil;
 import com.easyink.wecom.client.WeCropTagClient;
-import com.easyink.wecom.domain.WeTag;
-import com.easyink.wecom.domain.WeTagGroup;
-import com.easyink.wecom.domain.WeTagStatistic;
+import com.easyink.wecom.client.WeCustomerClient;
+import com.easyink.wecom.domain.*;
+import com.easyink.wecom.domain.dto.WeResultDTO;
+import com.easyink.wecom.domain.dto.customer.CustomerTagEdit;
 import com.easyink.wecom.domain.dto.statistics.WeTagStatisticsDTO;
 import com.easyink.wecom.domain.dto.tag.WeCropGroupTagDTO;
 import com.easyink.wecom.domain.dto.tag.WeCropGroupTagListDTO;
@@ -29,6 +33,7 @@ import com.easyink.wecom.domain.vo.statistics.WeTagCustomerStatisticsVO;
 import com.easyink.wecom.mapper.WeTagGroupMapper;
 import com.easyink.wecom.mapper.WeTagMapper;
 import com.easyink.wecom.mapper.WeUserMapper;
+import com.easyink.wecom.service.WeFlowerCustomerTagRelService;
 import com.easyink.wecom.service.WeTagService;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
@@ -61,6 +66,8 @@ public class WeTagServiceImpl extends ServiceImpl<WeTagMapper, WeTag> implements
     private final WeUserMapper weUserMapper;
 
     private final WeTagGroupMapper weTagGroupMapper;
+    private final WeFlowerCustomerTagRelService weFlowerCustomerTagRelService;
+    private final WeCustomerClient weCustomerClient;
 
     /**
      * 默认按照客户数量排序
@@ -83,9 +90,11 @@ public class WeTagServiceImpl extends ServiceImpl<WeTagMapper, WeTag> implements
     private static final Integer DEFAULT_TAG_LIST_START = 0;
 
     @Autowired
-    public WeTagServiceImpl(WeUserMapper weUserMapper, WeTagGroupMapper weTagGroupMapper) {
+    public WeTagServiceImpl(WeUserMapper weUserMapper, WeTagGroupMapper weTagGroupMapper, WeFlowerCustomerTagRelService weFlowerCustomerTagRelService, WeCustomerClient weCustomerClient) {
         this.weUserMapper = weUserMapper;
         this.weTagGroupMapper = weTagGroupMapper;
+        this.weFlowerCustomerTagRelService = weFlowerCustomerTagRelService;
+        this.weCustomerClient = weCustomerClient;
     }
 
     /**
@@ -497,6 +506,24 @@ public class WeTagServiceImpl extends ServiceImpl<WeTagMapper, WeTag> implements
         return PageInfoUtil.getDataTable(resultList, tagGroupCnt);
     }
 
+    @Override
+    public void addTag(String corpId, WeFlowerCustomerRel rel, List<String> tagIds) {
+        if (org.apache.commons.lang3.StringUtils.isAnyBlank(corpId) || rel == null || CollectionUtils.isEmpty(tagIds)) {
+            throw new CustomException(ResultTip.TIP_PARAM_MISSING);
+        }
+        // 新增标签关系
+        List<WeFlowerCustomerTagRel> tagRelList = tagIds.stream().map(tagId -> new WeFlowerCustomerTagRel(tagId, rel))
+                                                        .collect(Collectors.toList());
+        weFlowerCustomerTagRelService.batchInsetWeFlowerCustomerTagRel(tagRelList);
+        // 调用打标签接口
+        CustomerTagEdit customerTagEdit = CustomerTagEdit.builder()
+                                                         .userid(rel.getUserId())
+                                                         .external_userid(rel.getExternalUserid())
+                                                         .add_tag(ArrayUtil.toArray(tagIds, String.class))
+                                                         .build();
+         weCustomerClient.makeCustomerLabel(customerTagEdit, corpId);
+    }
+
     /**
      * 是否是部门查询
      * 如果只选定部门不选择员工 但是部门下没有员工则直接返回空列表
@@ -521,4 +548,15 @@ public class WeTagServiceImpl extends ServiceImpl<WeTagMapper, WeTag> implements
         return true;
     }
 
+    @Override
+    public List<String> getTagNameByIds(String corpId, List<String> tagIds) {
+        if (StringUtils.isBlank(corpId)) {
+            throw new CustomException(ResultTip.TIP_MISS_CORP_ID);
+        }
+        List<WeTag> weTagList = weTagMapper.selectList(new LambdaQueryWrapper<WeTag>().in(WeTag::getTagId, tagIds));
+        if (CollectionUtils.isEmpty(weTagList)) {
+            return new ArrayList<>();
+        }
+        return weTagList.stream().map(WeTag::getName).collect(Collectors.toList());
+    }
 }

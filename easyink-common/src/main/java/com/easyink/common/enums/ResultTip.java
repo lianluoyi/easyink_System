@@ -162,6 +162,13 @@ public enum ResultTip {
     TIP_MEDIA_TYPE_ERROR(2084,"媒体类型出错"),
     TIP_DELETE_QRCODE_NOT_FIND(2085, "未找到需要删除的员工活码"),
     TIP_ERROR_CREATING_APP_lINK(2086,"生成活码小程序短链失败"),
+    TIP_BATCH_TAG_TASK_NOT_IMPORT_EXCEL(2087, "请上传文件"),
+    TIP_BATCH_TAG_TASK_NOT_EXCEL(2088, "请上传Excel文件"),
+    TIP_FAILED_TO_COVERT_EXCEL(2089, "转换Excel文件失败"),
+    TIP_TEMPLATE_MISMATCH(2090, "模板不匹配，请重新导入"),
+    TIP_EXCEL_IS_EMPTY(2091, "excel内容为空"),
+    TIP_NO_EFFECTIVE_TAG(2092,"标签不存在"),
+    TIP_NO_EXPORT_DATA(2093, "没有要导出的数据"),
 
     //员工模块错误码
     TIP_PARAM_NAME_MISSING(3001, "请填写完整的员工信息"),

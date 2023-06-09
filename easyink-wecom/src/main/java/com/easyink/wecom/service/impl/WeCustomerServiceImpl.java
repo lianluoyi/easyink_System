@@ -78,7 +78,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.validation.constraints.NotBlank;
-import java.sql.Time;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -270,6 +269,7 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
         weCustomerClient.makeCustomerLabel(customerTagEdit, corpId);
     }
 
+
     @Transactional(rollbackFor = Exception.class)
     @Override
     public void batchMarkCustomTag(String corpId, String userId, String externalUserId, List<WeTag> addTags, List<WeTag> removeTags) {
@@ -277,11 +277,18 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
             log.info("员工id，客户id，公司id不能为空，userId：{}，externalUserId：{}，corpId：{}", userId, externalUserId, corpId);
             throw new CustomException("增量式打标签错误");
         }
-        List<String> addTagIds = addTags == null ? Collections.emptyList() : addTags.stream().map(WeTag::getTagId).filter(Objects::nonNull).collect(Collectors.toList());
-        List<String> removeTagIds = removeTags == null ? Collections.emptyList() : removeTags.stream().map(WeTag::getTagId).filter(Objects::nonNull).collect(Collectors.toList());
-        WeCustomerService weCustomerService = (WeCustomerServiceImpl)AopContext.currentProxy();
+        List<String> addTagIds = addTags == null ? Collections.emptyList() : addTags.stream()
+                                                                                    .map(WeTag::getTagId)
+                                                                                    .filter(Objects::nonNull)
+                                                                                    .collect(Collectors.toList());
+        List<String> removeTagIds = removeTags == null ? Collections.emptyList() : removeTags.stream()
+                                                                                             .map(WeTag::getTagId)
+                                                                                             .filter(Objects::nonNull)
+                                                                                             .collect(Collectors.toList());
+        WeCustomerService weCustomerService = (WeCustomerServiceImpl) AopContext.currentProxy();
         weCustomerService.batchMarkCustomTagWithTagIds(corpId, userId, externalUserId, addTagIds, removeTagIds);
     }
+
 
     @Override
     @Transactional(rollbackFor = Exception.class)

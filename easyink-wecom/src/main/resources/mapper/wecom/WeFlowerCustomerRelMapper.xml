@@ -366,4 +366,49 @@
                         AND create_time &lt;= #{endTime}
                         ), 0) AS contactTotalCnt
     </select>
+<!--    根据unionId 查询客户-->
+    <select id="getByUnionIds" resultType="com.easyink.wecom.domain.WeFlowerCustomerRel">
+        SELECT
+        wc.`external_userid`,
+        wc.`name` AS userName,
+        wc.`corp_id`,
+        wc.`unionid` as unionId,
+        wfcr.id ,
+        wfcr.`user_id`,
+        wfcr.`status`
+        FROM
+        we_customer wc
+        LEFT JOIN we_flower_customer_rel wfcr ON wc.corp_id = wfcr.corp_id
+        AND wc.external_userid = wfcr.external_userid
+        WHERE
+        wc.corp_id = #{corpId}
+        AND wc.unionid IN
+        <if test="unionIds != null and unionIds.size() >0">
+            <foreach collection="unionIds" item="unionId" separator="," open="(" close=")" >
+                #{unionId}
+            </foreach>
+        </if>
+        AND wfcr.status IN ('${@com.easyink.common.enums.CustomerStatusEnum@NORMAL.code}', '${@com.easyink.common.enums.CustomerStatusEnum@DRAIN.code}')
+    </select>
+    <!--    根据手机号 查询客户-->
+    <select id="getByMobiles" resultType="com.easyink.wecom.domain.WeFlowerCustomerRel">
+        SELECT
+        wfcr.external_userid,
+        wfcr.user_id,
+        wfcr.corp_id,
+        wfcr.remark_mobiles,
+        wfcr. STATUS,
+        wfcr.id
+        FROM
+        we_flower_customer_rel wfcr
+        WHERE
+        wfcr.corp_id = #{corpId}
+        AND wfcr.remark_mobiles IN
+        <if test="mobiles != null and mobiles.size()>0" >
+            <foreach collection="mobiles" item="mobile" separator="," open="(" close=")" >
+                #{mobile}
+            </foreach>
+        </if>
+        AND wfcr.status IN ('${@com.easyink.common.enums.CustomerStatusEnum@NORMAL.code}', '${@com.easyink.common.enums.CustomerStatusEnum@DRAIN.code}')
+    </select>
 </mapper>

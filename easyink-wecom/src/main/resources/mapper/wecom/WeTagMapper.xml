@@ -172,6 +172,14 @@
         </if>
     </select>
 
+    <!--统计当前企业下所有未删除的企业标签的数量 -->
+    <select id="totalTagCnt" resultType="java.lang.Integer">
+        SELECT COUNT(DISTINCT tag_id)
+        FROM we_tag
+        WHERE `status` = ${@com.easyink.common.constant.Constants@NORMAL_CODE}
+        AND corp_id = #{corpId}
+    </select>
+
     <update id="updateWeTag" parameterType="WeTag">
         update we_tag
         <trim prefix="SET" suffixOverrides=",">

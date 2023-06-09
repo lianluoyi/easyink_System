@@ -127,10 +127,12 @@ public class TagRecordUtil {
         if (StringUtils.isEmpty(userName)){
             userName = EMPTY_STRING;
         }
-        if (CustomerTrajectoryEnums.TagType.EDIT_TAG.getType().equals(type)){
-            return CustomerTrajectoryEnums.TagType.EDIT_TAG.getDesc().replace(GenConstants.OPERATOR,userName);
-        }else if (CustomerTrajectoryEnums.TagType.BATCH_REMOVE_TAG.getType().equals(type)){
-            return CustomerTrajectoryEnums.TagType.BATCH_REMOVE_TAG.getDesc().replace(GenConstants.OPERATOR,userName);
+        if (CustomerTrajectoryEnums.TagType.EDIT_TAG.getType().equals(type)) {
+            return CustomerTrajectoryEnums.TagType.EDIT_TAG.getDesc().replace(GenConstants.OPERATOR, userName);
+        } else if (CustomerTrajectoryEnums.TagType.BATCH_REMOVE_TAG.getType().equals(type)) {
+            return CustomerTrajectoryEnums.TagType.BATCH_REMOVE_TAG.getDesc().replace(GenConstants.OPERATOR, userName);
+        } else if (CustomerTrajectoryEnums.TagType.BATCH_TAG_TASK.getType().equals(type)) {
+            return CustomerTrajectoryEnums.TagType.BATCH_TAG_TASK.getDesc().replace(GenConstants.CREATE_BY, userName);
         }
         return CustomerTrajectoryEnums.TagType.BATCH_ADD_TAG.getDesc().replace(GenConstants.OPERATOR,userName);
     }

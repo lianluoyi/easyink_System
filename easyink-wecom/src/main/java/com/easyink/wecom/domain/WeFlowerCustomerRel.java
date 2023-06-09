@@ -140,6 +140,11 @@ public class WeFlowerCustomerRel {
 
     @TableField(exist = false)
     private String department;
+    /**
+     * 客户的unionId
+     */
+    @TableField(exist = false)
+    private String unionId;
 
 
     @TableField(exist = false)

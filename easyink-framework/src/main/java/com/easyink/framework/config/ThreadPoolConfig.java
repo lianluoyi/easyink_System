@@ -1,13 +1,18 @@
 package com.easyink.framework.config;
 
 import com.easyink.common.utils.Threads;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /**
@@ -16,6 +21,7 @@ import java.util.concurrent.ThreadPoolExecutor;
  * @author admin
  **/
 @Configuration
+@Slf4j
 public class ThreadPoolConfig {
     // 核心线程池大小
     private int corePoolSize = 50;
@@ -30,6 +36,7 @@ public class ThreadPoolConfig {
     private int keepAliveSeconds = 300;
 
     @Bean(name = "threadPoolTaskExecutor")
+    @Primary
     public ThreadPoolTaskExecutor threadPoolTaskExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setMaxPoolSize(maxPoolSize);
@@ -54,5 +61,75 @@ public class ThreadPoolConfig {
                 Threads.printException(r, t);
             }
         };
+    }
+
+    /**
+     * 仲裁工单线程池
+     *
+     * @return executor
+     */
+    @Bean("batchTagExecutor")
+    public ThreadPoolTaskExecutor batchTagExecutor() {
+        return init(corePoolSize, maxPoolSize, queueCapacity, keepAliveSeconds, "batchTag");
+    }
+
+    /**
+     * 同步编辑客户回调 线程池
+     * @return
+     */
+    @Bean("syncEditCustomerExecutor")
+    public ThreadPoolTaskExecutor syncEditCustomerExecutor() {
+        return init(corePoolSize, maxPoolSize, queueCapacity, keepAliveSeconds, "syncEditCustomer");
+    }
+
+    /**
+     * 构建线程池
+     *
+     * @param corePoolSize     核心线程数
+     * @param maxPoolSize      最大线程数
+     * @param keepAliveSeconds 活跃时间
+     * @param queueCapacity    队列容量
+     * @param poolNamePrefix   线程池名前缀
+     * @return {@link ThreadPoolTaskExecutor}
+     */
+    public ThreadPoolTaskExecutor init(Integer corePoolSize, Integer maxPoolSize, Integer queueCapacity, Integer keepAliveSeconds, String poolNamePrefix) {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        //  完成任务自动关闭 , 默认为false
+        executor.setWaitForTasksToCompleteOnShutdown(true);
+        //  核心线程超时退出，默认为false
+        executor.setAllowCoreThreadTimeOut(true);
+        //核心线程池大小
+        executor.setCorePoolSize(corePoolSize);
+        //最大线程数
+        executor.setMaxPoolSize(maxPoolSize);
+        //队列容量
+        executor.setQueueCapacity(queueCapacity);
+        //活跃时间
+        executor.setKeepAliveSeconds(keepAliveSeconds);
+        construct(executor, poolNamePrefix);
+        return executor;
+    }
+
+    /**
+     * 构建线程池执行器
+     *
+     * @param executor   初始化后的执行器
+     * @param namePrefix 线程名称前缀,如传getContact,线程名前缀则为 getContactThread-threadId
+     * @return {@link ThreadPoolTaskExecutor}
+     */
+    public ThreadPoolTaskExecutor construct(ThreadPoolTaskExecutor executor, String namePrefix) {
+        //线程名字前缀
+        executor.setThreadNamePrefix(namePrefix + "Thread-%d");
+        log.info("[" + namePrefix + "-thread-pool] init success ...");
+        // setRejectedExecutionHandler：当pool已经达到max size的时候，如何处理新任务
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.AbortPolicy());
+        ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat(namePrefix + "Thread-%d")
+                                                                .setUncaughtExceptionHandler(
+                                                                        (Thread t, Throwable e) ->
+                                                                                log.error("[" + namePrefix + "-thread-pool]thread pool error occurs:{}", ExceptionUtils.getStackTrace(e)))
+                                                                .build();
+        executor.setThreadFactory(threadFactory);
+        executor.initialize();
+        return executor;
     }
 }
