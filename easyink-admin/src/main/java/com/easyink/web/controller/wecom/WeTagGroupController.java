@@ -14,8 +14,10 @@ import com.easyink.common.core.page.TableDataInfo;
 import com.easyink.common.enums.BusinessType;
 import com.easyink.wecom.domain.WeTag;
 import com.easyink.wecom.domain.WeTagGroup;
+import com.easyink.wecom.domain.dto.statistics.WeTagStatisticsDTO;
 import com.easyink.wecom.domain.dto.tag.WeGroupTagDTO;
 import com.easyink.wecom.login.util.LoginTokenService;
+import com.easyink.wecom.mapper.WeTagMapper;
 import com.easyink.wecom.service.WeTagGroupService;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.StringUtils;
@@ -39,6 +41,9 @@ public class WeTagGroupController extends BaseController {
     @Autowired
     private WeTagGroupService weTagGroupService;
 
+    @Autowired
+    private WeTagMapper weTagMapper;
+
     /**
      * 查询标签组列表
      */
@@ -48,6 +53,14 @@ public class WeTagGroupController extends BaseController {
         startPage();
         weTagGroup.setCorpId(LoginTokenService.getLoginUser().getCorpId());
         return getDataTable(weTagGroupService.selectWeTagGroupList(weTagGroup));
+    }
+
+    @GetMapping("/totalTagCnt")
+    @ApiOperation("企业未删除标签总数")
+    public AjaxResult totalTagCnt(){
+        WeTagStatisticsDTO weTagStatisticsDTO =new WeTagStatisticsDTO();
+        weTagStatisticsDTO.setCorpId(LoginTokenService.getLoginUser().getCorpId());
+        return AjaxResult.success(weTagMapper.totalTagCnt(weTagStatisticsDTO));
     }
 
     /**

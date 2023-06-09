@@ -109,7 +109,7 @@ public class AttachmentParam {
             case MINIPROGRAM:
                 return builder.content(weMaterial.getMaterialName())
                         .picUrl(weMaterial.getCoverUrl())
-                        .description(weMaterial.getContent())
+                        .description(weMaterial.getAppid())
                         .url(weMaterial.getMaterialUrl()).typeEnum(typeEnum).build();
             case VIDEO:
                 return builder.picUrl(weMaterial.getMaterialUrl()).description(weMaterial.getContent()).typeEnum(typeEnum).build();

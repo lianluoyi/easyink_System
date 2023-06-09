@@ -1,16 +1,19 @@
 package com.easyink.web.controller.wecom;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.easyink.common.annotation.Log;
 import com.easyink.common.core.controller.BaseController;
 import com.easyink.common.core.domain.AjaxResult;
 import com.easyink.common.core.page.TableDataInfo;
 import com.easyink.common.enums.BusinessType;
 import com.easyink.common.utils.PageInfoUtil;
+import com.easyink.wecom.domain.WeGroupTag;
 import com.easyink.wecom.domain.dto.statistics.WeTagStatisticsDTO;
 import com.easyink.wecom.domain.dto.wegrouptag.*;
 import com.easyink.wecom.domain.vo.statistics.WeTagGroupListVO;
 import com.easyink.wecom.domain.vo.wegrouptag.PageWeGroupTagCategoryVO;
 import com.easyink.wecom.login.util.LoginTokenService;
+import com.easyink.wecom.mapper.WeGroupTagMapper;
 import com.easyink.wecom.service.WeGroupTagCategoryService;
 import com.easyink.wecom.service.WeGroupTagRelService;
 import com.easyink.wecom.service.WeGroupTagService;
@@ -35,6 +38,9 @@ public class WeGroupTagController extends BaseController {
     private final WeGroupTagCategoryService weGroupTagCategoryService;
     private final WeGroupTagRelService weGroupTagRelService;
     private final WeGroupTagService weGroupTagService;
+
+    @Autowired
+    private WeGroupTagMapper weGroupTagMapper;
 
     @Autowired
     public WeGroupTagController(WeGroupTagCategoryService weGroupTagCategoryService, WeGroupTagRelService weGroupTagRelService, WeGroupTagService weGroupTagService) {
@@ -123,5 +129,12 @@ public class WeGroupTagController extends BaseController {
         WeTagStatisticsDTO statisticsDTO=new WeTagStatisticsDTO();
         statisticsDTO.setCorpId(LoginTokenService.getLoginUser().getCorpId());
         return PageInfoUtil.getDataTable(weGroupTagService.groupTagList(statisticsDTO));
+    }
+
+    @GetMapping("/totalTagCnt")
+    @ApiOperation("企业未删除标签总数")
+    public AjaxResult totalTagCnt(){
+        int total = weGroupTagMapper.selectCount(new LambdaQueryWrapper<WeGroupTag>().eq(WeGroupTag::getCorpId,LoginTokenService.getLoginUser().getCorpId()));
+        return AjaxResult.success(total);
     }
 }

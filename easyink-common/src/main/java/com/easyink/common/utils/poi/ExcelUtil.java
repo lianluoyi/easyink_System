@@ -21,7 +21,7 @@ import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddressList;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
-import org.apache.poi.xssf.usermodel.XSSFDataValidation;
+import org.apache.poi.xssf.usermodel.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -1125,4 +1125,24 @@ public class ExcelUtil<T> {
         }
         return val;
     }
+
+    /**
+     * 获取指定单元格的值
+     *
+     * @param workbook {@link XSSFWorkbook}
+     * @param sheetNum 第几个工作表，0 表示第一个
+     * @param rowNum 第几行，0 表示第一行
+     * @param columnNum 第几列，0 表示第一列
+     * @return 单元格值
+     */
+    public static Object getRowValue(XSSFWorkbook workbook, Integer sheetNum, Integer rowNum, Integer columnNum) {
+        if (workbook == null) {
+            return null;
+        }
+        XSSFSheet sheet = workbook.getSheetAt(sheetNum);
+        XSSFRow row = sheet.getRow(rowNum);
+        XSSFCell cell = row.getCell(columnNum);
+        return cell.getStringCellValue();
+    }
+
 }

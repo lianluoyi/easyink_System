@@ -6,7 +6,6 @@ import com.easyink.wecom.domain.WeUserBehaviorData;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -101,10 +100,28 @@ public interface WeFlowerCustomerRelMapper extends BaseMapper<WeFlowerCustomerRe
     /**
      * 更新已流失重新添加回来的客户状态
      *
-     * @param corpId 企业ID
-     * @param userId 员工ID
+     * @param corpId          企业ID
+     * @param userId          员工ID
      * @param external_userid 外部联系人ID
      * @return 结果
      */
     Integer updateLossExternalUser(@Param("corpId") String corpId, @Param("userId") String userId, @Param("external_userid") String external_userid);
+
+    /**
+     * 根据unionId 查询客户
+     *
+     * @param corpId   企业ID
+     * @param unionIds unionId 列表
+     * @return 客户关系列表 {@link WeFlowerCustomerRel }
+     */
+    List<WeFlowerCustomerRel> getByUnionIds(@Param("corpId") String corpId, @Param("unionIds") List<String> unionIds);
+
+    /**
+     * 根据备注手机号 查询客户
+     *
+     * @param corpId  企业ID
+     * @param mobiles 手机号列表
+     * @return 客户关系列表 {@link WeFlowerCustomerRel }
+     */
+    List<WeFlowerCustomerRel> getByMobiles(@Param("corpId") String corpId, @Param("mobiles") List<String> mobiles);
 }

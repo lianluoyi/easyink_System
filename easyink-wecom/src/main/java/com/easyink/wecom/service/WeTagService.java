@@ -3,6 +3,7 @@ package com.easyink.wecom.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.easyink.common.core.domain.AjaxResult;
 import com.easyink.common.core.page.TableDataInfo;
+import com.easyink.wecom.domain.WeFlowerCustomerRel;
 import com.easyink.wecom.domain.WeTag;
 import com.easyink.wecom.domain.dto.statistics.WeTagStatisticsDTO;
 import com.easyink.wecom.domain.vo.autotag.TagInfoVO;
@@ -112,4 +113,21 @@ public interface WeTagService extends IService<WeTag> {
      */
     TableDataInfo<WeTagCustomerStatisticsChartVO> getCustomerTagTableChartView(WeTagStatisticsDTO dto);
 
+    /**
+     * 打标签
+     *
+     * @param corpId 企业ID
+     * @param rel    客户关系实体 {@link WeFlowerCustomerRel}
+     * @param tagIds 需要打上的标签
+     */
+    void addTag(String corpId, WeFlowerCustomerRel rel, List<String> tagIds);
+
+    /**
+     * 根据标签ID列表获取标签名
+     *
+     * @param corpId 企业ID
+     * @param tagIds 标签ID列表
+     * @return 标签名列表
+     */
+    List<String> getTagNameByIds(String corpId, List<String> tagIds);
 }
