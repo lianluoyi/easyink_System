@@ -27,7 +27,7 @@
 
 - 建议使用谷歌浏览器访问
 
-- [多租户体验入口](http://www.easyink.net) (免费体验90天)
+- [多租户体验入口](http://www.easyink.net) (免费体验60天)
 
 - 该环境采用第三方应用+代开发应用模式，可借助[第三方应用操作手册](https://www.yuque.com/docs/share/591b5dff-f705-413e-b167-e8ef72d519bf?#O35E2)辅助体验
 
