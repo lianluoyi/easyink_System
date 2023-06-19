@@ -458,7 +458,7 @@ public class WeGroupSopV2ServiceImpl implements WeGroupSopV2Service {
         WeCustomer weCustomer = new WeCustomer();
         BeanUtils.copyProperties(weCustomerSopDTO, weCustomer);
         weCustomer.setUserIds(weCustomerSopDTO.getUsers());
-        List<WeCustomerVO> weCustomers = weCustomerService.selectWeCustomerListV2(weCustomer);
+        List<WeCustomerVO> weCustomers = weCustomerService.selectWeCustomerListV3(weCustomer);
         List<String> customerList = CollectionUtils.isNotEmpty(customerIds)
                 ? weCustomers.stream().filter(customer -> customerIds.contains(customer.getExternalUserid())).map(WeCustomerVO::getExternalUserid).collect(Collectors.toList())
                 : weCustomers.stream().map(WeCustomerVO::getExternalUserid).collect(Collectors.toList());

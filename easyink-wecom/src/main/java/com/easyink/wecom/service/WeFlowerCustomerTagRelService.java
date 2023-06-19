@@ -2,6 +2,7 @@ package com.easyink.wecom.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.easyink.wecom.domain.WeFlowerCustomerTagRel;
+import com.easyink.wecom.domain.vo.customer.WeCustomerVO;
 
 import java.util.List;
 
@@ -111,4 +112,12 @@ public interface WeFlowerCustomerTagRelService extends IService<WeFlowerCustomer
      * @param takeoverRelId
      */
     void transferTag(Long handoverRelId, Long takeoverRelId);
+
+    /**
+     * 为客户列表设置标签
+     *
+     * @param corpId 企业id
+     * @param list   客户列表 {@link WeCustomerVO }
+     */
+    void setTagForCustomers(String corpId, List<WeCustomerVO> list);
 }

@@ -8,7 +8,6 @@ import com.easyink.common.annotation.Excel;
 import com.easyink.common.core.domain.BaseEntity;
 import com.easyink.common.core.domain.wecom.BaseExtendPropertyRel;
 import com.easyink.common.utils.StringUtils;
-import com.easyink.common.utils.bean.BeanUtils;
 import com.easyink.wecom.domain.dto.customer.ExternalContact;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.annotations.ApiModel;
@@ -199,9 +198,13 @@ public class WeCustomer extends BaseEntity {
     @TableField(exist = false)
     private Integer transferStatus;
 
-    @ApiModelProperty(value = "筛选结果")
+    @ApiModelProperty(value = "扩展属性筛选结果")
     @TableField(exist = false)
-    private List<WeCustomerExtend> extendList;
+    private List<WeCustomerRel> extendList;
+
+    @ApiModelProperty(value = "标签关系筛选结果的客户关系id")
+    @TableField(exist = false)
+    private List<Long> relIds;
 
     /**
      * 匹配的标签，使用","分隔。

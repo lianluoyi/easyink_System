@@ -6,7 +6,6 @@ import com.easyink.wecom.domain.WeCustomer;
 import com.easyink.wecom.domain.WeCustomerPortrait;
 import com.easyink.wecom.domain.WeCustomerSocialConn;
 import com.easyink.wecom.domain.dto.WeCustomerPushMessageDTO;
-import com.easyink.wecom.domain.dto.WeCustomerSearchDTO;
 import com.easyink.wecom.domain.vo.WeCustomerNameAndUserIdVO;
 import com.easyink.wecom.domain.vo.customer.WeCustomerUserListVO;
 import com.easyink.wecom.domain.vo.customer.WeCustomerVO;
@@ -200,5 +199,13 @@ public interface WeCustomerMapper extends BaseMapper<WeCustomer> {
      */
     List<WeCustomerVO> listCustomers(@Param("customerName") String customerName, @Param("corpId") String corpId);
 
+    /**
+     * 客户列表查询V3
+     * 修复了 v2 版本慢查询的问题
+     *
+     * @param weCustomer 查询客户条件
+     * @return {@link WeCustomerVO }
+     */
 
+    List<WeCustomerVO> selectWeCustomerV3(WeCustomer weCustomer);
 }

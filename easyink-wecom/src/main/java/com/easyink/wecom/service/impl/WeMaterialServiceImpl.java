@@ -35,6 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.validation.constraints.NotNull;
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -208,11 +209,15 @@ public class WeMaterialServiceImpl implements WeMaterialService {
         if (StringUtils.isBlank(url) || StringUtils.isBlank(type) || StringUtils.isBlank(name) || StringUtils.isBlank(corpId)) {
             throw new CustomException("请求参数不能为空");
         }
+        int fileLength;
         try (
                 InputStream inputStream = new URL(url).openConnection().getInputStream();
         ) {
+            // 获取文件的长度
+            BufferedInputStream bufferedInputStream = new BufferedInputStream(inputStream);
+            fileLength = bufferedInputStream.available();
             // 调用企微上传素材
-            return weMediaClient.upload(inputStream, name, type, corpId);
+            return weMediaClient.upload(inputStream, name, type, corpId, fileLength, WeConstans.WE_UPLOAD_FORM_DATA_CONTENT_TYPE);
         } catch (ForestRuntimeException e) {
             log.error("上传临时文件失败......url:{},type:{},name:{},ex:{},st:{}", url, type, name, ExceptionUtils.getMessage(e), ExceptionUtils.getStackTrace(e));
             WeResultDTO result = JSONUtil.toBean(e.getMessage(), WeResultDTO.class);

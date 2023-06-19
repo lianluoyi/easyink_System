@@ -1,14 +1,20 @@
 package com.easyink.wecom.service.impl;
 
+import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.easyink.common.utils.DateUtils;
+import com.easyink.common.utils.StringUtils;
 import com.easyink.wecom.domain.WeFlowerCustomerTagRel;
+import com.easyink.wecom.domain.vo.customer.WeCustomerVO;
 import com.easyink.wecom.mapper.WeFlowerCustomerTagRelMapper;
 import com.easyink.wecom.service.WeFlowerCustomerTagRelService;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 客户标签关系Service业务层处理
@@ -123,5 +129,26 @@ public class WeFlowerCustomerTagRelServiceImpl extends ServiceImpl<WeFlowerCusto
     @Override
     public void transferTag(Long handoverRelId, Long takeoverRelId) {
         weFlowerCustomerTagRelMapper.transferTag(handoverRelId, takeoverRelId);
+    }
+
+    @Override
+    public void setTagForCustomers(String corpId, List<WeCustomerVO> list) {
+        if(StringUtils.isBlank(corpId) || CollectionUtils.isEmpty(list)) {
+            return;
+        }
+        List<Long> relList = list.stream().map(WeCustomerVO::getRelId).collect(Collectors.toList());
+        // 根据客户-员工关系id 获取其打上的标签
+        List<WeFlowerCustomerTagRel> tagRelList = weFlowerCustomerTagRelMapper.getTagRelByRelIds(relList);
+        if(CollectionUtils.isEmpty(tagRelList)) {
+            return;
+        }
+        // 根据返回结果进行组装数据
+        for(WeCustomerVO vo : list) {
+            for(WeFlowerCustomerTagRel tagRel : tagRelList) {
+                if(ObjectUtil.equal( vo.getRelId(), tagRel.getFlowerCustomerRelId())) {
+                    vo.getWeFlowerCustomerTagRels().add(tagRel);
+                }
+            }
+        }
     }
 }

@@ -1,5 +1,6 @@
 package com.easyink.web.controller.wecom;
 
+import cn.hutool.core.util.PageUtil;
 import com.dtflys.forest.annotation.Get;
 import com.easyink.common.annotation.Log;
 import com.easyink.common.constant.WeConstans;
@@ -8,6 +9,7 @@ import com.easyink.common.core.domain.AjaxResult;
 import com.easyink.common.core.domain.model.LoginUser;
 import com.easyink.common.core.page.TableDataInfo;
 import com.easyink.common.enums.BusinessType;
+import com.easyink.common.utils.PageInfoUtil;
 import com.easyink.common.utils.StringUtils;
 import com.easyink.common.utils.sql.SqlUtil;
 import com.easyink.wecom.domain.dto.WeCustomerSearchDTO;
@@ -73,10 +75,11 @@ public class WeCustomerController extends BaseController {
         Integer pageNum = weCustomerSearchDTO.getPageNum();
         Integer pageSize = weCustomerSearchDTO.getPageSize();
         if (StringUtils.isNotNull(pageNum) && StringUtils.isNotNull(pageSize)) {
-            PageHelper.startPage(pageNum, pageSize);
+            //预设分页参数
+            PageInfoUtil.setPage(pageNum, pageSize);
         }
         WeCustomer weCustomer=weCustomerService.changeWecustomer(weCustomerSearchDTO);
-        List<WeCustomerVO> list = weCustomerService.selectWeCustomerListV2(weCustomer);
+        List<WeCustomerVO> list = weCustomerService.selectWeCustomerListV3(weCustomer);
         return getDataTable(list);
     }
 

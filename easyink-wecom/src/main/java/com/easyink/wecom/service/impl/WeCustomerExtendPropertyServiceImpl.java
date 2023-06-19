@@ -1,6 +1,7 @@
 package com.easyink.wecom.service.impl;
 
 import cn.hutool.core.collection.ListUtil;
+import cn.hutool.core.util.ObjectUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -18,6 +19,7 @@ import com.easyink.wecom.domain.entity.customer.ExtendPropertyMultipleOption;
 import com.easyink.wecom.domain.entity.customer.WeCustomerExtendProperty;
 import com.easyink.wecom.domain.entity.customer.WeCustomerExtendPropertyRel;
 import com.easyink.wecom.domain.vo.WeCustomerExportVO;
+import com.easyink.wecom.domain.vo.customer.WeCustomerVO;
 import com.easyink.wecom.mapper.WeCustomerExtendPropertyMapper;
 import com.easyink.wecom.service.ExtendPropertyMultipleOptionService;
 import com.easyink.wecom.service.WeCustomerExtendPropertyRelService;
@@ -416,6 +418,24 @@ public class WeCustomerExtendPropertyServiceImpl extends ServiceImpl<WeCustomerE
         // 多选值ID-> 多选值的映射
         Map<Long, ExtendPropertyMultipleOption> optionMap = extendPropertyMultipleOptionService.getMapByProp(extendPropList);
         return mapProperty2Value(extendProperties, extendPropMap, optionMap);
+    }
+
+    @Override
+    public void setExtendPropertyForCustomers(String corpId, List<WeCustomerVO> list) {
+        if(StringUtils.isBlank(corpId) || CollectionUtils.isEmpty(list)) {
+            return;
+        }
+        List<BaseExtendPropertyRel> extendPropertyRels = weCustomerExtendPropertyMapper.getPropByCustomer(corpId, list);
+        if(CollectionUtils.isEmpty(extendPropertyRels)) {
+            return;
+        }
+        for ( WeCustomerVO vo : list) {
+            for ( BaseExtendPropertyRel propRel : extendPropertyRels) {
+                if(ObjectUtil.equal(vo.getUserId(), propRel.getUserId()) && ObjectUtil.equal(vo.getExternalUserid(),propRel.getExternalUserid())) {
+                    vo.getExtendProperties().add(propRel);
+                }
+            }
+        }
     }
 
 

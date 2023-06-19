@@ -11,6 +11,11 @@ import lombok.Getter;
 public class WeConstans {
 
     /**
+     * /media/upload上传临时素材文件接口FormData的content-type格式。
+     */
+    public static final String WE_UPLOAD_FORM_DATA_CONTENT_TYPE = "application/octet-stream";
+
+    /**
      * 判断是否为员工消息的标识
      */
     public static final String IS_USER = "externalUser";

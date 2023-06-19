@@ -33,11 +33,14 @@ public class StatisticsDTO extends RootEntity {
     @ApiModelProperty("员工idList")
     private List<String> userIds;
 
-    @ApiModelProperty("开始时间/添加时间的开始时间")
+    @ApiModelProperty("开始时间/添加时间的开始时间，格式为：YYYY-MM-DD 00:00:00")
     private String beginTime;
 
-    @ApiModelProperty("结束时间/添加时间的结束时间")
+    @ApiModelProperty("结束时间/添加时间的结束时间，格式为：YYYY-MM-DD 23:59:59")
     private String endTime;
+
+    @ApiModelProperty("结束时间，格式为：YYYY-MM-DD 00:00:00")
+    private String endDate;
 
     public String getBeginTime() {
         return DateUtils.parseBeginDay(beginTime);
@@ -45,6 +48,10 @@ public class StatisticsDTO extends RootEntity {
 
     public String getEndTime() {
         return DateUtils.parseEndDay(endTime);
+    }
+
+    public String getEndDate() {
+        return DateUtils.parseBeginDay(endTime);
     }
 
     /**

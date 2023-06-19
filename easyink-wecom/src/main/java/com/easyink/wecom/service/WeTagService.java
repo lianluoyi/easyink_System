@@ -114,6 +114,14 @@ public interface WeTagService extends IService<WeTag> {
     TableDataInfo<WeTagCustomerStatisticsChartVO> getCustomerTagTableChartView(WeTagStatisticsDTO dto);
 
     /**
+     * 根据标签获取打上的客户
+     *
+     * @param corpId 企业id
+     * @param tagIds tagids 用,隔开
+     * @return {@link Long}
+     */
+    List<Long> getCustomerByTags(String corpId, String tagIds);
+    /**
      * 打标签
      *
      * @param corpId 企业ID

@@ -46,10 +46,20 @@ public interface WeCustomerExtendPropertyRelMapper extends BaseMapper<WeCustomer
     List<String> listOfPropertyIdAndValue(@Param("list") List<Column> columnList);
 
     /**
-     * 根据extend_property_id查询所有符合条件的客户额外字段关系
+     * 根据extend_property_id, userId查询所有符合条件的客户额外字段关系
      *
      * @param columnList 字段属性值
+     * @param userIds 员工ID
      * @return {@link BaseExtendPropertyRel}
      */
-    List<CustomerSopPropertyRel> selectBaseExtendValue(List<Column> columnList);
+    List<CustomerSopPropertyRel> selectBaseExtendValue(@Param("columnList") List<Column> columnList, @Param("userIds") String userIds);
+
+    /**
+     * 根据extend_property_id查询客户所属的除日期范围选择外的所有额外字段值
+     *
+     * @param extendPropertyIds extend_property_id 列表
+     * @param userIds userIds 员工ID，以","分隔
+     * @return 结果
+     */
+    List<CustomerSopPropertyRel> selectExtendGroupByCustomer(@Param("extendPropertyIds") List<String> extendPropertyIds, @Param("userIds") String userIds);
 }

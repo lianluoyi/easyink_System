@@ -207,6 +207,11 @@ git clone https://github.com/lianluoyi/easyink_Sidebar.git
 
 <img src=https://wecomsaas-1253559996.cos.ap-guangzhou.myqcloud.com/2022/06/01/%E6%8A%80%E6%9C%AF%E4%BA%A4%E6%B5%81%E7%BE%A4%E6%B4%BB%E7%A0%81.png width=200 height=200 />
 
+## 🥤 奖励一杯奶茶
+如果您觉得EasyInk项目对您有所帮助，可以给程序媛/猿们奖励一杯奶茶🥤，注入满满活力。
+您的激励就是对我们最大的肯定✨（捐赠时注意备注开源项目打赏或者其他留言哦，该打赏也会用于支持开源服务器的相关支出，帮助我们的开源项目茁壮成长🌲）
+<img src="https://wecomsaas-1253559996.cos.ap-guangzhou.myqcloud.com/WechatIMG3691.jpeg" width=300 />
+
 
 ## :pencil2: 贡献指南
 

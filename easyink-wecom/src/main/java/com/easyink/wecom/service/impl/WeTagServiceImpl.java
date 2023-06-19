@@ -507,6 +507,14 @@ public class WeTagServiceImpl extends ServiceImpl<WeTagMapper, WeTag> implements
     }
 
     @Override
+    public List<Long> getCustomerByTags(String corpId, String tagIds) {
+        if(StringUtils.isBlank(tagIds) || StringUtils.isBlank(corpId)) {
+            return Collections.emptyList();
+        }
+         return weTagMapper.getCustomerByTags(corpId, tagIds);
+    }
+
+    @Override
     public void addTag(String corpId, WeFlowerCustomerRel rel, List<String> tagIds) {
         if (org.apache.commons.lang3.StringUtils.isAnyBlank(corpId) || rel == null || CollectionUtils.isEmpty(tagIds)) {
             throw new CustomException(ResultTip.TIP_PARAM_MISSING);

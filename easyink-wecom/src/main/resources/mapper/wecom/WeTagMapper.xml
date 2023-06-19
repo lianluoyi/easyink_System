@@ -171,6 +171,24 @@
             </foreach>
         </if>
     </select>
+<!--    查询打上标签的客户-员工关系id -->
+    <select id="getCustomerByTags" resultType="java.lang.Long">
+        SELECT
+        flower_customer_rel_id
+        FROM  we_flower_customer_tag_rel
+        WHERE
+        <if test="tagIds != null and tagIds !=''">
+            <if test="tagIds.indexOf(',') != -1">
+                 tag_id in
+                <foreach item="item" index="index" collection="tagIds.split(',')" open="(" separator="," close=")">
+                    #{item}
+                </foreach>
+            </if>
+            <if test="tagIds.indexOf(',') == -1">
+                 tag_id=#{tagIds}
+            </if>
+        </if>
+    </select>
 
     <!--统计当前企业下所有未删除的企业标签的数量 -->
     <select id="totalTagCnt" resultType="java.lang.Integer">

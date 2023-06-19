@@ -514,6 +514,10 @@ public class WeCustomerTrajectoryServiceImpl extends ServiceImpl<WeCustomerTraje
         for (WeOperationsCenterSopTaskEntity taskEntity : taskEntityList) {
             SopAttachmentVO sopAttachmentVO = new SopAttachmentVO();
             BeanUtils.copyProperties(taskEntity, sopAttachmentVO);
+            // mediaType = 6 表示为小程序附件，将appid存入content中，用于侧边栏发送时取用
+            if (Objects.equals(sopAttachmentVO.getMediaType(), Integer.parseInt(GroupMessageType.MINIPROGRAM.getType()))) {
+                sopAttachmentVO.setAppid(sopAttachmentVO.getContent());
+            }
             materialList.add(sopAttachmentVO);
         }
         weCustomerTrajectory.setMaterialList(materialList);

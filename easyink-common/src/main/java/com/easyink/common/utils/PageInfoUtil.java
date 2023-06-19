@@ -1,13 +1,19 @@
 package com.easyink.common.utils;
 
+import com.easyink.common.core.page.PageDomain;
 import com.easyink.common.core.page.TableDataInfo;
+import com.easyink.common.core.page.TableSupport;
 import com.easyink.common.enums.ResultTip;
+import com.easyink.common.utils.sql.SqlUtil;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+
+import static com.easyink.common.core.page.TableSupport.PAGE_NUM;
+import static com.easyink.common.core.page.TableSupport.PAGE_SIZE;
 
 /**
  * 无法通过sql直接进行分页，需要对列表直接分页时 使用此工具类
@@ -144,12 +150,46 @@ public class PageInfoUtil {
      * @param list 数据
      * @return 封装后的数据
      */
-    public static  <T> TableDataInfo<T> getDataTable(List<T> list) {
+    public static <T> TableDataInfo<T> getDataTable(List<T> list) {
         TableDataInfo rspData = new TableDataInfo();
         rspData.setCode(ResultTip.TIP_GENERAL_SUCCESS.getCode());
         rspData.setMsg("查询成功");
         rspData.setRows(list);
         rspData.setTotal((int) new PageInfo(list).getTotal());
         return rspData;
+    }
+
+    /**
+     * 设置分页参数
+     *
+     * @param pageNum  页数
+     * @param pageSize 页码
+     */
+    public static void setPage(Integer pageNum, Integer pageSize) {
+        PageDomain pageDomain = new PageDomain();
+        pageDomain.setPageNum(pageNum);
+        pageDomain.setPageSize(pageSize);
+        ServletUtils.getRequest().setAttribute(PAGE_NUM, pageNum);
+        ServletUtils.getRequest().setAttribute(PAGE_SIZE, pageSize);
+    }
+
+    /**
+     * 开始分页,从session获取分页参数
+     */
+    public static void startPage() {
+//        PageDomain pageDomain = TableSupport.buildPageRequest();
+        Object pageNum =  ServletUtils.getRequest().getAttribute(PAGE_NUM);
+        Object pageSize = ServletUtils.getRequest().getAttribute(PAGE_SIZE);
+       if(pageNum == null ||  pageSize == null) {
+           return;
+       }
+        PageHelper.startPage((Integer)pageNum, (Integer)pageSize);
+    }
+
+    /**
+     * 清理分页的线程变量
+     */
+    public static void clearPage() {
+        PageHelper.clearPage();
     }
 }

@@ -104,4 +104,12 @@ public interface WeFlowerCustomerTagRelMapper extends BaseMapper<WeFlowerCustome
      * @param takeoverRelId 接替人 客户关系id
      */
     void transferTag(@Param("handoverRelId") Long handoverRelId, @Param("takeoverRelId") Long takeoverRelId);
+
+    /**
+     * 根据客户关系id获取标签id列表
+     *
+     * @param relList 客户关系id
+     * @return {@link WeFlowerCustomerTagRel}
+     */
+    List<WeFlowerCustomerTagRel> getTagRelByRelIds(@Param("list") List<Long> relList);
 }

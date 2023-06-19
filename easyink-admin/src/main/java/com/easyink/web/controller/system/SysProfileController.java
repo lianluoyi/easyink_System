@@ -2,6 +2,7 @@ package com.easyink.web.controller.system;
 
 import com.easyink.common.annotation.Log;
 import com.easyink.common.config.RuoYiConfig;
+import com.easyink.common.constant.WeConstans;
 import com.easyink.common.core.controller.BaseController;
 import com.easyink.common.core.domain.AjaxResult;
 import com.easyink.common.core.domain.entity.SysUser;
@@ -135,7 +136,7 @@ public class SysProfileController extends BaseController {
             //企微用户
             if (!loginUser.isSuperAdmin()) {
                 WeUser weUser = loginUser.getWeUser();
-                WeMediaDTO weMediaDTO = weMediaClient.upload(file.getInputStream(), file.getName(), MediaType.IMAGE.getMediaType(), LoginTokenService.getLoginUser().getCorpId());
+                WeMediaDTO weMediaDTO = weMediaClient.upload(file.getInputStream(), file.getName(), MediaType.IMAGE.getMediaType(), LoginTokenService.getLoginUser().getCorpId(), (int) file.getSize(), WeConstans.WE_UPLOAD_FORM_DATA_CONTENT_TYPE);
                 weUser.setAvatarMediaid(weMediaDTO.getMedia_id());
                 //用临时素材更新头像
                 weUserClient.updateUser(new WeUserDTO(weUser), loginUser.getCorpId());

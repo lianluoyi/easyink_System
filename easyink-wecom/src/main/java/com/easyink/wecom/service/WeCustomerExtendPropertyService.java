@@ -7,6 +7,7 @@ import com.easyink.wecom.domain.dto.SaveCustomerExtendPropertyDTO;
 import com.easyink.wecom.domain.entity.customer.ExtendPropertyMultipleOption;
 import com.easyink.wecom.domain.entity.customer.WeCustomerExtendProperty;
 import com.easyink.wecom.domain.vo.WeCustomerExportVO;
+import com.easyink.wecom.domain.vo.customer.WeCustomerVO;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -155,4 +156,12 @@ public interface WeCustomerExtendPropertyService extends IService<WeCustomerExte
      * @return 自定义字段->所有值用,隔开 的映射
      */
     Map<WeCustomerExtendProperty, String> mapProperty2Value(List<BaseExtendPropertyRel> extendProperties, String corpId);
+
+    /**
+     * 为客户设置扩展字段和对应的值
+     *
+     * @param corpId 企业id
+     * @param list   客户列表
+     */
+    void setExtendPropertyForCustomers(String corpId, List<WeCustomerVO> list);
 }

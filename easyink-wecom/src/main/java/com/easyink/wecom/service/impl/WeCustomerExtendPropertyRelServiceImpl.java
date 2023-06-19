@@ -1,16 +1,20 @@
 package com.easyink.wecom.service.impl;
 
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.easyink.common.constant.WeConstans;
 import com.easyink.common.core.domain.sop.CustomerSopPropertyRel;
 import com.easyink.common.core.domain.wecom.BaseExtendPropertyRel;
 import com.easyink.common.enums.ResultTip;
 import com.easyink.common.exception.CustomException;
 import com.easyink.wecom.domain.WeCustomer;
+import com.easyink.wecom.domain.dto.WeCustomerPushMessageDTO;
 import com.easyink.wecom.domain.dto.customersop.Column;
 import com.easyink.wecom.domain.entity.customer.WeCustomerExtendPropertyRel;
 import com.easyink.wecom.mapper.WeCustomerExtendPropertyRelMapper;
 import com.easyink.wecom.service.WeCustomerExtendPropertyRelService;
+import com.easyink.wecom.service.WeUserService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -35,9 +39,12 @@ public class WeCustomerExtendPropertyRelServiceImpl extends ServiceImpl<WeCustom
 
     private final WeCustomerExtendPropertyRelMapper weCustomerExtendPropertyRelMapper;
 
+    private final WeUserService weUserService;
+
     @Autowired
-    public WeCustomerExtendPropertyRelServiceImpl(@NotBlank WeCustomerExtendPropertyRelMapper weCustomerExtendPropertyRelMapper) {
+    public WeCustomerExtendPropertyRelServiceImpl(@NotBlank WeCustomerExtendPropertyRelMapper weCustomerExtendPropertyRelMapper, WeUserService weUserService) {
         this.weCustomerExtendPropertyRelMapper = weCustomerExtendPropertyRelMapper;
+        this.weUserService = weUserService;
     }
 
     @Override
@@ -78,14 +85,40 @@ public class WeCustomerExtendPropertyRelServiceImpl extends ServiceImpl<WeCustom
     }
 
     /**
-     * 根据extend_property_id查询所有符合条件的客户额外字段关系
+     * 根据extend_property_id, userId查询所有符合条件的客户额外字段关系
      *
      * @param columnList 字段属性值
+     * @param weCustomer {@link WeCustomerPushMessageDTO}
      * @return {@link BaseExtendPropertyRel}
      */
     @Override
-    public List<CustomerSopPropertyRel> selectBaseExtendValue(List<Column> columnList) {
-        return weCustomerExtendPropertyRelMapper.selectBaseExtendValue(columnList);
+    public List<CustomerSopPropertyRel> selectBaseExtendValue(List<Column> columnList, WeCustomerPushMessageDTO weCustomer) {
+        if (CollectionUtils.isEmpty(columnList) || weCustomer == null) {
+            return new ArrayList<>();
+        }
+        // 查找部门下员工
+        if (StringUtils.isNotEmpty(weCustomer.getDepartmentIds())) {
+            List<String> userIdsByDepartment = weUserService.listOfUserId(weCustomer.getCorpId(), weCustomer.getDepartmentIds().split(StrUtil.COMMA));
+            String userIdsFromDepartment = CollectionUtils.isNotEmpty(userIdsByDepartment) ? StringUtils.join(userIdsByDepartment, WeConstans.COMMA) : StringUtils.EMPTY;
+            if (StringUtils.isNotEmpty(weCustomer.getUserIds())) {
+                weCustomer.setUserIds(weCustomer.getUserIds() + StrUtil.COMMA + userIdsFromDepartment);
+            } else {
+                weCustomer.setUserIds(userIdsFromDepartment);
+            }
+        }
+        return weCustomerExtendPropertyRelMapper.selectBaseExtendValue(columnList, weCustomer.getUserIds());
+    }
+
+    /**
+     * 根据extend_property_id查询客户所属的除日期范围选择外的所有额外字段值
+     *
+     * @param extendPropertyIds extend_property_id 列表
+     * @param userIds 员工ID，以","分隔
+     * @return 结果
+     */
+    @Override
+    public List<CustomerSopPropertyRel> selectExtendGroupByCustomer(List<String > extendPropertyIds, String userIds) {
+        return weCustomerExtendPropertyRelMapper.selectExtendGroupByCustomer(extendPropertyIds, userIds);
     }
 
 }

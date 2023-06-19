@@ -28,6 +28,15 @@
         <include refid="selectWeFlowerCustomerTagRelVo"/>
         where id = #{id}
     </select>
+    <select id="getTagRelByRelIds" resultType="com.easyink.wecom.domain.WeFlowerCustomerTagRel">
+        select  wfctr.flower_customer_rel_id, wfctr.tag_id, wt.name as tagName, wt.group_id from we_flower_customer_tag_rel wfctr left join
+        we_tag wt on wfctr.tag_id = wt.tag_id
+        WHERE  wfctr.flower_customer_rel_id
+        IN
+        <foreach collection="list" item="item" separator="," open="(" close=")">
+            #{item}
+        </foreach>
+    </select>
 
     <insert id="insertWeFlowerCustomerTagRel" parameterType="WeFlowerCustomerTagRel">
         insert into we_flower_customer_tag_rel

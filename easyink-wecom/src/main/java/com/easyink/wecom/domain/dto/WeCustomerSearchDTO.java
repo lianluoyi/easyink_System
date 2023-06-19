@@ -5,14 +5,12 @@ import com.alibaba.fastjson.annotation.JSONField;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.easyink.common.core.domain.BaseEntity;
 import com.easyink.common.core.domain.wecom.BaseExtendPropertyRel;
-import com.easyink.wecom.domain.WeCustomerExtend;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
 import javax.validation.constraints.NotBlank;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 @Data
@@ -92,7 +90,7 @@ public class WeCustomerSearchDTO extends BaseEntity {
      * 筛选结果
      */
     @TableField(exist = false)
-    private List<WeCustomerExtend> extendList;
+    private List<Long> extendList;
 
     @ApiModelProperty(value = "页数")
     private Integer pageNum;

@@ -3,6 +3,7 @@ package com.easyink.wecom.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.easyink.common.constant.WeConstans;
+import com.easyink.common.enums.GroupMessageType;
 import com.easyink.common.enums.ResultTip;
 import com.easyink.common.enums.WeOperationsCenterSop;
 import com.easyink.common.exception.CustomException;
@@ -28,6 +29,7 @@ import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 
 @Service
@@ -114,6 +116,10 @@ public class WeOperationsCenterSopRulesServiceImpl extends ServiceImpl<WeOperati
                 updateList.add(sopRulesEntity);
                 if (CollectionUtils.isNotEmpty(sopRuleDTO.getMaterialList())) {
                     sopRuleDTO.getMaterialList().forEach(sopMaterial -> sopMaterial.setRuleId(sopRuleDTO.getId()));
+                    for (WeWordsDetailEntity weWordsDetailEntity : sopRuleDTO.getMaterialList()) {
+                        // mediaType = 6 表示为小程序附件，将appid存入content中，用于侧边栏发送时取用
+                        saveAppidToContent(weWordsDetailEntity);
+                    }
                     updateMaterialList.addAll(sopRuleDTO.getMaterialList());
                 }
             }
@@ -189,6 +195,8 @@ public class WeOperationsCenterSopRulesServiceImpl extends ServiceImpl<WeOperati
                 detailEntity.setId(SnowFlakeUtil.nextId());
                 detailEntity.setCorpId(corpId);
                 detailEntity.setGroupId(WeConstans.DEFAULT_SOP_WORDS_DETAIL_GROUP_ID);
+                // mediaType = 6 表示为小程序附件，将appid存入content中，用于侧边栏发送时取用
+                saveAppidToContent(detailEntity);
                 addList.add(detailEntity);
             }
             sopMaterialEntity = new WeOperationsCenterSopMaterialEntity();
@@ -200,6 +208,18 @@ public class WeOperationsCenterSopRulesServiceImpl extends ServiceImpl<WeOperati
         }
         //保存到sop素材表
         sopMaterialService.saveBatch(sopMaterialEntityList);
+    }
+
+    /**
+     * 将小程序appid存入content，用于侧边栏发送时使用
+     *
+     * @param weWordsDetailEntity {@link WeWordsDetailEntity}
+     */
+    private void saveAppidToContent(WeWordsDetailEntity weWordsDetailEntity) {
+        // mediaType = 6 表示为小程序附件，将appid存入content中，用于侧边栏发送时取用
+        if (Objects.equals(weWordsDetailEntity.getMediaType(), Integer.parseInt(GroupMessageType.MINIPROGRAM.getType()))) {
+            weWordsDetailEntity.setContent(weWordsDetailEntity.getAppid());
+        }
     }
 
     /**

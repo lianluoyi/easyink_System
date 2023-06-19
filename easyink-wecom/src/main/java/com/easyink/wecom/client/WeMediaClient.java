@@ -35,7 +35,7 @@ public interface WeMediaClient {
      * 使用byte数组和Inputstream对象时一定要定义fileName属性
      */
     @Post(url = "/media/upload")
-    WeMediaDTO upload(@DataFile(value = "media", fileName = "${1}") InputStream file, String filename, @Query("type") String type, @Header("corpid") String corpId);
+    WeMediaDTO upload(@DataFile(value = "media", fileName = "${1}") InputStream file, @DataParam("filename") String filename, @Query("type") String type, @Header("corpid") String corpId, @DataParam("filelength") int filelength, @DataParam("content-type") String contentType);
 
     /**
      * 上传附件资源
