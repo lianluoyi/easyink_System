@@ -62,6 +62,14 @@ public class WeMsgTlpMaterial {
     @TableField("description")
     private String description;
 
+    @ApiModelProperty(value = "小程序账号原始id，小程序专用")
+    @TableField("account_original_id")
+    private String accountOriginalId;
+
+    @ApiModelProperty(value = "小程序appid，存入description")
+    @TableField(exist = false)
+    private String appid;
+
     @ApiModelProperty(value = "链接url,小程序page")
     @TableField("url")
     private String url;

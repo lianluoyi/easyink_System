@@ -27,6 +27,7 @@ import com.easyink.common.exception.CustomException;
 import com.easyink.common.exception.wecom.WeComException;
 import com.easyink.common.utils.DateUtils;
 import com.easyink.common.utils.DictUtils;
+import com.easyink.common.utils.PageInfoUtil;
 import com.easyink.common.utils.TagRecordUtil;
 import com.easyink.common.utils.bean.BeanUtils;
 import com.easyink.common.utils.poi.ExcelUtil;
@@ -333,21 +334,56 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
      */
     @Override
     @DataScope
+    @Deprecated
     public List<WeCustomerVO> selectWeCustomerListV2(WeCustomer weCustomer) {
 
 
         if (StringUtils.isBlank(weCustomer.getCorpId())) {
             throw new CustomException(ResultTip.TIP_GENERAL_PARAM_ERROR);
         }
-        if (CollectionUtils.isNotEmpty(weCustomer.getExtendProperties())){
-            List<WeCustomerExtend> extendList=extendProperties(weCustomer);
-            if (CollectionUtils.isEmpty(extendList)){
+        if (CollectionUtils.isNotEmpty(weCustomer.getExtendProperties())) {
+            List<WeCustomerRel> extendList = extendProperties(weCustomer);
+            if (CollectionUtils.isEmpty(extendList)) {
                 return new ArrayList<>();
             }
             weCustomer.setExtendList(extendList);
         }
 
-         return weCustomerMapper.selectWeCustomerListV2(weCustomer);
+        return weCustomerMapper.selectWeCustomerListV2(weCustomer);
+    }
+
+    @DataScope
+    @Override
+    public List<WeCustomerVO> selectWeCustomerListV3(WeCustomer weCustomer) {
+        if (StringUtils.isBlank(weCustomer.getCorpId())) {
+            throw new CustomException(ResultTip.TIP_GENERAL_PARAM_ERROR);
+        }
+        String corpId = weCustomer.getCorpId();
+        // 根据自定义字段 筛选满足条件 external_userid和 user_id
+        if (CollectionUtils.isNotEmpty(weCustomer.getExtendProperties())) {
+             List<WeCustomerRel> extendCustomers = extendProperties(weCustomer);
+            if (CollectionUtils.isEmpty(extendCustomers)) {
+                return Collections.emptyList();
+            }
+            weCustomer.setExtendList(extendCustomers);
+
+        }
+        //  标签筛选满足条件 external_userid和 user_id
+        if(StringUtils.isNotBlank(weCustomer.getTagIds())) {
+            List<Long> tagFilterCustomers = weTagService.getCustomerByTags(corpId,weCustomer.getTagIds());
+            if(CollectionUtils.isEmpty(tagFilterCustomers)) {
+                return Collections.emptyList();
+            }
+            weCustomer.setRelIds(tagFilterCustomers);
+        }
+        // 查询客户
+        PageInfoUtil.startPage();
+        List<WeCustomerVO> list = weCustomerMapper.selectWeCustomerV3(weCustomer);
+        // 根据返回的结果获取需要的标签详情
+        weFlowerCustomerTagRelService.setTagForCustomers(corpId,list) ;
+        // 根据返回的结果获取需要的扩展字段
+        weCustomerExtendPropertyService.setExtendPropertyForCustomers(corpId, list) ;
+        return list ;
     }
 
     /**
@@ -356,7 +392,7 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
      * @param weCustomer
      * @return 筛选后的检索列表
      */
-    public  List<WeCustomerExtend> extendProperties(WeCustomer weCustomer) {
+    public List<WeCustomerRel> extendProperties(WeCustomer weCustomer) {
         List<BaseExtendPropertyRel> baseExtendPropertyRelList = weCustomer.getExtendProperties();
         List<BaseExtendPropertyRel> oneLineType = new ArrayList<>();
         List<BaseExtendPropertyRel> multipleType = new ArrayList<>();
@@ -404,13 +440,13 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
             oneLineList=getIntersectionTypeNotFind(oneLineList,timeList);
         }
 
-        List<WeCustomerExtend> extendList = new ArrayList<>();
+        List<WeCustomerRel> extendList = new ArrayList<>();
         if (oneLineList.size() > 0) {
             for (BaseExtendPropertyRel list : oneLineList) {
-                WeCustomerExtend weCustomerExtend = new WeCustomerExtend();
-                weCustomerExtend.setExternalUserid(list.getExternalUserid());
-                weCustomerExtend.setUserId(list.getUserId());
-                extendList.add(weCustomerExtend);
+                WeCustomerRel relIds = new WeCustomerRel();
+                relIds.setExternalUserid(list.getExternalUserid());
+                relIds.setUserId(list.getUserId());
+                extendList.add(relIds);
             }
         }
         return extendList;
@@ -511,6 +547,13 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
         return weCustomer;
     }
 
+    /**
+     * 查询客户sop使用客户
+     *
+     * @param corpId    企业id
+     * @param sopFilter sop过滤条件
+     * @return {@link List<WeCustomer>}
+     */
     @Override
     public List<WeCustomer> listOfUseCustomer(String corpId, WeOperationsCenterCustomerSopFilterEntity sopFilter) {
         WeCustomerPushMessageDTO weCustomerPushMessageDTO = new WeCustomerPushMessageDTO();
@@ -526,8 +569,122 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
         weCustomerPushMessageDTO.setDepartmentIds(sopFilter.getDepartments());
         weCustomerPushMessageDTO.setFilterTags(sopFilter.getFilterTagId());
         List<Column> columns = JSONArray.parseArray(sopFilter.getCloumnInfo(), Column.class);
-        // 来源
-        String addWay = null;
+        // 从额外属性条件中获取来源、出生日期条件
+        setAddWayAndBirthday(columns, weCustomerPushMessageDTO);
+        // 普通属性查询客户
+        List<WeCustomer> weCustomers = selectWeCustomerListNoRel(weCustomerPushMessageDTO);
+        // 若标签条件不为空，筛选出包含有所有标签条件的客户
+        if (StringUtils.isNotBlank(weCustomerPushMessageDTO.getTagIds())) {
+            weCustomers = weCustomers.stream().filter(customer -> {
+                        if (StringUtils.isBlank(customer.getMarkTagIds()) || StringUtils.isBlank(weCustomerPushMessageDTO.getTagIds())) {
+                            return false;
+                        }
+                        return new HashSet<>(Arrays.asList(customer.getMarkTagIds().split(DictUtils.SEPARATOR)))
+                                .containsAll(Arrays.asList(weCustomerPushMessageDTO.getTagIds().split(DictUtils.SEPARATOR)));
+                    }
+            ).collect(Collectors.toList());
+        }
+        // 有存在额外属性条件客户
+        if (CollectionUtils.isNotEmpty(columns)) {
+            // 额外属性条件下的客户
+            List<String> customers = selectWeCustomerListExtendRel(columns, weCustomerPushMessageDTO);
+            if (CollectionUtils.isNotEmpty(customers)) {
+                // 存在额外属性条件则求普通条件、额外属性条件的交集
+                weCustomers = weCustomers.stream().filter(customer -> customers.contains(customer.getExternalUserid())).collect(Collectors.toList());
+            } else {
+                weCustomers = new ArrayList<>();
+            }
+        }
+        return weCustomers;
+    }
+
+    /**
+     * 额外字段属性客户查询
+     *
+     * @param columns {@link Column}
+     * @param dto {@link WeCustomerPushMessageDTO}
+     * @return 客户ID列表
+     */
+    public List<String> selectWeCustomerListExtendRel(List<Column> columns, WeCustomerPushMessageDTO dto) {
+        if (CollectionUtils.isEmpty(columns) || dto == null) {
+            return new ArrayList<>();
+        }
+        // 符合日期条件的external_userid
+        List<String> dateExternalUserIds = new ArrayList<>();
+        // 日期条件的额外字段个数
+        HashSet<Long> dateExtendNum = new HashSet<>();
+        // 符合下拉、单选条件的external_userid
+        List<String> otherExternalUserIds = new ArrayList<>();
+        // 所有符合条件的额外字段关系
+        List<CustomerSopPropertyRel> customerSopPropertyRels = weCustomerExtendPropertyRelService.selectBaseExtendValue(columns, dto);
+        // 日期查询条件
+        HashSet<String> extendPropertyIds = new HashSet<>();
+        for (CustomerSopPropertyRel customerSopPropertyRel : customerSopPropertyRels) {
+            for (Column column : columns) {
+                // extend_property_id相同，判断type类型
+                if (customerSopPropertyRel.getExtendPropertyId().equals(column.getExtendPropertyId())) {
+                    // type 为 "7" 表示该过滤条件为日期范围选择器
+                    if (CustomerSopConstants.CUSTOMER_SOP_DATE_RANGE.equals(column.getType())) {
+                        // 将日期额外字段id存入hashset去重
+                        dateExtendNum.add(column.getExtendPropertyId());
+                        // 判断当前的值是否在日期范围内，若在则存入external_userid
+                        if (DateUtils.isDateRange(column.getPropertyValue().split(DictUtils.SEPARATOR)[0], column.getPropertyValue().split(DictUtils.SEPARATOR)[1], customerSopPropertyRel.getPropertyValue())) {
+                            dateExternalUserIds.add(customerSopPropertyRel.getExternalUserid());
+                        }
+                    } else {
+                        // 下拉框、单选框属性值
+                        extendPropertyIds.add(customerSopPropertyRel.getExtendPropertyId().toString());
+                    }
+                }
+            }
+        }
+        // 过滤出匹配所有日期字段的客户id
+        List<String> allMatchDateExridList = handleMatchDateExtend(dateExternalUserIds, dateExtendNum.size());
+        // 获取筛选条件中除日期外的额外字段值
+        List<String> allExtendPropertyByFilter = columns.stream().filter(item -> !CustomerSopConstants.CUSTOMER_SOP_DATE_RANGE.equals(item.getType())).map(Column::getPropertyValue).collect(Collectors.toList());
+        if(CollectionUtils.isNotEmpty(extendPropertyIds)) {
+            List<CustomerSopPropertyRel> extendPropertyRelList = weCustomerExtendPropertyRelService.selectExtendGroupByCustomer(new ArrayList<>(extendPropertyIds), dto.getUserIds());
+            // 是否有其他属性值
+            if (CollectionUtils.isNotEmpty(allExtendPropertyByFilter) && CollectionUtils.isNotEmpty(extendPropertyRelList)) {
+                for (CustomerSopPropertyRel customerSopPropertyRel : extendPropertyRelList) {
+                    // 客户的其他属性值列表
+                    List<String> customerPropertyList = Arrays.stream(customerSopPropertyRel.getPropertyValue().split(DictUtils.SEPARATOR)).collect(Collectors.toList());
+                    if (CollectionUtils.isNotEmpty(customerPropertyList)) {
+                        // 客户的其他类型值包含所有的过滤条件，才进行判断
+                        if (customerPropertyList.containsAll(allExtendPropertyByFilter)) {
+                            // 相同则存入external_userid
+                            otherExternalUserIds.add(customerSopPropertyRel.getExternalUserid());
+                        }
+                    }
+                }
+            }
+        }
+        return handleExtendPropertyCustomer(allMatchDateExridList, otherExternalUserIds, columns);
+    }
+
+    /**
+     * 过滤出匹配所有日期字段的客户id
+     *
+     * @param dateExternalUserIds 符合日期条件的客户Id列表
+     * @param dateExtendNum 额外字段日期条件个数
+     */
+    private List<String> handleMatchDateExtend(List<String> dateExternalUserIds, int dateExtendNum) {
+        if (CollectionUtils.isNotEmpty(dateExternalUserIds) && dateExtendNum > 0) {
+            return dateExternalUserIds.stream()
+                    .filter(externalUserId -> Collections.frequency(dateExternalUserIds, externalUserId) == dateExtendNum)
+                    .distinct()
+                    .collect(Collectors.toList());
+        }
+        return new ArrayList<>();
+    }
+
+    /**
+     * 从额外属性条件中取出源、出生日期条件
+     *
+     * @param columns {@link Column}
+     * @param weCustomerPushMessageDTO {@link WeCustomerPushMessageDTO}
+     */
+    public void setAddWayAndBirthday(List<Column> columns, WeCustomerPushMessageDTO weCustomerPushMessageDTO) {
         if (CollectionUtils.isNotEmpty(columns)) {
             Iterator<Column> iterator = columns.iterator();
             while (iterator.hasNext()) {
@@ -535,7 +692,7 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
                 // type 为 "addWay"，表示该过滤条件为来源
                 if (CustomerSopConstants.CUSTOMER_SOP_ADD_WAY.equals(column.getType())) {
                     // 获取来源的值
-                    addWay = column.getPropertyValue();
+                    String addWay = column.getPropertyValue();
                     weCustomerPushMessageDTO.setAddWay(addWay);
                     // 因是普通属性查询，不需要到额外字段关系表查询，故删除
                     iterator.remove();
@@ -548,60 +705,53 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
                 }
             }
         }
-        // 普通属性查询客户
-        List<WeCustomer> weCustomers = selectWeCustomerListNoRel(weCustomerPushMessageDTO);
-        // 若标签条件不为空，筛选出包含有所有标签条件的客户
-        if (StringUtils.isNotBlank(weCustomerPushMessageDTO.getTagIds())) {
-            weCustomers = weCustomers.stream().filter(customer -> {
-                        if (StringUtils.isBlank(customer.getMarkTagIds()) || StringUtils.isBlank(weCustomerPushMessageDTO.getTagIds())) {
-                            return false;
-                        }
-                        return Arrays.asList(customer.getMarkTagIds().split(DictUtils.SEPARATOR))
-                                .containsAll(Arrays.asList(weCustomerPushMessageDTO.getTagIds().split(DictUtils.SEPARATOR)));
-                    }
-            ).collect(Collectors.toList());
-        }
-        if (StringUtils.isNotEmpty(sopFilter.getCloumnInfo())) {
-            if (CollectionUtils.isNotEmpty(columns)) {
-                //自定义属性查询客户
-                HashSet<String> customerIdSet = new HashSet<>();
-                // 所有符合条件的额外字段关系
-                List<CustomerSopPropertyRel> customerSopPropertyRels = weCustomerExtendPropertyRelService.selectBaseExtendValue(columns);
-                // 获取筛选条件中的额外字段值
-                List<String> allExtendPropertyByFilter = columns.stream().map(Column::getPropertyValue).collect(Collectors.toList());
-                for (CustomerSopPropertyRel customerSopPropertyRel : customerSopPropertyRels) {
-                    for (Column column : columns) {
-                        // extend_property_id相同，判断type类型
-                        if (customerSopPropertyRel.getExtendPropertyId().equals(column.getExtendPropertyId())) {
-                            // type 为 "7" 表示该过滤条件为日期范围选择器
-                            if (CustomerSopConstants.CUSTOMER_SOP_DATE_RANGE.equals(column.getType())) {
-                                // 判断当前的值是否在日期范围内，若在则存入external_userid
-                                if (DateUtils.isDateRange(column.getPropertyValue().split(DictUtils.SEPARATOR)[0], column.getPropertyValue().split(DictUtils.SEPARATOR)[1], customerSopPropertyRel.getPropertyValue())) {
-                                    customerIdSet.add(customerSopPropertyRel.getExternalUserid());
-                                }
-                            }
-                        }
-                    }
-                }
-                // 是否有其他属性值
-                if (CollectionUtils.isNotEmpty(allExtendPropertyByFilter)) {
-                    for (WeCustomer weCustomer : weCustomers) {
-                        // 获取客户对应的所有的额外字段值
-                        List<String> allExtendProperty = customerSopPropertyRels.stream().filter(item -> item.getExternalUserid().equals(weCustomer.getExternalUserid())).map(CustomerSopPropertyRel::getPropertyValue).collect(Collectors.toList());
-                        // 客户的其他类型值包含所有的过滤条件，才进行判断
-                        if (allExtendProperty.containsAll(allExtendPropertyByFilter)) {
-                            // 其他类型（单选、多选、下拉框）可以直接获取到对应的值进行比较，相同则存入external_userid
-                            customerIdSet.add(weCustomer.getExternalUserid());
-                        }
-                    }
-                }
+    }
 
-                List<String> customers = new ArrayList<>(customerIdSet);
-                //求两个集合交集
-                weCustomers = weCustomers.stream().filter(customer -> customers.contains(customer.getExternalUserid())).collect(Collectors.toList());
+    /**
+     * 额外属性下客户处理
+     *
+     * @param dateExternalUserIds  日期条件下的客户
+     * @param otherExternalUserIds 下拉、单选条件下的客户
+     * @return 客户id列表
+     */
+    public List<String> handleExtendPropertyCustomer(List<String> dateExternalUserIds, List<String> otherExternalUserIds, List<Column> columns) {
+        if (CollectionUtils.isEmpty(columns)) {
+            return new ArrayList<>();
+        }
+        // 日期条件
+        boolean isDate = false;
+        // 下拉、单选条件
+        boolean isOther = false;
+        // 过滤筛选条件中type = 7 日期的，存在则表示有日期条件
+        List<Column> dateType = columns.stream().filter(item -> CustomerSopConstants.CUSTOMER_SOP_DATE_RANGE.equals(item.getType())).collect(Collectors.toList());
+        if (CollectionUtils.isNotEmpty(dateType)) {
+            isDate = true;
+        }
+        // 过滤筛选条件中type != 7 的，存在表示有其他条件
+        List<Column> otherType = columns.stream().filter(item -> !CustomerSopConstants.CUSTOMER_SOP_DATE_RANGE.equals(item.getType())).collect(Collectors.toList());
+        if (CollectionUtils.isNotEmpty(otherType)) {
+            isOther = true;
+        }
+        // 日期 下拉 单选
+        if (isDate && isOther) {
+            if (CollectionUtils.isNotEmpty(dateExternalUserIds) && CollectionUtils.isNotEmpty(otherExternalUserIds)) {
+            // 日期和下拉、单选都不为空，求交集
+            return dateExternalUserIds.stream().filter(otherExternalUserIds::contains).collect(Collectors.toList());
+            }
+        } else if (isDate) {
+            // 日期
+            if (CollectionUtils.isNotEmpty(dateExternalUserIds)) {
+                // 为日期条件下不为空的客户
+                return dateExternalUserIds;
+            }
+        } else if (isOther) {
+            // 单选、下拉
+            if (CollectionUtils.isNotEmpty(otherExternalUserIds)) {
+                // 为符合下拉、单选不为空条件下的客户
+                return otherExternalUserIds;
             }
         }
-            return weCustomers;
+        return new ArrayList<>();
     }
 
 
@@ -634,7 +784,7 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
         if (StringUtils.isAnyBlank(weCustomer.getCorpId())) {
             throw new CustomException(ResultTip.TIP_GENERAL_PARAM_ERROR);
         }
-        List<WeCustomerVO> list = this.selectWeCustomerListV2(weCustomer);
+        List<WeCustomerVO> list = this.selectWeCustomerListV3(weCustomer);
         // 根据externalUserId去重
         Set<String> set = list.stream().map(WeCustomerVO::getExternalUserid).collect(Collectors.toSet());
         return WeCustomerSumVO.builder()
@@ -1164,7 +1314,7 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
         WeCustomerSearchDTO weCustomerSearchDTO=new WeCustomerSearchDTO();
         BeanUtils.copyProperties(dto, weCustomerSearchDTO);
         WeCustomer weCustomer=changeWecustomer(weCustomerSearchDTO);
-        List<WeCustomerVO> list = this.selectWeCustomerListV2(weCustomer);
+        List<WeCustomerVO> list = this.selectWeCustomerListV3(weCustomer);
         if (CollectionUtils.isEmpty(list)) {
             throw new CustomException(ResultTip.TIP_NO_DATA_TO_EXPORT);
         }

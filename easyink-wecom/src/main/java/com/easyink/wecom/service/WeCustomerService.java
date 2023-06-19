@@ -264,13 +264,19 @@ public interface WeCustomerService extends IService<WeCustomer> {
      * @param removeTags        移除的tags
      */
     void batchMarkCustomTag(String corpId, String userId, String externalUserId, List<WeTag> addTags, List<WeTag> removeTags);
+
     /**
      * 查询企业微信客户列表
      *
      * @param weCustomer {@link WeCustomer}
      * @return 客户列表
+     * @update V1.28.1 由于慢查询 废弃,使用V3 接口
      */
+    @Deprecated
     List<WeCustomerVO> selectWeCustomerListV2(WeCustomer weCustomer);
+
+    @DataScope
+    List<WeCustomerVO> selectWeCustomerListV3(WeCustomer weCustomer);
 
     /**
      * 将用户DTO转化为实体类

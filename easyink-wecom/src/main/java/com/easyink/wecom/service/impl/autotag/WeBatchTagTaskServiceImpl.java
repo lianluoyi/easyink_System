@@ -276,7 +276,7 @@ public class WeBatchTagTaskServiceImpl extends ServiceImpl<WeBatchTagTaskMapper,
             String mobile = getCellValue(row, mobileColumn);
             // 三个值为空或为空字符串则表示该行无数据，跳过此行
             if (StringUtils.isBlank(externalUserid) && StringUtils.isBlank(unionId) && StringUtils.isBlank(mobile)) {
-                break;
+                continue;
             }
             // 有数据时
             if (CollectionUtils.isNotEmpty(resultList)) {

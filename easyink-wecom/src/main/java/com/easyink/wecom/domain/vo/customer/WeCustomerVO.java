@@ -8,6 +8,7 @@ import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -89,12 +90,12 @@ public class WeCustomerVO {
     // 标签信息
 
     @ApiModelProperty(value = "跟进人对客户打的标签集合")
-    private List<WeFlowerCustomerTagRel> weFlowerCustomerTagRels;
+    private List<WeFlowerCustomerTagRel> weFlowerCustomerTagRels = new ArrayList<>();
 
     // 扩展信息
 
     @ApiModelProperty(value = "跟进人对客户备注的自定义字段信息")
-    private List<BaseExtendPropertyRel> extendProperties;
+    private List<BaseExtendPropertyRel> extendProperties = new ArrayList<>();
 
     @ApiModelProperty(value = "接替状态，接替状态,1-接替完毕 2-等待接替 3-客户拒绝 4-接替成员客户达到上限 5-无接替记录")
     private Integer transferStatus;

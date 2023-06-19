@@ -1,7 +1,9 @@
 package com.easyink.wecom.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.easyink.common.core.domain.wecom.BaseExtendPropertyRel;
 import com.easyink.wecom.domain.entity.customer.WeCustomerExtendProperty;
+import com.easyink.wecom.domain.vo.customer.WeCustomerVO;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 
@@ -46,4 +48,13 @@ public interface WeCustomerExtendPropertyMapper extends BaseMapper<WeCustomerExt
      * @return updated num
      */
     Integer insertOrUpdateBatch(@Param("list") List<WeCustomerExtendProperty> list);
+
+    /**
+     * 根据客户 获取对应的扩展属性
+     *
+     * @param corpId 企业id
+     * @param list   客户列表
+     * @return {@link BaseExtendPropertyRel} list
+     */
+    List<BaseExtendPropertyRel> getPropByCustomer(@Param("corpId") String corpId, @Param("list") List<WeCustomerVO> list);
 }

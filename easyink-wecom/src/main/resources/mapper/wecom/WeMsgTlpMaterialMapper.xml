@@ -12,6 +12,8 @@
                content,
                pic_url,
                description,
+               description AS appid,
+               account_original_id,
                url,
                sort_no,
                extra_id

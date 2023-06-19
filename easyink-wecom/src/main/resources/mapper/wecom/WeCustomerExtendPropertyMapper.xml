@@ -170,4 +170,19 @@
         <if test="required != null">AND wcep.required = #{required}</if>
         ORDER BY wcep.property_sort, epmo.id
     </select>
+    <!--    根据客户id获取扩展属性-->
+    <select id="getPropByCustomer" resultType="com.easyink.common.core.domain.wecom.BaseExtendPropertyRel">
+        select extend_property_id, property_value,user_id, external_userid
+        from we_customer_extend_property_rel
+        where
+        corp_id = #{corpId}
+        <if test="list != null and list.size()>0" >
+            AND
+            (
+            <foreach collection="list" item="rel" separator=" OR ">
+                (user_id = #{rel.userId} AND external_userid = #{rel.externalUserid} )
+            </foreach>
+            )
+        </if>
+    </select>
 </mapper>

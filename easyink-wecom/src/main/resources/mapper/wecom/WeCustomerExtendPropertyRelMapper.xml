@@ -44,18 +44,55 @@
         GROUP BY
         wcepr.external_userid
     </select>
-    <!--  根据extend_property_id查询所有符合条件的客户额外字段关系  -->
+    <!--  根据extend_property_id, userId查询所有符合条件的客户额外字段关系  -->
     <select id="selectBaseExtendValue" resultType="com.easyink.common.core.domain.sop.CustomerSopPropertyRel">
         SELECT
-            wcepr.external_userid, wcepr.extend_property_id, wcepr.property_value
+            wcepr.external_userid, wcepr.user_id, wcepr.extend_property_id, wcepr.property_value
         FROM
             we_customer wc
                 LEFT JOIN we_customer_extend_property_rel wcepr ON wcepr.external_userid = wc.external_userid
         WHERE
             wcepr.extend_property_id IN
-        <foreach collection="list" item="item" open="(" separator="," close=")" index="index">
+        <foreach collection="columnList" item="item" open="(" separator="," close=")" index="index">
             #{item.extendPropertyId}
         </foreach>
+        <if test="userIds != null and userIds !=''">
+            <if test="userIds.indexOf(',') != -1">
+                AND wcepr.user_id in
+                <foreach item="item" index="index" collection="userIds.split(',')" open="(" separator="," close=")">
+                    #{item}
+                </foreach>
+            </if>
+            <if test="userIds.indexOf(',') == -1">
+                AND wcepr.user_id=#{userIds}
+            </if>
+        </if>
+    </select>
+    <!--  根据extend_property_id查询客户所属的除日期范围选择外的所有额外字段值  -->
+    <select id="selectExtendGroupByCustomer"
+            resultType="com.easyink.common.core.domain.sop.CustomerSopPropertyRel">
+        SELECT
+        wcepr.external_userid, wcepr.user_id, wcepr.extend_property_id, GROUP_CONCAT(wcepr.property_value) AS propertyValue
+        FROM
+        we_customer wc
+        LEFT JOIN we_customer_extend_property_rel wcepr ON wcepr.external_userid = wc.external_userid
+        WHERE
+        wcepr.extend_property_id IN
+        <foreach collection="extendPropertyIds" item="item" open="(" separator="," close=")" index="index">
+            #{item}
+        </foreach>
+        <if test="userIds != null and userIds !=''">
+            <if test="userIds.indexOf(',') != -1">
+                AND wcepr.user_id in
+                <foreach item="item" index="index" collection="userIds.split(',')" open="(" separator="," close=")">
+                    #{item}
+                </foreach>
+            </if>
+            <if test="userIds.indexOf(',') == -1">
+                AND wcepr.user_id=#{userIds}
+            </if>
+        </if>
+        GROUP BY wcepr.external_userid
     </select>
 
 </mapper>

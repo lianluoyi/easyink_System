@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.easyink.common.core.domain.sop.CustomerSopPropertyRel;
 import com.easyink.common.core.domain.wecom.BaseExtendPropertyRel;
 import com.easyink.wecom.domain.WeCustomer;
+import com.easyink.wecom.domain.dto.WeCustomerPushMessageDTO;
 import com.easyink.wecom.domain.dto.customersop.Column;
 import com.easyink.wecom.domain.entity.customer.WeCustomerExtendPropertyRel;
 
@@ -32,10 +33,20 @@ public interface WeCustomerExtendPropertyRelService extends IService<WeCustomerE
     List<String> listOfPropertyIdAndValue(List<Column> columnList);
 
     /**
-     * 根据extend_property_id查询所有符合条件的客户额外字段关系
+     * 根据extend_property_id, userId查询所有符合条件的客户额外字段关系
      *
      * @param columnList 字段属性值
+     * @param weCustomer {@link WeCustomerPushMessageDTO}
      * @return {@link BaseExtendPropertyRel}
      */
-    List<CustomerSopPropertyRel> selectBaseExtendValue(List<Column> columnList);
+    List<CustomerSopPropertyRel> selectBaseExtendValue(List<Column> columnList, WeCustomerPushMessageDTO weCustomer);
+
+    /**
+     * 根据extend_property_id查询客户所属的除日期范围选择外的所有额外字段值
+     *
+     * @param extendPropertyIds extend_property_id 列表
+     * @param userIds 员工ID，以","分隔
+     * @return 结果
+     */
+    List<CustomerSopPropertyRel> selectExtendGroupByCustomer(List<String> extendPropertyIds, String userIds);
 }

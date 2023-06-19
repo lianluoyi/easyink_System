@@ -100,6 +100,15 @@ public interface WeTagMapper extends BaseMapper<WeTag> {
     List<WeTagCustomerStatisticsVO> getCustomerTagCnt(WeTagStatisticsDTO dto);
 
     /**
+     * 查看满足标签条件的客户-员工关系id
+     *
+     * @param corpId 企业id
+     * @param tagIds 标签 ,隔开
+     * @return 满足的 客户关系relId集合
+     */
+    List<Long> getCustomerByTags(@Param("corpId") String corpId, @Param("tagIds") String tagIds);
+
+    /**
      * 统计当前企业下所有未删除的企业标签的数量
      *
      * @param dto {@link WeTagStatisticsDTO}

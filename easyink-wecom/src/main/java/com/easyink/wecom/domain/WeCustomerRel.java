@@ -6,7 +6,7 @@ import lombok.Data;
  * 获取筛选后所需搜索字段
  */
 @Data
-public class WeCustomerExtend {
+public class WeCustomerRel {
 
     /**
      * 筛选后获取的用户id

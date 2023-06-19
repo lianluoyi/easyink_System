@@ -9,6 +9,7 @@ import com.easyink.common.constant.redeemcode.RedeemCodeConstants;
 import com.easyink.common.enums.MediaType;
 import com.easyink.common.enums.ResultTip;
 import com.easyink.common.enums.AttachmentTypeEnum;
+import com.easyink.common.enums.wemsgtlp.WeMsgTlpEnum;
 import com.easyink.common.exception.CustomException;
 import com.easyink.common.utils.StringUtils;
 import com.easyink.wecom.client.WeWelcomeMsgClient;
@@ -32,6 +33,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -67,6 +69,23 @@ public class WeMsgTlpMaterialServiceImpl extends ServiceImpl<WeMsgTlpMaterialMap
     }
 
     /**
+     * 当附件类型为小程序时，保存appid
+     *
+     * @param weMsgTlpMaterial {@link WeMsgTlpMaterial}
+     */
+    public void saveAppid(WeMsgTlpMaterial weMsgTlpMaterial) {
+        // 判断类型是否为小程序
+        if (Objects.equals(weMsgTlpMaterial.getType(), WeMsgTlpEnum.MINI_PROGRAM.getValue())) {
+            // 判断appid是否为空
+            if (StringUtils.isBlank(weMsgTlpMaterial.getAppid())) {
+                throw new CustomException(ResultTip.TIP_NO_APP_ID_CONFIG);
+            }
+            // 设置appid到description
+            weMsgTlpMaterial.setDescription(weMsgTlpMaterial.getAppid());
+        }
+    }
+
+    /**
      * 保存好友默认欢迎语素材
      *
      * @param defaultMsgId        默认欢迎语id
@@ -85,6 +104,8 @@ public class WeMsgTlpMaterialServiceImpl extends ServiceImpl<WeMsgTlpMaterialMap
             for (WeMsgTlpMaterial weMsgTlpMaterial : defaultMaterialList) {
                 weMsgTlpMaterial.setDefaultMsgId(defaultMsgId);
                 batchList.add(weMsgTlpMaterial);
+                // 判断类型是否为小程序
+                saveAppid(weMsgTlpMaterial);
             }
             weMsgTlpMaterialService.saveBatch(batchList);
         }
@@ -110,6 +131,8 @@ public class WeMsgTlpMaterialServiceImpl extends ServiceImpl<WeMsgTlpMaterialMap
                 for (WeMsgTlpMaterial weMsgTlpMaterial : weMsgTlpSpecialRule.getSpecialMaterialList()) {
                     weMsgTlpMaterial.setDefaultMsgId(defaultMsgId);
                     weMsgTlpMaterial.setSpecialMsgId(weMsgTlpSpecialRule.getId());
+                    // 判断类型是否为小程序
+                    saveAppid(weMsgTlpMaterial);
                     specialMaterialBatchList.add(weMsgTlpMaterial);
                 }
             }
@@ -153,6 +176,8 @@ public class WeMsgTlpMaterialServiceImpl extends ServiceImpl<WeMsgTlpMaterialMap
         if (CollectionUtils.isNotEmpty(defaultMaterialList)) {
             // 这里最多只存在一个素材
             weMsgTlpMaterial = defaultMaterialList.get(0);
+            // 判断类型是否为小程序
+            saveAppid(weMsgTlpMaterial);
             // 根据媒体类型构建DTO调用企业微信接口
             groupWelcomeMsgAddDTO = handleByMaterialType(weMsgTlpMaterial.getContent(), weMsgTlpMaterial.getPicUrl(), weMsgTlpMaterial.getDescription(), weMsgTlpMaterial.getUrl(), AttachmentTypeEnum.getByMessageType(weMsgTlpMaterial.getType()), groupWelcomeMsgAddDTO, corpId);
         }
@@ -195,6 +220,8 @@ public class WeMsgTlpMaterialServiceImpl extends ServiceImpl<WeMsgTlpMaterialMap
             for (WeMsgTlpMaterial defaultMaterial : defaultMaterials) {
                 defaultMaterial.setSortNo(++sortNo);
                 defaultMaterial.setDefaultMsgId(defaultMsgId);
+                // 判断类型是否为小程序
+                saveAppid(defaultMaterial);
             }
             weMsgTlpMaterialService.saveOrUpdateBatch(defaultMaterials);
         }
@@ -225,6 +252,8 @@ public class WeMsgTlpMaterialServiceImpl extends ServiceImpl<WeMsgTlpMaterialMap
                 weMsgTlpMaterial.setSortNo(++sortNo);
                 weMsgTlpMaterial.setDefaultMsgId(defaultMsgId);
                 weMsgTlpMaterial.setSpecialMsgId(weMsgTlpSpecialRule.getId());
+                // 判断类型是否为小程序
+                saveAppid(weMsgTlpMaterial);
                 batchList.add(weMsgTlpMaterial);
             }
         }
@@ -351,6 +380,8 @@ public class WeMsgTlpMaterialServiceImpl extends ServiceImpl<WeMsgTlpMaterialMap
         if (CollectionUtils.isNotEmpty(defaultMaterials)) {
             // 这里最多只存在一个素材
             weMsgTlpMaterial = defaultMaterials.get(0);
+            // 判断类型是否为小程序
+            saveAppid(weMsgTlpMaterial);
             // 根据媒体类型构建DTO调用企业微信接口
             groupWelcomeMsgUpdateDTO = handleByMaterialType(weMsgTlpMaterial.getContent(), weMsgTlpMaterial.getPicUrl(), weMsgTlpMaterial.getDescription(), weMsgTlpMaterial.getUrl(), AttachmentTypeEnum.getByMessageType(weMsgTlpMaterial.getType()), groupWelcomeMsgUpdateDTO, corpId);
         }

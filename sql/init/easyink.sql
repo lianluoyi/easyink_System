@@ -1640,7 +1640,8 @@ CREATE TABLE `we_flower_customer_rel`
     `wechat_channel`   varchar(64)                                                   NOT NULL DEFAULT '' COMMENT '该成员添加此客户的来源add_way为10时，对应的视频号信息',
     PRIMARY KEY (`id`) USING BTREE,
     UNIQUE INDEX `un_user_external_userid_corpid` (`external_userid`, `user_id`, `corp_id`) USING BTREE,
-    KEY  `idx_corp_user_id` (`corp_id`,`user_id`) USING BTREE
+    KEY  `idx_corp_user_id` (`corp_id`,`user_id`) USING BTREE,
+    KEY `idx_corp_status` (`corp_id`,`status`,`create_time`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '企业员工与客户的关系表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
@@ -3106,6 +3107,7 @@ CREATE TABLE `we_msg_tlp_material`
     `content`              varchar(255) NOT NULL DEFAULT '' COMMENT '文本内容,链接消息标题,小程序消息标题，(前端: 图片,文件,视频的标题)',
     `pic_url`              varchar(255) NOT NULL DEFAULT '' COMMENT '图片url,链接封面url,小程序picurl,文件url,视频url',
     `description`          varchar(255) NOT NULL DEFAULT '' COMMENT '链接消息描述,小程序appid(前端: 文件大小)',
+    `account_original_id`  varchar(64) NOT NULL DEFAULT '' COMMENT '小程序账号原始id，小程序专用',
     `url`                  varchar(255) NOT NULL DEFAULT '' COMMENT '链接url,小程序page',
     `sort_no`              tinyint(2) NOT NULL DEFAULT '0' COMMENT '排序字段',
     `extra_id`             bigint(20) NOT NULL DEFAULT '0' COMMENT '其他id, 素材类型为雷达时存储雷达id，为智能表单时为存储表单id',

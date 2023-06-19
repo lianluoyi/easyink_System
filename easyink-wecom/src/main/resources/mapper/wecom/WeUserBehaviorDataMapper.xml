@@ -25,7 +25,7 @@
         bd.contact_total_cnt
                 FROM we_user_behavior_data bd
                 WHERE bd.corp_id = #{corpId}
-                AND bd.stat_time = #{beginTime}
+                AND bd.stat_time = #{endDate}
                 AND bd.user_id  = ubd.user_id
                 ) ,0) as totalContactCnt,
         SUM(IFNULL(ubd.new_contact_cnt,0)) as newContactCnt,
@@ -124,7 +124,7 @@
         FROM we_user_behavior_data bd
         LEFT JOIN we_user wu ON wu.corp_id = bd.corp_id AND wu.user_id = bd.user_id
         WHERE bd.corp_id = #{corpId}
-        AND bd.stat_time = #{beginTime}
+        AND bd.stat_time = #{endDate}
         <if test="userIds != null and userIds.size() > 0">
             AND bd.user_id IN
             <foreach collection="userIds" item="userId" open="(" separator="," close=")">
