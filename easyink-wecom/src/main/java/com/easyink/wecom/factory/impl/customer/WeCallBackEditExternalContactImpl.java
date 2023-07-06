@@ -1,6 +1,6 @@
 package com.easyink.wecom.factory.impl.customer;
 
-import com.easyink.common.redis.CustomerRedisCache;
+import com.easyink.wecom.utils.redis.CustomerRedisCache;
 import com.easyink.wecom.domain.vo.WxCpXmlMessageVO;
 import com.easyink.wecom.factory.WeEventStrategy;
 import com.easyink.wecom.service.WeCustomerService;
@@ -44,7 +44,7 @@ public class WeCallBackEditExternalContactImpl extends WeEventStrategy {
             return;
         }
         //  存入redis 后续由定时任务统一处理
-        customerRedisCache.saveCallback(message.getToUserName(), message.getUserId(), message.getExternalUserId());
+        customerRedisCache.saveCallback(message.getToUserName(), message.getUserId(), message.getExternalUserId(), message);
 //        weCustomerService.updateExternalContactV2(message.getToUserName(), message.getUserId(), message.getExternalUserId());
     }
 }

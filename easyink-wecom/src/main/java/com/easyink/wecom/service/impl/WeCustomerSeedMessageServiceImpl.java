@@ -3,10 +3,14 @@ package com.easyink.wecom.service.impl;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.easyink.common.config.RuoYiConfig;
 import com.easyink.common.constant.WeConstans;
 import com.easyink.common.enums.GroupMessageType;
+import com.easyink.common.enums.ResultTip;
+import com.easyink.common.exception.CustomException;
 import com.easyink.common.utils.SnowFlakeUtil;
 import com.easyink.common.utils.StringUtils;
+import com.easyink.common.utils.file.FileUploadUtils;
 import com.easyink.wecom.domain.WeCustomerSeedMessage;
 import com.easyink.wecom.domain.dto.message.*;
 import com.easyink.wecom.login.util.LoginTokenService;
@@ -29,9 +33,12 @@ import java.util.Optional;
 public class WeCustomerSeedMessageServiceImpl extends ServiceImpl<WeCustomerSeedMessageMapper, WeCustomerSeedMessage> implements WeCustomerSeedMessageService {
     private final WeCustomerSeedMessageMapper weCustomerSeedMessageMapper;
 
+    private final RuoYiConfig ruoYiConfig;
+
     @Autowired
-    public WeCustomerSeedMessageServiceImpl(WeCustomerSeedMessageMapper weCustomerSeedMessageMapper) {
+    public WeCustomerSeedMessageServiceImpl(WeCustomerSeedMessageMapper weCustomerSeedMessageMapper, RuoYiConfig ruoYiConfig) {
         this.weCustomerSeedMessageMapper = weCustomerSeedMessageMapper;
+        this.ruoYiConfig = ruoYiConfig;
     }
 
     @Override
@@ -53,7 +60,10 @@ public class WeCustomerSeedMessageServiceImpl extends ServiceImpl<WeCustomerSeed
         attachments.forEach(attachment -> {
             WeCustomerSeedMessage customerSeedMessage = new WeCustomerSeedMessage();
             buildCommonMessage(customerSeedMessage, messageId);
-            buildSeedMessage(attachment, customerSeedMessage);
+            // 构建群发消息子消息
+            buildSeedMessage(attachment, customerSeedMessage, customerMessagePushDTO.getCorpId());
+            // 设置附件的唯一id，用于前端区分附件
+            attachment.setId(customerSeedMessage.getSeedMessageId());
             customerSeedMessages.add(customerSeedMessage);
         });
         this.saveBatch(customerSeedMessages);
@@ -85,8 +95,9 @@ public class WeCustomerSeedMessageServiceImpl extends ServiceImpl<WeCustomerSeed
      *
      * @param attachment          附件
      * @param customerSeedMessage 子消息实体
+     * @param corpId 企业ID
      */
-    private void buildSeedMessage(Attachment attachment, WeCustomerSeedMessage customerSeedMessage) {
+    private void buildSeedMessage(Attachment attachment, WeCustomerSeedMessage customerSeedMessage, String corpId) {
         String msgtype = attachment.getMsgtype();
         //图片
         if (GroupMessageType.IMAGE.getType().equals(msgtype) && attachment.getImageMessage() != null) {
@@ -94,7 +105,16 @@ public class WeCustomerSeedMessageServiceImpl extends ServiceImpl<WeCustomerSeed
             String name = StringUtils.isNotBlank(imageMessage.getTitle()) ? imageMessage.getTitle() : FileUtil.getName(imageMessage.getPic_url());
             customerSeedMessage.setPicName(name);
             customerSeedMessage.setMediaId(Optional.ofNullable(imageMessage.getMedia_id()).orElse(StrUtil.EMPTY));
-            customerSeedMessage.setPicUrl(Optional.ofNullable(imageMessage.getPic_url()).orElse(StrUtil.EMPTY));
+            // 获取图片文件Url，为空表示没有修改文件名，依然使用原来的url
+            String newPicUrl = getNewFileUrl(imageMessage.getPic_url(), imageMessage.getTitle(), corpId);
+            if (StringUtils.isBlank(newPicUrl)) {
+                customerSeedMessage.setPicUrl(Optional.ofNullable(imageMessage.getPic_url()).orElse(StrUtil.EMPTY));
+            } else {
+                // 这个是存入群发信息表
+                customerSeedMessage.setPicUrl(newPicUrl);
+                // 这个是实际执行发送应用通知使用
+                attachment.getImageMessage().setPic_url(newPicUrl);
+            }
             customerSeedMessage.setMessageType(GroupMessageType.IMAGE.getType());
         }
         //小程序
@@ -106,6 +126,8 @@ public class WeCustomerSeedMessageServiceImpl extends ServiceImpl<WeCustomerSeed
             customerSeedMessage.setAccountOriginalId(Optional.ofNullable(miniprogramMessage.getAccountOriginalId()).orElse(StrUtil.EMPTY));
             customerSeedMessage.setPage(Optional.ofNullable(miniprogramMessage.getPage()).orElse(StrUtil.EMPTY));
             customerSeedMessage.setMessageType(GroupMessageType.MINIPROGRAM.getType());
+            customerSeedMessage.setPicUrl(attachment.getMiniprogramMessage().getPicUrl());
+            customerSeedMessage.setPicName(FileUtil.getName(attachment.getMiniprogramMessage().getPicUrl()));
         }
         //链接
         else if (GroupMessageType.LINK.getType().equals(msgtype) && attachment.getLinkMessage() != null) {
@@ -133,7 +155,16 @@ public class WeCustomerSeedMessageServiceImpl extends ServiceImpl<WeCustomerSeed
             VideoDTO videoDTO = attachment.getVideoDTO();
             String name = StringUtils.isNotBlank(videoDTO.getTitle()) ? videoDTO.getTitle() : FileUtil.getName(videoDTO.getVideoUrl());
             customerSeedMessage.setVideoName(name);
-            customerSeedMessage.setVideoUrl(Optional.ofNullable(videoDTO.getVideoUrl()).orElse(StrUtil.EMPTY));
+            // 获取新的视频文件Url，为空表示没有修改文件名，依然使用原来的url
+            String newVideoUrl = getNewFileUrl(videoDTO.getVideoUrl(), videoDTO.getTitle(), corpId);
+            if (StringUtils.isBlank(newVideoUrl)) {
+                customerSeedMessage.setVideoUrl(Optional.ofNullable(videoDTO.getVideoUrl()).orElse(StrUtil.EMPTY));
+            } else {
+                // 这个是存入群发信息表
+                customerSeedMessage.setVideoUrl(newVideoUrl);
+                // 这个是实际执行发送应用通知使用
+                attachment.getVideoDTO().setVideoUrl(newVideoUrl);
+            }
             customerSeedMessage.setMessageType(GroupMessageType.VIDEO.getType());
             customerSeedMessage.setPicUrl(videoDTO.getCoverUrl());
             customerSeedMessage.setSize(videoDTO.getSize());
@@ -143,9 +174,38 @@ public class WeCustomerSeedMessageServiceImpl extends ServiceImpl<WeCustomerSeed
             FileDTO fileDTO = attachment.getFileDTO();
             String name = StringUtils.isNotBlank(fileDTO.getTitle()) ? fileDTO.getTitle() : FileUtil.getName(fileDTO.getFileUrl());
             customerSeedMessage.setFileName(name);
-            customerSeedMessage.setFileUrl(Optional.ofNullable(fileDTO.getFileUrl()).orElse(StrUtil.EMPTY));
+            // 获取新的文件Url，为空表示没有修改文件名，依然使用原来的url
+            String newFileUrl = getNewFileUrl(fileDTO.getFileUrl(), fileDTO.getTitle(), corpId);
+            if (StringUtils.isBlank(newFileUrl)) {
+                customerSeedMessage.setFileUrl(Optional.ofNullable(fileDTO.getFileUrl()).orElse(StrUtil.EMPTY));
+            } else {
+                // 这个是存入群发信息表
+                customerSeedMessage.setFileUrl(newFileUrl);
+                // 这个是实际执行发送应用通知使用
+                attachment.getFileDTO().setFileUrl(newFileUrl);
+            }
             customerSeedMessage.setMessageType(GroupMessageType.FILE.getType());
         }
+    }
+
+    /**
+     * 保存重新上传的文件名
+     *
+     * @param url 文件Url
+     * @param fileName 文件名
+     * @param corpId 企业ID
+     * @return
+     */
+    public String getNewFileUrl(String url, String fileName, String corpId) {
+        String newFileUrl = null;
+        // 判断文件名是否和原来的Url中的文件名一致
+        if (!fileName.equals(FileUtil.getName(url))) {
+            newFileUrl = FileUploadUtils.reUploadFile(url, ruoYiConfig,fileName, corpId);
+            if (StringUtils.isBlank(newFileUrl)) {
+                throw new CustomException(ResultTip.TIP_FAIL_RE_UPLOAD_FILE);
+            }
+        }
+        return newFileUrl;
     }
 
 }

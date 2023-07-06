@@ -64,6 +64,14 @@ public interface WeTagGroupService extends IService<WeTagGroup> {
      */
     void synchWeTags(String corpId);
 
+    /**
+     * 删除标签-员工-客户关系
+     *
+     * @param corpId 企业ID
+     * @param tagIdList 要删除的标签ID列表
+     */
+    void delFlowerTagRel(List<String> tagIdList, String corpId);
+
 
     /**
      * 来自微信端批量保存或者更新标签组和标签

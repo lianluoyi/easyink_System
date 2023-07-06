@@ -169,6 +169,7 @@ public enum ResultTip {
     TIP_EXCEL_IS_EMPTY(2091, "excel内容为空"),
     TIP_NO_EFFECTIVE_TAG(2092,"标签不存在"),
     TIP_NO_EXPORT_DATA(2093, "没有要导出的数据"),
+    TIP_FAIL_RE_UPLOAD_FILE(2094, "重新上传文件获取路径失败，请联系管理员检查配置"),
 
     //员工模块错误码
     TIP_PARAM_NAME_MISSING(3001, "请填写完整的员工信息"),

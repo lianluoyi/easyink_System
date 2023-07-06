@@ -262,80 +262,6 @@ public class WeCustomerMessageServiceImpl extends ServiceImpl<WeCustomerMessageM
         weCustomerMessagePushDTO.setAttachments(attachmentList);
     }
 
-    /**
-     * 处理不同类型的附件
-     *
-     * @param attachment     附件
-     * @param corpId         企业id
-     * @param attachmentList 附件列表（保存附件）
-     */
-    private void attachmentHandler(Attachment attachment, String corpId, List attachmentList, Long messageId) {
-        //校验CorpId
-        StringUtils.checkCorpId(corpId);
-        JSONObject jsonObject = new JSONObject();
-        String msgtype = attachment.getMsgtype();
-        //图片
-        if (GroupMessageType.IMAGE.getType().equals(msgtype)) {
-            jsonObject.put(WeConstans.MSG_TYPE, GroupMessageType.IMAGE.getMessageType());
-            ImageMessageDTO imageMessage = attachment.getImageMessage();
-            String mdiaId = buildMediaId(imageMessage.getPic_url(),
-                    GroupMessageType.IMAGE.getMessageType(), FileUtil.getName(imageMessage.getPic_url()), corpId, messageId);
-            imageMessage.setMedia_id(mdiaId);
-            jsonObject.put(GroupMessageType.IMAGE.getMessageType(), imageMessage);
-        }
-        //小程序
-        else if (GroupMessageType.MINIPROGRAM.getType().equals(msgtype)) {
-            jsonObject.put(WeConstans.MSG_TYPE, GroupMessageType.MINIPROGRAM.getMessageType());
-            MiniprogramMessageDTO miniprogramMessage = attachment.getMiniprogramMessage();
-            String mdiaId = buildMediaId(miniprogramMessage.getPicUrl(), GroupMessageType.IMAGE.getMessageType(), FileUtil.getName(miniprogramMessage.getPicUrl()), corpId, messageId);
-            miniprogramMessage.setPic_media_id(mdiaId);
-            jsonObject.put(GroupMessageType.MINIPROGRAM.getMessageType(), miniprogramMessage);
-        }
-        //链接
-        else if (GroupMessageType.LINK.getType().equals(msgtype)) {
-            jsonObject.put(WeConstans.MSG_TYPE, GroupMessageType.LINK.getMessageType());
-            jsonObject.put(GroupMessageType.LINK.getMessageType(), attachment.getLinkMessage());
-        } else if (GroupMessageType.RADAR.getType().equals(msgtype)) {
-            jsonObject.put(WeConstans.MSG_TYPE, GroupMessageType.RADAR.getMessageType());
-            jsonObject.put(GroupMessageType.RADAR.getMessageType(), attachment.getLinkMessage());
-        }
-        //视频
-        else if (GroupMessageType.VIDEO.getType().equals(msgtype)) {
-            VideoDTO videoDTO = attachment.getVideoDTO();
-            //大于10M发送链接
-            if (videoDTO.getSize() != null && videoDTO.getSize() > WeConstans.DEFAULT_MAX_VIDEO_SIZE) {
-                buildLinkJson(jsonObject, videoDTO);
-            } else {
-                jsonObject.put(WeConstans.MSG_TYPE, GroupMessageType.VIDEO.getMessageType());
-                String mdiaId = buildMediaId(videoDTO.getVideoUrl(), GroupMessageType.VIDEO.getMessageType(), FileUtil.getName(videoDTO.getVideoUrl()), corpId, messageId);
-                videoDTO.setMedia_id(mdiaId);
-                //上传失败转链接
-                if (StringUtils.isBlank(mdiaId)) {
-                    buildLinkJson(jsonObject, videoDTO);
-                    //状态置为未执行
-                    LambdaUpdateWrapper<WeCustomerMessgaeResult> updateWrapper = new LambdaUpdateWrapper<WeCustomerMessgaeResult>()
-                            .eq(WeCustomerMessgaeResult::getMessageId, messageId)
-                            .set(WeCustomerMessgaeResult::getStatus, MessageStatusEnum.NOT_SEND.getType())
-                            .set(WeCustomerMessgaeResult::getRemark, MessageStatusEnum.NOT_SEND.getName());
-                    weCustomerMessgaeResultService.update(updateWrapper);
-                } else {
-                    jsonObject.put(GroupMessageType.VIDEO.getMessageType(), videoDTO);
-                }
-            }
-        }
-        //文件
-        else if (GroupMessageType.FILE.getType().equals(msgtype)) {
-            jsonObject.put(WeConstans.MSG_TYPE, GroupMessageType.FILE.getMessageType());
-            FileDTO fileDTO = attachment.getFileDTO();
-            String mdiaId = buildMediaId(fileDTO.getFileUrl(), GroupMessageType.FILE.getMessageType(), FileUtil.getName(fileDTO.getFileUrl()), corpId, messageId);
-            fileDTO.setMedia_id(mdiaId);
-            jsonObject.put(GroupMessageType.FILE.getMessageType(), fileDTO);
-        } else {
-            //不存在附件直接返回
-            return;
-        }
-        attachmentList.add(jsonObject);
-    }
 
     /**
      * 构造链接json
@@ -374,36 +300,7 @@ public class WeCustomerMessageServiceImpl extends ServiceImpl<WeCustomerMessageM
         return linkMessageDTO;
     }
 
-    /**
-     * 获得mediaId
-     *
-     * @param url       url
-     * @param type      类型
-     * @param name      名称
-     * @param corpId    企业id
-     * @param messageId 消息id
-     * @return mediaId
-     */
-    private String buildMediaId(String url, String type, String name, String corpId, Long messageId) {
-        Object cacheObject = redisCache.getCacheObject(WeConstans.MEDIA_KEY + url);
-        String mediaId = StrUtil.EMPTY;
-        if (cacheObject != null) {
-            mediaId = cacheObject.toString();
-            return mediaId;
-        }
-        try {
-            WeMediaDTO weMediaDTO = weMaterialService.uploadTemporaryMaterial(url, type, name, corpId);
-            mediaId = weMediaDTO.getMedia_id();
-            redisCache.setCacheObject(WeConstans.MEDIA_KEY + url, weMediaDTO.getMedia_id(), 2, TimeUnit.DAYS);
-        } catch (Exception e) {
-            LambdaUpdateWrapper<WeCustomerMessgaeResult> updateWrapper = new LambdaUpdateWrapper<WeCustomerMessgaeResult>()
-                    .eq(WeCustomerMessgaeResult::getMessageId, messageId)
-                    .set(WeCustomerMessgaeResult::getStatus, MessageStatusEnum.MEDIA_ID_ERROR.getType())
-                    .set(WeCustomerMessgaeResult::getRemark, MessageStatusEnum.MEDIA_ID_ERROR.getName());
-            weCustomerMessgaeResultService.update(updateWrapper);
-        }
-        return mediaId;
-    }
+
 
     /**
      * 获得朋友圈附件id（企业朋友圈使用）

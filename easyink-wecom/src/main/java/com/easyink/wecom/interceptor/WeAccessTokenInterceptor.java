@@ -10,10 +10,12 @@ import com.dtflys.forest.interceptor.Interceptor;
 import com.dtflys.forest.utils.ForestDataType;
 import com.easyink.common.config.WeComeConfig;
 import com.easyink.common.constant.WeConstans;
+import com.easyink.common.utils.StringUtils;
 import com.easyink.common.utils.spring.SpringUtils;
 import com.easyink.wecom.domain.dto.WeResultDTO;
 import com.easyink.wecom.service.WeAccessTokenService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import org.springframework.util.PatternMatchUtils;
@@ -37,9 +39,9 @@ public class WeAccessTokenInterceptor implements Interceptor<Object> {
     private final String urlPrefix;
 
     @Lazy
-    public WeAccessTokenInterceptor(WeAccessTokenService weAccessTokenService, WeComeConfig weComeConfig) {
-        this.weAccessTokenService = weAccessTokenService;
-        this.weComeConfig = weComeConfig;
+    public WeAccessTokenInterceptor() {
+        weComeConfig = SpringUtils.getBean(WeComeConfig.class);
+        weAccessTokenService = SpringUtils.getBean(WeAccessTokenService.class);
         forestConfiguration = SpringUtils.getBean(ForestConfiguration.class);
         String weComServerUrl = String.valueOf(forestConfiguration.getVariableValue(WeConstans.WECOM_SERVER_URL));
         String weComePrefix = String.valueOf(forestConfiguration.getVariableValue(WeConstans.WECOM_PREFIX));
@@ -53,7 +55,12 @@ public class WeAccessTokenInterceptor implements Interceptor<Object> {
     @Override
     public boolean beforeExecute(ForestRequest request) {
         String uri = request.getUrl().replace(urlPrefix, "");
-        log.info(">>>>>>>>>>>>>>>>>>>>>>>>uri：{},query: {},body: {}", uri, request.getQueryString(), request.getBody());
+        StringBuilder body = encodeToStringBody(request, uri);
+        if (StringUtils.isBlank(body)) {
+            log.info(">>>>>>>>>>>>>>>>>>>>>>>>uri：{}, query: {}", uri, request.getQueryString());
+        } else {
+            log.info(">>>>>>>>>>>>>>>>>>>>>>>>uri：{}, query: {}, body: {}", uri, request.getQueryString(), body);
+        }
 
         if (!Arrays.asList(weComeConfig.getFileUplodUrl()).contains(uri)) {
             request.setDataType(ForestDataType.JSON);
@@ -101,10 +108,10 @@ public class WeAccessTokenInterceptor implements Interceptor<Object> {
         log.error("请求失败url:【{}】,result:【{}】", forestRequest.getUrl(), forestResponse.getContent());
     }
 
-    @Override
-    public void onRetry(ForestRequest request, ForestResponse response) {
-        log.error("准备重试, url:【{}】,result:【{}】,retryCnt:【{}】", request.getUrl(), response.getContent() ,request.getCurrentRetryCount());
-    }
+//    @Override
+//    public void onRetry(ForestRequest request, ForestResponse response) {
+//        log.error("准备重试, url:【{}】,result:【{}】,retryCnt:【{}】", request.getUrl(), response.getContent() ,request.getCurrentRetryCount());
+//    }
 
     /**
      * 请求成功调用(微信端错误异常统一处理)
@@ -128,5 +135,24 @@ public class WeAccessTokenInterceptor implements Interceptor<Object> {
 
     }
 
-
+    /**
+     * 获取打印的Body内容
+     *
+     * @param request {@link ForestRequest}
+     * @param uri 请求uri
+     * @return
+     */
+    private StringBuilder encodeToStringBody(ForestRequest request, String uri) {
+        StringBuilder body = null;
+        try {
+            body = new StringBuilder();
+            Object[] objects = request.getBody().stream().toArray();
+            for (Object object : objects) {
+                body.append(object.toString());
+            }
+        } catch (Exception e) {
+            log.info(">>>>>>>>>>>>>>>>>>>>>>>>打印body参数异常，uri:{}, query:{}, ex:{}", uri, request.getQueryString(), ExceptionUtils.getStackTrace(e));
+        }
+        return body;
+    }
 }

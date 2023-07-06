@@ -29,7 +29,14 @@
             </foreach>
         </if>
         <if test="dto.createBy != null and dto.createBy != ''">
-            AND (wu.user_name LIKE CONCAT("%",#{dto.createBy},"%") OR wbtt.create_by LIKE CONCAT("%",#{dto.createBy},"%"))
+        <choose>
+            <when test="dto.createBy eq 'admin'">
+                AND wbtt.create_by = #{dto.createBy}
+            </when>
+            <otherwise>
+                AND wu.user_name LIKE CONCAT("%",#{dto.createBy},"%")
+            </otherwise>
+        </choose>
         </if>
         ORDER BY wbtt.create_time DESC
     </select>

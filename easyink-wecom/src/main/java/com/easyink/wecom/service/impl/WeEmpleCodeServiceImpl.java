@@ -1,9 +1,11 @@
 package com.easyink.wecom.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.io.FileUtil;
 import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.easyink.common.config.RuoYiConfig;
 import com.easyink.common.constant.WeConstans;
 import com.easyink.common.constant.redeemcode.RedeemCodeConstants;
 import com.easyink.common.core.redis.RedisCache;
@@ -12,19 +14,18 @@ import com.easyink.common.enums.code.WelcomeMsgTypeEnum;
 import com.easyink.common.exception.CustomException;
 import com.easyink.common.shorturl.model.EmpleCodeShortUrlAppendInfo;
 import com.easyink.common.utils.DateUtils;
+import com.easyink.common.utils.file.FileUploadUtils;
 import com.easyink.common.utils.spring.SpringUtils;
 import com.easyink.wecom.client.WeExternalContactClient;
 import com.easyink.wecom.domain.*;
 import com.easyink.wecom.domain.dto.AddWeMaterialDTO;
+import com.easyink.wecom.domain.dto.UpdateWeMaterialDTO;
 import com.easyink.wecom.domain.dto.WeEmpleCodeDTO;
 import com.easyink.wecom.domain.dto.WeExternalContactDTO;
 import com.easyink.wecom.domain.dto.emplecode.AddWeEmpleCodeDTO;
 import com.easyink.wecom.domain.dto.emplecode.FindWeEmpleCodeDTO;
 import com.easyink.wecom.domain.entity.redeemcode.WeRedeemCode;
-import com.easyink.wecom.domain.vo.SelectWeEmplyCodeWelcomeMsgVO;
-import com.easyink.wecom.domain.vo.WeEmpleCodeVO;
-import com.easyink.wecom.domain.vo.WeEmplyCodeDownloadVO;
-import com.easyink.wecom.domain.vo.WeEmplyCodeScopeUserVO;
+import com.easyink.wecom.domain.vo.*;
 import com.easyink.wecom.domain.vo.redeemcode.WeRedeemCodeActivityVO;
 import com.easyink.wecom.handler.shorturl.EmpleCodeShortUrlHandler;
 import com.easyink.wecom.login.util.LoginTokenService;
@@ -38,6 +39,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -69,11 +72,11 @@ public class WeEmpleCodeServiceImpl extends ServiceImpl<WeEmpleCodeMapper, WeEmp
     private final WeRedeemCodeMapper weRedeemCodeMapper;
     private final WeRedeemCodeActivityService weRedeemCodeActivityService;
     private final WeUserService weUserService;
-    private final WeRadarService weRadarService;
     private final EmpleCodeShortUrlHandler empleCodeShortUrlHandler;
+    private final RuoYiConfig ruoYiConfig;
 
     @Autowired
-    public WeEmpleCodeServiceImpl(WeEmpleCodeTagService weEmpleCodeTagService, WeEmpleCodeUseScopService weEmpleCodeUseScopService, WeExternalContactClient weExternalContactClient, RedisCache redisCache, WeEmpleCodeMaterialService weEmpleCodeMaterialService, WeMaterialService weMaterialService, WeGroupCodeService weGroupCodeService, WeEmpleCodeAnalyseService weEmpleCodeAnalyseService, WeGroupCodeActualService weGroupCodeActualService, WeRedeemCodeMapper weRedeemCodeMapper, WeRedeemCodeActivityService weRedeemCodeActivityService, WeUserService weUserService, WeRadarService weRadarService, EmpleCodeShortUrlHandler empleCodeShortUrlHandler) {
+    public WeEmpleCodeServiceImpl(WeEmpleCodeTagService weEmpleCodeTagService, WeEmpleCodeUseScopService weEmpleCodeUseScopService, WeExternalContactClient weExternalContactClient, RedisCache redisCache, WeEmpleCodeMaterialService weEmpleCodeMaterialService, WeMaterialService weMaterialService, WeGroupCodeService weGroupCodeService, WeEmpleCodeAnalyseService weEmpleCodeAnalyseService, WeGroupCodeActualService weGroupCodeActualService, WeRedeemCodeMapper weRedeemCodeMapper, WeRedeemCodeActivityService weRedeemCodeActivityService, WeUserService weUserService, EmpleCodeShortUrlHandler empleCodeShortUrlHandler, RuoYiConfig ruoYiConfig) {
         this.weEmpleCodeTagService = weEmpleCodeTagService;
         this.weEmpleCodeUseScopService = weEmpleCodeUseScopService;
         this.weExternalContactClient = weExternalContactClient;
@@ -86,8 +89,8 @@ public class WeEmpleCodeServiceImpl extends ServiceImpl<WeEmpleCodeMapper, WeEmp
         this.weRedeemCodeMapper = weRedeemCodeMapper;
         this.weRedeemCodeActivityService = weRedeemCodeActivityService;
         this.weUserService = weUserService;
-        this.weRadarService = weRadarService;
         this.empleCodeShortUrlHandler = empleCodeShortUrlHandler;
+        this.ruoYiConfig = ruoYiConfig;
     }
 
     @Override
@@ -258,10 +261,13 @@ public class WeEmpleCodeServiceImpl extends ServiceImpl<WeEmpleCodeMapper, WeEmp
             weEmpleCodeUseScopService.saveOrUpdateBatch(useScops);
             //调用企微接口
             WeExternalContactDTO.WeContactWay weContactWay = getWeContactWay(weEmpleCode);
-            // 生成小程序短链
-            WeExternalContactDTO contactDTO = getQrCodeFromClient(weContactWay, weEmpleCode.getCorpId());
-            weEmpleCode.setConfigId(contactDTO.getConfig_id());
-            weEmpleCode.setQrCode(contactDTO.getQr_code());
+            // 调用企微更新联系我接口
+            try {
+                // 更新活码信息
+                weExternalContactClient.updateContactWay(weContactWay, weEmpleCode.getCorpId());
+            } catch (Exception e) {
+                log.info("[更新活码] 更新活码信息异常，corpId:{}, empleCodeId:{},ex:{}", weEmpleCode.getCorpId(), weEmpleCode.getId(), ExceptionUtils.getStackTrace(e));
+            }
             isNotCreate = false;
         }
 
@@ -283,14 +289,8 @@ public class WeEmpleCodeServiceImpl extends ServiceImpl<WeEmpleCodeMapper, WeEmp
             //保存群活码到附件表
             saveGroupCodeMaterial(weEmpleCode.getId(), weEmpleCode.getGroupCodeId());
         }
-
-        List<Long> activityIdList = new ArrayList<>();
-        activityIdList.add(weEmpleCode.getId());
-        //删除附件表
-        weEmpleCodeMaterialService.removeByEmpleCodeId(activityIdList);
-        //删除员工活码，物理删除
-        this.baseMapper.deleteWeEmpleCode(weEmpleCode.getCorpId(), weEmpleCode.getId());
-        this.baseMapper.insertWeEmpleCode(weEmpleCode);
+        // 更新员工活码
+        this.baseMapper.updateWeEmpleCode(weEmpleCode);
         //未创建新的活码才更新
         if (isNotCreate) {
             WeExternalContactDTO.WeContactWay weContactWay = getWeContactWay(weEmpleCode);
@@ -433,7 +433,7 @@ public class WeEmpleCodeServiceImpl extends ServiceImpl<WeEmpleCodeMapper, WeEmp
      */
     private void setMaterialSort(List<AddWeMaterialDTO> codeMaterialList, WeEmpleCode weEmpleCode) {
         //判断为新增或者从素材库获取,若为新增则保存tempFlag=1
-        saveTempMaterial(codeMaterialList);
+        saveTempMaterial(codeMaterialList, weEmpleCode.getCorpId());
         //保存素材到附件表
         saveEmpleCodeMaterialList(codeMaterialList, weEmpleCode.getId());
     }
@@ -475,16 +475,76 @@ public class WeEmpleCodeServiceImpl extends ServiceImpl<WeEmpleCodeMapper, WeEmp
      * 当素材ID为空时,则为临时素材 需保存到素材库拿取素材ID
      *
      * @param materialDTOList materialDTOList
+     * @param corpId 企业ID
      */
-    private void saveTempMaterial(List<AddWeMaterialDTO> materialDTOList) {
+    private void saveTempMaterial(List<AddWeMaterialDTO> materialDTOList, String corpId) {
         if (CollectionUtils.isNotEmpty(materialDTOList)) {
             for (AddWeMaterialDTO materialDTO : materialDTOList) {
                 if (materialDTO.getId() == null) {
                     materialDTO.setTempFlag(WeTempMaterialEnum.TEMP.getTempFlag());
                     weMaterialService.insertWeMaterial(materialDTO);
+                } else {
+                    // 更新编辑后的素材信息
+                    UpdateWeMaterialDTO weMaterialDTO = new UpdateWeMaterialDTO();
+                    BeanUtils.copyProperties(materialDTO, weMaterialDTO);
+                    weMaterialDTO.setCorpId(corpId);
+                    // 如果是图片、文件、视频类型数据，且文件名和原来的Url中的文件名不一致
+                    if ((Objects.equals(MediaType.IMAGE.getType(), weMaterialDTO.getMediaType().toString()) || Objects.equals(MediaType.FILE.getType(), weMaterialDTO.getMediaType().toString()) || Objects.equals(MediaType.VIDEO.getType(), weMaterialDTO.getMediaType().toString())) && !weMaterialDTO.getMaterialName().equals(FileUtil.getName(weMaterialDTO.getMaterialUrl()))) {
+                        String newFileUrl = FileUploadUtils.reUploadFile(weMaterialDTO.getMaterialUrl(), ruoYiConfig, weMaterialDTO.getMaterialName(), corpId);
+                        if (StringUtils.isBlank(newFileUrl)) {
+                            throw new CustomException(ResultTip.TIP_FAIL_RE_UPLOAD_FILE);
+                        }
+                        // 设置改名后的文件Url
+                        weMaterialDTO.setMaterialUrl(newFileUrl);
+                        materialDTO.setMaterialUrl(newFileUrl);
+                    }
+                    // 如果判断是从素材库取出的素材，且内容有被修改，则插入一条新的数据，不更新原来的素材库中的内容
+                    if (WeTempMaterialEnum.MATERIAL.getTempFlag().equals(weMaterialDTO.getTempFlag())) {
+                        WeMaterial originalMaterial = weMaterialService.getById(materialDTO.getId());
+                        // 比较本地素材库中的素材和编辑/新增的附件中从素材库取出的素材是否相同
+                        if (!compareMaterial(originalMaterial, materialDTO)) {
+                            // 素材有做修改，设置类型为临时素材
+                            materialDTO.setTempFlag(WeTempMaterialEnum.TEMP.getTempFlag());
+                            InsertWeMaterialVO insertWeMaterialVO = weMaterialService.insertWeMaterial(materialDTO);
+                            // 获取新的素材ID存入素材排序列表
+                            materialDTO.setId(insertWeMaterialVO.getId());
+                        }
+                    } else {
+                        // 自定义的附件，直接更新
+                        weMaterialService.updateWeMaterial(weMaterialDTO);
+                    }
                 }
             }
         }
+    }
+
+    /**
+     * 比较本地素材库中的素材和编辑/新增的附件中从素材库取出的素材是否相同
+     *
+     * @param originalMaterial {@link WeMaterial}
+     * @param materialDTO {@link AddWeMaterialDTO}
+     * @return True-相同，表示没有修改， False-不同，表示素材有做修改
+     */
+    private Boolean compareMaterial(WeMaterial originalMaterial, AddWeMaterialDTO materialDTO) {
+        String materialType = materialDTO.getMediaType().toString();
+        // 图片、文件，只能修改标题
+        if (MediaType.IMAGE.getType().equals(materialType) || MediaType.FILE.getType().equals(materialType)) {
+            return originalMaterial.getMaterialName().equals(materialDTO.getMaterialName());
+        }
+        // 视频，可以修改显示的封面图片、标题
+        if (MediaType.VIDEO.getType().equals(materialType)) {
+            return originalMaterial.getMaterialName().equals(materialDTO.getMaterialName()) && originalMaterial.getCoverUrl().equals(materialDTO.getCoverUrl());
+        }
+        // 链接，可以修改标题、摘要、地址、封面
+        if (GroupMessageType.LINK.getType().equals(materialType)) {
+            return originalMaterial.getCoverUrl().equals(materialDTO.getCoverUrl()) && originalMaterial.getMaterialName().equals(materialDTO.getMaterialName()) && originalMaterial.getDigest().equals(materialDTO.getDigest()) && originalMaterial.getMaterialUrl().equals(materialDTO.getMaterialUrl());
+        }
+        // 小程序，可以修改原始ID，APPID，地址，标题，封面
+        if (GroupMessageType.MINIPROGRAM.getType().equals(materialType)) {
+            return originalMaterial.getAccountOriginalId().equals(materialDTO.getAccountOriginalId()) && originalMaterial.getAppid().equals(materialDTO.getAppid()) && originalMaterial.getMaterialUrl().equals(materialDTO.getMaterialUrl()) && originalMaterial.getMaterialName().equals(materialDTO.getMaterialName()) && originalMaterial.getCoverUrl().equals(materialDTO.getCoverUrl());
+        }
+        // 表单、雷达，不能在附件中修改
+        return true;
     }
 
     /**

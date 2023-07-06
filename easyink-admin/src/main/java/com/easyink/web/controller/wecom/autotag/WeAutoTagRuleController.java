@@ -50,7 +50,7 @@ public class WeAutoTagRuleController extends BaseController {
     @PostMapping("keyword/list")
     public TableDataInfo<TagRuleListVO> listKeyword(@RequestBody TagRuleQuery query) {
         query.setCorpId(LoginTokenService.getLoginUser().getCorpId());
-        PageHelper.startPage(query.getPageNum(), query.getPageSize(), null);
+        startPage();
         List<TagRuleListVO> list = weAutoTagRuleService.listKeyword(query);
         return getDataTable(list);
     }
@@ -60,7 +60,7 @@ public class WeAutoTagRuleController extends BaseController {
     @PostMapping("group/list")
     public TableDataInfo<TagRuleListVO> listGroup(@RequestBody TagRuleQuery query) {
         query.setCorpId(LoginTokenService.getLoginUser().getCorpId());
-        PageHelper.startPage(query.getPageNum(), query.getPageSize(), null);
+        startPage();
         List<TagRuleListVO> list = weAutoTagRuleService.listGroup(query);
         return getDataTable(list);
     }
@@ -70,7 +70,7 @@ public class WeAutoTagRuleController extends BaseController {
     @PostMapping("customer/list")
     public TableDataInfo<TagRuleListVO> listCustomer(@RequestBody TagRuleQuery query) {
         query.setCorpId(LoginTokenService.getLoginUser().getCorpId());
-        PageHelper.startPage(query.getPageNum(), query.getPageSize(), null);
+        startPage();
         List<TagRuleListVO> list = weAutoTagRuleService.listCustomer(query);
         return getDataTable(list);
     }

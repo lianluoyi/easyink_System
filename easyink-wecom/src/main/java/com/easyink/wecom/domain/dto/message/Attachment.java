@@ -13,6 +13,10 @@ import lombok.Data;
 @ApiModel("消息附件《Attachment》")
 @Data
 public class Attachment {
+
+    @ApiModelProperty(value = "主键id，群发附件编辑素材时，兼容前端使用，实际上是seed_message_id")
+    private Long id;
+
     @ApiModelProperty("消息类型")
     private String msgtype;
 

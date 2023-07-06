@@ -80,6 +80,14 @@ public class AutoTagConstants {
      * 任务被删除而终止的失败备注
      */
     public static final String TASK_STOPPER_BY_DEL = "任务被删除,停止执行";
+    /**
+     * 导入字段超出限制长度提示内容
+     */
+    public static final String COLUMN_EXCEED_64_LENGTH = "字段长度不能超过64字符";
+    /**
+     * 3个字段的长度校验
+     */
+    public static final int MAX_COLUMN_LENGTH = 64;
 
 
 }

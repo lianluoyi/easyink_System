@@ -5,6 +5,7 @@ import com.easyink.common.config.RuoYiConfig;
 import com.easyink.common.constant.Constants;
 import com.easyink.common.constant.WeConstans;
 import com.easyink.common.enums.ResultTip;
+import com.easyink.common.enums.material.UrlFileTypeEnum;
 import com.easyink.common.exception.CustomException;
 import com.easyink.common.exception.file.FileNameLengthLimitExceededException;
 import com.easyink.common.exception.file.FileSizeLimitExceededException;
@@ -27,6 +28,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URLConnection;
 
 /**
  * 文件上传工具类
@@ -289,6 +291,74 @@ public class FileUploadUtils {
         return fileName;
     }
 
+    /**
+     * 不校验后缀名，获取文件名称的上传方法 【编辑附件名称】
+     *
+     * @param inputStream {@link InputStream}
+     * @param fileName 文件名称
+     * @param cosConfig 云存储桶配置信息
+     * @return 上传后的文件名称
+     * @throws FileSizeLimitExceededException
+     * @throws InvalidExtensionException
+     */
+    public static String reUpload2CosFileByName(InputStream inputStream, String fileName, CosConfig cosConfig) throws FileSizeLimitExceededException {
+        COSClient cosClient = getCosClient(cosConfig);
+        ObjectMetadata objectMetadata = new ObjectMetadata();
+        PutObjectRequest putObjectRequest = new PutObjectRequest(cosConfig.getBucketName(), fileName, inputStream, objectMetadata);
+        cosClient.putObject(putObjectRequest);
+        cosClient.shutdown();
+        return fileName;
+    }
+
+    /**
+     * 以新的文件名称重新上传文件
+     *
+     * @param url 文件url
+     * @param ruoYiConfig {@link RuoYiConfig}
+     * @param fileName 文件名
+     * @param corpId 企业ID
+     * @return 新的文件Url
+     */
+    public static String reUploadFile(String url, RuoYiConfig ruoYiConfig, String fileName, String corpId) {
+        String imgUrlPrefix = null;
+        try {
+            // 获取原始的文件流
+            InputStream inputStream = FileUtils.downloadFile(url);
+            // 以新的文件名称重新上传，获取文件名
+            FileUploadUtils.reUpload2CosFileByName(inputStream, fileName, ruoYiConfig.getFile().getCos());
+            // COS的url前缀
+            imgUrlPrefix = ruoYiConfig.getFile().getCos().getCosImgUrlPrefix();
+        } catch (IOException e) {
+            log.info("[重新上传] 重新获取新的文件名URL异常，corpId:{}，上传的文件名:{}", corpId, fileName);
+        }
+        // 返回拼接好的文件Url
+        return imgUrlPrefix == null ? StringUtils.EMPTY : imgUrlPrefix + fileName;
+    }
+
+    /**
+     * 获取带有后缀的文件名
+     *
+     * @param connection {@link URLConnection}
+     * @param fileName 文件名
+     * @return 带有后缀的文件名
+     */
+    private static String getSuffixName(URLConnection connection, String fileName) {
+        // 后缀名分隔符
+        final String INTERCEPT = ".";
+        // 文件类型位置
+        final int SUFFIX_NUM = 2;
+        // 如果文件名本身带有后缀名，则不拼接
+        if (fileName.split(INTERCEPT).length >= SUFFIX_NUM) {
+            return fileName;
+        }
+        // 获取文件类型
+        String suffix = UrlFileTypeEnum.getSuffixByType(connection.getContentType());
+        // 拼接文件类型
+        if (StringUtils.isNotBlank(suffix)) {
+            return fileName + suffix;
+        }
+        return fileName;
+    }
 
     public static String uploadFile(String baseDir, MultipartFile file)
             throws FileSizeLimitExceededException, IOException, FileNameLengthLimitExceededException {

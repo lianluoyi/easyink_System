@@ -4,6 +4,7 @@ import cn.hutool.core.io.FileUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.easyink.common.config.RuoYiConfig;
 import com.easyink.common.constant.WeConstans;
 import com.easyink.common.constant.redeemcode.RedeemCodeConstants;
 import com.easyink.common.enums.MediaType;
@@ -12,6 +13,7 @@ import com.easyink.common.enums.AttachmentTypeEnum;
 import com.easyink.common.enums.wemsgtlp.WeMsgTlpEnum;
 import com.easyink.common.exception.CustomException;
 import com.easyink.common.utils.StringUtils;
+import com.easyink.common.utils.file.FileUploadUtils;
 import com.easyink.wecom.client.WeWelcomeMsgClient;
 import com.easyink.wecom.domain.*;
 import com.easyink.wecom.domain.dto.WeMediaDTO;
@@ -55,9 +57,11 @@ public class WeMsgTlpMaterialServiceImpl extends ServiceImpl<WeMsgTlpMaterialMap
     private WeMsgTlpService weMsgTlpService;
     private AttachmentService attachmentService;
 
+    private final RuoYiConfig ruoYiConfig;
+
     @Lazy
     @Autowired
-    public WeMsgTlpMaterialServiceImpl(WeMsgTlpMaterialService weMsgTlpMaterialService, WeMaterialService weMaterialService, WeWelcomeMsgClient weWelcomeMsgClient, WeFlowerCustomerRelService weFlowerCustomerRelService, WeCustomerService weCustomerService, WeUserService weUserService, WeMsgTlpService weMsgTlpService, AttachmentService attachmentService) {
+    public WeMsgTlpMaterialServiceImpl(WeMsgTlpMaterialService weMsgTlpMaterialService, WeMaterialService weMaterialService, WeWelcomeMsgClient weWelcomeMsgClient, WeFlowerCustomerRelService weFlowerCustomerRelService, WeCustomerService weCustomerService, WeUserService weUserService, WeMsgTlpService weMsgTlpService, AttachmentService attachmentService, RuoYiConfig ruoYiConfig) {
         this.weMsgTlpMaterialService = weMsgTlpMaterialService;
         this.weMaterialService = weMaterialService;
         this.weWelcomeMsgClient = weWelcomeMsgClient;
@@ -66,6 +70,7 @@ public class WeMsgTlpMaterialServiceImpl extends ServiceImpl<WeMsgTlpMaterialMap
         this.weUserService = weUserService;
         this.weMsgTlpService = weMsgTlpService;
         this.attachmentService = attachmentService;
+        this.ruoYiConfig = ruoYiConfig;
     }
 
     /**
@@ -203,9 +208,10 @@ public class WeMsgTlpMaterialServiceImpl extends ServiceImpl<WeMsgTlpMaterialMap
      * @param removeMaterialIds 需要删除的素材ids
      * @param defaultMaterials  新增或修改的素材
      * @param defaultMsgId      默认欢迎语id
+     * @param corpId            企业ID
      */
     @Override
-    public void updateDefaultEmployMaterial(List<Long> removeMaterialIds, List<WeMsgTlpMaterial> defaultMaterials, Long defaultMsgId) {
+    public void updateDefaultEmployMaterial(List<Long> removeMaterialIds, List<WeMsgTlpMaterial> defaultMaterials, Long defaultMsgId, String corpId) {
         if (defaultMsgId == null) {
             throw new CustomException(ResultTip.TIP_GENERAL_BAD_REQUEST);
         }
@@ -222,11 +228,30 @@ public class WeMsgTlpMaterialServiceImpl extends ServiceImpl<WeMsgTlpMaterialMap
                 defaultMaterial.setDefaultMsgId(defaultMsgId);
                 // 判断类型是否为小程序
                 saveAppid(defaultMaterial);
+                // 保存重新上传的文件名
+                saveFileUrl(defaultMaterial, corpId);
             }
             weMsgTlpMaterialService.saveOrUpdateBatch(defaultMaterials);
         }
     }
 
+
+    /**
+     * 保存重新上传的文件名
+     *
+     * @param weMsgTlpMaterial {@link WeMsgTlpMaterial}
+     * @param corpId 企业ID
+     */
+    public void saveFileUrl(WeMsgTlpMaterial weMsgTlpMaterial, String corpId) {
+        // 判断是否为图片、文件、视频类型的素材，且文件名和原来的Url中的文件名不一致
+        if ((Objects.equals(weMsgTlpMaterial.getType(), WeMsgTlpEnum.IMAGE.getValue()) || Objects.equals(weMsgTlpMaterial.getType(), WeMsgTlpEnum.FILE.getValue()) || Objects.equals(weMsgTlpMaterial.getType(), WeMsgTlpEnum.VIDEO.getValue())) && !weMsgTlpMaterial.getContent().equals(FileUtil.getName(weMsgTlpMaterial.getPicUrl()))) {
+            String newFileUrl = FileUploadUtils.reUploadFile(weMsgTlpMaterial.getPicUrl(), ruoYiConfig, weMsgTlpMaterial.getContent(), corpId);
+            if (StringUtils.isBlank(newFileUrl)) {
+                throw new CustomException(ResultTip.TIP_FAIL_RE_UPLOAD_FILE);
+            }
+            weMsgTlpMaterial.setPicUrl(newFileUrl);
+        }
+    }
 
     /**
      * 修改特殊欢迎语附件
@@ -382,6 +407,8 @@ public class WeMsgTlpMaterialServiceImpl extends ServiceImpl<WeMsgTlpMaterialMap
             weMsgTlpMaterial = defaultMaterials.get(0);
             // 判断类型是否为小程序
             saveAppid(weMsgTlpMaterial);
+            // 保存重新上传的文件名
+            saveFileUrl(weMsgTlpMaterial, corpId);
             // 根据媒体类型构建DTO调用企业微信接口
             groupWelcomeMsgUpdateDTO = handleByMaterialType(weMsgTlpMaterial.getContent(), weMsgTlpMaterial.getPicUrl(), weMsgTlpMaterial.getDescription(), weMsgTlpMaterial.getUrl(), AttachmentTypeEnum.getByMessageType(weMsgTlpMaterial.getType()), groupWelcomeMsgUpdateDTO, corpId);
         }

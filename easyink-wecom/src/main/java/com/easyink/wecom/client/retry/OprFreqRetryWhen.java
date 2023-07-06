@@ -1,7 +1,6 @@
 package com.easyink.wecom.client.retry;
 
 import cn.hutool.json.JSONUtil;
-import com.dtflys.forest.callback.RetryWhen;
 import com.dtflys.forest.http.ForestRequest;
 import com.dtflys.forest.http.ForestResponse;
 import com.easyink.wecom.domain.dto.WeResultDTO;
@@ -15,7 +14,7 @@ import org.springframework.stereotype.Component;
  * @date : 2023/5/29 17:04
  **/
 @Component
-public class OprFreqRetryWhen implements RetryWhen {
+public class OprFreqRetryWhen {
     /**
      * 操作频繁状态码
      *
@@ -24,7 +23,6 @@ public class OprFreqRetryWhen implements RetryWhen {
      *
      */
     private static final  Integer OPR_FREQ_ERR_CODE = 45033 ;
-    @Override
     public boolean retryWhen(ForestRequest req, ForestResponse res) {
         if(res == null) {
             return true ;

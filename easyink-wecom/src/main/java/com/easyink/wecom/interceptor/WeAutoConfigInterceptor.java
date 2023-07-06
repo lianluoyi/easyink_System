@@ -19,6 +19,7 @@ import org.springframework.util.CollectionUtils;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
@@ -108,9 +109,14 @@ public class WeAutoConfigInterceptor implements Interceptor<Object> {
         request.addHeader("sec-fetch-dest", "document");
         request.addHeader("accept-language", "zh-CN,zh;q=0.9");
         request.addHeader("upgrade-insecure-requests", "1");
-        request.addHeader("accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9");
-
+        request.addHeader("accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7");
+        request.addHeader("accept-encoding", "gzip, deflate, br");
+        request.addHeader("accept", "*/*")
+               .addHeader("x-requested-with", "XMLHttpRequest")
+               .addHeader("sec-fetch-mode", "cors")
+               .addHeader("accept-encoding", "gzip, deflate, br");
     }
+
 
     /**
      * 判断是否是短信验证的链接
@@ -156,6 +162,13 @@ public class WeAutoConfigInterceptor implements Interceptor<Object> {
         throw new WeComException("官方接口请求过于频繁，稍后再试");
     }
 
+    public void onRedirection(ForestRequest<?> redirectReq, ForestRequest<?> prevReq, ForestResponse<?> prevRes) {
+        log.info("请求重定向,url:{} ,重定向到:{}" , prevReq.getUrl(), redirectReq.getUrl());
+        if(prevReq.getUrl().contains("/choose_corp")  || prevReq.getUrl().contains("loginpage_wx")) {
+            String qrcodeKey = prevReq.getHeader("qrcodeKey") != null? String.valueOf(prevReq.getHeader("qrcodeKey").getValue()) : (String) prevReq.getQuery("qrcode_key");
+            redirectReq.addHeader("qrcodeKey",qrcodeKey);
+        }
+    }
 
     /**
      * 请求成功调用(微信端错误异常统一处理)

@@ -305,7 +305,7 @@
             </if>
             <if test="tagFlag!=null">tag_flag = #{tagFlag},</if>
             <if test="welcomeMsgType != null">welcome_msg_type = #{welcomeMsgType},</if>
-            <if test="codeActivityId != null">code_activity_id = {codeActivityId},</if>
+            <if test="codeActivityId != null">code_activity_id = #{codeActivityId},</if>
             <if test="codeSuccessMaterialSort != null and codeSuccessMaterialSort.length > 0">code_success_material_sort
                 =
                 #{codeSuccessMaterialSort,jdbcType=OTHER,typeHandler=com.easyink.framework.handler.StringArrayJoinTypeHandler},

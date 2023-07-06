@@ -106,7 +106,8 @@ public class WeAutoConfigServiceImpl implements WeAutoConfigService {
      */
     @Override
     public WeAdminQrcodeVO getAdminQrcode() {
-        String callback = "wwqrloginCallback_" + System.currentTimeMillis();
+        Long timestamp = System.currentTimeMillis();
+        String callback = "wwqrloginCallback_" + timestamp;
         String redirect = "https://work.weixin.qq.com/wework_admin/loginpage_wx?_r=989&url_hash=";
         BaseAdminResult<WeGetKeyResp> weGetKeyResp = weAdminClient.getKey(LOGIN_TYPE, callback, redirect, 1);
         if (weGetKeyResp == null || weGetKeyResp.getData() == null || StringUtils.isEmpty(weGetKeyResp.getData()
@@ -161,6 +162,9 @@ public class WeAutoConfigServiceImpl implements WeAutoConfigService {
         String source = data.getString(authSourceStr);
         if (SUCC_STATUS.equals(qrcodeStatus)) {
             try {
+//                String queryString = "url_hash=&code="+code+"&wwqrlogin=1&_r="+223+"&qrcode_key="+qrcodeKey+"&auth_source=SOURCE_FROM_WEWORK";
+//                String weLoginRespStr = Forest.get("https://work.weixin.qq.com/wework_admin/loginpage_wx?" + queryString)
+//                                       .executeAsString();
                 String weLoginRespStr = weAdminClient.login("", code, 1, qrcodeKey, source);
                 // 先判断是否需要短信验证
                 if (needMobileConfirm(weLoginRespStr)) {
@@ -174,10 +178,12 @@ public class WeAutoConfigServiceImpl implements WeAutoConfigService {
                     return new WeCheckQrcodeVO(NEED_MOBILE_CONFIRM, mobileRsp.getTlKey(), mobileRsp.getMobile());
                 }
                 WeLoginResp weLoginResp = loginFilter(weLoginRespStr);
+//                WeLoginResp weLoginResp = JSONObject.parseObject(weLoginRespStr, WeLoginRespV2.class)
+//                                                    .adapt2OriginResp();
                 if (weLoginResp == null) {
                     return new WeCheckQrcodeVO(qrcodeStatus);
                 }
-                // 处理登录后返回的页面
+                //  处理登录后返回的页面
                 handleLoginResult(weLoginResp, loginUser, qrcodeKey);
             } catch (CustomException e) {
                 qrcodeStatus = CORP_MISMATCH;

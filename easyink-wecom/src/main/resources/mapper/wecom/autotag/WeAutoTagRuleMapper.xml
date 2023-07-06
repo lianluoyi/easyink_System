@@ -146,14 +146,21 @@
         LEFT JOIN we_department wd ON wd.id = wu.main_department AND wd.corp_id = r.corp_id
         WHERE r.corp_id = #{corpId}
         AND r.label_type = ${@com.easyink.common.enums.autotag.AutoTagLabelTypeEnum@KEYWORD.type}
+        ${params.dataScope}
         <if test="ruleName != null and ruleName != ''">
             <bind name="likeRuleName" value="'%' + ruleName + '%'"/>
             AND r.rule_name LIKE #{likeRuleName}
         </if>
         <if test="createBy != null and createBy != ''">
             <bind name="likeCreateBy" value="'%' + createBy +'%'"/>
-            AND( wu.user_name LIKE #{likeCreateBy}
-            OR r.create_by LIKE #{likeCreateBy})
+            <choose>
+                <when test="createBy eq 'admin'">
+                    AND r.create_by = #{createBy}
+                </when>
+                <otherwise>
+                    AND wu.user_name LIKE #{likeCreateBy}
+                </otherwise>
+            </choose>
         </if>
         <if test="status != null">
             AND r.status = #{status}
@@ -174,14 +181,21 @@
         LEFT JOIN we_department wd ON wd.id = wu.main_department AND wd.corp_id = r.corp_id
         WHERE r.corp_id = #{corpId}
         AND r.label_type = ${@com.easyink.common.enums.autotag.AutoTagLabelTypeEnum@GROUP.type}
+        ${params.dataScope}
         <if test="ruleName != null and ruleName != ''">
             <bind name="likeRuleName" value="'%' + ruleName + '%'"/>
             AND r.rule_name LIKE #{likeRuleName}
         </if>
         <if test="createBy != null and createBy != ''">
             <bind name="likeCreateBy" value="'%' + createBy +'%'"/>
-            AND( wu.user_name LIKE #{likeCreateBy}
-            OR r.create_by LIKE #{likeCreateBy})
+            <choose>
+                <when test="createBy eq 'admin'">
+                    AND r.create_by = #{createBy}
+                </when>
+                <otherwise>
+                    AND wu.user_name LIKE #{likeCreateBy}
+                </otherwise>
+            </choose>
         </if>
         <if test="status != null">
             AND r.status = #{status}
@@ -202,14 +216,21 @@
         LEFT JOIN we_department wd ON wd.id = wu.main_department AND wd.corp_id = r.corp_id
         WHERE r.corp_id = #{corpId}
         AND r.label_type = ${@com.easyink.common.enums.autotag.AutoTagLabelTypeEnum@CUSTOMER.type}
+        ${params.dataScope}
         <if test="ruleName != null and ruleName != ''">
             <bind name="likeRuleName" value="'%' + ruleName + '%'"/>
             AND r.rule_name LIKE #{likeRuleName}
         </if>
         <if test="createBy != null and createBy != ''">
             <bind name="likeCreateBy" value="'%' + createBy +'%'"/>
-            AND( wu.user_name LIKE #{likeCreateBy}
-            OR r.create_by LIKE #{likeCreateBy})
+            <choose>
+                <when test="createBy eq 'admin'">
+                    AND r.create_by = #{createBy}
+                </when>
+                <otherwise>
+                    AND wu.user_name LIKE #{likeCreateBy}
+                </otherwise>
+            </choose>
         </if>
         <if test="status != null">
             AND r.status = #{status}

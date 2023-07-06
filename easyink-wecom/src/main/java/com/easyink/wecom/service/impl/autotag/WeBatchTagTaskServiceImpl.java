@@ -278,6 +278,13 @@ public class WeBatchTagTaskServiceImpl extends ServiceImpl<WeBatchTagTaskMapper,
             if (StringUtils.isBlank(externalUserid) && StringUtils.isBlank(unionId) && StringUtils.isBlank(mobile)) {
                 continue;
             }
+            // 判断字段是否超长，超长记录并跳过此行
+            Boolean overLength = calculateLength(externalUserid, unionId, mobile);
+            if (overLength) {
+                appendFailMsg(failMsg, currentRowNum, AutoTagConstants.COLUMN_EXCEED_64_LENGTH);
+                failNum++;
+                continue;
+            }
             // 有数据时
             if (CollectionUtils.isNotEmpty(resultList)) {
                 Boolean isRepeated = false;
@@ -323,6 +330,22 @@ public class WeBatchTagTaskServiceImpl extends ServiceImpl<WeBatchTagTaskMapper,
         // 上传文件并设置下载路径
         uploadFailFileAndSetUrl(importBatchTagTaskVO, failMsg);
         return resultList;
+    }
+
+    /**
+     * 计算当前行数据总长度是否符合规则
+     *
+     * @param externalUserid 客户ID
+     * @param unionId 客户unionid
+     * @param mobile 手机号
+     * @return false：不符合，true：符合
+     */
+    private Boolean calculateLength(String externalUserid, String unionId, String mobile) {
+        int externalLength = StringUtils.isBlank(externalUserid) ? 0 : externalUserid.length();
+        int unionIdLength = StringUtils.isBlank(unionId) ? 0 : unionId.length();
+        int mobileLength = StringUtils.isBlank(mobile) ? 0 : mobile.length();
+        // 任意一个大于64字符，表示该行不合法
+        return externalLength > MAX_COLUMN_LENGTH || unionIdLength > MAX_COLUMN_LENGTH || mobileLength > MAX_COLUMN_LENGTH;
     }
 
     /**
