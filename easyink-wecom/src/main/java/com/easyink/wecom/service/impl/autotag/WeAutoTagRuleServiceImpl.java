@@ -3,6 +3,8 @@ package com.easyink.wecom.service.impl.autotag;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.easyink.common.annotation.DataScope;
+import com.easyink.common.constant.WeConstans;
 import com.easyink.common.enums.ResultTip;
 import com.easyink.common.enums.autotag.AutoTagLabelTypeEnum;
 import com.easyink.common.exception.CustomException;
@@ -16,10 +18,7 @@ import com.easyink.wecom.domain.dto.autotag.group.AddGroupTagRuleDTO;
 import com.easyink.wecom.domain.dto.autotag.group.UpdateGroupTagRuleDTO;
 import com.easyink.wecom.domain.dto.autotag.keyword.AddKeywordTagRuleDTO;
 import com.easyink.wecom.domain.dto.autotag.keyword.UpdateKeywordTagRuleDTO;
-import com.easyink.wecom.domain.entity.autotag.WeAutoTagCustomerRuleEffectTime;
-import com.easyink.wecom.domain.entity.autotag.WeAutoTagCustomerScene;
-import com.easyink.wecom.domain.entity.autotag.WeAutoTagGroupScene;
-import com.easyink.wecom.domain.entity.autotag.WeAutoTagRule;
+import com.easyink.wecom.domain.entity.autotag.*;
 import com.easyink.wecom.domain.query.autotag.RuleInfoQuery;
 import com.easyink.wecom.domain.query.autotag.TagRuleQuery;
 import com.easyink.wecom.domain.vo.autotag.TagInfoVO;
@@ -78,6 +77,7 @@ public class WeAutoTagRuleServiceImpl extends ServiceImpl<WeAutoTagRuleMapper, W
      * @return
      */
     @Override
+    @DataScope
     public List<TagRuleListVO> listKeyword(TagRuleQuery query) {
         checkCorpId(query.getCorpId());
         return filterTag(weAutoTagRuleMapper.listKeyword(query), query.getTagIdList());
@@ -91,6 +91,7 @@ public class WeAutoTagRuleServiceImpl extends ServiceImpl<WeAutoTagRuleMapper, W
      * @return
      */
     @Override
+    @DataScope
     public List<TagRuleListVO> listGroup(TagRuleQuery query) {
         return filterTag(weAutoTagRuleMapper.listGroup(query), query.getTagIdList());
     }
@@ -102,6 +103,7 @@ public class WeAutoTagRuleServiceImpl extends ServiceImpl<WeAutoTagRuleMapper, W
      * @return
      */
     @Override
+    @DataScope
     public List<TagRuleListVO> listCustomer(TagRuleQuery query) {
         return filterTag(weAutoTagRuleMapper.listCustomer(query), query.getTagIdList());
     }
@@ -212,8 +214,13 @@ public class WeAutoTagRuleServiceImpl extends ServiceImpl<WeAutoTagRuleMapper, W
         if (weAutoTagCustomerRuleEffectTime != null) {
             weAutoTagCustomerRuleEffectTimeService.save(weAutoTagCustomerRuleEffectTime);
         }
-        // 添加 员工关系
-        weAutoTagUserRelService.batchSave(addCustomerTagRuleDTO.toWeAutoTagUserRel(ruleId));
+        if (CollectionUtils.isEmpty(addCustomerTagRuleDTO.getUserIdList()) && CollectionUtils.isEmpty(addCustomerTagRuleDTO.getDepartmentIdList())) {
+            // 员工、部门都为空，表示该规则为全部员工范围 type = 3
+            weAutoTagUserRelService.save(new WeAutoTagUserRel(ruleId, StringUtils.EMPTY, WeConstans.AUTO_TAG_ADD_ALL_USER));
+        } else {
+            // 添加 员工关系
+            weAutoTagUserRelService.batchSave(addCustomerTagRuleDTO.toWeAutoTagUserRel(ruleId));
+        }
 
         // 添加 新客场景
         List<WeAutoTagCustomerScene> weAutoTagCustomerSceneList = addCustomerTagRuleDTO.toWeAutoTagCustomerSceneList(ruleId, addCustomerTagRuleDTO.getCorpId());
@@ -293,9 +300,15 @@ public class WeAutoTagRuleServiceImpl extends ServiceImpl<WeAutoTagRuleMapper, W
         WeAutoTagRule weAutoTagRule = updateCustomerTagRuleDTO.toWeAutoTagRule();
         int result = weAutoTagRuleMapper.updateById(weAutoTagRule);
         Long ruleId = weAutoTagRule.getId();
-
-        // 修改 员工关系
-        weAutoTagUserRelService.edit(updateCustomerTagRuleDTO.toWeAutoTagUserRel(ruleId), ruleId);
+        // 编辑时先把原来的删除
+        weAutoTagUserRelService.remove(new LambdaQueryWrapper<WeAutoTagUserRel>().eq(WeAutoTagUserRel::getRuleId, ruleId));
+        if (CollectionUtils.isEmpty(updateCustomerTagRuleDTO.getUserIdList()) && CollectionUtils.isEmpty(updateCustomerTagRuleDTO.getDepartmentIdList())) {
+            // 员工、部门都为空，表示该规则为全部员工范围 type = 3
+            weAutoTagUserRelService.save(new WeAutoTagUserRel(ruleId, StringUtils.EMPTY, WeConstans.AUTO_TAG_ADD_ALL_USER));
+        } else {
+            // 添加 员工关系
+            weAutoTagUserRelService.batchSave(updateCustomerTagRuleDTO.toWeAutoTagUserRel(ruleId));
+        }
         // 修改 生效时间
         WeAutoTagCustomerRuleEffectTime weAutoTagCustomerRuleEffectTime = updateCustomerTagRuleDTO.toWeAutoTagCustomerRuleEffectTime(ruleId);
         // 不等于null->修改

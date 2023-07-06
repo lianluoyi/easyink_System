@@ -1,10 +1,11 @@
 package com.easyink.quartz.task;
 
 import com.easyink.common.core.domain.entity.WeCorpAccount;
-import com.easyink.common.redis.CustomerRedisCache;
-import com.easyink.wecom.domain.WeFlowerCustomerRel;
+import com.easyink.wecom.domain.vo.WxCpXmlMessageVO;
+import com.easyink.wecom.factory.impl.customer.WeCallBackAddExternalContactImpl;
 import com.easyink.wecom.service.WeCorpAccountService;
 import com.easyink.wecom.service.WeCustomerService;
+import com.easyink.wecom.utils.redis.CustomerRedisCache;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -22,6 +23,7 @@ import java.util.List;
  * 所以不在回调时马上处理,而是定时任务处理前段时间的客户遍及变更)
  *
  * @author : silver_chariot
+ * @update V1.29.2 起, 新增客户的回调 add_external_contact 也在此任务一并执行
  * @date : 2023/6/8 17:24
  **/
 @Component
@@ -31,10 +33,16 @@ public class SyncCustomerChangeTask {
 
     @Resource(name = "customerRedisCache")
     private CustomerRedisCache customerRedisCache;
-    @Resource(name =  "syncEditCustomerExecutor")
-    private ThreadPoolTaskExecutor syncEditCustomerExecutor;
+    /**
+     * 新增客户回调类型
+     */
+    private final static String ADD_CONTACT_TYPE = "add_external_contact";
+    private final WeCorpAccountService weCorpAccountService;
     private final WeCustomerService weCustomerService;
-    private final  WeCorpAccountService weCorpAccountService;
+    @Resource(name = "syncEditCustomerExecutor")
+    private ThreadPoolTaskExecutor syncEditCustomerExecutor;
+    @Resource(name = "add_external_contact")
+    private WeCallBackAddExternalContactImpl weCallBackAddExternalContact;
 
     /**
      * 执行任务 cron : 0/30 * * * * ?
@@ -42,7 +50,7 @@ public class SyncCustomerChangeTask {
     public void execute() {
         // 1. 获取所有企业
         List<WeCorpAccount> weCorpAccountList = weCorpAccountService.listOfAuthCorpInternalWeCorpAccount();
-        if(CollectionUtils.isEmpty(weCorpAccountList) ) {
+        if (CollectionUtils.isEmpty(weCorpAccountList)) {
             return;
         }
         for (WeCorpAccount corpAccount : weCorpAccountList) {
@@ -58,22 +66,38 @@ public class SyncCustomerChangeTask {
                     }
                     for ( CustomerRedisCache.RedisCustomerModel model : callbackCustomerModels) {
                         try {
-                            // 3. 依次执行原 客户变更回调处理
-                            weCustomerService.updateExternalContactV2(corpAccount.getCorpId(), model.getUserId(), model.getExternalUserId());
-                        }catch (Exception e) {
-                            log.error("[同步回调编辑客户]更新客户异常,corpId:{}, userId:{},exuserId:{},e :{}" ,corpAccount.getCorpId(), model.getUserId(), model.getExternalUserId(), ExceptionUtils.getStackTrace(e));
+                            // 3. 依次执行原 新增/变更回调处理
+                            if (isAddContact(model.getMessage())) {
+                                weCallBackAddExternalContact.addHandle(model.getMessage());
+                            } else {
+                                weCustomerService.updateExternalContactV2(corpAccount.getCorpId(), model.getUserId(), model.getExternalUserId());
+                            }
+                        } catch (Exception e) {
+                            log.error("[同步回调变更客户]更新客户异常,corpId:{}, userId:{},exuserId:{},msg:{},e :{}", corpAccount.getCorpId(), model.getUserId(), model.getExternalUserId(),model.getMessage(), ExceptionUtils.getStackTrace(e));
                         }
                     }
-                    log.info("[同步回调编辑客户] 同步成功{}个客户-员工信息,corpId:{}",callbackCustomerModels.size(), corpAccount.getCorpId());
-                }catch (Exception e) {
-                    log.error("[同步回调编辑客户] 执行异常,corpID:{} e :{} ", corpAccount.getExternalCorpId(), ExceptionUtils.getStackTrace(e));
+                    log.info("[同步回调变更客户] 同步成功{}个客户-员工信息,corpId:{}", callbackCustomerModels.size(), corpAccount.getCorpId());
+                } catch (Exception e) {
+                    log.error("[同步回调变更客户] 执行异常,corpID:{} e :{} ", corpAccount.getExternalCorpId(), ExceptionUtils.getStackTrace(e));
                 }
             });
 
         }
 
 
+    }
 
+    /**
+     * 是否是新增客户的回调
+     *
+     * @param message 回调消息
+     * @return true 是 false 否
+     */
+    private boolean isAddContact(WxCpXmlMessageVO message) {
+        if (message == null) {
+            return false;
+        }
+        return ADD_CONTACT_TYPE.equals(message.getChangeType());
     }
 
 }

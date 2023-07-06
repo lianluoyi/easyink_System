@@ -3,11 +3,13 @@ package com.easyink.wecom.domain.dto.autotag;
 import com.easyink.common.constant.WeConstans;
 import com.easyink.common.enums.ResultTip;
 import com.easyink.common.exception.CustomException;
+import com.easyink.common.utils.StringUtils;
 import com.easyink.wecom.domain.entity.autotag.WeAutoTagUserRel;
 import com.google.common.collect.Lists;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -24,6 +24,9 @@ public class WeMaterialVO {
 
     private Long id;
 
+    @ApiModelProperty("分类ID")
+    private Long categoryId;
+
     /**
      * 本地资源文件地址
      */
@@ -95,6 +98,9 @@ public class WeMaterialVO {
      * 是否发布到侧边栏（0否，1是）
      */
     private Boolean showMaterial;
+
+    @ApiModelProperty("素材类型：0-素材库 1-临时素材")
+    private Integer tempFlag;
 
     @ApiModelProperty("链接是否使用自定义信息")
     private Boolean isDefined;

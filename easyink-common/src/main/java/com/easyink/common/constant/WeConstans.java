@@ -176,6 +176,15 @@ public class WeConstans {
      */
     public static final Integer WE_SUCCESS_CODE = 0;
 
+    /**
+     * 编辑标签不存在错误码
+     */
+    public static final Integer WE_ERROR_TAG_NO_EXISTS = 40068;
+
+    /**
+     * 编辑标签不存在错误提示语
+     */
+    public static String WE_TAG_NO_EXISTS_ERR_MSG = "invalid tagid";
 
     /**
      * 企业微信端根部门id
@@ -905,6 +914,10 @@ public class WeConstans {
      * 自动标签传入部门
      */
     public static final int AUTO_TAG_ADD_DEPARTMENT_TYPE = 1;
+    /**
+     * 自动标签范围为全部员工
+     */
+    public static final int AUTO_TAG_ADD_ALL_USER = 3;
 
     /**
      * 密文 userId前缀

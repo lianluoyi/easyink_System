@@ -2,15 +2,16 @@ package com.easyink.wecom.service.impl.autotag;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.easyink.common.constant.WeConstans;
 import com.easyink.common.core.domain.wecom.WeUser;
 import com.easyink.common.enums.ResultTip;
 import com.easyink.common.exception.CustomException;
 import com.easyink.common.utils.DateUtils;
 import com.easyink.common.utils.StringUtils;
 import com.easyink.wecom.domain.WeTag;
-import com.easyink.wecom.domain.entity.autotag.WeAutoTagRule;
 import com.easyink.wecom.domain.entity.autotag.WeAutoTagRuleHitCustomerRecord;
 import com.easyink.wecom.domain.entity.autotag.WeAutoTagRuleHitCustomerRecordTagRel;
+import com.easyink.wecom.domain.entity.autotag.WeAutoTagUserRel;
 import com.easyink.wecom.domain.query.autotag.CustomerTagRuleRecordQuery;
 import com.easyink.wecom.domain.query.autotag.TagRuleQuery;
 import com.easyink.wecom.domain.vo.autotag.TagRuleListVO;
@@ -108,15 +109,26 @@ public class WeAutoTagRuleHitCustomerRecordServiceImpl extends ServiceImpl<WeAut
             log.info("新客打标签, 无可用或有效期内的标签");
             return;
         }
-
         // 2.判断员工是否符合规则设置的使用人员范围,符合条件的添加到正式规则列表rules
-        List<Long> availableRuleIdList = weAutoTagUserRelService.
-                getCurrentUserIdAvailableCustomerRuleIdList(corpId, candidatesRuleIdList, userId);
+        List<Long> availableRuleIdList;
+        availableRuleIdList = weAutoTagUserRelService.getCurrentUserIdAvailableCustomerRuleIdList(corpId, candidatesRuleIdList, userId);
+        if (CollectionUtils.isEmpty(availableRuleIdList)) {
+            // 3.查询当前规则是否为选择全部员工
+            List<WeAutoTagUserRel> haveRuleIdList = weAutoTagUserRelService.list(new LambdaQueryWrapper<WeAutoTagUserRel>()
+                                                                           .in(WeAutoTagUserRel::getRuleId, candidatesRuleIdList)
+                                                                           .eq(WeAutoTagUserRel::getType, WeConstans.AUTO_TAG_ADD_ALL_USER));
+            // 4.当前规则为选择全部员工
+            if (CollectionUtils.isNotEmpty(haveRuleIdList)) {
+                // 有效的规则Id就是查询出的所有规则Id
+                availableRuleIdList = haveRuleIdList.stream().map(item -> item.getRuleId()).collect(Collectors.toList());
+            }
+        }
+        // 5.如果员工不符合规则设置的使用人员范围
         if (CollectionUtils.isEmpty(availableRuleIdList)) {
             log.info("新客打标签, 当前员工没有可使用范围内的标签规则, userId: {}", userId);
             return;
         }
-        // 3.判断每个规则下的场景是否符合,符合的添加到正式的场景列表scenes
+        // 6.判断每个规则下的场景是否符合,符合的添加到正式的场景列表scenes
         Map<Long, List<Long>> availableSceneIdListGroupByRuleIdMap = weAutoTagCustomerSceneService.
                 getAvailableSceneIdListFromRuleIdListGroupByRuleId(availableRuleIdList);
         List<WeAutoTagRuleHitCustomerRecord> batchAddRecordList = new ArrayList<>();
@@ -141,7 +153,7 @@ public class WeAutoTagRuleHitCustomerRecordServiceImpl extends ServiceImpl<WeAut
             batchAddTagRelList.addAll(tagRelList);
             ruleNameList.addAll(sceneRuleName);
         }
-        // 4.添加记录和标签记录
+        // 7.添加记录和标签记录
         // 添加数据
         if (CollectionUtils.isNotEmpty(batchAddRecordList)) {
             this.baseMapper.insertOrUpdateBatch(batchAddRecordList);
@@ -157,7 +169,7 @@ public class WeAutoTagRuleHitCustomerRecordServiceImpl extends ServiceImpl<WeAut
             return;
         }
 
-        // 5.调用接口打标签
+        // 8.调用接口打标签
         if (CollectionUtils.isNotEmpty(allTagIdList)) {
             log.info(">>>>>>>>>>>>>>>准备进行打标签,标签列表: {}", allTagIdList);
             weCustomerService.singleMarkLabel(corpId, userId, customerId, allTagIdList, weUser.getName());

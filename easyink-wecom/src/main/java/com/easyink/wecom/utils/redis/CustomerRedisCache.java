@@ -1,6 +1,8 @@
-package com.easyink.common.redis;
+package com.easyink.wecom.utils.redis;
 
+import com.alibaba.fastjson.JSONObject;
 import com.easyink.common.core.redis.RedisCache;
+import com.easyink.wecom.domain.vo.WxCpXmlMessageVO;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.apache.commons.collections4.MapUtils;
@@ -48,12 +50,18 @@ public class CustomerRedisCache extends RedisCache {
      * @param corpId         企业id
      * @param userId         员工id
      * @param externalUserId 客户id
+     * @param message
      */
-    public void saveCallback(String corpId, String userId, String externalUserId) {
+    public void saveCallback(String corpId, String userId, String externalUserId, WxCpXmlMessageVO message) {
         if (StringUtils.isAnyBlank(corpId, externalUserId)) {
             return;
         }
-        redisTemplate.opsForHash().put(getCallBackEditCustomerKey(corpId), callbackValue(userId,externalUserId), externalUserId);
+        String key = getCallBackEditCustomerKey(corpId);
+        String value = callbackValue(userId, externalUserId);
+        if (redisTemplate.opsForHash().hasKey(key, value)) {
+            return;
+        }
+        redisTemplate.opsForHash().put(key, value, JSONObject.toJSONString(message));
     }
 
     /**
@@ -85,12 +93,14 @@ public class CustomerRedisCache extends RedisCache {
                 return null;
             }
             for (Map.Entry<String,String> entry : map.entrySet()) {
-                String key =entry.getKey();
-                String externalUserId= entry.getValue();
-                if (StringUtils.isNoneBlank(key,externalUserId)) {
-                    list.add(new RedisCustomerModel(key.split(VALUE_SEPARATOR)[USER_ID_INDEX], externalUserId));
+                String key = entry.getKey();
+                String messageStr = entry.getValue();
+                if (StringUtils.isNoneBlank(key)  ) {
+                    WxCpXmlMessageVO message = JSONObject.parseObject(messageStr, WxCpXmlMessageVO.class);
+                    String[] arr = key.split(VALUE_SEPARATOR);
+                    list.add(new RedisCustomerModel(arr[USER_ID_INDEX], arr[EXTERNAL_USER_ID], message));
                 }
-                redisTemplate.opsForHash().delete(redisKey,key);
+                redisTemplate.opsForHash().delete(redisKey, key);
             }
             return null;
         });
@@ -109,6 +119,10 @@ public class CustomerRedisCache extends RedisCache {
          * 客户id
          */
         private String externalUserId;
+        /**
+         * 回调消息体
+         */
+        private WxCpXmlMessageVO message;
     }
 
 }

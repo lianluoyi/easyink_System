@@ -2050,7 +2050,7 @@ CREATE TABLE `we_tag`
     `corp_id`     varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '企业ID',
     `name`        varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '标签名',
     `create_time` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    `status`      char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci      NOT NULL DEFAULT '0' COMMENT '状态（0正常 1删除）',
+    `status`      char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci      NOT NULL DEFAULT '0' COMMENT '状态（0正常 2删除）',
     `seq_id`      BIGINT ( 20 ) NOT NULL AUTO_INCREMENT COMMENT '非主键自增序列号',
     PRIMARY KEY (`tag_id`) USING BTREE,
     KEY           `idx_seq_id` ( `seq_id` ) USING BTREE,
@@ -2068,7 +2068,7 @@ CREATE TABLE `we_tag_group`
     `corp_id`     varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '企业ID',
     `create_by`   varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '创建人',
     `create_time` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    `status`      char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci      NOT NULL DEFAULT '0' COMMENT '帐号状态（0正常 2删除）',
+    `status`      char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci      NOT NULL DEFAULT '0' COMMENT '状态（0正常 2删除）',
     PRIMARY KEY (`group_id`) USING BTREE,
     KEY `status_corpid` (`status`,`corp_id`)
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '标签组' ROW_FORMAT = Dynamic;
@@ -3269,7 +3269,7 @@ CREATE TABLE `we_auto_tag_user_rel`
 (
     `rule_id`   bigint(20) NOT NULL DEFAULT '0' COMMENT '规则id',
     `target_id` varchar(64) NOT NULL DEFAULT '' COMMENT 'type:0 表示员工id， type:1 表示部门id',
-    `type`      tinyint(1) NOT NULL DEFAULT '2' COMMENT '传入员工/部门 2-员工 1部门',
+    `type`      tinyint(1) NOT NULL DEFAULT '2' COMMENT '传入全部员工/员工/部门 3-全部员工 2-员工 1-部门',
     PRIMARY KEY (`rule_id`, `target_id`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC COMMENT='标签与员工使用范围表';
 

@@ -485,7 +485,7 @@ public class WeMsgTlpServiceImpl extends ServiceImpl<WeMsgTlpMapper, WeMsgTlp> i
         weMsgTlp.setExistSpecialFlag(notEmptyFlag);
         weMsgTlpMapper.updateById(weMsgTlp);
         // 2.1修改默认欢迎语附件
-        weMsgTlpMaterialService.updateDefaultEmployMaterial(welComeMsgUpdateDTO.getRemoveMaterialIds(), welComeMsgUpdateDTO.getDefaultMaterialList(), weMsgTlp.getId());
+        weMsgTlpMaterialService.updateDefaultEmployMaterial(welComeMsgUpdateDTO.getRemoveMaterialIds(), welComeMsgUpdateDTO.getDefaultMaterialList(), weMsgTlp.getId(), welComeMsgUpdateDTO.getCorpId());
 
         // 3.特殊欢迎语
         if (notEmptyFlag) {

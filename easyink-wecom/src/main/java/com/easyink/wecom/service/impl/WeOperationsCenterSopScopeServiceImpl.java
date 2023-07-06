@@ -4,7 +4,9 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.easyink.common.constant.WeConstans;
 import com.easyink.common.enums.ResultTip;
+import com.easyink.common.enums.WeExceptionTip;
 import com.easyink.common.exception.CustomException;
+import com.easyink.common.exception.wecom.WeComException;
 import com.easyink.wecom.domain.WeOperationsCenterSopScopeEntity;
 import com.easyink.wecom.mapper.WeOperationsCenterSopScopeMapper;
 import com.easyink.wecom.service.WeOperationsCenterSopScopeService;
@@ -106,7 +108,7 @@ public class WeOperationsCenterSopScopeServiceImpl extends ServiceImpl<WeOperati
     @Transactional(rollbackFor = Exception.class)
     public void batchSave(List<WeOperationsCenterSopScopeEntity> list) {
         if (CollectionUtils.isEmpty(list)){
-            throw new CustomException(ResultTip.TIP_GENERAL_BAD_REQUEST);
+            throw new CustomException(WeExceptionTip.WE_EXCEPTION_TIP_41035);
         }
         baseMapper.batchSave(list);
     }

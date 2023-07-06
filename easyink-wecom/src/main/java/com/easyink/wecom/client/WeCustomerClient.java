@@ -1,7 +1,7 @@
 package com.easyink.wecom.client;
 
 import com.dtflys.forest.annotation.*;
-import com.easyink.wecom.client.retry.OprFreqRetryWhen;
+import com.easyink.wecom.client.retry.EnableRetry;
 import com.easyink.wecom.domain.dto.*;
 import com.easyink.wecom.domain.dto.customer.*;
 import com.easyink.wecom.domain.dto.customer.req.GetByUserReq;
@@ -10,6 +10,7 @@ import com.easyink.wecom.domain.query.GroupChatStatisticQuery;
 import com.easyink.wecom.domain.query.UserBehaviorDataQuery;
 import com.easyink.wecom.domain.resp.UnionId2ExternalUserIdResp;
 import com.easyink.wecom.interceptor.WeAccessTokenInterceptor;
+import com.easyink.wecom.interceptor.WeCustomerEditTagInterceptor;
 import org.springframework.stereotype.Component;
 
 /**
@@ -19,7 +20,7 @@ import org.springframework.stereotype.Component;
  * @date: 2021-08-18 17:04
  */
 @Component
-@BaseRequest(baseURL = "${weComServerUrl}${weComePrefix}", interceptor = WeAccessTokenInterceptor.class)
+@BaseRequest(baseURL = "${weComServerUrl}${weComePrefix}")
 public interface WeCustomerClient {
 
 
@@ -28,7 +29,7 @@ public interface WeCustomerClient {
      *
      * @return
      */
-    @Get(url = "/externalcontact/get_follow_user_list")
+    @Get(url = "/externalcontact/get_follow_user_list", interceptor = WeAccessTokenInterceptor.class)
     FollowUserList getFollowUserList(@Header("corpid") String corpId);
 
 
@@ -38,7 +39,7 @@ public interface WeCustomerClient {
      * @param externalUserid
      * @return
      */
-    @Get(url = "/externalcontact/get")
+    @Get(url = "/externalcontact/get", interceptor = WeAccessTokenInterceptor.class)
     ExternalUserDetail get(@Query("external_userid") String externalUserid, @Header("corpid") String corpId);
 
     /**
@@ -48,7 +49,7 @@ public interface WeCustomerClient {
      * @param corpId         企业ID
      * @return
      */
-    @Get(url = "/externalcontact/get")
+    @Get(url = "/externalcontact/get", interceptor = WeAccessTokenInterceptor.class)
     GetExternalDetailResp getV2(@Query("external_userid") String externalUserid, @Header("corpid") String corpId);
 
     /**
@@ -58,7 +59,7 @@ public interface WeCustomerClient {
      * @param corpId 企业id
      * @return {@link GetByUserResp}
      */
-    @Post(url = "/externalcontact/batch/get_by_user")
+    @Post(url = "/externalcontact/batch/get_by_user", interceptor = WeAccessTokenInterceptor.class)
     GetByUserResp getByUser(@Body GetByUserReq req, @Header("corpId") String corpId);
 
 
@@ -68,7 +69,7 @@ public interface WeCustomerClient {
      * @param weCustomerRemark
      * @return
      */
-    @Post(url = "/externalcontact/remark")
+    @Post(url = "/externalcontact/remark", interceptor = WeAccessTokenInterceptor.class)
     WeResultDTO remark(@Body WeCustomerDTO.WeCustomerRemark weCustomerRemark, @Header("corpid") String corpId);
 
 
@@ -77,15 +78,15 @@ public interface WeCustomerClient {
      *
      * @return
      */
-    @Post(url = "/externalcontact/mark_tag")
-    @Retry(maxRetryInterval = "1000" ,maxRetryCount =  "3" , condition = OprFreqRetryWhen.class)
+    @Post(url = "/externalcontact/mark_tag", interceptor = WeCustomerEditTagInterceptor.class)
+    @EnableRetry
     WeResultDTO makeCustomerLabel(@Body CustomerTagEdit customerTagEdit, @Header("corpid") String corpId);
 
 
     /**
      * 客户发送欢迎语
      */
-    @Post(url = "/externalcontact/send_welcome_msg")
+    @Post(url = "/externalcontact/send_welcome_msg", interceptor = WeAccessTokenInterceptor.class)
     WeResultDTO sendWelcomeMsg(@Body WeWelcomeMsg wxCpWelcomeMsg, @Header("corpid") String corpId);
 
 
@@ -94,7 +95,7 @@ public interface WeCustomerClient {
      *
      * @return
      */
-    @Post(url = "/externalcontact/unionid_to_external_userid")
+    @Post(url = "/externalcontact/unionid_to_external_userid", interceptor = WeAccessTokenInterceptor.class)
     ExternalUserDetail unionidToExternalUserid(@Body ExternalContact unionid, @Header("corpid") String corpId);
 
 
@@ -103,7 +104,7 @@ public interface WeCustomerClient {
      *
      * @return
      */
-    @Post(url = "/externalcontact/get_user_behavior_data")
+    @Post(url = "/externalcontact/get_user_behavior_data", interceptor = WeAccessTokenInterceptor.class)
     UserBehaviorDataDTO getUserBehaviorData(@JSONBody UserBehaviorDataQuery query, @Header("corpid") String corpId);
 
     /**
@@ -111,7 +112,7 @@ public interface WeCustomerClient {
      *
      * @return
      */
-    @Post(url = "/externalcontact/groupchat/statistic")
+    @Post(url = "/externalcontact/groupchat/statistic", interceptor = WeAccessTokenInterceptor.class)
     GroupChatStatisticDTO getGroupChatStatistic(@JSONBody GroupChatStatisticQuery query, @Header("corpid") String corpId);
 
     /**
@@ -119,11 +120,11 @@ public interface WeCustomerClient {
      *
      * @return
      */
-    @Post(url = "/externalcontact/groupchat/statistic_group_by_day")
+    @Post(url = "/externalcontact/groupchat/statistic_group_by_day", interceptor = WeAccessTokenInterceptor.class)
     GroupChatStatisticDTO getGroupChatStatisticGroupByDay(@JSONBody GroupChatStatisticQuery query, @Header("corpid") String corpId);
 
 
-    @Post("/externalcontact/unionid_to_external_userid")
+    @Post(url = "/externalcontact/unionid_to_external_userid" , interceptor = WeAccessTokenInterceptor.class)
     UnionId2ExternalUserIdResp unionId2ExternalUserId (@Body("unionid")String unionid ,@Body("openid")String openid) ;
 
 
@@ -140,7 +141,7 @@ public interface WeCustomerClient {
      *
      * @return ExternalUserDetail#external_userid
      */
-    @Post(url = "/idconvert/unionid_to_external_userid")
+    @Post(url = "/idconvert/unionid_to_external_userid", interceptor = WeAccessTokenInterceptor.class)
     ExternalUserDetail getExternalUserIdByUnionIdAndOpenId(@Body("unionid") String unionId,
                                                            @Body("openid") String openId,
                                                            @Body("subject_type") Integer subjectType,

@@ -447,6 +447,10 @@ public class WeGroupSopV2ServiceImpl implements WeGroupSopV2Service {
         customerIdList.forEach(userId -> {
             WeOperationsCenterSopScopeEntity sopScope = new WeOperationsCenterSopScopeEntity();
             BeanUtils.copyProperties(sopScopeEntity, sopScope);
+            // 时间为空，设置为当前时间
+            if (sopScope.getCreateTime() == null) {
+                sopScope.setCreateTime(new Date());
+            }
             sopScope.setTargetId(userId);
             weOperationsCenterSopScopeEntities.add(sopScope);
         });
@@ -457,6 +461,10 @@ public class WeGroupSopV2ServiceImpl implements WeGroupSopV2Service {
     private List<String> filterCustomer(AddWeCustomerSopDTO weCustomerSopDTO, List<String> customerIds) {
         WeCustomer weCustomer = new WeCustomer();
         BeanUtils.copyProperties(weCustomerSopDTO, weCustomer);
+        // 存在标签筛选条件
+        if(StringUtils.isNotBlank(weCustomerSopDTO.getTagId())) {
+            weCustomer.setTagIds(weCustomerSopDTO.getTagId());
+        }
         weCustomer.setUserIds(weCustomerSopDTO.getUsers());
         List<WeCustomerVO> weCustomers = weCustomerService.selectWeCustomerListV3(weCustomer);
         List<String> customerList = CollectionUtils.isNotEmpty(customerIds)

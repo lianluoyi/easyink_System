@@ -219,6 +219,8 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
     @Transactional(rollbackFor = Exception.class)
     @Override
     public void batchMarkCustomTagWithTagIds(String corpId, String userId, String externalUserId, List<String> addTagIds, List<String> removeTagIds) {
+        List<WeTag> localAddTagList = new ArrayList<>();
+        List<WeTag> localDelTagList = new ArrayList<>();
         if (StringUtils.isAnyBlank(userId, externalUserId, corpId) || (CollUtil.isEmpty(addTagIds) && CollUtil.isEmpty(removeTagIds))) {
             log.info("员工id，客户id，公司id不能为空，userId：{}，externalUserId：{}，corpId：{}", userId, externalUserId, corpId);
             throw new CustomException("增量式打标签错误");
@@ -234,8 +236,21 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
         if (CollUtil.isEmpty(addTagIds) && CollUtil.isEmpty(removeTagIds)) {
             return;
         }
+        if (CollectionUtils.isNotEmpty(addTagIds)) {
+            // 根据要添加的标签ID获取本地标签列表
+            localAddTagList = weTagService.listByIds(addTagIds);
+        }
+        if (CollectionUtils.isNotEmpty(removeTagIds)){
+            // 根据要删除的标签ID获取本地标签列表
+            localDelTagList = weTagService.listByIds(removeTagIds);
+        }
+        if (CollectionUtils.isEmpty(localAddTagList) && CollectionUtils.isEmpty(localDelTagList)) {
+            return;
+        }
+        // 获取有效的添加本地标签ID
+        List<String> effectAddTagList = localAddTagList.stream().map(item -> item.getTagId()).collect(Collectors.toList());
         List<WeFlowerCustomerTagRel> addTagRels = new ArrayList<>();
-        for (String tagId : addTagIds) {
+        for (String tagId : effectAddTagList) {
             //本地标签关系
             addTagRels.add(
                     WeFlowerCustomerTagRel.builder()
@@ -247,8 +262,6 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
             );
         }
         //官方接口参数
-        log.info("可打的标签id列表: {}", addTagIds);
-        log.info("可移除的标签id列表: {}", removeTagIds);
         CustomerTagEdit customerTagEdit = CustomerTagEdit.builder()
                 .userid(flowerCustomerRel.getUserId())
                 .external_userid(flowerCustomerRel.getExternalUserid())
@@ -256,15 +269,18 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
         // 新增标签
         if (CollUtil.isNotEmpty(addTagRels)) {
             weFlowerCustomerTagRelService.batchInsetWeFlowerCustomerTagRel(addTagRels);
-            customerTagEdit.setAdd_tag(ArrayUtil.toArray(addTagIds, String.class));
+            customerTagEdit.setAdd_tag(ArrayUtil.toArray(effectAddTagList, String.class));
+            log.info("可打的标签id列表: {}, corpId:{}", effectAddTagList, corpId);
         }
         // 删除标签
         if (CollUtil.isNotEmpty(removeTagIds)) {
+            List<String> effectDelTagList = localDelTagList.stream().map(item -> item.getTagId()).collect(Collectors.toList());
             weFlowerCustomerTagRelService.remove(new LambdaQueryWrapper<WeFlowerCustomerTagRel>()
                     .eq(WeFlowerCustomerTagRel::getFlowerCustomerRelId, flowerCustomerRel.getId())
                     .eq(WeFlowerCustomerTagRel::getExternalUserid, flowerCustomerRel.getExternalUserid())
-                    .in(WeFlowerCustomerTagRel::getTagId, removeTagIds));
-            customerTagEdit.setRemove_tag(ArrayUtil.toArray(removeTagIds, String.class));
+                    .in(WeFlowerCustomerTagRel::getTagId, effectDelTagList));
+            customerTagEdit.setRemove_tag(ArrayUtil.toArray(effectDelTagList, String.class));
+            log.info("可移除的标签id列表: {}, corpId:{}", effectDelTagList, corpId);
         }
         //企微新接口
         weCustomerClient.makeCustomerLabel(customerTagEdit, corpId);
@@ -812,9 +828,8 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
         }
         long endTime = System.currentTimeMillis();
         log.info("同步客户结束[新]:corpId:{}耗时：{}", corpId, Double.valueOf((endTime - startTime) / 1000.00D));
-        // 3.客户信息同步后,刷新数据概览页客户数据
+        // 4.客户信息同步后,刷新数据概览页客户数据
         pageHomeService.getCustomerData(corpId);
-
     }
 
 
@@ -870,6 +885,9 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
 
         // 5. 数据同步: 客户-标签关系 ,获取每个客户关系对应的标签,并同步更新数据库
         List<WeFlowerCustomerTagRel> tagRelList = resp.getCustomerTagRelList(localRelList);
+        List<Long> relIds = localRelList.stream().map(WeFlowerCustomerRel::getId).collect(Collectors.toList());
+        BatchInsertUtil.doInsert(relIds, list -> weFlowerCustomerTagRelService.remove(new LambdaQueryWrapper<WeFlowerCustomerTagRel>()
+                .in(WeFlowerCustomerTagRel::getFlowerCustomerRelId,list)));
         BatchInsertUtil.doInsert(tagRelList, list -> weFlowerCustomerTagRelService.batchInsert(list));
     }
 

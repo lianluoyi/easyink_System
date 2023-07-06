@@ -1,14 +1,20 @@
 package com.easyink.wecom.factory.impl.tag;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.easyink.wecom.domain.WeTag;
 import com.easyink.wecom.domain.vo.WxCpXmlMessageVO;
 import com.easyink.wecom.factory.WeEventStrategy;
-import com.easyink.wecom.service.WeTagGroupService;
-import com.easyink.wecom.service.WeTagService;
+import com.easyink.wecom.service.*;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @author admin
@@ -35,12 +41,27 @@ public class WeCallBackDeleteCustomerTagImpl extends WeEventStrategy {
         }
 
         try {
+            // 最终要删除的标签ID列表
+            List<String> tagIdList = new ArrayList<>();
             switch (message.getTagType()) {
                 case tagGroup:
                     weTagGroupService.deleteTagGroup(message.getTagId(), message.getToUserName());
+                    // 获取标签组下的所有标签ID
+                    List<WeTag> weTags = weTagService.list(new LambdaQueryWrapper<WeTag>().select(WeTag::getTagId)
+                                                                                          .eq(WeTag::getCorpId, message.getToUserName())
+                                                                                          .eq(WeTag::getGroupId, message.getTagId()));
+                    if (CollectionUtils.isEmpty(weTags)) {
+                        return;
+                    }
+                    tagIdList = weTags.stream().map(WeTag::getTagId).collect(Collectors.toList());
+                    // 删除标签-员工-客户关系
+                    weTagGroupService.delFlowerTagRel(tagIdList, message.getToUserName());
                     break;
                 case tag:
                     weTagService.deleteTag(message.getTagId(), message.getToUserName());
+                    tagIdList.add(message.getTagId());
+                    // 删除标签-员工-客户关系
+                    weTagGroupService.delFlowerTagRel(tagIdList, message.getToUserName());
                     break;
                 default:
                     break;

@@ -17,17 +17,20 @@ import com.easyink.common.enums.*;
 import com.easyink.common.enums.code.WelcomeMsgTypeEnum;
 import com.easyink.common.exception.CustomException;
 import com.easyink.common.lock.LockUtil;
+import com.easyink.wecom.utils.redis.CustomerRedisCache;
 import com.easyink.common.utils.TagRecordUtil;
-import com.easyink.wecom.domain.*;
+import com.easyink.wecom.domain.WeCustomer;
+import com.easyink.wecom.domain.WeEmpleCode;
+import com.easyink.wecom.domain.WeEmpleCodeTag;
+import com.easyink.wecom.domain.WeFlowerCustomerRel;
 import com.easyink.wecom.domain.dto.AddWeMaterialDTO;
 import com.easyink.wecom.domain.dto.WeMediaDTO;
 import com.easyink.wecom.domain.dto.WeWelcomeMsg;
-import com.easyink.wecom.domain.dto.common.Attachment;
-import com.easyink.wecom.domain.dto.redeemcode.WeRedeemCodeDTO;
-import com.easyink.wecom.domain.vo.welcomemsg.WeEmployMaterialVO;
 import com.easyink.wecom.domain.dto.common.*;
+import com.easyink.wecom.domain.dto.redeemcode.WeRedeemCodeDTO;
 import com.easyink.wecom.domain.vo.SelectWeEmplyCodeWelcomeMsgVO;
 import com.easyink.wecom.domain.vo.WxCpXmlMessageVO;
+import com.easyink.wecom.domain.vo.welcomemsg.WeEmployMaterialVO;
 import com.easyink.wecom.factory.WeEventStrategy;
 import com.easyink.wecom.mapper.WeCustomerTrajectoryMapper;
 import com.easyink.wecom.mapper.WeEmpleCodeMapper;
@@ -43,8 +46,10 @@ import org.redisson.api.RLock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.sql.Time;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -95,6 +100,8 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
     private WeCustomerTrajectoryMapper weCustomerTrajectoryMapper;
 
     private final WeUserService weUserService;
+    @Autowired
+    private CustomerRedisCache customerRedisCache;
 
     @Autowired
     public WeCallBackAddExternalContactImpl(WeUserService weUserService) {
@@ -104,20 +111,30 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
 
     @Override
     public void eventHandle(WxCpXmlMessageVO message) {
-
         if (!checkParams(message)) {
             return;
         }
-        String corpId = message.getToUserName();
+        //  存入redis 后续由定时任务与编辑客户回调一起处理,避免同时处理导致的锁表 Tower 任务: 好友活码打标签失败 ( https://tower.im/teams/636204/todos/70202 )
+        customerRedisCache.saveCallback(message.getToUserName(), message.getUserId(), message.getExternalUserId() , message);
+    }
 
+    /**
+     * 添加客户回调处理
+     *
+     * @param message 回调消息体
+     */
+    public void addHandle(WxCpXmlMessageVO message) {
+
+        String corpId = message.getToUserName();
         // 添加客户回调处理
         try {
             // 先查询数据库中是否已经存在此客户
-            List<String>  lossExternalUserId = new ArrayList<>();
+            List<String> lossExternalUserId = new ArrayList<>();
             LambdaQueryWrapper<WeFlowerCustomerRel> queryWrapper = new LambdaQueryWrapper<>();
             queryWrapper.eq(WeFlowerCustomerRel::getCorpId, corpId);
             queryWrapper.eq(WeFlowerCustomerRel::getUserId, message.getUserId());
-            weFlowerCustomerRelService.list(queryWrapper).forEach(item -> lossExternalUserId.add(item.getExternalUserid()));
+            weFlowerCustomerRelService.list(queryWrapper)
+                                      .forEach(item -> lossExternalUserId.add(item.getExternalUserid()));
             // 若存在，则直接更新状态，不从远端获取信息
             if (lossExternalUserId.contains(message.getExternalUserId())) {
                 weFlowerCustomerRelService.updateLossExternalUser(corpId, message.getUserId(), message.getExternalUserId());
@@ -140,8 +157,7 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
         weAutoTagRuleHitCustomerRecordService.makeTagToNewCustomer(message.getExternalUserId(), message.getUserId(), corpId);
 
         // 客户轨迹记录 : 添加员工
-        weCustomerTrajectoryService.saveActivityRecord(corpId, message.getUserId(), message.getExternalUserId(),
-                CustomerTrajectoryEnums.SubType.ADD_USER.getType());
+        weCustomerTrajectoryService.saveActivityRecord(corpId, message.getUserId(), message.getExternalUserId(), CustomerTrajectoryEnums.SubType.ADD_USER.getType());
     }
 
     private boolean checkParams(WxCpXmlMessageVO message) {
@@ -230,6 +246,8 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
                                 .eq(WeFlowerCustomerRel::getExternalUserid, externalUserId)
                                 .eq(WeFlowerCustomerRel::getStatus, 0).last(GenConstants.LIMIT_1)
                         );
+                // 查询外部联系人的信息
+                WeCustomer weCustomer = weCustomerService.getOne(new LambdaQueryWrapper<WeCustomer>().eq(WeCustomer::getExternalUserid, externalUserId));
                 //更新活码添加方式
                 weFlowerCustomerRel.setState(state);
                 weFlowerCustomerRelService.updateById(weFlowerCustomerRel);
@@ -238,7 +256,7 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
                     //给好友发送消息
                     CompletableFuture.runAsync(() -> {
                         try {
-                            sendMessageToNewExternalUserId(weWelcomeMsgBuilder, messageMap, weFlowerCustomerRel.getRemark(), corpId, userId, externalUserId, state);
+                            sendMessageToNewExternalUserId(weWelcomeMsgBuilder, messageMap, weCustomer.getName(), corpId, userId, externalUserId, state);
                         } catch (Exception e) {
                             log.error("异步发送欢迎语消息异常：ex:{}", ExceptionUtils.getStackTrace(e));
                         }
@@ -251,7 +269,7 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
                 // 打标签后休眠1S , 避免出现打标签后又打备注提示接口调用频繁 Tower 任务: 客户扫活码加好友之后没有自动备注 ( https://tower.im/teams/636204/todos/69053 )
                 ThreadUtil.safeSleep(1000L);
                 //判断是否需要设置备注
-                setEmplyCodeExternalUserRemark(state, userId, externalUserId, corpId, messageMap.getRemarkType(), messageMap.getRemarkName(), weFlowerCustomerRel.getRemark());
+                setEmplyCodeExternalUserRemark(state, userId, externalUserId, corpId, messageMap.getRemarkType(), messageMap.getRemarkName(), weCustomer.getName());
             }
         } catch (Exception e) {
             log.error("empleCodeHandle error!! e={}", ExceptionUtils.getStackTrace(e));
@@ -496,32 +514,6 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
         }
     }
 
-    /**
-     * 发送视频大小超过10M,则以图文链接形式发送
-     *
-     * @param corpId        企业ID
-     * @param weMaterialDTO 素材内容
-     */
-    private Attachment sendWelcomeMsgVideoOrLink(String corpId, AddWeMaterialDTO weMaterialDTO) {
-        if (weMaterialDTO == null) {
-            log.error("sendWelcomeMsgVideoOrLink param error!!");
-            return null;
-        }
-        String content = weMaterialDTO.getContent();
-        //当content为空,则为旧数据,按照发送视频方式发送
-        if (org.apache.commons.lang3.StringUtils.isBlank(content)) {
-            log.error("sendWelcomeMsgVideoOrLink content is null!!");
-            return sendVideo(corpId, weMaterialDTO);
-        }
-        long videoSize = Long.parseLong(content);
-        //发图文链接
-        if (videoSize > WeConstans.DEFAULT_MAX_VIDEO_SIZE) {
-            return sendLink(weMaterialDTO);
-        } else {
-            //发视频
-            return sendVideo(corpId, weMaterialDTO);
-        }
-    }
 
     /**
      * 发送视频
@@ -543,18 +535,4 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
     }
 
 
-    /**
-     * 组装发送视频
-     *
-     * @param corpId        企业ID
-     * @param weMaterialDTO 素材内容
-     * @return JSONObject
-     */
-    private Attachment sendVideo(String corpId, AddWeMaterialDTO weMaterialDTO) {
-        Attachments attachments = new Attachments();
-        WeMediaDTO weMediaDto = weMaterialService.uploadTemporaryMaterial(weMaterialDTO.getMaterialUrl(), GroupMessageType.VIDEO.getMessageType(), FileUtil.getName(weMaterialDTO.getMaterialUrl()), corpId);
-        attachments.setMsgtype(AttachmentTypeEnum.VIDEO.getTypeStr());
-        attachments.setVideo(Video.builder().media_id(weMediaDto.getMedia_id()).build());
-        return attachments;
-    }
 }

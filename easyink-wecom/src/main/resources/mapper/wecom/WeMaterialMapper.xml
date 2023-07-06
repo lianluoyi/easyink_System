@@ -51,6 +51,7 @@
     <resultMap id="materialVoMap" type="com.easyink.wecom.domain.vo.WeMaterialVO">
         <id property="mediaType" column="media_type"/>
         <id property="id" column="id"/>
+        <id property="categoryId" column="category_id"/>
         <result property="materialUrl" column="material_url"/>
         <result property="content" column="content"/>
         <result property="materialName" column="material_name"/>
@@ -65,6 +66,7 @@
         <result property="audioTime" column="audio_time"/>
         <result property="expireTime" column="expire_time"/>
         <result property="showMaterial" column="show_material"/>
+        <result property="tempFlag" column="temp_flag"/>
         <result property="isDefined" column="is_defined"/>
         <result property="enableConvertRadar" column="enable_convert_radar"/>
         <result property="extraId" column="extra_id"/>
@@ -323,7 +325,7 @@
     <select id="findWeMaterials" resultMap="materialVoMap">
         SELECT wm.id,wm.category_id,wm.material_url,wm.content,wm.material_name,
         wm.digest,wm.account_original_id, wm.appid, wm.cover_url,wm.create_by,wm.create_time,wm.update_by,wm.update_time,
-        wm.audio_time,wm.show_material,wc.media_type,#{tagIds} tagIds,wm.is_defined,wm.enable_convert_radar,wm.extra_id,
+        wm.audio_time,wm.show_material, wm.temp_flag, wc.media_type,#{tagIds} tagIds,wm.is_defined,wm.enable_convert_radar,wm.extra_id,
         IF(wm.expire_time='${@com.easyink.common.constant.WeConstans@DEFAULT_MATERIAL_NOT_EXPIRE}',NULL,wm.expire_time)
         expire_time
         FROM we_material wm
@@ -472,8 +474,8 @@
 
     <select id="getListByMaterialSort" resultType="com.easyink.wecom.domain.dto.AddWeMaterialDTO">
         SELECT
-            wc.media_type, wm.id, wm.material_url,wm.content,wm.material_name,wm.digest,wm.account_original_id, wm.appid, wm.audio_time,wm.cover_url,
-        wm.create_by,wm.create_time,wm.update_by,wm.update_time,wm.is_defined,wm.enable_convert_radar,wm.extra_id
+            wc.media_type, wm.id, wm.category_id, wm.material_url,wm.content,wm.material_name,wm.digest,wm.account_original_id, wm.appid, wm.audio_time,wm.cover_url,
+        wm.create_by,wm.create_time,wm.update_by,wm.update_time, wm.temp_flag, wm.is_defined,wm.enable_convert_radar,wm.extra_id
         FROM we_material wm
         LEFT JOIN we_category wc ON wc.id = wm.category_id AND wc.corp_id = #{corpId}
         WHERE wm.id IN

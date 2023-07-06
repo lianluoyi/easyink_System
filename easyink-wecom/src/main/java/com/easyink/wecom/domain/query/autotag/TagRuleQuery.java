@@ -1,6 +1,6 @@
 package com.easyink.wecom.domain.query.autotag;
 
-import com.easyink.common.core.domain.PageEntity;
+import com.easyink.common.core.domain.BaseEntity;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -19,7 +19,7 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 @Data
-public class TagRuleQuery extends PageEntity {
+public class TagRuleQuery extends BaseEntity {
     @ApiModelProperty("规则名称")
     private String ruleName;
     @ApiModelProperty("标签id列表")
@@ -28,6 +28,6 @@ public class TagRuleQuery extends PageEntity {
     private String createBy;
     @ApiModelProperty("启用禁用状态 0:禁用1:启用")
     private Boolean status;
-
+    @ApiModelProperty("企业ID")
     private String corpId;
 }

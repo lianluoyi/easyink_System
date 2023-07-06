@@ -46,8 +46,9 @@ public interface WeMsgTlpMaterialService extends IService<WeMsgTlpMaterial> {
      * @param removeMaterialIds 需要删除的素材ids
      * @param defaultMaterials  新增或修改的素材
      * @param defaultMsgId      默认欢迎语id
+     * @param corpId            企业ID
      */
-    void updateDefaultEmployMaterial(List<Long> removeMaterialIds, List<WeMsgTlpMaterial> defaultMaterials, Long defaultMsgId);
+    void updateDefaultEmployMaterial(List<Long> removeMaterialIds, List<WeMsgTlpMaterial> defaultMaterials, Long defaultMsgId, String corpId);
 
     /**
      * 修改特殊欢迎语附件

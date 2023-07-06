@@ -1,6 +1,7 @@
 package com.easyink.common.exception;
 
 import com.easyink.common.enums.ResultTip;
+import com.easyink.common.enums.WeExceptionTip;
 
 import java.text.MessageFormat;
 
@@ -59,6 +60,16 @@ public class CustomException extends RuntimeException {
     public CustomException(ResultTip resultTip, String msg) {
         this.message = msg;
         this.code = resultTip.getCode();
+    }
+
+    /**
+     * 直接用WeExceptionTip构造
+     *
+     * @param weExceptionTip {@link WeExceptionTip}
+     */
+    public CustomException(WeExceptionTip weExceptionTip) {
+        this.message = weExceptionTip.getTipMsg();
+        this.code = weExceptionTip.getCode();
     }
 
     @Override

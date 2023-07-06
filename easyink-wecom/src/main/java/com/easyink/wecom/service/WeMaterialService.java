@@ -1,5 +1,6 @@
 package com.easyink.wecom.service;
 
+import com.baomidou.mybatisplus.extension.service.IService;
 import com.easyink.wecom.domain.WeMaterial;
 import com.easyink.wecom.domain.dto.*;
 import com.easyink.wecom.domain.vo.InsertWeMaterialVO;
@@ -17,7 +18,7 @@ import java.util.List;
  * @author admin
  * @date 2020-10-08
  */
-public interface WeMaterialService {
+public interface WeMaterialService extends IService<WeMaterial> {
 
     /**
      * 上传素材信息

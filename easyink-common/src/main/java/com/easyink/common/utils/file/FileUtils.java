@@ -96,6 +96,19 @@ public class FileUtils extends org.apache.commons.io.FileUtils {
     }
 
     /**
+     * 获取URLConnection对象
+     *
+     * @param urlPath 下载路径
+     * @return {@link URLConnection}
+     * @throws IOException
+     */
+    public static InputStream downloadFile(String urlPath) throws IOException {
+        URL url = new URL(urlPath);
+        URLConnection conn = url.openConnection();
+        return conn.getInputStream();
+    }
+
+    /**
      * @param urlPath 下载路径
      * @param os      输出流
      * @return 返回下载文件

@@ -494,6 +494,7 @@ public class WeCustomerMessagePushServiceImpl implements WeCustomerMessagePushSe
             if (GroupMessageType.TEXT.getType().equals(msgtype)) {
                 TextMessageDTO textMessageDTO = new TextMessageDTO();
                 textMessageDTO.setContent(customerSeedMessage.getContent());
+                attachment.setId(customerSeedMessage.getSeedMessageId());
                 customerMessagePushDTO.setTextMessage(textMessageDTO);
                 continue;
             }
@@ -503,6 +504,7 @@ public class WeCustomerMessagePushServiceImpl implements WeCustomerMessagePushSe
                 ImageMessageDTO imageMessage = new ImageMessageDTO();
                 imageMessage.setPic_url(customerSeedMessage.getPicUrl());
                 imageMessage.setTitle(customerSeedMessage.getPicName());
+                attachment.setId(customerSeedMessage.getSeedMessageId());
                 attachment.setImageMessage(imageMessage);
             }
             //小程序
@@ -510,6 +512,7 @@ public class WeCustomerMessagePushServiceImpl implements WeCustomerMessagePushSe
                 MiniprogramMessageDTO miniprogramMessage = new MiniprogramMessageDTO();
                 BeanUtils.copyProperties(customerSeedMessage, miniprogramMessage);
                 miniprogramMessage.setTitle(customerSeedMessage.getMiniprogramTitle());
+                attachment.setId(customerSeedMessage.getSeedMessageId());
                 attachment.setMiniprogramMessage(miniprogramMessage);
             }
             //链接
@@ -519,6 +522,7 @@ public class WeCustomerMessagePushServiceImpl implements WeCustomerMessagePushSe
                 linkMessage.setTitle(customerSeedMessage.getLinkTitle());
                 linkMessage.setDesc(customerSeedMessage.getLinDesc());
                 linkMessage.setPicurl(customerSeedMessage.getPicUrl());
+                attachment.setId(customerSeedMessage.getSeedMessageId());
                 attachment.setLinkMessage(linkMessage);
             }
             // 雷达
@@ -526,6 +530,7 @@ public class WeCustomerMessagePushServiceImpl implements WeCustomerMessagePushSe
                 RadarMessageDTO radarMessage = new RadarMessageDTO();
                 radarMessage.setRadarId(customerSeedMessage.getExtraId());
                 radarMessage.setRadar(SpringUtils.getBean(WeRadarService.class).getRadar(customerMessagePushDTO.getCorpId(), radarMessage.getRadarId()));
+                attachment.setId(customerSeedMessage.getSeedMessageId());
                 attachment.setRadarMessage(radarMessage);
             }
             // 表单
@@ -533,6 +538,7 @@ public class WeCustomerMessagePushServiceImpl implements WeCustomerMessagePushSe
                 FormMessageDTO formMessage = new FormMessageDTO();
                 formMessage.setFormId(customerSeedMessage.getExtraId());
                 formMessage.setForm(ExtraMaterialUtils.getForm(customerSeedMessage.getExtraId()));
+                attachment.setId(customerSeedMessage.getSeedMessageId());
                 attachment.setFormMessage(formMessage);
             }
             //视频
@@ -542,6 +548,7 @@ public class WeCustomerMessagePushServiceImpl implements WeCustomerMessagePushSe
                 videoDTO.setTitle(customerSeedMessage.getVideoName());
                 videoDTO.setCoverUrl(customerSeedMessage.getPicUrl());
                 videoDTO.setSize(customerSeedMessage.getSize());
+                attachment.setId(customerSeedMessage.getSeedMessageId());
                 attachment.setVideoDTO(videoDTO);
             }
             //文件
@@ -549,6 +556,7 @@ public class WeCustomerMessagePushServiceImpl implements WeCustomerMessagePushSe
                 FileDTO fileDTO = new FileDTO();
                 fileDTO.setFileUrl(customerSeedMessage.getFileUrl());
                 fileDTO.setTitle(customerSeedMessage.getFileName());
+                attachment.setId(customerSeedMessage.getSeedMessageId());
                 attachment.setFileDTO(fileDTO);
             }
             attachments.add(attachment);

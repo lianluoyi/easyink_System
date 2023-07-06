@@ -3,6 +3,7 @@ package com.easyink.wecom.service.impl;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.json.JSONUtil;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.dtflys.forest.exceptions.ForestRuntimeException;
 import com.easyink.common.config.RuoYiConfig;
 import com.easyink.common.constant.WeConstans;
@@ -51,7 +52,7 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Service
-public class WeMaterialServiceImpl implements WeMaterialService {
+public class WeMaterialServiceImpl extends ServiceImpl<WeMaterialMapper, WeMaterial> implements WeMaterialService {
     private final WeMaterialMapper weMaterialMapper;
     private final WeMediaClient weMediaClient;
     private final RuoYiConfig ruoYiConfig;

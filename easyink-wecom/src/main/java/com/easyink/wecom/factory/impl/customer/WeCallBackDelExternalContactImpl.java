@@ -56,11 +56,13 @@ public class WeCallBackDelExternalContactImpl extends WeEventStrategy {
         if (DELETE_BY_TRANSFER.equals(message.getSource())) {
             // 在职继承成功处理
             weCustomerTransferRecordService.handleTransferSuccess(message.getToUserName(), message.getUserId(), message.getExternalUserId());
-            return;
         }
         if (message.getExternalUserId() != null && message.getUserId() != null) {
             weFlowerCustomerRelService.deleteFollowUser(message.getUserId(), message.getExternalUserId(), Constants.DELETE_CODE, message.getToUserName());
-
+            // 如果是在职继承的回调，不记录敏感记录，只更新客户状态
+            if (DELETE_BY_TRANSFER.equals(message.getSource())) {
+                return;
+            }
             //增加敏感行为记录，员工删除客户
             WeSensitiveAct weSensitiveAct = weSensitiveActHitService.getSensitiveActType(WeSensitiveActEnum.DELETE.getInfo(), message.getToUserName());
             if (weSensitiveAct != null && WeSensitiveActEnum.OPEN.getCode().equals(weSensitiveAct.getEnableFlag())) {
