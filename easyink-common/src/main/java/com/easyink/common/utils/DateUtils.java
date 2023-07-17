@@ -11,6 +11,7 @@ import java.lang.management.ManagementFactory;
 import java.text.ParseException;
 import java.text.ParsePosition;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -662,5 +663,32 @@ public class DateUtils extends org.apache.commons.lang3.time.DateUtils {
             return false;
         }
         return inputTime.compareTo(getNowDate()) > 0;
+    }
+
+    /**
+     * 获取当前时间前一个小时的日期
+     *
+     * @return 日期 格式为 YYYY-MM-DD
+     */
+    public static String getBeforeHourDate() {
+        // 获取当前时间
+        LocalDateTime currentTime = LocalDateTime.now();
+        // 获取当前时间前一个小时的时间
+        LocalDateTime oneHourAgo = currentTime.minusHours(1);
+        // 定义日期格式
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(YYYY_MM_DD);
+        // 将时间按照指定格式转换为字符串
+        return oneHourAgo.format(formatter);
+    }
+
+    /**
+     * 获取当前时间前一天的日期
+     *
+     * @return 日期 格式为：YYYY-MM-DD
+     */
+    public static String getYesterdayDateBeforeNow() {
+        LocalDate yesterday = LocalDate.now().minusDays(1);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(YYYY_MM_DD);
+        return yesterday.format(formatter);
     }
 }

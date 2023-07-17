@@ -1,19 +1,26 @@
 package com.easyink.web.controller.wecom;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.easyink.common.core.controller.BaseController;
 import com.easyink.common.core.domain.AjaxResult;
 import com.easyink.common.core.page.TableDataInfo;
 import com.easyink.common.enums.ResultTip;
 import com.easyink.common.utils.PageInfoUtil;
 import com.easyink.wecom.domain.dto.statistics.*;
+import com.easyink.wecom.domain.entity.WeUserCustomerMessageStatistics;
 import com.easyink.wecom.domain.vo.statistics.*;
+import com.easyink.wecom.domain.vo.statistics.emplecode.EmpleCodeDateVO;
+import com.easyink.wecom.domain.vo.statistics.emplecode.EmpleCodeUserVO;
+import com.easyink.wecom.domain.vo.statistics.emplecode.EmpleCodeVO;
 import com.easyink.wecom.login.util.LoginTokenService;
 import com.easyink.wecom.service.*;
+import com.easyink.wecom.service.statistic.WeEmpleCodeStatisticService;
 import com.github.pagehelper.PageInfo;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -35,11 +42,12 @@ public class StatisticsController extends BaseController {
     private final WeUserService weUserService;
     private final PageHomeService pageHomeService;
     private final WeTagService weTagService;
-
     private final WeGroupTagService weGroupTagService;
+    private final WeEmpleCodeStatisticService weEmpleCodeStatisticService;
 
     @GetMapping("/data")
     @ApiOperation("执行对应日期的数据统计任务，执行前需先将we_user_customer_message_statisticsService表中对应日期的数据删除。")
+    @Transactional
     public AjaxResult getData(String time) {
         String corpId = LoginTokenService.getLoginUser().getCorpId();
         weUserService.getUserBehaviorDataByCorpId(corpId, time);
@@ -233,4 +241,59 @@ public class StatisticsController extends BaseController {
         return AjaxResult.success(weGroupTagService.exportGroupTags(weTagStatisticsDTO));
     }
 
+    @PostMapping("/emplecode/total")
+    @ApiOperation("活码统计-数据总览")
+    public AjaxResult listEmpleTotal(@RequestBody EmpleCodeStatisticDTO dto) {
+        dto.setCorpId(LoginTokenService.getLoginUser().getCorpId());
+        return AjaxResult.success(weEmpleCodeStatisticService.listEmpleTotal(dto));
+    }
+
+    @PostMapping("/emplecode/user/list")
+    @ApiOperation("活码统计-员工维度")
+    public TableDataInfo<EmpleCodeUserVO> listEmpleUser(@RequestBody EmpleCodeStatisticDTO dto) {
+        dto.setCorpId(LoginTokenService.getLoginUser().getCorpId());
+        startPage();
+        List<EmpleCodeUserVO> list = weEmpleCodeStatisticService.listEmpleUser(dto);
+        return getDataTable(list);
+    }
+
+    @PreAuthorize("@ss.hasPermi('stastistic:codeStatistics:export')")
+    @PostMapping("/emplecode/user/export")
+    @ApiOperation("活码统计-员工维度-导出报表")
+    public AjaxResult exportEmpleUser(@RequestBody EmpleCodeStatisticDTO dto) {
+        dto.setCorpId(LoginTokenService.getLoginUser().getCorpId());
+        return AjaxResult.success(weEmpleCodeStatisticService.exportEmpleUser(dto));
+    }
+
+    @PostMapping("/emplecode/emple/list")
+    @ApiOperation(("活码统计-活码维度"))
+    public TableDataInfo<EmpleCodeVO> listEmple(@RequestBody EmpleCodeStatisticDTO dto) {
+        dto.setCorpId(LoginTokenService.getLoginUser().getCorpId());
+        startPage();
+        List<EmpleCodeVO> list = weEmpleCodeStatisticService.listEmple(dto);
+        return getDataTable(list);
+    }
+
+    @PreAuthorize("@ss.hasPermi('stastistic:codeStatistics:export')")
+    @PostMapping("/emplecode/emple/export")
+    @ApiOperation("活码统计-活码维度-导出报表")
+    public AjaxResult exportEmple(@RequestBody EmpleCodeStatisticDTO dto) {
+        dto.setCorpId(LoginTokenService.getLoginUser().getCorpId());
+        return AjaxResult.success(weEmpleCodeStatisticService.exportEmple(dto));
+    }
+
+    @PostMapping("/emplecode/date/list")
+    @ApiOperation(("活码统计-日期维度"))
+    public TableDataInfo<EmpleCodeDateVO> listEmpleDate(@RequestBody EmpleCodeStatisticDTO dto) {
+        dto.setCorpId(LoginTokenService.getLoginUser().getCorpId());
+        return getDataTable(weEmpleCodeStatisticService.listEmpleDate(dto));
+    }
+
+    @PreAuthorize("@ss.hasPermi('stastistic:codeStatistics:export')")
+    @PostMapping("/emplecode/date/export")
+    @ApiOperation("活码统计-日期维度-导出报表")
+    public AjaxResult exportEmpleDate(@RequestBody EmpleCodeStatisticDTO dto) {
+        dto.setCorpId(LoginTokenService.getLoginUser().getCorpId());
+        return AjaxResult.success(weEmpleCodeStatisticService.exportEmpleDate(dto));
+    }
 }

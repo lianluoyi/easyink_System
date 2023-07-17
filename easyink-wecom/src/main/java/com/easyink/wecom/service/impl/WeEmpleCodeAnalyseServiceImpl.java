@@ -3,8 +3,8 @@ package com.easyink.wecom.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.easyink.common.core.domain.AjaxResult;
-import com.easyink.common.core.domain.entity.SysDictData;
 import com.easyink.common.core.domain.wecom.WeDepartment;
+import com.easyink.common.core.domain.wecom.WeUser;
 import com.easyink.common.enums.ResultTip;
 import com.easyink.common.enums.WeEmpleCodeAnalyseTypeEnum;
 import com.easyink.common.exception.CustomException;
@@ -12,13 +12,12 @@ import com.easyink.common.utils.DateUtils;
 import com.easyink.common.utils.poi.ExcelUtil;
 import com.easyink.wecom.domain.WeEmpleCode;
 import com.easyink.wecom.domain.WeEmpleCodeAnalyse;
+import com.easyink.wecom.domain.WeEmpleCodeStatistic;
+import com.easyink.wecom.domain.WeEmpleCodeUseScop;
 import com.easyink.wecom.domain.dto.emplecode.FindWeEmpleCodeAnalyseDTO;
 import com.easyink.wecom.domain.vo.WeEmplyCodeAnalyseCountVO;
 import com.easyink.wecom.domain.vo.WeEmplyCodeAnalyseVO;
-import com.easyink.wecom.mapper.WeDepartmentMapper;
-import com.easyink.wecom.mapper.WeEmpleCodeAnalyseMapper;
-import com.easyink.wecom.mapper.WeEmpleCodeMapper;
-import com.easyink.wecom.mapper.WeUserMapper;
+import com.easyink.wecom.mapper.*;
 import com.easyink.wecom.service.WeEmpleCodeAnalyseService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -46,6 +45,10 @@ public class WeEmpleCodeAnalyseServiceImpl extends ServiceImpl<WeEmpleCodeAnalys
     private final WeUserMapper weUserMapper;
 
     private final WeDepartmentMapper weDepartmentMapper;
+
+    private final WeEmpleCodeUseScopMapper weEmpleCodeUseScopMapper;
+
+    private final WeEmpleCodeAnalyseMapper weEmpleCodeAnalyseMapper;
 
     @Override
     public WeEmplyCodeAnalyseVO getTimeRangeAnalyseCount(FindWeEmpleCodeAnalyseDTO analyseDTO) {
@@ -138,6 +141,129 @@ public class WeEmpleCodeAnalyseServiceImpl extends ServiceImpl<WeEmpleCodeAnalys
         return baseMapper.selectCount(queryWrapper);
     }
 
+    /**
+     * 获取企业下所有活码-员工对应的统计数据
+     *
+     * @param corpId 企业ID
+     * @param date 日期 格式为YYYY-MM-DD
+     * @return 统计数据
+     */
+    @Override
+    public List<WeEmpleCodeStatistic> getEmpleStatisticData(String corpId, String date) {
+        if (StringUtils.isBlank(corpId) || StringUtils.isBlank(date)) {
+            throw new CustomException(ResultTip.TIP_MISS_CORP_ID);
+        }
+        // 获取需要统计数据的活码(未被删除的活码)
+        List<WeEmpleCode> weEmpleCodes = weEmpleCodeMapper.selectList(new LambdaQueryWrapper<WeEmpleCode>()
+                .eq(WeEmpleCode::getCorpId, corpId)
+                .eq(WeEmpleCode::getDelFlag, false));
+        if (CollectionUtils.isEmpty(weEmpleCodes)) {
+            return new ArrayList<>();
+        }
+        // 获取活码ID列表
+        List<Long> empleCodeIdList = weEmpleCodes.stream().map(WeEmpleCode::getId).collect(Collectors.toList());
+        // 初始化统计表数据
+        List<WeEmpleCodeStatistic> resultList = initData(corpId, empleCodeIdList, date);
+        // 获取企业下所有活码-员工对应的新增客户数和流失客户数
+        List<WeEmpleCodeStatistic> newAndLossCntList = baseMapper.getEmpleStatisticDateData(corpId, date, empleCodeIdList);
+        // 获取企业下所有活码-员工对应的累计客户数
+        List<WeEmpleCodeStatistic> accumulateList = baseMapper.getAccumulateData(corpId, date, empleCodeIdList);
+        // 获取企业下所有活码-员工对应的留存客户数总数
+        List<WeEmpleCodeStatistic> retainCntList = baseMapper.getRetainData(corpId, date, empleCodeIdList);
+        // 处理数据
+        resultList.forEach(result -> {
+            // 将新增客户数和流失客户数设置到对应的活码中,为活码id相同且userid相同的员工设置新增客户数和流失客户数
+            newAndLossCntList.stream().filter(newAndLossItem -> result.getEmpleCodeId().equals(newAndLossItem.getEmpleCodeId()) && result.getUserId().equals(newAndLossItem.getUserId()))
+                    .findFirst()
+                    .ifPresent(empleCodeStatistic -> {
+                        result.setNewCustomerCnt(empleCodeStatistic.getNewCustomerCnt());
+                        result.setLossCustomerCnt(empleCodeStatistic.getLossCustomerCnt());
+                    });
+            // 将累计客户数设置到对应的活码中,为活码id相同且userid相同的员工设置累计客户数
+            accumulateList.stream().filter(accumulateItem -> result.getEmpleCodeId().equals(accumulateItem.getEmpleCodeId()) && result.getUserId().equals(accumulateItem.getUserId()))
+                    .findFirst()
+                    .ifPresent(empleCodeStatistic -> result.setAccumulateCustomerCnt(empleCodeStatistic.getAccumulateCustomerCnt()));
+            // 将留存客户总数设置到对应的活码中,为活码id相同且userid相同的员工设置留存客户总数
+            retainCntList.stream().filter(retainItem -> result.getEmpleCodeId().equals(retainItem.getEmpleCodeId()) && result.getUserId().equals(retainItem.getUserId()))
+                    .findFirst()
+                    .ifPresent(empleCodeStatistic -> result.setRetainCustomerCnt(empleCodeStatistic.getRetainCustomerCnt()));
+        });
+        return resultList;
+    }
+
+    /**
+     * 初始化数据
+     *
+     * @param corpId 企业ID
+     * @param empleCodeIdList 活码ID列表
+     * @param date 日期，格式为 YYYY-MM-DD
+     * @return 初始化数据
+     */
+    private List<WeEmpleCodeStatistic> initData(String corpId, List<Long> empleCodeIdList, String date) {
+        List<WeEmpleCodeStatistic> resultList = new ArrayList<>();
+        // 查询使用人
+        List<WeEmpleCodeUseScop> useScopeList = weEmpleCodeUseScopMapper.selectWeEmpleCodeUseScopListByIds(empleCodeIdList, corpId);
+        // 查询使用部门(查询使用人时需要用businessId关联we_user表，活码使用部门时不传入businessId)
+        List<WeEmpleCodeUseScop> departmentScopeList = weEmpleCodeUseScopMapper.selectDepartmentWeEmpleCodeUseScopListByIds(empleCodeIdList);
+        for (Long empleCodeId : empleCodeIdList) {
+            // 使用人，部门不存在则跳过当前活码
+            if (CollectionUtils.isEmpty(useScopeList) && CollectionUtils.isEmpty(departmentScopeList)) {
+                continue;
+            }
+            // 获取当前活码对应的userId
+            List<String> userIds = getUserIds(useScopeList.stream().filter(item -> item.getEmpleCodeId().equals(empleCodeId)).collect(Collectors.toList()),
+                    departmentScopeList.stream().filter(item -> item.getEmpleCodeId().equals(empleCodeId)).collect(Collectors.toList()), corpId, empleCodeId);
+            // 获取不到userId则跳过当前活码
+            if (CollectionUtils.isEmpty(userIds)) {
+                continue;
+            }
+            // 根据userId，初始化统计数据
+            for (String userId : userIds) {
+                WeEmpleCodeStatistic data = new WeEmpleCodeStatistic(corpId, empleCodeId, userId, date);
+                resultList.add(data);
+            }
+        }
+        return resultList;
+    }
+
+    /**
+     * 根据使用人和部门范围获取UserId
+     *
+     * @param useScopeList 使用人范围列表
+     * @param departmentScopeList 部门范围列表
+     * @param corpId 企业ID
+     * @param empleCodeId 活码ID
+     * @return userId 列表
+     */
+    private List<String> getUserIds(List<WeEmpleCodeUseScop> useScopeList, List<WeEmpleCodeUseScop> departmentScopeList, String corpId,  Long empleCodeId) {
+        // 去重处理
+        HashSet<String> userIds = new HashSet<>();
+        // 从使用人获取userId
+        if (CollectionUtils.isNotEmpty(useScopeList)) {
+            // 添加userId
+            userIds.addAll(useScopeList.stream().map(WeEmpleCodeUseScop::getBusinessId).collect(Collectors.toList()));
+        }
+        // 从部门获取userId
+        if (CollectionUtils.isNotEmpty(departmentScopeList)) {
+            // 获取部门id
+            List<String> departmentIds = departmentScopeList.stream().map(WeEmpleCodeUseScop::getBusinessId).collect(Collectors.toList());
+            // 根据部门获取员工信息
+            List<WeUser> weUserList = weUserMapper.getUserByDepartmentList(corpId, departmentIds.toArray(new String[0]));
+            // 部门下没有userId，则直接返回上一步获取的userId列表
+            if (CollectionUtils.isEmpty(weUserList)) {
+                return new ArrayList<>(userIds);
+            }
+            // 添加userId
+            userIds.addAll(weUserList.stream().map(WeUser::getUserId).collect(Collectors.toList()));
+        }
+        // 从活码分析表获取活码员工ID
+        List<String> analysesUserIds = weEmpleCodeAnalyseMapper.selectUserIdsById(corpId, empleCodeId);
+        // 添加userId
+        if (CollectionUtils.isNotEmpty(analysesUserIds)) {
+            userIds.addAll(analysesUserIds);
+        }
+        return new ArrayList<>(userIds);
+    }
 
     /**
      * 保存员工活码数据统计

@@ -240,7 +240,7 @@ public class Constants {
     /**
      * 初始化的菜单权限的菜单ID
      */
-    protected static final Long[] INIT_MENU_LIST = new Long[]{2016L, 2014L, 2015L, 2022L, 2074L, 2020L, 2021L, 2002L, 2003L, 2001L, 2079L, 2080L, 2312L, 2313L, 2314L, 2315L, 2320L};
+    protected static final Long[] INIT_MENU_LIST = new Long[]{2016L, 2014L, 2015L, 2022L, 2074L, 2020L, 2021L, 2002L, 2003L, 2001L, 2079L, 2080L, 2312L, 2313L, 2314L, 2315L, 2320L, 2327L, 2328L};
 
     /**
      * 获取初始化菜单权限的菜单ID

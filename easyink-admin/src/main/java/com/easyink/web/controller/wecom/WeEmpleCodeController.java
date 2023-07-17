@@ -18,6 +18,7 @@ import com.easyink.wecom.domain.dto.emplecode.FindWeEmpleCodeAnalyseDTO;
 import com.easyink.wecom.domain.dto.emplecode.FindWeEmpleCodeDTO;
 import com.easyink.wecom.domain.vo.WeEmpleCodeVO;
 import com.easyink.wecom.domain.vo.WeEmplyCodeScopeUserVO;
+import com.easyink.wecom.domain.vo.statistics.emplecode.EmpleCodeByNameVO;
 import com.easyink.wecom.login.util.LoginTokenService;
 import com.easyink.wecom.service.WeEmpleCodeAnalyseService;
 import com.easyink.wecom.service.WeEmpleCodeService;
@@ -81,6 +82,15 @@ public class WeEmpleCodeController extends BaseController {
         startPage();
         weEmpleCode.setSource(EmployCodeSourceEnum.CODE_CREATE.getSource());
         List<WeEmpleCodeVO> list = weEmpleCodeService.selectWeEmpleCodeList(weEmpleCode);
+        return getDataTable(list);
+    }
+
+    @GetMapping("/listByName")
+    @ApiOperation("活码统计-根据名称模糊搜索活码信息")
+    public TableDataInfo<EmpleCodeByNameVO> listByName(FindWeEmpleCodeDTO weEmpleCode) {
+        weEmpleCode.setCorpId(LoginTokenService.getLoginUser().getCorpId());
+        startPage();
+        List<EmpleCodeByNameVO> list = weEmpleCodeService.listByName(weEmpleCode);
         return getDataTable(list);
     }
 

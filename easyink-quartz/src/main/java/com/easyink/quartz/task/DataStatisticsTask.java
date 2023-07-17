@@ -1,11 +1,11 @@
 package com.easyink.quartz.task;
 
-import cn.hutool.core.date.DateUtil;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.easyink.common.core.domain.entity.WeCorpAccount;
 import com.easyink.common.utils.DateUtils;
+import com.easyink.wecom.domain.entity.WeUserCustomerMessageStatistics;
 import com.easyink.wecom.service.WeCorpAccountService;
 import com.easyink.wecom.service.WeUserCustomerMessageStatisticsService;
-import com.easyink.wecom.service.WeUserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -36,6 +36,7 @@ public class DataStatisticsTask {
         weCorpAccountList.parallelStream().forEach(weCorpAccount -> {
             try {
                 if (weCorpAccount != null && StringUtils.isNotBlank(weCorpAccount.getCorpId())) {
+                    // 开始统计
                     userCustomerMessageStatisticsService.getMessageStatistics(weCorpAccount.getCorpId(), DateUtils.dateTime(DateUtils.getYesterday(DateUtils.getNowDate())));
                 }
             } catch (Exception e) {

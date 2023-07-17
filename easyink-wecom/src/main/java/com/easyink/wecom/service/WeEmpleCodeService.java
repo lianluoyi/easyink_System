@@ -7,6 +7,7 @@ import com.easyink.wecom.domain.dto.WeExternalContactDTO;
 import com.easyink.wecom.domain.dto.emplecode.AddWeEmpleCodeDTO;
 import com.easyink.wecom.domain.dto.emplecode.FindWeEmpleCodeDTO;
 import com.easyink.wecom.domain.vo.*;
+import com.easyink.wecom.domain.vo.statistics.emplecode.EmpleCodeByNameVO;
 
 import java.util.List;
 
@@ -147,4 +148,12 @@ public interface WeEmpleCodeService extends IService<WeEmpleCode> {
      * @return short mini app link
      */
     String getCodeAppLink(Long id);
+
+    /**
+     * 活码统计-根据活动场景模糊查询活码信息
+     *
+     * @param dto {@link FindWeEmpleCodeDTO}
+     * @return {@link EmpleCodeByNameVO}
+     */
+    List<EmpleCodeByNameVO> listByName(FindWeEmpleCodeDTO dto);
 }
