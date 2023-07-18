@@ -830,7 +830,8 @@ public class WeAutoConfigServiceImpl implements WeAutoConfigService {
         } else {
             log.info("已配置过侧边栏画像");
         }
-
+        // 自动化配置时取消侧边栏应用工具配置  Tower 任务: 应用管理屏蔽青鸾工单系统 ( https://tower.im/teams/636204/todos/70495 )
+        needApplication = false;
         if (needApplication) {
             ThreadUtil.sleep(300);
             log.info("配置侧边栏应用工具");

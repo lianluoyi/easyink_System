@@ -63,7 +63,7 @@ public class WeUnionIdInterceptor implements Interceptor<Object> {
 
     @Override
     public void onSuccess(Object data, ForestRequest request, ForestResponse response) {
-        log.error("请求成功url:【{}】,result:【{}】", request.getUrl(), response.getContent());
+        log.info("请求成功url:【{}】,result:【{}】", request.getUrl(), response.getContent());
     }
 
     @Override

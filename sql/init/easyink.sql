@@ -271,13 +271,13 @@ INSERT INTO `sys_job`
 VALUES (6, '定时消息群发', 'SYSTEM', 'ryTask.messageTask', '0 */2 * * * ?', '1', '1', '0', 'admin', '2021-02-10 10:07:22',
         'admin', '2021-07-27 09:09:55', '');
 INSERT INTO `sys_job`
-VALUES (7, '联系客户统计数据拉取', 'SYSTEM', 'UserBehaviorDataTak.getUserBehaviorData()', '0 0 4 * * ?', '1', '1', '0', 'admin',
+VALUES (7, '联系客户统计数据拉取', 'SYSTEM', 'UserBehaviorDataTak.getUserBehaviorData()', '0 30 5 * * ?', '1', '1', '0', 'admin',
         '2021-02-25 16:47:59', 'admin', '2021-02-25 23:45:03', '');
 INSERT INTO `sys_job`
-VALUES (8, '群聊数据统计数据拉取', 'SYSTEM', 'GroupChatStatisticTask.getGroupChatData()', '0 0 5 * * ? ', '1', '1', '0', 'admin',
+VALUES (8, '群聊数据统计数据拉取', 'SYSTEM', 'GroupChatStatisticTask.getGroupChatData()', '0 0 6 * * ? ', '1', '1', '0', 'admin',
         '2021-02-25 16:49:44', '', '2021-02-25 23:45:05', '');
 INSERT INTO `sys_job`
-VALUES (9, '首页数据统计', 'SYSTEM', 'PageHomeDataTask.getPageHomeDataData()', '0 30 5 * * ? ', '1', '1', '0', 'admin',
+VALUES (9, '首页数据统计', 'SYSTEM', 'PageHomeDataTask.getPageHomeDataData()', '0 30 6 * * ?', '1', '1', '0', 'admin',
         '2021-02-25 16:52:23', '', '2021-02-25 23:45:07', '');
 INSERT INTO `sys_job`
 VALUES (10, '删除过期素材', 'SYSTEM', 'RemoveMaterialTask.removeExpireMaterial()', '0 0 4 * * ? ', '1', '1', '0', 'admin',
@@ -316,13 +316,32 @@ INSERT INTO `sys_job`
 VALUES (20, '定期查询客户分配情况任务', 'SYSTEM', 'transferResultTask.execute', '0 */5 * * * ?', '2', '1', '0', 'admin',
         '2021-12-01 18:25:03', 'admin', '2021-12-01 18:25:51', '');
 INSERT INTO `sys_job`
-VALUES (21, '数据统计定时任务', 'SYSTEM', 'DataStatisticsTask.getDataStatistics()', '0 0 6 * * ?', '2', '1', '0', 'admin',
+VALUES (21, '数据统计定时任务', 'SYSTEM', 'DataStatisticsTask.getDataStatistics()', '0 30 7 * * ?', '2', '1', '0', 'admin',
         '2023-02-13 16:34:13', '', NULL, '');
 -- 2023--6-8 silver_chariot 增加定时任务  Tower 任务: 执行批量打标签导致系统无法使用 ( https://tower.im/teams/636204/todos/69816 )
 INSERT INTO `sys_job` (`job_id`, `job_name`, `job_group`, `invoke_target`, `cron_expression`, `misfire_policy`,
                        `concurrent`, `status`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`)
 VALUES ('22', '同步回调变更客户定时任务', 'SYSTEM', 'syncCustomerChangeTask.execute()', '0/30 * * * * ? ', '2', '1', '0', 'admin',
         '2023-06-08 19:31:58', 'admin', '2023-06-08 19:32:36', '');
+-- 2023-07-07 lichaoyu 增加定时任务 Tower 任务: 活码统计-定时任务统计数据处理 ( https://tower.im/teams/636204/todos/71488 )
+INSERT INTO `sys_job`(`job_id`, `job_name`, `job_group`, `invoke_target`, `cron_expression`, `misfire_policy`,
+                      `concurrent`, `status`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`)
+VALUES ('23', '每小时活码统计数据定时任务', 'SYSTEM', 'EmpleStatisticTask.getEmpleStatisticData()', '0 3 * * * ?', '2',
+        '1', '0', 'admin', '2023-07-07 15:22:28', 'admin', '2023-07-07 15:23:05', '');
+INSERT INTO `sys_job`(`job_id`, `job_name`, `job_group`, `invoke_target`, `cron_expression`, `misfire_policy`,
+                      `concurrent`, `status`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`)
+VALUES ('24', '每日活码统计数据定时任务(传参日期格式:YYYY-MM-DD)', 'SYSTEM', 'EmpleStatisticTask.getEmpleStatisticDateData('''')', '0 0 3 * * ?', '2', '1',
+        '0', 'admin', '2023-07-07 19:50:41', '', '2023-07-07 19:50:46', '');
+-- 2023-07-11 lichaoyu 添加二次数据统计定时任务 Tower 任务: 每天定时2次统计数据 ( https://tower.im/teams/636204/todos/69513 )
+INSERT INTO `sys_job`
+VALUES ('25', '联系客户统计数据拉取', 'SYSTEM', 'UserBehaviorDataTak.getUserBehaviorData()', '0 0 12 * * ?', '1', '1', '0', 'admin',
+        '2023-07-11 10:15:59', 'admin', '2023-07-11 10:16:37', '');
+INSERT INTO `sys_job`
+VALUES ('26', '群聊数据统计数据拉取', 'SYSTEM', 'GroupChatStatisticTask.getGroupChatData()', '0 30 12 * * ? ', '1', '1', '0', 'admin',
+        '2023-07-11 10:16:44', '', '2023-07-11 10:16:16', '');
+INSERT INTO `sys_job`
+VALUES ('27', '数据统计定时任务', 'SYSTEM', 'DataStatisticsTask.getDataStatistics()', '0 30 13 * * ?', '2', '1', '0', 'admin',
+        '2023-07-11 10:17:13', '', NULL, '');
 
 -- ----------------------------
 -- Table structure for sys_menu
@@ -1014,6 +1033,10 @@ INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`
 INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`, `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES (2324, '新增打标任务', 2285, 51, '', NULL, 1, 'F', '0', '0', 'wecom:batchtag:add', '#', 'admin', '2023-06-07 09:49:09', '', NULL, '');
 INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`, `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES (2325, '删除打标任务', 2285, 52, '', NULL, 1, 'F', '0', '0', 'wecom:batchtag:del', '#', 'admin', '2023-06-07 09:49:32', '', NULL, '');
 INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`, `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES (2326, '导出打标任务报表', 2285, 53, '', NULL, 1, 'F', '0', '0', 'wecom:batchtag:export', '#', 'admin', '2023-06-07 09:49:51', '', NULL, '');
+-- 2023-07-10 lcy 补交initSQL Tower 任务: 初始化环境活码统计功能异常 ( https://tower.im/teams/636204/todos/71799 )
+INSERT INTO `sys_menu`(`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`, `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES (2327, '引流分析', 2312, 2, 'drainageAnalysis', NULL, 1, 'M', '0', '0', '', 'drainageAnalysis', 'admin', '2023-07-04 13:54:14', 'admin', '2023-07-05 17:42:47', '');
+INSERT INTO `sys_menu`(`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`, `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES (2328, '活码统计', 2327, 1, 'codeStatistics', 'drainageAnalysis/codeStatistics/index', 1, 'C', '0', '0', NULL, '#', 'admin', '2023-07-04 13:58:05', '', NULL, '');
+INSERT INTO `sys_menu`(`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`, `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES (2329, '导出报表', 2328, 1, '', NULL, 1, 'F', '0', '0', 'stastistic:codeStatistics:export', '#', 'admin', '2023-07-10 15:24:12', 'admin', '2023-07-10 18:10:25', '');
 -- ----------------------------
 -- Table structure for sys_role
 -- ----------------------------
@@ -2528,7 +2551,7 @@ CREATE TABLE `we_application_center`
   COMMENT ='应用中心表';
 
 
-
+-- 2023-07-11 补交init修改的SQL Tower 任务: 应用管理屏蔽青鸾工单系统 ( https://tower.im/teams/636204/todos/70495 )
 INSERT INTO `we_application_center`
 VALUES (2, '青鸾智能工单系统', '企微群聊自动分析反馈内容形成工单，自动根据工单状态变更回复工单内容。',
         '',
@@ -2536,7 +2559,7 @@ VALUES (2, '青鸾智能工单系统', '企微群聊自动分析反馈内容形�
         '群聊关联客户：企微群聊关联工单系统客户关系对应；\r\n自动获取工单信息：根据NLP自动获取信息，形成工单；\r\n自动回复工单信息：工单状态变更，自动群聊@工单反馈人员，自动告知状态；\r\n工单报表：自动发送当日工单报表；',
         '使用该应用需进行初始化操作，进行工单系统注册、客服人员账号注册、客户资料维护；若您有疑问请扫描以下二维码，添加客服，咨询初始化操作事宜',
         'https://wecomsaas-1253559996.cos.ap-guangzhou.myqcloud.com/2021/12/16/壹鸽咨询服务.png',
-        1, '2021-12-20 09:59:03', 1, 'workSheetAssistant', 'http://121.37.253.126:8088');
+        0, '2021-12-20 09:59:03', 1, 'workSheetAssistant', 'http://121.37.253.126:8088');
 
 
 CREATE TABLE `order_user_to_order_account`
@@ -2726,7 +2749,7 @@ CREATE TABLE `we_emple_code_analyse`
     `emple_code_id`   bigint(20) NOT NULL DEFAULT '0' COMMENT '员工活码主键ID',
     `user_id`         varchar(64) NOT NULL DEFAULT '' COMMENT '企业成员userId',
     `external_userid` varchar(32) NOT NULL DEFAULT '' COMMENT '客户ID',
-    `time`            date        NOT NULL COMMENT '添加时间',
+    `time`            date        NOT NULL COMMENT 'type为1时是添加时间，type为0时是流失时间',
     `type`            tinyint(1) NOT NULL COMMENT '1:新增，0:流失',
     PRIMARY KEY (`id`),
     UNIQUE KEY `uniq_corpid_codeid_userid_extid_type_time` (`corp_id`,`emple_code_id`,`user_id`,`external_userid`,`type`,`time`) USING BTREE COMMENT '唯一索引'
@@ -3700,3 +3723,20 @@ CREATE TABLE `we_batch_tag_task_rel` (
                                          `tag_id` varchar(64)  NOT NULL DEFAULT '' COMMENT '此次任务需要打上的标签id',
                                          PRIMARY KEY (`task_id`,`tag_id`)
 ) ENGINE=InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT='批量打标签任务-标签关联表';
+
+-- 2023-07-07 新增活码统计表 Tower 任务: 活码统计-定时任务统计数据处理 ( https://tower.im/teams/636204/todos/71488 )
+CREATE TABLE `we_emple_code_statistic` (
+                                           `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+                                           `corp_id` varchar(64) NOT NULL DEFAULT '' COMMENT '企业ID',
+                                           `emple_code_id` bigint(20) NOT NULL DEFAULT '0' COMMENT '活码id',
+                                           `user_id` varchar(64) NOT NULL DEFAULT '' COMMENT '员工ID',
+                                           `accumulate_customer_cnt` int(11) NOT NULL DEFAULT '0' COMMENT '累计客户数',
+                                           `retain_customer_cnt` int(11) NOT NULL DEFAULT '0' COMMENT '留存客户数',
+                                           `new_customer_cnt` int(11) NOT NULL DEFAULT '0' COMMENT '新增客户数',
+                                           `loss_customer_cnt` int(11) NOT NULL DEFAULT '0' COMMENT '流失客户数',
+                                           `time` date NOT NULL COMMENT '日期',
+                                           PRIMARY KEY (`id`),
+                                           UNIQUE KEY `uni_emple_user_time` (`emple_code_id`,`user_id`,`time`) USING BTREE,
+                                           KEY `idx_corp_user_id` (`corp_id`,`user_id`) USING BTREE,
+                                           KEY `idx_emple_user_id` (`emple_code_id`,`user_id`) USING BTREE
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COMMENT='活码数据统计表';

@@ -3,8 +3,11 @@ package com.easyink.wecom.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.easyink.common.core.domain.AjaxResult;
 import com.easyink.wecom.domain.WeEmpleCodeAnalyse;
+import com.easyink.wecom.domain.WeEmpleCodeStatistic;
 import com.easyink.wecom.domain.dto.emplecode.FindWeEmpleCodeAnalyseDTO;
 import com.easyink.wecom.domain.vo.WeEmplyCodeAnalyseVO;
+
+import java.util.List;
 
 /**
  * 类名：WeEmpleCodeAnalyseService
@@ -49,4 +52,13 @@ public interface WeEmpleCodeAnalyseService extends IService<WeEmpleCodeAnalyse> 
      * @return int
      */
     int getAddCountByState(String state);
+
+    /**
+     * 获取企业下所有活码-员工对应的统计数据
+     *
+     * @param corpId 企业ID
+     * @param date 日期 格式为YYYY-MM-DD
+     * @return 统计数据
+     */
+    List<WeEmpleCodeStatistic> getEmpleStatisticData(String corpId, String date);
 }

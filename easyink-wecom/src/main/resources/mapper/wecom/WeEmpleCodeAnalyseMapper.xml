@@ -61,6 +61,64 @@
         </if>
         GROUP BY `time`
     </select>
+    <!--获取企业下所有活码-员工对应的新增客户数和流失客户数-->
+    <select id="getEmpleStatisticDateData" resultType="com.easyink.wecom.domain.WeEmpleCodeStatistic">
+        SELECT emple_code_id,
+               user_id,
+               SUM(CASE WHEN type = '${@com.easyink.common.enums.WeEmpleCodeAnalyseTypeEnum@ADD.type}' THEN 1 ELSE 0 END) AS newCustomerCnt,
+               SUM(CASE WHEN type = '${@com.easyink.common.enums.WeEmpleCodeAnalyseTypeEnum@DEL.type}' THEN 1 ELSE 0 END) AS lossCustomerCnt,
+               `time`
+        FROM we_emple_code_analyse
+        WHERE corp_id = #{corpId}
+        <if test="empleCodeIdList != null and empleCodeIdList.size() > 0">
+        AND emple_code_id IN
+            <foreach collection="empleCodeIdList" item="empleCodeId" open="(" separator="," close=")">
+                #{empleCodeId}
+            </foreach>
+        </if>
+        AND `time` = #{date}
+        GROUP BY emple_code_id, user_id
+    </select>
+    <!--获取企业下所有活码-员工对应的累计客户数-->
+    <select id="getAccumulateData" resultType="com.easyink.wecom.domain.WeEmpleCodeStatistic">
+        SELECT emple_code_id,
+        user_id,
+        SUM(CASE WHEN type = '${@com.easyink.common.enums.WeEmpleCodeAnalyseTypeEnum@ADD.type}' THEN 1 ELSE 0 END) AS accumulateCustomerCnt
+        FROM we_emple_code_analyse
+        WHERE corp_id = #{corpId}
+        <if test="empleCodeIdList != null and empleCodeIdList.size() > 0">
+        AND emple_code_id IN
+            <foreach collection="empleCodeIdList" item="empleCodeId" open="(" separator="," close=")">
+                #{empleCodeId}
+            </foreach>
+        </if>
+        AND `time` &lt;= #{date}
+        GROUP BY emple_code_id, user_id
+    </select>
+    <!--获取企业下所有活码-员工对应的留存客户数总数-->
+    <select id="getRetainData" resultType="com.easyink.wecom.domain.WeEmpleCodeStatistic">
+        SELECT weca.emple_code_id,
+        weca.user_id,
+        SUM(CASE WHEN wfcr.status = '${@com.easyink.common.enums.CustomerStatusEnum@NORMAL.code}' THEN 1 ELSE 0 END) AS retainCustomerCnt
+        FROM we_emple_code_analyse weca
+        LEFT JOIN we_flower_customer_rel wfcr ON weca.corp_id = wfcr.corp_id
+        AND weca.emple_code_id = wfcr.state AND weca.user_id = wfcr.user_id
+        AND weca.external_userid = wfcr.external_userid
+        AND wfcr.create_time &lt;= DATE_FORMAT(weca.`time`, '%Y-%m-%d 23:59:59')
+        WHERE weca.corp_id = #{corpId}
+        <if test="empleCodeIdList != null and empleCodeIdList.size() > 0">
+            AND weca.emple_code_id IN
+            <foreach collection="empleCodeIdList" item="empleCodeId" open="(" separator="," close=")">
+                #{empleCodeId}
+            </foreach>
+        </if>
+        AND weca.`time` &lt;= #{date}
+        GROUP BY weca.emple_code_id, weca.user_id
+    </select>
+    <!--根据活码Id获取员工Id列表-->
+    <select id="selectUserIdsById" resultType="java.lang.String">
+        SELECT DISTINCT user_id FROM we_emple_code_analyse WHERE corp_id = #{corpId} AND emple_code_id = #{empleCodeId}
+    </select>
 
 
     <insert id="insert" parameterType="com.easyink.wecom.domain.WeEmpleCodeAnalyse">

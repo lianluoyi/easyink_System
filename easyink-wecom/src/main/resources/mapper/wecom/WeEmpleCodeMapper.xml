@@ -461,6 +461,15 @@
             #{id}
         </foreach>
     </select>
+    <!--活码统计-根据活动场景模糊查询活码信息-->
+    <select id="listByName" resultType="com.easyink.wecom.domain.vo.statistics.emplecode.EmpleCodeByNameVO">
+        SELECT id, scenario FROM we_emple_code WHERE corp_id = #{corpId}
+        <if test="scenario != null">
+            AND scenario LIKE CONCAT('%', #{scenario}, '%')
+        </if>
+        AND del_flag = '${@com.easyink.common.constant.Constants@NORMAL_CODE}'
+        ORDER BY create_time DESC
+    </select>
 
 
 </mapper>

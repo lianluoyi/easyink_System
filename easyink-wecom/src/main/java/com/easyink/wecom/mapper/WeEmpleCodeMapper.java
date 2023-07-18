@@ -3,9 +3,9 @@ package com.easyink.wecom.mapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.easyink.wecom.domain.WeEmpleCode;
 import com.easyink.wecom.domain.dto.WeEmpleCodeDTO;
-import com.easyink.wecom.domain.dto.WeExternalContactDTO;
 import com.easyink.wecom.domain.dto.emplecode.FindWeEmpleCodeDTO;
 import com.easyink.wecom.domain.vo.*;
+import com.easyink.wecom.domain.vo.statistics.emplecode.EmpleCodeByNameVO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
@@ -131,4 +131,12 @@ public interface WeEmpleCodeMapper extends BaseMapper<WeEmpleCode> {
      * @return
      */
     List<WeEmplyCodeScopeUserVO> getUserFromDepartmentByEmplyCodeId(String corpId, Long id);
+
+    /**
+     * 活码统计-根据活动场景模糊查询活码信息
+     *
+     * @param dto {@link FindWeEmpleCodeDTO}
+     * @return {@link EmpleCodeByNameVO}
+     */
+    List<EmpleCodeByNameVO> listByName(FindWeEmpleCodeDTO dto);
 }

@@ -27,6 +27,7 @@ import com.easyink.wecom.domain.dto.emplecode.FindWeEmpleCodeDTO;
 import com.easyink.wecom.domain.entity.redeemcode.WeRedeemCode;
 import com.easyink.wecom.domain.vo.*;
 import com.easyink.wecom.domain.vo.redeemcode.WeRedeemCodeActivityVO;
+import com.easyink.wecom.domain.vo.statistics.emplecode.EmpleCodeByNameVO;
 import com.easyink.wecom.handler.shorturl.EmpleCodeShortUrlHandler;
 import com.easyink.wecom.login.util.LoginTokenService;
 import com.easyink.wecom.mapper.WeEmpleCodeMapper;
@@ -749,6 +750,21 @@ public class WeEmpleCodeServiceImpl extends ServiceImpl<WeEmpleCodeMapper, WeEmp
         weEmpleCode.setAppLink(shortUrl);
         updateById(weEmpleCode);
         return shortUrl;
+    }
+
+    /**
+     * 活码统计-根据活动场景模糊查询活码信息
+     *
+     * @param dto {@link FindWeEmpleCodeDTO}
+     * @return {@link EmpleCodeByNameVO}
+     */
+    @Override
+    public List<EmpleCodeByNameVO> listByName(FindWeEmpleCodeDTO dto) {
+        if (StringUtils.isBlank(dto.getCorpId())) {
+            throw new CustomException(ResultTip.TIP_MISS_CORP_ID);
+        }
+        return this.baseMapper.listByName(dto);
+
     }
 
     /**

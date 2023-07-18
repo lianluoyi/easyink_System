@@ -16,6 +16,7 @@ import com.easyink.common.enums.StaffActivateEnum;
 import com.easyink.common.utils.DateUtils;
 import com.easyink.common.utils.bean.BeanUtils;
 import com.easyink.common.utils.poi.ExcelUtil;
+import com.easyink.common.utils.sql.BatchInsertUtil;
 import com.easyink.wecom.domain.WeUserBehaviorData;
 import com.easyink.wecom.domain.dto.statistics.*;
 import com.easyink.wecom.domain.entity.WeUserCustomerMessageStatistics;
@@ -135,7 +136,7 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
         }
         // 获取前一天的数据
         String yesterday = time;
-        visibleUser.parallelStream().forEach(weUser -> {
+        visibleUser.forEach(weUser -> {
             try {
                 //根据员工id在会话存档中获取全部对话
                 ConversationArchiveQuery archiveQuery = new ConversationArchiveQuery();
@@ -220,6 +221,10 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
             weUserCustomerMessageStatistics.setCorpId(weUser.getCorpId());
             weUserCustomerMessageStatistics.setExternalUserid(nullSign);
             weUserCustomerMessageStatistics.setSendTime(nowDate);
+            this.remove(new LambdaQueryWrapper<WeUserCustomerMessageStatistics>()
+                    .eq(WeUserCustomerMessageStatistics::getCorpId, weUser.getCorpId())
+                    .eq(WeUserCustomerMessageStatistics::getUserId, weUser.getUserId())
+                    .eq(WeUserCustomerMessageStatistics::getSendTime, time));
             this.save(weUserCustomerMessageStatistics);
             return;
         }
@@ -289,21 +294,26 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
             // 员工对该客户发送的消息数
             userCustomerMessageStatistics.setUserSendMessageCnt(entry.getValue().size());
             // 获取添加客户时间
-            if (!Objects.isNull(getCustomerAddTime(entry.getValue(), true))){
+            if (!Objects.isNull(getCustomerAddTime(entry.getValue(), true))) {
                 userCustomerMessageStatistics.setAddTime(getCustomerAddTime(entry.getValue(), true));
             }
             // 发送消息时间
             userCustomerMessageStatistics.setSendTime(nowDate);
             //
             buildContactAndSet(weUser, userCustomerMessageStatistics, null, entry.getValue());
-            if (userCustomerMessageStatistics.getUserActiveDialogue() != null){
-                if (userCustomerMessageStatistics.getUserActiveDialogue()){
+            if (userCustomerMessageStatistics.getUserActiveDialogue() != null) {
+                if (userCustomerMessageStatistics.getUserActiveDialogue()) {
                     userActiveChatCnt++;
                 }
             }
             userCustomerMessageStatisticsList.add(userCustomerMessageStatistics);
-            chatCnt ++;
+            chatCnt++;
         }
+        // 删除员工当天原来的统计数据
+        this.remove(new LambdaQueryWrapper<WeUserCustomerMessageStatistics>()
+                .eq(WeUserCustomerMessageStatistics::getCorpId, weUser.getCorpId())
+                .eq(WeUserCustomerMessageStatistics::getUserId, weUser.getUserId())
+                .eq(WeUserCustomerMessageStatistics::getSendTime, time));
         this.saveBatch(userCustomerMessageStatisticsList);
         // 保存用户行为
         saveUserBehaviorDate(userBehaviorData, thirtyMinReplyCount, newCustomerStartContactCnt, chatCnt, userActiveChatCnt);

@@ -1,7 +1,6 @@
 package com.easyink.wecom.factory.impl.customer;
 
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
@@ -17,14 +16,12 @@ import com.easyink.common.enums.*;
 import com.easyink.common.enums.code.WelcomeMsgTypeEnum;
 import com.easyink.common.exception.CustomException;
 import com.easyink.common.lock.LockUtil;
+import com.easyink.common.utils.DateUtils;
+import com.easyink.wecom.domain.*;
+import com.easyink.wecom.mapper.statistic.WeEmpleCodeStatisticMapper;
 import com.easyink.wecom.utils.redis.CustomerRedisCache;
 import com.easyink.common.utils.TagRecordUtil;
-import com.easyink.wecom.domain.WeCustomer;
-import com.easyink.wecom.domain.WeEmpleCode;
-import com.easyink.wecom.domain.WeEmpleCodeTag;
-import com.easyink.wecom.domain.WeFlowerCustomerRel;
 import com.easyink.wecom.domain.dto.AddWeMaterialDTO;
-import com.easyink.wecom.domain.dto.WeMediaDTO;
 import com.easyink.wecom.domain.dto.WeWelcomeMsg;
 import com.easyink.wecom.domain.dto.common.*;
 import com.easyink.wecom.domain.dto.redeemcode.WeRedeemCodeDTO;
@@ -46,10 +43,7 @@ import org.redisson.api.RLock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -103,9 +97,13 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
     @Autowired
     private CustomerRedisCache customerRedisCache;
 
+
+    private final WeEmpleCodeStatisticMapper weEmpleCodeStatisticMapper;
+
     @Autowired
-    public WeCallBackAddExternalContactImpl(WeUserService weUserService) {
+    public WeCallBackAddExternalContactImpl(WeUserService weUserService, WeEmpleCodeStatisticMapper weEmpleCodeStatisticMapper) {
         this.weUserService = weUserService;
+        this.weEmpleCodeStatisticMapper = weEmpleCodeStatisticMapper;
     }
 
 
@@ -238,7 +236,8 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
                 String empleCodeId = messageMap.getEmpleCodeId();
                 //更新活码数据统计
                 weEmpleCodeAnalyseService.saveWeEmpleCodeAnalyse(corpId, userId, externalUserId, empleCodeId, true);
-
+                // 活码统计数据记录
+                empleStatisticCount(corpId, userId, state);
                 //查询外部联系人与通讯录关系数据
                 WeFlowerCustomerRel weFlowerCustomerRel = weFlowerCustomerRelService
                         .getOne(new LambdaQueryWrapper<WeFlowerCustomerRel>()
@@ -273,6 +272,38 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
             }
         } catch (Exception e) {
             log.error("empleCodeHandle error!! e={}", ExceptionUtils.getStackTrace(e));
+        }
+    }
+
+    /**
+     * 活码统计数据记录
+     *
+     * @param corpId 企业ID
+     * @param userId 员工ID
+     * @param empleCodeId 活码ID
+     */
+    private void empleStatisticCount(String corpId, String userId, String empleCodeId) {
+        String date = DateUtils.dateTime(new Date());
+        // 获取当前日期下活码-员工对应的统计数据
+        WeEmpleCodeStatistic historyData = weEmpleCodeStatisticMapper.selectOne(new LambdaQueryWrapper<WeEmpleCodeStatistic>()
+                .eq(WeEmpleCodeStatistic::getCorpId, corpId)
+                .eq(WeEmpleCodeStatistic::getUserId, userId)
+                .eq(WeEmpleCodeStatistic::getEmpleCodeId, empleCodeId)
+                .eq(WeEmpleCodeStatistic::getTime, date)
+        );
+        // 没有历史数据，创建一条新数据
+        if (historyData == null) {
+            WeEmpleCodeStatistic newData = new WeEmpleCodeStatistic(corpId, Long.valueOf(empleCodeId), userId, date);
+            newData.addHandle();
+            // 保存新数据
+            weEmpleCodeStatisticMapper.insert(newData);
+        } else {
+            // 存在数据，则将新增客户数+1
+            List<WeEmpleCodeStatistic> dataList = new ArrayList<>();
+            historyData.setNewCustomerCnt(historyData.getNewCustomerCnt() + 1);
+            dataList.add(historyData);
+            // 更新数据
+            weEmpleCodeStatisticMapper.batchInsertOrUpdate(dataList);
         }
     }
 

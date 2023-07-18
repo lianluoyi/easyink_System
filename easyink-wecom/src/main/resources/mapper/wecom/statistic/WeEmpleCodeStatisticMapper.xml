@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.easyink.wecom.mapper.statistic.WeEmpleCodeStatisticMapper">
+    <!--批量插入或更新统计数据-->
+    <insert id="batchInsertOrUpdate">
+        INSERT INTO we_emple_code_statistic (corp_id, emple_code_id, user_id, accumulate_customer_cnt, retain_customer_cnt, new_customer_cnt, loss_customer_cnt, `time`)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+            #{item.corpId}, #{item.empleCodeId}, #{item.userId}, #{item.accumulateCustomerCnt},
+            #{item.retainCustomerCnt}, #{item.newCustomerCnt}, #{item.lossCustomerCnt}, #{item.time}
+            )
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+        accumulate_customer_cnt = VALUES(accumulate_customer_cnt),
+        retain_customer_cnt = VALUES(retain_customer_cnt),
+        new_customer_cnt = VALUES(new_customer_cnt),
+        loss_customer_cnt = VALUES(loss_customer_cnt)
+    </insert>
+    <!--活码统计-数据总览-->
+    <select id="listEmpleTotal" resultType="com.easyink.wecom.domain.vo.statistics.emplecode.EmpleCodeBaseVO">
+        SELECT
+        SUM(CASE WHEN `time` = #{endDate} THEN accumulate_customer_cnt ELSE 0 END) AS accumulateCustomerCnt,
+        SUM(CASE WHEN `time` = #{endDate} THEN retain_customer_cnt ELSE 0 END) AS retainCustomerCnt,
+        SUM( new_customer_cnt ) AS newCustomerCnt,
+        SUM( loss_customer_cnt ) AS lossCustomerCnt
+        FROM
+        we_emple_code_statistic
+        WHERE corp_id = #{corpId}
+        <if test="empleCodeIdList != null and empleCodeIdList.size() > 0">
+            AND emple_code_id IN
+            <foreach collection="empleCodeIdList" item="empleCodeId" open="(" separator="," close=")">
+                 #{empleCodeId}
+            </foreach>
+        </if>
+        <if test="userIds != null and userIds.size() > 0">
+            AND user_id IN
+            <foreach collection="userIds" item="userId" open="(" separator="," close=")">
+                #{userId}
+            </foreach>
+        </if>
+        <if test="beginDate != null and beginDate != ''">
+            AND `time` &gt;= #{beginDate}
+        </if><if test="endDate != null and endDate != ''">
+            AND `time` &lt;= #{endDate}
+        </if>
+    </select>
+    <!--活码统计-员工维度-获取截止当前时间下，员工新增客户数-->
+    <select id="listUserCustomerRel"
+            resultType="com.easyink.wecom.domain.vo.statistics.emplecode.EmpleCodeUserVO">
+        SELECT user_id, COUNT(external_userid) currentNewCustomerCnt
+        FROM
+        we_flower_customer_rel
+        WHERE
+        corp_id = #{corpId}
+        AND `status` NOT IN ('${@com.easyink.common.enums.CustomerStatusEnum@DRAIN.code}', '${@com.easyink.common.enums.CustomerStatusEnum@DELETE.code}')
+        <if test="empleCodeIdList != null and empleCodeIdList.size() > 0">
+            AND state IN
+            <foreach collection="empleCodeIdList" item="empleCodeId" open="(" separator="," close=")">
+                #{empleCodeId}
+            </foreach>
+        </if>
+        <if test="userIds != null and userIds.size() > 0">
+            AND user_id IN
+            <foreach collection="userIds" item="userId" open="(" separator="," close=")">
+                #{userId}
+            </foreach>
+        </if>
+        AND create_time >= #{beginTime}
+        AND create_time &lt;= #{time}
+        GROUP BY user_id
+    </select>
+    <!--活码统计-员工维度-获取基础数据-->
+    <select id="listEmpleUser" resultType="com.easyink.wecom.domain.vo.statistics.emplecode.EmpleCodeUserVO">
+        SELECT
+        wecs.user_id AS userId,
+        wu.user_name AS userName,
+        wd.name AS departmentName,
+        wu.head_image_url AS userHeadImage,
+        SUM( CASE WHEN `time` = #{endDate} THEN wecs.accumulate_customer_cnt ELSE 0 END ) AS accumulateCustomerCnt,
+        SUM( CASE WHEN `time` = #{endDate} THEN wecs.retain_customer_cnt ELSE 0 END ) AS retainCustomerCnt,
+        SUM( wecs.new_customer_cnt ) AS newCustomerCnt,
+        SUM( wecs.loss_customer_cnt ) AS lossCustomerCnt
+        FROM
+        we_emple_code_statistic wecs
+        LEFT JOIN we_user wu ON wecs.corp_id = wu.corp_id AND wecs.user_id = wu.user_id
+        LEFT JOIN we_department wd ON wu.corp_id = wd.corp_id AND wu.main_department = wd.id
+        WHERE wecs.corp_id = #{corpId}
+        <if test="empleCodeIdList != null and empleCodeIdList.size() > 0">
+            AND wecs.emple_code_id IN
+            <foreach collection="empleCodeIdList" item="empleCodeId" open="(" separator="," close=")">
+                #{empleCodeId}
+            </foreach>
+        </if>
+        <if test="userIds != null and userIds.size() > 0">
+            AND wecs.user_id IN
+            <foreach collection="userIds" item="userId" open="(" separator="," close=")">
+                #{userId}
+            </foreach>
+        </if>
+        <if test="beginDate != null and beginDate != ''">
+            AND wecs.`time` &gt;= #{beginDate}
+        </if>
+        <if test="endDate != null and endDate != ''">
+            AND wecs.`time` &lt;= #{endDate}
+        </if>
+        GROUP BY wecs.user_id
+    </select>
+    <!--活码统计-活码维度-获取基础数据-->
+    <select id="listEmple" resultType="com.easyink.wecom.domain.vo.statistics.emplecode.EmpleCodeVO">
+        SELECT
+        wec.scenario AS empleName,
+        wecs.emple_code_id AS empleCodeId,
+        SUM( CASE WHEN `time` = #{endDate} THEN wecs.accumulate_customer_cnt ELSE 0 END ) AS accumulateCustomerCnt,
+        SUM( CASE WHEN `time` = #{endDate} THEN wecs.retain_customer_cnt ELSE 0 END ) AS retainCustomerCnt,
+        SUM( wecs.new_customer_cnt ) AS newCustomerCnt,
+        SUM( wecs.loss_customer_cnt ) AS lossCustomerCnt
+        FROM
+        we_emple_code_statistic wecs
+        LEFT JOIN we_emple_code wec ON wecs.corp_id = wec.corp_id AND wecs.emple_code_id = wec.id
+        WHERE wecs.corp_id = #{corpId}
+        <if test="empleCodeIdList != null and empleCodeIdList.size() > 0">
+            AND wecs.emple_code_id IN
+            <foreach collection="empleCodeIdList" item="empleCodeId" open="(" separator="," close=")">
+                #{empleCodeId}
+            </foreach>
+        </if>
+        <if test="userIds != null and userIds.size() > 0">
+            AND wecs.user_id IN
+            <foreach collection="userIds" item="userId" open="(" separator="," close=")">
+                #{userId}
+            </foreach>
+        </if>
+        <if test="beginDate != null and beginDate != ''">
+            AND wecs.`time` &gt;= #{beginDate}
+        </if>
+        <if test="endDate != null and endDate != ''">
+            AND wecs.`time` &lt;= #{endDate}
+        </if>
+        GROUP BY wecs.emple_code_id
+        ORDER BY wec.create_time DESC
+    </select>
+    <!--活码统计-活码维度-获取截止当前时间下，员工新增客户数-->
+    <select id="listStateUserCustomerRel"
+            resultType="com.easyink.wecom.domain.vo.statistics.emplecode.EmpleCodeVO">
+        SELECT `state` AS empleCodeId, COUNT(external_userid) currentNewCustomerCnt
+        FROM
+        we_flower_customer_rel
+        WHERE
+        corp_id = #{corpId}
+        AND `status` NOT IN ('${@com.easyink.common.enums.CustomerStatusEnum@DRAIN.code}', '${@com.easyink.common.enums.CustomerStatusEnum@DELETE.code}')
+        <if test="empleCodeIdList != null and empleCodeIdList.size() > 0">
+            AND state IN
+            <foreach collection="empleCodeIdList" item="empleCodeId" open="(" separator="," close=")">
+                #{empleCodeId}
+            </foreach>
+        </if>
+        <if test="userIds != null and userIds.size() > 0">
+            AND user_id IN
+            <foreach collection="userIds" item="userId" open="(" separator="," close=")">
+                #{userId}
+            </foreach>
+        </if>
+        AND create_time >= #{beginTime}
+        AND create_time &lt;= #{time}
+        GROUP BY `state`
+    </select>
+    <!--活码统计-日期维度-获取基础数据-->
+    <select id="listEmpleDate" resultType="com.easyink.wecom.domain.vo.statistics.emplecode.EmpleCodeDateVO">
+        SELECT
+        `time`,
+        SUM( new_customer_cnt ) AS newCustomerCnt,
+        SUM( loss_customer_cnt ) AS lossCustomerCnt
+        FROM
+        we_emple_code_statistic
+        WHERE corp_id = #{corpId}
+        <if test="empleCodeIdList != null and empleCodeIdList.size() > 0">
+            AND emple_code_id IN
+            <foreach collection="empleCodeIdList" item="empleCodeId" open="(" separator="," close=")">
+                #{empleCodeId}
+            </foreach>
+        </if>
+        <if test="userIds != null and userIds.size() > 0">
+            AND user_id IN
+            <foreach collection="userIds" item="userId" open="(" separator="," close=")">
+                #{userId}
+            </foreach>
+        </if>
+        <if test="beginDate != null and beginDate != ''">
+            AND `time` &gt;= #{beginDate}
+        </if>
+        <if test="endDate != null and endDate != ''">
+            AND `time` &lt;= #{endDate}
+        </if>
+        GROUP BY `time`
+    </select>
+    <!--活码统计-日期维度-获取截止当前时间下，员工新增客户数-->
+    <select id="listEmpleDateUserCustomerRel"
+            resultType="com.easyink.wecom.domain.vo.statistics.emplecode.EmpleCodeDateVO">
+        SELECT DATE_FORMAT(create_time, '%Y-%m-%d') AS `time`, COUNT(external_userid) currentNewCustomerCnt
+        FROM
+        we_flower_customer_rel
+        WHERE
+        corp_id = #{corpId}
+        AND `status` NOT IN ('${@com.easyink.common.enums.CustomerStatusEnum@DRAIN.code}', '${@com.easyink.common.enums.CustomerStatusEnum@DELETE.code}')
+        <if test="empleCodeIdList != null and empleCodeIdList.size() > 0">
+            AND state IN
+            <foreach collection="empleCodeIdList" item="empleCodeId" open="(" separator="," close=")">
+                #{empleCodeId}
+            </foreach>
+        </if>
+        <if test="userIds != null and userIds.size() > 0">
+            AND user_id IN
+            <foreach collection="userIds" item="userId" open="(" separator="," close=")">
+                #{userId}
+            </foreach>
+        </if>
+        AND create_time &lt;= #{time}
+        GROUP BY DATE_FORMAT(create_time, '%Y-%m-%d')
+    </select>
+    <!--活码统计-日期维度-获取每个日期下的留存客户数和累计客户数-->
+    <select id="listDateAccumulateRetainCnt"
+            resultType="com.easyink.wecom.domain.vo.statistics.emplecode.EmpleCodeDateVO">
+        SELECT
+        `time`,
+        SUM(accumulate_customer_cnt)  AS accumulateCustomerCnt,
+        SUM(retain_customer_cnt) AS retainCustomerCnt
+        FROM
+        we_emple_code_statistic
+        WHERE corp_id = #{corpId}
+        <if test="empleCodeIdList != null and empleCodeIdList.size() > 0">
+            AND emple_code_id IN
+            <foreach collection="empleCodeIdList" item="empleCodeId" open="(" separator="," close=")">
+                #{empleCodeId}
+            </foreach>
+        </if>
+        <if test="userIds != null and userIds.size() > 0">
+            AND user_id IN
+            <foreach collection="userIds" item="userId" open="(" separator="," close=")">
+                #{userId}
+            </foreach>
+        </if>
+        <if test="beginDate != null and beginDate != ''">
+            AND `time` &gt;= #{beginDate}
+        </if>
+        <if test="endDate != null and endDate != ''">
+            AND `time` &lt;= #{endDate}
+        </if>
+        GROUP BY `time`
+    </select>
+</mapper>
