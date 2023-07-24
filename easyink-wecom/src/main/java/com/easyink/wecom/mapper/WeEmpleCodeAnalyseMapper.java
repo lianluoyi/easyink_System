@@ -33,7 +33,7 @@ public interface WeEmpleCodeAnalyseMapper extends BaseMapper<WeEmpleCodeAnalyse>
      * @param analyseDTO analyseDTO
      * @return List<WeEmpleCodeAnalyse>
      */
-    List<WeEmpleCodeAnalyse> selectList(FindWeEmpleCodeAnalyseDTO analyseDTO);
+    List<WeEmpleCodeAnalyse> selectAnalyseList(FindWeEmpleCodeAnalyseDTO analyseDTO);
 
     /**
      * 查询每个日期的新增和流失数量

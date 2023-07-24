@@ -75,4 +75,11 @@ public interface WeEmpleCodeStatisticService extends IService<WeEmpleCodeStatist
      * @return 报表
      */
     AjaxResult exportEmpleDate(EmpleCodeStatisticDTO dto);
+
+    /**
+     * 从活码分析表更新活码统计表历史旧数据
+     *
+     * @return 结果
+     */
+    AjaxResult updateHistoryData();
 }

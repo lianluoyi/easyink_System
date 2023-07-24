@@ -1,13 +1,11 @@
 package com.easyink.web.controller.wecom;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.easyink.common.core.controller.BaseController;
 import com.easyink.common.core.domain.AjaxResult;
 import com.easyink.common.core.page.TableDataInfo;
 import com.easyink.common.enums.ResultTip;
 import com.easyink.common.utils.PageInfoUtil;
 import com.easyink.wecom.domain.dto.statistics.*;
-import com.easyink.wecom.domain.entity.WeUserCustomerMessageStatistics;
 import com.easyink.wecom.domain.vo.statistics.*;
 import com.easyink.wecom.domain.vo.statistics.emplecode.EmpleCodeDateVO;
 import com.easyink.wecom.domain.vo.statistics.emplecode.EmpleCodeUserVO;
@@ -44,6 +42,12 @@ public class StatisticsController extends BaseController {
     private final WeTagService weTagService;
     private final WeGroupTagService weGroupTagService;
     private final WeEmpleCodeStatisticService weEmpleCodeStatisticService;
+
+    @PostMapping("/emple/history/update")
+    @ApiOperation("从活码分析表更新活码统计表历史旧数据")
+    public AjaxResult empleStatisticUpdate() {
+        return weEmpleCodeStatisticService.updateHistoryData();
+    }
 
     @GetMapping("/data")
     @ApiOperation("执行对应日期的数据统计任务，执行前需先将we_user_customer_message_statisticsService表中对应日期的数据删除。")

@@ -90,4 +90,22 @@ public class EmpleCodeBaseVO {
         this.currentNewCustomerCnt = currentNewCustomerCnt;
         this.retainNewCustomerRate = getRetainNewCustomerRate();
     }
+
+    /**
+     * 处理Redis数据
+     *
+     * @param redisNewCustomerCnt redis中的新增客户数
+     * @param redisLossCustomerCnt redis中的流失客户数
+     */
+    public void handleRedisData(int redisNewCustomerCnt, int redisLossCustomerCnt) {
+        // 累计客户数： Redis的新增客户数 + 原来的累计客户数
+        this.accumulateCustomerCnt += redisNewCustomerCnt;
+        // 留存客户数： (Redis的新增客户数 - Redis的流失客户数) + 原来的留存客户数
+        this.retainCustomerCnt += (redisNewCustomerCnt - redisLossCustomerCnt);
+        // 新增客户数： Redis的新增客户数 + 原来的新增客户数
+        this.newCustomerCnt += redisNewCustomerCnt;
+        // 流失客户数： Redis的流失客户数 + 原来的流失客户数
+        this.lossCustomerCnt += redisLossCustomerCnt;
+    }
+
 }

@@ -691,4 +691,18 @@ public class DateUtils extends org.apache.commons.lang3.time.DateUtils {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern(YYYY_MM_DD);
         return yesterday.format(formatter);
     }
+
+    /**
+     * 根据传来的日期，获取传来的日期前一天的指定格式的日期
+     *
+     * @param date 日期，格式为YYYY-MM-DD
+     * @param pattern 转换的格式，如YYYY-MM-DD等
+     * @return 前一天日期
+     */
+    public static String getYesterday(String date, String pattern) {
+        LocalDate today = LocalDate.parse(date);
+        LocalDate previousDate = today.minusDays(1);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(pattern);
+        return previousDate.format(formatter);
+    }
 }

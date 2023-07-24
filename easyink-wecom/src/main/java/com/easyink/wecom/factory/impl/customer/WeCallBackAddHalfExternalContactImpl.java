@@ -16,12 +16,9 @@ import javax.annotation.Resource;
 @Component("add_half_external_contact")
 public class WeCallBackAddHalfExternalContactImpl extends WeEventStrategy {
 
-    @Resource(name = "add_external_contact")
-    private WeCallBackAddExternalContactImpl weCallBackAddExternalContact;
 
     @Override
     public void eventHandle(WxCpXmlMessageVO message) {
-        // 与【新增客户事件】相同处理逻辑
-        weCallBackAddExternalContact.eventHandle(message);
+       log.info("[单向联系人]收到单向联系人回调,暂不处理,message:{}",message);
     }
 }

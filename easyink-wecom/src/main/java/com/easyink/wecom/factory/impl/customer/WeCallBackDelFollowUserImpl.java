@@ -11,12 +11,11 @@ import com.easyink.common.enums.CustomerTrajectoryEnums;
 import com.easyink.common.enums.MessageType;
 import com.easyink.common.enums.ResultTip;
 import com.easyink.common.exception.CustomException;
+import com.easyink.common.utils.DateUtils;
 import com.easyink.common.utils.TagRecordUtil;
 import com.easyink.wecom.client.WeMessagePushClient;
 import com.easyink.wecom.domain.WeCustomer;
-import com.easyink.wecom.domain.WeCustomerTrajectory;
 import com.easyink.wecom.domain.WeFlowerCustomerRel;
-import com.easyink.wecom.domain.WeTag;
 import com.easyink.wecom.domain.dto.WeMessagePushDTO;
 import com.easyink.wecom.domain.dto.message.TextMessageDTO;
 import com.easyink.wecom.domain.vo.WeUserVO;
@@ -24,18 +23,17 @@ import com.easyink.wecom.domain.vo.WxCpXmlMessageVO;
 import com.easyink.wecom.domain.vo.autotag.TagInfoVO;
 import com.easyink.wecom.domain.vo.customerloss.CustomerLossTagVO;
 import com.easyink.wecom.factory.WeEventStrategy;
-import com.easyink.wecom.mapper.WeCustomerTrajectoryMapper;
 import com.easyink.wecom.mapper.WeUserMapper;
 import com.easyink.wecom.service.*;
+import com.easyink.wecom.utils.redis.CustomerRedisCache;
+import com.easyink.wecom.utils.redis.EmpleStatisticRedisCache;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.apache.poi.ss.formula.functions.T;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.sql.Time;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -68,6 +66,14 @@ public class WeCallBackDelFollowUserImpl extends WeEventStrategy {
 
     @Autowired
     private WeTagService weTagService;
+    @Autowired
+    private CustomerRedisCache customerRedisCache;
+
+    private final EmpleStatisticRedisCache empleStatisticRedisCache;
+
+    public WeCallBackDelFollowUserImpl(EmpleStatisticRedisCache empleStatisticRedisCache) {
+        this.empleStatisticRedisCache = empleStatisticRedisCache;
+    }
 
     @Override
     public void eventHandle(WxCpXmlMessageVO message) {
@@ -78,6 +84,17 @@ public class WeCallBackDelFollowUserImpl extends WeEventStrategy {
             log.error("del_follow_user:返回数据不完整,message:{}", message);
             return;
         }
+        // 存入缓存列表 稍后处理
+        customerRedisCache.saveCallback(message.getToUserName(), message.getUserId(), message.getExternalUserId(), message);
+
+    }
+
+    /**
+     * 处理流失客户回调
+     *
+     * @param message 回调消息
+     */
+    public void handleDelFollowUser(WxCpXmlMessageVO message) {
         String corpId = message.getToUserName();
         try {
             weFlowerCustomerRelService.deleteFollowUser(message.getUserId(), message.getExternalUserId(), Constants.DELETE_CODES, corpId);
@@ -99,13 +116,16 @@ public class WeCallBackDelFollowUserImpl extends WeEventStrategy {
                     weMessagePushDto.setMsgtype(MessageType.TEXT.getMessageType());
                     weMessagePushDto.setTouser(message.getUserId());
                     weMessagePushDto.setText(textMessageDTO);
-                    Optional.ofNullable(validWeCorpAccount).map(WeCorpAccount::getAgentId).ifPresent(agentId -> weMessagePushDto.setAgentid(Integer.valueOf(agentId)));
-                    weMessagePushClient.sendMessageToUser(weMessagePushDto, weMessagePushDto.getAgentid().toString(), corpId);
+                    Optional.ofNullable(validWeCorpAccount)
+                            .map(WeCorpAccount::getAgentId)
+                            .ifPresent(agentId -> weMessagePushDto.setAgentid(Integer.valueOf(agentId)));
+                    weMessagePushClient.sendMessageToUser(weMessagePushDto, weMessagePushDto.getAgentid()
+                                                                                            .toString(), corpId);
 
                 }
                 // 打客户流失标签
                 if (WeConstans.DEL_FOLLOW_USER_SWITCH_OPEN.equals(customerLossTagSwitch)) {
-                    addLossTag(message,corpId);
+                    addLossTag(message, corpId);
                 }
             });
             // 更新活码统计
@@ -116,9 +136,11 @@ public class WeCallBackDelFollowUserImpl extends WeEventStrategy {
                     .last(GenConstants.LIMIT_1)
             );
             // state 为空表示不是从活码加的外部联系人
-            if(weFlowerCustomerRel != null && StringUtils.isNotBlank(weFlowerCustomerRel.getState())) {
+            if (weFlowerCustomerRel != null && StringUtils.isNotBlank(weFlowerCustomerRel.getState())) {
                 weEmpleCodeAnalyseService.saveWeEmpleCodeAnalyse(corpId, message.getUserId(), message.getExternalUserId(), weFlowerCustomerRel.getState(), false);
             }
+            // 更新Redis中的数据
+            empleStatisticRedisCache.addLossCustomerCnt(corpId, DateUtils.dateTime(new Date()), Long.valueOf(weFlowerCustomerRel.getState()), message.getUserId());
             // 客户轨迹:记录删除跟进成员事件
             weCustomerTrajectoryService.saveActivityRecord(corpId, message.getUserId(), message.getExternalUserId(),
                     CustomerTrajectoryEnums.SubType.DEL_USER.getType());

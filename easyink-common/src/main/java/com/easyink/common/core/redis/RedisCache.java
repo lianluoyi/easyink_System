@@ -6,6 +6,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.Resource;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +23,35 @@ import java.util.concurrent.TimeUnit;
 public class RedisCache {
     @Autowired
     public RedisTemplate redisTemplate;
+
+    @Resource( name = "empleRedisTemplate")
+    public RedisTemplate empleRedisTemplate;
+
+    /**
+     * 增加计数
+     *
+     * @param key 缓存的键值
+     * @param hashKey 缓存的hash键值
+     * @param value 自增的值
+     */
+    public <T> void increment(final String key, final T hashKey, final long value) {
+        empleRedisTemplate.opsForHash().increment(key, hashKey, value);
+    }
+
+    /**
+     * 获取缓存的hashValue
+     *
+     * @param key 缓存的建
+     * @param hashKey 缓存的hash键值
+     */
+    public <T> int getHashIncrCnt(final String key, final T hashKey) {
+        Object incrCnt = empleRedisTemplate.opsForHash().get(key, hashKey);
+        if (incrCnt == null) {
+            return 0;
+        }
+        return (int) incrCnt;
+
+    }
 
     /**
      * 缓存基本的对象，Integer、String、实体类等

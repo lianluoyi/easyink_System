@@ -14,7 +14,7 @@ import java.io.IOException;
 /**
  * redis分布式锁配置
  *
- * @author : wangzimo
+ * @author : silver_chariot
  * @date : 2021-3-17 20:05:34
  */
 @Configuration

@@ -1097,6 +1097,13 @@
         ORDER BY
         wfcr.create_time DESC
     </select>
+    <!--根据客户状态企业id和时间获取去重客户数量-->
+    <select id="countCustomerNumByTime" resultType="java.lang.Integer">
+        <include refid="countCustomer"/>
+        <if test="time != null and time != ''">
+            AND create_time &lt;= #{time}
+        </if>
+    </select>
 
 
 </mapper>

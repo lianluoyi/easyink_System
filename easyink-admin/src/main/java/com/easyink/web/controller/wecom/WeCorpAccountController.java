@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.easyink.common.annotation.Log;
 import com.easyink.common.config.ChatRsaKeyConfig;
 import com.easyink.common.config.RuoYiConfig;
+import com.easyink.common.config.WeCrypt;
 import com.easyink.common.constant.Constants;
 import com.easyink.common.core.controller.BaseController;
 import com.easyink.common.core.domain.AjaxResult;

@@ -274,7 +274,7 @@ INSERT INTO `sys_job`
 VALUES (7, '联系客户统计数据拉取', 'SYSTEM', 'UserBehaviorDataTak.getUserBehaviorData()', '0 30 5 * * ?', '1', '1', '0', 'admin',
         '2021-02-25 16:47:59', 'admin', '2021-02-25 23:45:03', '');
 INSERT INTO `sys_job`
-VALUES (8, '群聊数据统计数据拉取', 'SYSTEM', 'GroupChatStatisticTask.getGroupChatData()', '0 0 6 * * ? ', '1', '1', '0', 'admin',
+VALUES (8, '群聊数据统计数据拉取', 'SYSTEM', 'GroupChatStatisticTask.getGroupChatData()', '0 0 6 * * ?', '1', '1', '0', 'admin',
         '2021-02-25 16:49:44', '', '2021-02-25 23:45:05', '');
 INSERT INTO `sys_job`
 VALUES (9, '首页数据统计', 'SYSTEM', 'PageHomeDataTask.getPageHomeDataData()', '0 30 6 * * ?', '1', '1', '0', 'admin',
@@ -324,24 +324,15 @@ INSERT INTO `sys_job` (`job_id`, `job_name`, `job_group`, `invoke_target`, `cron
 VALUES ('22', '同步回调变更客户定时任务', 'SYSTEM', 'syncCustomerChangeTask.execute()', '0/30 * * * * ? ', '2', '1', '0', 'admin',
         '2023-06-08 19:31:58', 'admin', '2023-06-08 19:32:36', '');
 -- 2023-07-07 lichaoyu 增加定时任务 Tower 任务: 活码统计-定时任务统计数据处理 ( https://tower.im/teams/636204/todos/71488 )
+-- 2023-07-18 lichaoyu 删除每小时定时任务，修改为每日活码初始化数据任务，在每天 00:00:00 执行一次 Tower 任务: 今日活码数据实时更新优化 ( https://tower.im/teams/636204/todos/71849 )
 INSERT INTO `sys_job`(`job_id`, `job_name`, `job_group`, `invoke_target`, `cron_expression`, `misfire_policy`,
                       `concurrent`, `status`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`)
-VALUES ('23', '每小时活码统计数据定时任务', 'SYSTEM', 'EmpleStatisticTask.getEmpleStatisticData()', '0 3 * * * ?', '2',
+VALUES ('23', '每日活码初始化数据任务', 'SYSTEM', 'EmpleStatisticInitTask.getEmpleStatisticData()', '0 0 0 * * ?', '2',
         '1', '0', 'admin', '2023-07-07 15:22:28', 'admin', '2023-07-07 15:23:05', '');
 INSERT INTO `sys_job`(`job_id`, `job_name`, `job_group`, `invoke_target`, `cron_expression`, `misfire_policy`,
                       `concurrent`, `status`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`)
 VALUES ('24', '每日活码统计数据定时任务(传参日期格式:YYYY-MM-DD)', 'SYSTEM', 'EmpleStatisticTask.getEmpleStatisticDateData('''')', '0 0 3 * * ?', '2', '1',
         '0', 'admin', '2023-07-07 19:50:41', '', '2023-07-07 19:50:46', '');
--- 2023-07-11 lichaoyu 添加二次数据统计定时任务 Tower 任务: 每天定时2次统计数据 ( https://tower.im/teams/636204/todos/69513 )
-INSERT INTO `sys_job`
-VALUES ('25', '联系客户统计数据拉取', 'SYSTEM', 'UserBehaviorDataTak.getUserBehaviorData()', '0 0 12 * * ?', '1', '1', '0', 'admin',
-        '2023-07-11 10:15:59', 'admin', '2023-07-11 10:16:37', '');
-INSERT INTO `sys_job`
-VALUES ('26', '群聊数据统计数据拉取', 'SYSTEM', 'GroupChatStatisticTask.getGroupChatData()', '0 30 12 * * ? ', '1', '1', '0', 'admin',
-        '2023-07-11 10:16:44', '', '2023-07-11 10:16:16', '');
-INSERT INTO `sys_job`
-VALUES ('27', '数据统计定时任务', 'SYSTEM', 'DataStatisticsTask.getDataStatistics()', '0 30 13 * * ?', '2', '1', '0', 'admin',
-        '2023-07-11 10:17:13', '', NULL, '');
 
 -- ----------------------------
 -- Table structure for sys_menu
@@ -3739,4 +3730,26 @@ CREATE TABLE `we_emple_code_statistic` (
                                            UNIQUE KEY `uni_emple_user_time` (`emple_code_id`,`user_id`,`time`) USING BTREE,
                                            KEY `idx_corp_user_id` (`corp_id`,`user_id`) USING BTREE,
                                            KEY `idx_emple_user_id` (`emple_code_id`,`user_id`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COMMENT='活码数据统计表';
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COMMENT='活码数据统计表-每天凌晨3点更新前一天的数据';
+
+
+-- 开放api设置表
+CREATE TABLE `app_id_info` (
+                               `corp_id` varchar(64) NOT NULL DEFAULT '0' COMMENT '企业ID',
+                               `app_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT 'app_id',
+                               `app_secret` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT 'app_secret',
+                               `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                               `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+                               PRIMARY KEY (`corp_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='开放API配置表';
+
+-- 开放api回调设置表
+CREATE TABLE `app_callback_setting` (
+                                        `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键id',
+                                        `corp_id` varchar(64) NOT NULL DEFAULT '' COMMENT '企业id',
+                                        `callback_url` varchar(512) NOT NULL DEFAULT '' COMMENT '回调地址',
+                                        `token` varchar(128) NOT NULL DEFAULT '' COMMENT 'token',
+                                        `encoding_aes_key` varchar(255) NOT NULL DEFAULT '' COMMENT '用于加密解密的aesKey',
+                                        PRIMARY KEY (`id`),
+                                        KEY `uniq_corp_url` (`corp_id`,`callback_url`) USING BTREE
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COMMENT='API-消息订阅配置表';

@@ -3,6 +3,7 @@ package com.easyink.wecom.service.impl;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.io.FileUtil;
 import com.alibaba.fastjson.JSON;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.easyink.common.config.RuoYiConfig;
@@ -32,6 +33,7 @@ import com.easyink.wecom.handler.shorturl.EmpleCodeShortUrlHandler;
 import com.easyink.wecom.login.util.LoginTokenService;
 import com.easyink.wecom.mapper.WeEmpleCodeMapper;
 import com.easyink.wecom.mapper.redeemcode.WeRedeemCodeMapper;
+import com.easyink.wecom.mapper.statistic.WeEmpleCodeStatisticMapper;
 import com.easyink.wecom.service.*;
 import com.easyink.wecom.service.radar.WeRadarService;
 import com.easyink.wecom.service.redeemcode.WeRedeemCodeActivityService;
@@ -75,9 +77,10 @@ public class WeEmpleCodeServiceImpl extends ServiceImpl<WeEmpleCodeMapper, WeEmp
     private final WeUserService weUserService;
     private final EmpleCodeShortUrlHandler empleCodeShortUrlHandler;
     private final RuoYiConfig ruoYiConfig;
+    private final WeEmpleCodeStatisticMapper weEmpleCodeStatisticMapper;
 
     @Autowired
-    public WeEmpleCodeServiceImpl(WeEmpleCodeTagService weEmpleCodeTagService, WeEmpleCodeUseScopService weEmpleCodeUseScopService, WeExternalContactClient weExternalContactClient, RedisCache redisCache, WeEmpleCodeMaterialService weEmpleCodeMaterialService, WeMaterialService weMaterialService, WeGroupCodeService weGroupCodeService, WeEmpleCodeAnalyseService weEmpleCodeAnalyseService, WeGroupCodeActualService weGroupCodeActualService, WeRedeemCodeMapper weRedeemCodeMapper, WeRedeemCodeActivityService weRedeemCodeActivityService, WeUserService weUserService, EmpleCodeShortUrlHandler empleCodeShortUrlHandler, RuoYiConfig ruoYiConfig) {
+    public WeEmpleCodeServiceImpl(WeEmpleCodeTagService weEmpleCodeTagService, WeEmpleCodeUseScopService weEmpleCodeUseScopService, WeExternalContactClient weExternalContactClient, RedisCache redisCache, WeEmpleCodeMaterialService weEmpleCodeMaterialService, WeMaterialService weMaterialService, WeGroupCodeService weGroupCodeService, WeEmpleCodeAnalyseService weEmpleCodeAnalyseService, WeGroupCodeActualService weGroupCodeActualService, WeRedeemCodeMapper weRedeemCodeMapper, WeRedeemCodeActivityService weRedeemCodeActivityService, WeUserService weUserService, EmpleCodeShortUrlHandler empleCodeShortUrlHandler, RuoYiConfig ruoYiConfig, WeEmpleCodeStatisticMapper weEmpleCodeStatisticMapper) {
         this.weEmpleCodeTagService = weEmpleCodeTagService;
         this.weEmpleCodeUseScopService = weEmpleCodeUseScopService;
         this.weExternalContactClient = weExternalContactClient;
@@ -92,6 +95,7 @@ public class WeEmpleCodeServiceImpl extends ServiceImpl<WeEmpleCodeMapper, WeEmp
         this.weUserService = weUserService;
         this.empleCodeShortUrlHandler = empleCodeShortUrlHandler;
         this.ruoYiConfig = ruoYiConfig;
+        this.weEmpleCodeStatisticMapper = weEmpleCodeStatisticMapper;
     }
 
     @Override
@@ -262,6 +266,10 @@ public class WeEmpleCodeServiceImpl extends ServiceImpl<WeEmpleCodeMapper, WeEmp
             weEmpleCodeUseScopService.saveOrUpdateBatch(useScops);
             //调用企微接口
             WeExternalContactDTO.WeContactWay weContactWay = getWeContactWay(weEmpleCode);
+            // 从作用范围获取userId列表
+            List<String> userIdList = getUserIdByScope(useScops, weEmpleCode.getCorpId());
+            // 处理活码统计表数据
+            handleEmpleStatisticData(userIdList, weEmpleCode.getCorpId(), weEmpleCode.getId());
             // 调用企微更新联系我接口
             try {
                 // 更新活码信息
@@ -299,7 +307,80 @@ public class WeEmpleCodeServiceImpl extends ServiceImpl<WeEmpleCodeMapper, WeEmp
         }
     }
 
+    /**
+     * 处理活码统计表数据
+     *
+     * @param userIdList 员工ID列表
+     * @param corpId 企业ID
+     * @param empleCodeId 活码ID
+     */
+    private void handleEmpleStatisticData(List<String > userIdList, String corpId, Long empleCodeId) {
+        if (StringUtils.isBlank(corpId) || empleCodeId == null || CollectionUtils.isEmpty(userIdList)) {
+            return;
+        }
+        // 今日日期
+        String today = DateUtils.dateTime(new Date());
+        // 最后要插入的数据
+        List<WeEmpleCodeStatistic> insertData = new ArrayList<>();
+        // 查询统计表中当天的数据
+        List<WeEmpleCodeStatistic> statisticList = weEmpleCodeStatisticMapper.selectList(new LambdaQueryWrapper<WeEmpleCodeStatistic>()
+                .eq(WeEmpleCodeStatistic::getCorpId, corpId)
+                .eq(WeEmpleCodeStatistic::getEmpleCodeId, empleCodeId)
+                .eq(WeEmpleCodeStatistic::getTime, today)
+        );
+        // 不存在数据
+        if (CollectionUtils.isEmpty(statisticList)) {
+            // 初始化这个活码的所有员工数据
+            List<Long> initList = new ArrayList<>();
+            initList.add(empleCodeId);
+            insertData = weEmpleCodeAnalyseService.initData(corpId, initList, today);
+        } else {
+            // 旧的员工ID列表
+            List<String> oldUserIdList = statisticList.stream().map(WeEmpleCodeStatistic::getUserId).collect(Collectors.toList());
+            // 删除掉旧的
+            userIdList.removeAll(oldUserIdList);
+            if (CollectionUtils.isEmpty(userIdList)) {
+                return;
+            }
+            // 初始化数据
+            for (String userId : userIdList) {
+                insertData.add(new WeEmpleCodeStatistic(corpId, empleCodeId, userId, today));
+            }
+        }
+        // 批量插入或更新今天的数据
+        weEmpleCodeStatisticMapper.batchInsertOrUpdate(insertData);
+    }
 
+    /**
+     * 根据使用范围获取userId列表
+     *
+     * @param useScops 活码使用范围
+     * @param corpId 企业ID
+     * @return
+     */
+    private List<String> getUserIdByScope(List<WeEmpleCodeUseScop> useScops, String corpId) {
+        if (CollectionUtils.isEmpty(useScops) || StringUtils.isBlank(corpId)) {
+            return new ArrayList<>();
+        }
+        // 获取员工ID列表，businessIdType = 2 表示是userid
+        List<String> userIdList = useScops.stream()
+                .filter(item -> item.getBusinessIdType().equals(WeConstans.USE_SCOP_BUSINESSID_TYPE_USER))
+                .map(WeEmpleCodeUseScop::getBusinessId).collect(Collectors.toList());
+        // 获取部门ID列表，businessIdType = 1 表示是departmentId
+        List<String> departmentIdList = useScops.stream()
+                .filter(item -> item.getBusinessIdType().equals(WeConstans.USE_SCOP_BUSINESSID_TYPE_ORG))
+                .map(WeEmpleCodeUseScop::getBusinessId).collect(Collectors.toList());
+        if (CollectionUtils.isEmpty(departmentIdList)) {
+            return userIdList;
+        }
+        // 获取部门下的userId列表
+        userIdList.addAll(weUserService.listOfUserId(corpId, departmentIdList.toArray(new String[0])));
+        if (CollectionUtils.isNotEmpty(departmentIdList)) {
+            // 获取部门下的userId列表
+            userIdList.addAll(weUserService.listOfUserId(corpId, departmentIdList.toArray(new String[0])));
+        }
+        return userIdList;
+    }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -343,7 +424,7 @@ public class WeEmpleCodeServiceImpl extends ServiceImpl<WeEmpleCodeMapper, WeEmp
     }
 
     @Override
-    public SelectWeEmplyCodeWelcomeMsgVO selectWelcomeMsgByState(String state, String corpId, String externalUserId) {
+    public SelectWeEmplyCodeWelcomeMsgVO selectWelcomeMsgByState(String state, String corpId) {
         if (StringUtils.isBlank(state) || StringUtils.isBlank(corpId)) {
             throw new CustomException(ResultTip.TIP_GENERAL_BAD_REQUEST);
         }
@@ -410,6 +491,10 @@ public class WeEmpleCodeServiceImpl extends ServiceImpl<WeEmpleCodeMapper, WeEmp
         //保存使用人及部门
         weEmpleCode.getWeEmpleCodeUseScops().forEach(item -> item.setEmpleCodeId(weEmpleCode.getId()));
         weEmpleCodeUseScopService.saveBatch(weEmpleCode.getWeEmpleCodeUseScops());
+        // 根据使用人及部门获取userId
+        List<String> userIdList = getUserIdByScope(weEmpleCode.getWeEmpleCodeUseScops(), weEmpleCode.getCorpId());
+        // 插入初始化数据
+        handleEmpleStatisticData(userIdList, weEmpleCode.getCorpId(), weEmpleCode.getId());
         //保存标签信息
         if (CollectionUtils.isNotEmpty(weEmpleCode.getWeEmpleCodeTags())) {
             weEmpleCode.getWeEmpleCodeTags().forEach(item -> item.setEmpleCodeId(weEmpleCode.getId()));
@@ -765,6 +850,31 @@ public class WeEmpleCodeServiceImpl extends ServiceImpl<WeEmpleCodeMapper, WeEmp
         }
         return this.baseMapper.listByName(dto);
 
+    }
+
+    /**
+     * 获取有效的活码ID
+     *
+     * @param corpId 企业ID
+     * @param date 日期，格式为YYYY-MM-DD
+     * @return 活码ID列表
+     */
+    @Override
+    public List<Long> getEffectEmpleCodeId(String corpId, String date) {
+        if (StringUtils.isBlank(corpId)) {
+            return new ArrayList<>();
+        }
+        // 获取小于格式为YYYY-MM-DD 23:29:59时间的需要统计数据的活码(未被删除的活码)
+        List<WeEmpleCode> weEmpleCodes = this.baseMapper.selectList(new LambdaQueryWrapper<WeEmpleCode>()
+                .eq(WeEmpleCode::getCorpId, corpId)
+                .eq(WeEmpleCode::getDelFlag, false)
+                .lt(WeEmpleCode::getCreateTime, DateUtils.parseEndDay(date))
+        );
+        if (CollectionUtils.isEmpty(weEmpleCodes)) {
+            return new ArrayList<>();
+        }
+        // 获取活码ID列表
+        return weEmpleCodes.stream().map(WeEmpleCode::getId).collect(Collectors.toList());
     }
 
     /**

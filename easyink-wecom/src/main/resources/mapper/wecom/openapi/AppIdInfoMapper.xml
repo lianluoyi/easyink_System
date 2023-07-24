@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.easyink.wecom.openapi.dao.AppIdInfoMapper">
+    <!--    新增-->
+    <insert id="insert">
+        INSERT INTO app_id_info
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            corp_id,
+            app_id,
+            app_secret,
+            create_time,
+        </trim>
+        <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
+            #{corpId},
+            #{appId},
+            #{appSecret},
+            #{createTime},
+        </trim>
+    </insert>
+    <update id="update">
+        UPDATE app_id_info
+        <set>
+            app_secret=#{appSecret},
+            update_time=#{updateTime},
+        </set>
+        WHERE corp_id = #{corpId}
+    </update>
+    <!--    获取-->
+    <select id="get" resultType="com.easyink.wecom.openapi.domain.entity.AppIdInfo">
+        SELECT corp_id, app_id, app_secret
+        FROM app_id_info
+        WHERE corp_id = #{corpId}
+        LIMIT 1
+    </select>
+    <!--    获取全部 -->
+    <select id="getAll" resultType="com.easyink.wecom.openapi.domain.entity.AppIdInfo">
+        SELECT corp_id, app_id, app_secret
+        FROM app_id_info
+    </select>
+</mapper>
