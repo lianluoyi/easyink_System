@@ -8,6 +8,8 @@ import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
+
 
 /**
  * 活码统计表实体类
@@ -19,7 +21,7 @@ import lombok.NoArgsConstructor;
 @TableName("we_emple_code_statistic")
 @NoArgsConstructor
 @ApiModel("活码统计")
-public class WeEmpleCodeStatistic {
+public class WeEmpleCodeStatistic implements Serializable {
 
     private static final long serialVersionUID = 1L;
 

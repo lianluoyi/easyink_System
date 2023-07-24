@@ -265,6 +265,13 @@ public enum ResultTip {
     TIP_ERROR_CREATE_MINI_APP_URL_LINK(9010,"创建小程序url_link 失败"),
     TIP_APPEND_MISSING(9012,"附加信息缺失"),
 
+    // open api 错误码  从10000 开始
+    TIP_MAX_CALLBACK_URL_CNT ( 10001,"一个企业最多只能设置三个回调地址"),
+    HAS_THIS_CALLBACK_URL(10002,"已配置此地址，请勿重复配置"),
+    EDIT_URL_ERROR(10003,"保存回调地址失败"),
+    DEL_URL_ERROR(10004,"删除回调地址失败"),
+    CALLBACK_FAIL(10005,"回调地址请求不通过, 请检查代码"),
+
     ;
     @Getter
     private final Integer code;

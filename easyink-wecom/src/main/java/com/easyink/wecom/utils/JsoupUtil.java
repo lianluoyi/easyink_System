@@ -104,7 +104,7 @@ public class JsoupUtil {
      * @param url 链接
      * @return true是  false否
      */
-    private static boolean isValidUrl(String url){
+    public static boolean isValidUrl(String url){
         Matcher urlMatcher = URL_PATTERN.matcher(url);
         return urlMatcher.find();
     }

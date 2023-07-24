@@ -75,11 +75,23 @@ public class ThreadPoolConfig {
 
     /**
      * 同步编辑客户回调 线程池
+     *
      * @return
      */
     @Bean("syncEditCustomerExecutor")
     public ThreadPoolTaskExecutor syncEditCustomerExecutor() {
         return init(corePoolSize, maxPoolSize, queueCapacity, keepAliveSeconds, "syncEditCustomer");
+    }
+
+    /**
+     * 发送回调线程池
+     *
+     * @return
+     */
+    @Bean("sendCallbackExecutor")
+    public ThreadPoolTaskExecutor sendCallbackExecutor() {
+        return init(corePoolSize, maxPoolSize, queueCapacity, keepAliveSeconds, "sendCallback");
+
     }
 
     /**

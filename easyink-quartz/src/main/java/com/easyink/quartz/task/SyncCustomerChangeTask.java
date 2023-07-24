@@ -1,8 +1,10 @@
 package com.easyink.quartz.task;
 
 import com.easyink.common.core.domain.entity.WeCorpAccount;
+import com.easyink.common.enums.callback.WecomCallbackEventEnum;
 import com.easyink.wecom.domain.vo.WxCpXmlMessageVO;
 import com.easyink.wecom.factory.impl.customer.WeCallBackAddExternalContactImpl;
+import com.easyink.wecom.factory.impl.customer.WeCallBackDelFollowUserImpl;
 import com.easyink.wecom.service.WeCorpAccountService;
 import com.easyink.wecom.service.WeCustomerService;
 import com.easyink.wecom.utils.redis.CustomerRedisCache;
@@ -43,6 +45,8 @@ public class SyncCustomerChangeTask {
     private ThreadPoolTaskExecutor syncEditCustomerExecutor;
     @Resource(name = "add_external_contact")
     private WeCallBackAddExternalContactImpl weCallBackAddExternalContact;
+    @Resource(name = "del_follow_user")
+    private WeCallBackDelFollowUserImpl weCallBackDelFollowUser;
 
     /**
      * 执行任务 cron : 0/30 * * * * ?
@@ -66,11 +70,23 @@ public class SyncCustomerChangeTask {
                     }
                     for ( CustomerRedisCache.RedisCustomerModel model : callbackCustomerModels) {
                         try {
-                            // 3. 依次执行原 新增/变更回调处理
-                            if (isAddContact(model.getMessage())) {
-                                weCallBackAddExternalContact.addHandle(model.getMessage());
-                            } else {
-                                weCustomerService.updateExternalContactV2(corpAccount.getCorpId(), model.getUserId(), model.getExternalUserId());
+                            if(model.getMessage() == null) {
+                                log.error("[同步回调变更客户]更新客户异常,缺失回调类型,corpId:{}, userId:{},exuserId:{},msg:{}", corpAccount.getCorpId(), model.getUserId(), model.getExternalUserId(),model.getMessage());
+                                continue;
+                            }
+                            // 3. 依次执行原回调处理
+                            switch (WecomCallbackEventEnum.getByType(model.getMessage().getChangeType())) {
+                                case ADD_EXTERNAL_CONTACT:
+                                    weCallBackAddExternalContact.addHandle(model.getMessage());
+                                    break;
+                                case EDIT_EXTERNAL_CONTACT:
+                                    weCustomerService.updateExternalContactV2(corpAccount.getCorpId(), model.getUserId(), model.getExternalUserId());
+                                    break;
+                                case DEL_FOLLOW_USER:
+                                    weCallBackDelFollowUser.handleDelFollowUser(model.getMessage());
+                                    break;
+                                default:
+                                    log.error("[同步回调变更客户]更新客户异常,暂不处理回调的类型,corpId:{}, userId:{},exuserId:{},msg:{}", corpAccount.getCorpId(), model.getUserId(), model.getExternalUserId(),model.getMessage());
                             }
                         } catch (Exception e) {
                             log.error("[同步回调变更客户]更新客户异常,corpId:{}, userId:{},exuserId:{},msg:{},e :{}", corpAccount.getCorpId(), model.getUserId(), model.getExternalUserId(),model.getMessage(), ExceptionUtils.getStackTrace(e));

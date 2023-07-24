@@ -17,7 +17,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
  */
 @Slf4j
 @SpringBootApplication(exclude = {DataSourceAutoConfiguration.class, PageHelperAutoConfiguration.class})
-@MapperScan("com.easyink.*.mapper")
+@MapperScan(basePackages = {"com.easyink.*.mapper","com.easyink.wecom.openapi.dao"})
 @ForestScan(basePackages = {"com.easyink.wecom.client", "com.easyink.wecom.wxclient"})
 @EnableAsync(proxyTargetClass = true)
 @EnableAspectJAutoProxy(exposeProxy = true)

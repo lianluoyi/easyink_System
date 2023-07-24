@@ -27,8 +27,6 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -469,7 +467,7 @@ public class PageHomeServiceImpl implements PageHomeService {
         Date beginTime = DateUtils.dateTime(DateUtils.YYYY_MM_DD_HH_MM_SS, time + DateUtils.BEGIN_TIME_SUFFIX);
         Date endTime = DateUtils.dateTime(DateUtils.YYYY_MM_DD_HH_MM_SS, time + DateUtils.END_TIME_SUFFIX);
         //  统计客户总数
-        Integer totalContactCnt = weCustomerMapper.countCustomerNum(corpId);
+        Integer totalContactCnt = weCustomerMapper.countCustomerNumByTime(corpId, DateUtils.parseEndDay(time));
         // 今日流失数
         Integer todayLossCnt = weFlowerCustomerRelService.count(new LambdaQueryWrapper<WeFlowerCustomerRel>()
                 .eq(WeFlowerCustomerRel::getCorpId, corpId)

@@ -144,24 +144,16 @@ public class WeEmpleCodeAnalyseServiceImpl extends ServiceImpl<WeEmpleCodeAnalys
     /**
      * 获取企业下所有活码-员工对应的统计数据
      *
-     * @param corpId 企业ID
-     * @param date 日期 格式为YYYY-MM-DD
+     * @param corpId          企业ID
+     * @param date            日期 格式为YYYY-MM-DD
+     * @param empleCodeIdList 活码ID列表
      * @return 统计数据
      */
     @Override
-    public List<WeEmpleCodeStatistic> getEmpleStatisticData(String corpId, String date) {
+    public List<WeEmpleCodeStatistic> getEmpleStatisticData(String corpId, String date, List<Long> empleCodeIdList) {
         if (StringUtils.isBlank(corpId) || StringUtils.isBlank(date)) {
             throw new CustomException(ResultTip.TIP_MISS_CORP_ID);
         }
-        // 获取需要统计数据的活码(未被删除的活码)
-        List<WeEmpleCode> weEmpleCodes = weEmpleCodeMapper.selectList(new LambdaQueryWrapper<WeEmpleCode>()
-                .eq(WeEmpleCode::getCorpId, corpId)
-                .eq(WeEmpleCode::getDelFlag, false));
-        if (CollectionUtils.isEmpty(weEmpleCodes)) {
-            return new ArrayList<>();
-        }
-        // 获取活码ID列表
-        List<Long> empleCodeIdList = weEmpleCodes.stream().map(WeEmpleCode::getId).collect(Collectors.toList());
         // 初始化统计表数据
         List<WeEmpleCodeStatistic> resultList = initData(corpId, empleCodeIdList, date);
         // 获取企业下所有活码-员工对应的新增客户数和流失客户数
@@ -199,7 +191,8 @@ public class WeEmpleCodeAnalyseServiceImpl extends ServiceImpl<WeEmpleCodeAnalys
      * @param date 日期，格式为 YYYY-MM-DD
      * @return 初始化数据
      */
-    private List<WeEmpleCodeStatistic> initData(String corpId, List<Long> empleCodeIdList, String date) {
+    @Override
+    public List<WeEmpleCodeStatistic> initData(String corpId, List<Long> empleCodeIdList, String date) {
         List<WeEmpleCodeStatistic> resultList = new ArrayList<>();
         // 查询使用人
         List<WeEmpleCodeUseScop> useScopeList = weEmpleCodeUseScopMapper.selectWeEmpleCodeUseScopListByIds(empleCodeIdList, corpId);
@@ -227,6 +220,40 @@ public class WeEmpleCodeAnalyseServiceImpl extends ServiceImpl<WeEmpleCodeAnalys
     }
 
     /**
+     * 根据EmpleCodeId获取UserId
+     *
+     * @param corpId 企业ID
+     * @param empleCodeIdList 活码ID列表
+     * @return userid列表
+     */
+    @Override
+    public List<String> selectUserIds(String corpId, List<Long> empleCodeIdList) {
+        HashSet<String> userIds = new HashSet<>();
+        // 查询使用人
+        List<WeEmpleCodeUseScop> useScopeList = weEmpleCodeUseScopMapper.selectWeEmpleCodeUseScopListByIds(empleCodeIdList, corpId);
+        // 查询使用部门(查询使用人时需要用businessId关联we_user表，活码使用部门时不传入businessId)
+        List<WeEmpleCodeUseScop> departmentScopeList = weEmpleCodeUseScopMapper.selectDepartmentWeEmpleCodeUseScopListByIds(empleCodeIdList);
+        for (Long empleCodeId : empleCodeIdList) {
+            // 使用人，部门不存在则跳过当前活码
+            if (CollectionUtils.isEmpty(useScopeList) && CollectionUtils.isEmpty(departmentScopeList)) {
+                continue;
+            }
+            // 获取当前活码对应的userId
+            userIds.addAll(
+                    getUserIds(useScopeList.stream()
+                                           .filter(item -> item.getEmpleCodeId().equals(empleCodeId))
+                                           .collect(Collectors.toList()),
+                               departmentScopeList.stream()
+                                                  .filter(item -> item.getEmpleCodeId().equals(empleCodeId))
+                                                  .collect(Collectors.toList()),
+                    corpId,
+                    empleCodeId)
+            );
+        }
+        return new ArrayList<>(userIds);
+    }
+
+    /**
      * 根据使用人和部门范围获取UserId
      *
      * @param useScopeList 使用人范围列表
@@ -235,9 +262,15 @@ public class WeEmpleCodeAnalyseServiceImpl extends ServiceImpl<WeEmpleCodeAnalys
      * @param empleCodeId 活码ID
      * @return userId 列表
      */
-    private List<String> getUserIds(List<WeEmpleCodeUseScop> useScopeList, List<WeEmpleCodeUseScop> departmentScopeList, String corpId,  Long empleCodeId) {
+    private List<String> getUserIds(List<WeEmpleCodeUseScop> useScopeList, List<WeEmpleCodeUseScop> departmentScopeList, String corpId, Long empleCodeId) {
         // 去重处理
         HashSet<String> userIds = new HashSet<>();
+        // 从活码分析表获取活码员工ID
+        List<String> analysesUserIds = weEmpleCodeAnalyseMapper.selectUserIdsById(corpId, empleCodeId);
+        // 添加userId
+        if (CollectionUtils.isNotEmpty(analysesUserIds)) {
+            userIds.addAll(analysesUserIds);
+        }
         // 从使用人获取userId
         if (CollectionUtils.isNotEmpty(useScopeList)) {
             // 添加userId
@@ -255,12 +288,6 @@ public class WeEmpleCodeAnalyseServiceImpl extends ServiceImpl<WeEmpleCodeAnalys
             }
             // 添加userId
             userIds.addAll(weUserList.stream().map(WeUser::getUserId).collect(Collectors.toList()));
-        }
-        // 从活码分析表获取活码员工ID
-        List<String> analysesUserIds = weEmpleCodeAnalyseMapper.selectUserIdsById(corpId, empleCodeId);
-        // 添加userId
-        if (CollectionUtils.isNotEmpty(analysesUserIds)) {
-            userIds.addAll(analysesUserIds);
         }
         return new ArrayList<>(userIds);
     }

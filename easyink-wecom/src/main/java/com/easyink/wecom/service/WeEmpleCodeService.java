@@ -74,10 +74,9 @@ public interface WeEmpleCodeService extends IService<WeEmpleCode> {
      *
      * @param state
      * @param corpId
-     * @param externalUserId
      * @return
      */
-    SelectWeEmplyCodeWelcomeMsgVO selectWelcomeMsgByState(String state, String corpId, String externalUserId);
+    SelectWeEmplyCodeWelcomeMsgVO selectWelcomeMsgByState(String state, String corpId);
 
     /**
      * 获取员工二维码
@@ -156,4 +155,13 @@ public interface WeEmpleCodeService extends IService<WeEmpleCode> {
      * @return {@link EmpleCodeByNameVO}
      */
     List<EmpleCodeByNameVO> listByName(FindWeEmpleCodeDTO dto);
+
+    /**
+     * 获取有效的活码ID
+     *
+     * @param corpId 企业ID
+     * @param date 日期，格式为YYYY-MM-DD
+     * @return 活码ID列表
+     */
+    List<Long> getEffectEmpleCodeId(String corpId, String date);
 }

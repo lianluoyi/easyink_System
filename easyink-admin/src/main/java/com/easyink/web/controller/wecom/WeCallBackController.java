@@ -3,15 +3,14 @@ package com.easyink.web.controller.wecom;
 import com.alibaba.fastjson.JSON;
 import com.easyink.common.config.RuoYiConfig;
 import com.easyink.common.config.WeCrypt;
-import com.easyink.common.config.WechatOpenConfig;
 import com.easyink.common.enums.ResultTip;
 import com.easyink.common.exception.CustomException;
 import com.easyink.common.utils.Threads;
-import com.easyink.common.utils.WXBizMsgCrypt;
 import com.easyink.common.utils.wecom.WxCryptUtil;
 import com.easyink.wecom.domain.vo.WxCpXmlMessageVO;
 import com.easyink.wecom.factory.WeCallBackEventFactory;
 import com.easyink.wecom.factory.WeEventHandle;
+import com.easyink.wecom.openapi.service.AppCallbackSettingService;
 import com.thoughtworks.xstream.XStream;
 import com.thoughtworks.xstream.security.AnyTypePermission;
 import io.swagger.annotations.Api;
@@ -23,10 +22,12 @@ import me.chanjar.weixin.cp.bean.WxCpXmlMessage;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.web.bind.annotation.*;
 
+import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+
 /**
  * 类名: 企业微信回调接口
  *
@@ -40,16 +41,16 @@ import javax.servlet.http.HttpServletRequest;
 public class WeCallBackController {
     private final WeEventHandle weEventHandle;
     private final RuoYiConfig ruoYiConfig;
-    private final WechatOpenConfig wechatOpenConfig;
+    private final AppCallbackSettingService appCallbackSettingService;
+    @Resource(name = "sendCallbackExecutor")
+    private ThreadPoolTaskExecutor sendCallbackExecutor;
+
 
     @Autowired
-    private RedisTemplate redisTemplate;
-
-    @Autowired
-    public WeCallBackController(WeEventHandle weEventHandle, RuoYiConfig ruoYiConfig, WechatOpenConfig wechatOpenConfig) {
+    public WeCallBackController(WeEventHandle weEventHandle, RuoYiConfig ruoYiConfig,  AppCallbackSettingService appCallbackSettingService) {
         this.weEventHandle = weEventHandle;
         this.ruoYiConfig = ruoYiConfig;
-        this.wechatOpenConfig = wechatOpenConfig;
+        this.appCallbackSettingService = appCallbackSettingService;
     }
 
     /**
@@ -77,13 +78,17 @@ public class WeCallBackController {
             if (factory != null) {
                 Threads.SINGLE_THREAD_POOL.submit(() -> factory.eventHandle(wxCpXmlMessage));
             } else {
-               log.info("[企微回调通知接口]该回调事件不存在对应的处理,{}",wxCpXmlMessage.getEvent());
+                log.info("[企微回调通知接口]该回调事件不存在对应的处理,{}", wxCpXmlMessage.getEvent());
             }
+            sendCallbackExecutor.execute(()->appCallbackSettingService.sendCallback(wxCpXmlMessage.getToUserName(),msg, signature,timestamp, nonce));
         } catch (Exception e) {
             log.error("企微回调异常:{}", ExceptionUtils.getStackTrace(e));
         }
         return "success";
     }
+
+
+
 
     /**
      * 回调配置校验接口 请求验证URL有效性
@@ -144,6 +149,7 @@ public class WeCallBackController {
             } else {
                 throw new CustomException(ResultTip.TIP_STRATEGY_IS_EMPTY);
             }
+            sendCallbackExecutor.execute(()->appCallbackSettingService.sendCallback(wxCpXmlMessage.getToUserName(),msg, signature,timestamp, nonce));
         } catch (Exception e) {
             log.error("企微三方应用回调通知接口异常:{}", ExceptionUtils.getStackTrace(e));
         }

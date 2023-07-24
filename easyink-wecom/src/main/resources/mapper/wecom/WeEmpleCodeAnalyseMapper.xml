@@ -4,7 +4,7 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.easyink.wecom.mapper.WeEmpleCodeAnalyseMapper">
 
-    <select id="selectList" parameterType="com.easyink.wecom.domain.dto.emplecode.FindWeEmpleCodeAnalyseDTO"
+    <select id="selectAnalyseList" parameterType="com.easyink.wecom.domain.dto.emplecode.FindWeEmpleCodeAnalyseDTO"
             resultType="com.easyink.wecom.domain.WeEmpleCodeAnalyse">
         SELECT
         `id`,
@@ -99,12 +99,15 @@
     <select id="getRetainData" resultType="com.easyink.wecom.domain.WeEmpleCodeStatistic">
         SELECT weca.emple_code_id,
         weca.user_id,
-        SUM(CASE WHEN wfcr.status = '${@com.easyink.common.enums.CustomerStatusEnum@NORMAL.code}' THEN 1 ELSE 0 END) AS retainCustomerCnt
+        SUM(CASE WHEN wfcr.status IN ('${@com.easyink.common.enums.CustomerStatusEnum@NORMAL.code}',
+                                      '${@com.easyink.common.enums.CustomerStatusEnum@TO_BE_TRANSFERRED.code}',
+                                      '${@com.easyink.common.enums.CustomerStatusEnum@TRANSFERRING.code}' ) THEN 1 ELSE 0 END) AS retainCustomerCnt
         FROM we_emple_code_analyse weca
         LEFT JOIN we_flower_customer_rel wfcr ON weca.corp_id = wfcr.corp_id
         AND weca.emple_code_id = wfcr.state AND weca.user_id = wfcr.user_id
         AND weca.external_userid = wfcr.external_userid
         AND wfcr.create_time &lt;= DATE_FORMAT(weca.`time`, '%Y-%m-%d 23:59:59')
+        AND wfcr.delete_time &lt;= wfcr.create_time
         WHERE weca.corp_id = #{corpId}
         <if test="empleCodeIdList != null and empleCodeIdList.size() > 0">
             AND weca.emple_code_id IN
@@ -112,6 +115,7 @@
                 #{empleCodeId}
             </foreach>
         </if>
+        AND type = '${@com.easyink.common.enums.WeEmpleCodeAnalyseTypeEnum@ADD.type}'
         AND weca.`time` &lt;= #{date}
         GROUP BY weca.emple_code_id, weca.user_id
     </select>

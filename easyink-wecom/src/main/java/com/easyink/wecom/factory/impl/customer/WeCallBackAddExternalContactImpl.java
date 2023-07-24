@@ -17,13 +17,13 @@ import com.easyink.common.enums.code.WelcomeMsgTypeEnum;
 import com.easyink.common.exception.CustomException;
 import com.easyink.common.lock.LockUtil;
 import com.easyink.common.utils.DateUtils;
-import com.easyink.wecom.domain.*;
-import com.easyink.wecom.mapper.statistic.WeEmpleCodeStatisticMapper;
-import com.easyink.wecom.utils.redis.CustomerRedisCache;
 import com.easyink.common.utils.TagRecordUtil;
+import com.easyink.wecom.client.WeCustomerClient;
+import com.easyink.wecom.domain.*;
 import com.easyink.wecom.domain.dto.AddWeMaterialDTO;
 import com.easyink.wecom.domain.dto.WeWelcomeMsg;
 import com.easyink.wecom.domain.dto.common.*;
+import com.easyink.wecom.domain.dto.customer.GetExternalDetailResp;
 import com.easyink.wecom.domain.dto.redeemcode.WeRedeemCodeDTO;
 import com.easyink.wecom.domain.vo.SelectWeEmplyCodeWelcomeMsgVO;
 import com.easyink.wecom.domain.vo.WxCpXmlMessageVO;
@@ -31,10 +31,13 @@ import com.easyink.wecom.domain.vo.welcomemsg.WeEmployMaterialVO;
 import com.easyink.wecom.factory.WeEventStrategy;
 import com.easyink.wecom.mapper.WeCustomerTrajectoryMapper;
 import com.easyink.wecom.mapper.WeEmpleCodeMapper;
+import com.easyink.wecom.mapper.statistic.WeEmpleCodeStatisticMapper;
 import com.easyink.wecom.service.*;
 import com.easyink.wecom.service.autotag.WeAutoTagRuleHitCustomerRecordService;
 import com.easyink.wecom.service.redeemcode.WeRedeemCodeService;
 import com.easyink.wecom.utils.AttachmentService;
+import com.easyink.wecom.utils.redis.CustomerRedisCache;
+import com.easyink.wecom.utils.redis.EmpleStatisticRedisCache;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -75,6 +78,8 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
     private WeTagService weTagService;
     @Autowired
     private RedisCache redisCache;
+    @Autowired
+    private WeCustomerClient weCustomerClient;
 
     @Autowired
     private WeCustomerTrajectoryService weCustomerTrajectoryService;
@@ -97,12 +102,13 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
     @Autowired
     private CustomerRedisCache customerRedisCache;
 
-
+    private final EmpleStatisticRedisCache empleStatisticRedisCache;
     private final WeEmpleCodeStatisticMapper weEmpleCodeStatisticMapper;
 
     @Autowired
-    public WeCallBackAddExternalContactImpl(WeUserService weUserService, WeEmpleCodeStatisticMapper weEmpleCodeStatisticMapper) {
+    public WeCallBackAddExternalContactImpl(WeUserService weUserService, EmpleStatisticRedisCache empleStatisticRedisCache, WeEmpleCodeStatisticMapper weEmpleCodeStatisticMapper) {
         this.weUserService = weUserService;
+        this.empleStatisticRedisCache = empleStatisticRedisCache;
         this.weEmpleCodeStatisticMapper = weEmpleCodeStatisticMapper;
     }
 
@@ -112,8 +118,19 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
         if (!checkParams(message)) {
             return;
         }
+        String corpId = message.getToUserName();
+        // 收到新增客户回调后,先进行欢迎语处理
+        if (message.getState() != null && message.getWelcomeCode() != null && !isFission(message.getState())) {
+            // 活码欢迎语处理
+            sendEmpleCodeWelcomeMsg(message.getState(), message.getWelcomeCode(), message.getUserId(), message.getExternalUserId(), corpId);
+        } else if (message.getWelcomeCode() != null) {
+            // 配置的欢迎语处理
+            otherHandle(message.getWelcomeCode(), message.getUserId(), message.getExternalUserId(), corpId);
+        } else {
+            log.error("[{}]:回调处理,发送欢迎语失败,message:{}", message.getChangeType(), message);
+        }
         //  存入redis 后续由定时任务与编辑客户回调一起处理,避免同时处理导致的锁表 Tower 任务: 好友活码打标签失败 ( https://tower.im/teams/636204/todos/70202 )
-        customerRedisCache.saveCallback(message.getToUserName(), message.getUserId(), message.getExternalUserId() , message);
+        customerRedisCache.saveCallback(message.getToUserName(), message.getUserId(), message.getExternalUserId(), message);
     }
 
     /**
@@ -122,7 +139,6 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
      * @param message 回调消息体
      */
     public void addHandle(WxCpXmlMessageVO message) {
-
         String corpId = message.getToUserName();
         // 添加客户回调处理
         try {
@@ -142,18 +158,11 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
         } catch (Exception e) {
             log.error("[{}]:回调处理,更新客户信息异常,message:{},e:{}", message.getChangeType(), message, ExceptionUtils.getStackTrace(e));
         }
-        // 欢迎语处理
-        if (message.getState() != null && message.getWelcomeCode() != null && !isFission(message.getState())) {
-            // 活码欢迎语处理
-            empleCodeHandle(message.getState(), message.getWelcomeCode(), message.getUserId(), message.getExternalUserId(), corpId);
-        } else if (message.getWelcomeCode() != null) {
-            // 配置的欢迎语处理
-            otherHandle(message.getWelcomeCode(), message.getUserId(), message.getExternalUserId(), corpId);
-        } else {
-            log.error("[{}]:回调处理,发送欢迎语失败,message:{}", message.getChangeType(), message);
-        }
         weAutoTagRuleHitCustomerRecordService.makeTagToNewCustomer(message.getExternalUserId(), message.getUserId(), corpId);
-
+        if (message.getState() != null  && !isFission(message.getState())) {
+            // 活码处理
+            empleCodeHandle(message.getState(), message.getUserId(), message.getExternalUserId(), corpId);
+        }
         // 客户轨迹记录 : 添加员工
         weCustomerTrajectoryService.saveActivityRecord(corpId, message.getUserId(), message.getExternalUserId(), CustomerTrajectoryEnums.SubType.ADD_USER.getType());
     }
@@ -184,13 +193,7 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
         log.info("[非活码欢迎语] welcomeCode:{}, userId:{}, externalUserId:{}, corpId:{}", welcomeCode, userId, externalUserId, corpId);
         WeWelcomeMsg.WeWelcomeMsgBuilder weWelcomeMsgBuilder = WeWelcomeMsg.builder().welcome_code(welcomeCode);
         //查询外部联系人与通讯录关系数据
-        WeFlowerCustomerRel weFlowerCustomerRel = weFlowerCustomerRelService
-                .getOne(new LambdaQueryWrapper<WeFlowerCustomerRel>()
-                        .eq(WeFlowerCustomerRel::getUserId, userId)
-                        .eq(WeFlowerCustomerRel::getExternalUserid, externalUserId)
-                        .eq(WeFlowerCustomerRel::getStatus, CustomerStatusEnum.NORMAL.getCode())
-                        .eq(WeFlowerCustomerRel::getCorpId, corpId));
-
+        String customerName = getCustomerName(corpId,externalUserId);
         CompletableFuture.runAsync(() -> {
             try {
                 WeEmployMaterialVO weEmployMaterialVO = weMsgTlpService.selectMaterialByUserId(userId, corpId);
@@ -198,7 +201,7 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
                 if (weEmployMaterialVO != null
                         && (CollectionUtils.isNotEmpty(weEmployMaterialVO.getWeMsgTlpMaterialList()) || StringUtils.isNotEmpty(weEmployMaterialVO.getDefaultMsg()))) {
                     // 构建欢迎语并发送
-                    buildAndSendOtherWelcomeMsg(weEmployMaterialVO, userId, externalUserId, corpId, weWelcomeMsgBuilder, weFlowerCustomerRel.getRemark());
+                    buildAndSendOtherWelcomeMsg(weEmployMaterialVO, userId, externalUserId, corpId, weWelcomeMsgBuilder, customerName);
                     log.info("好友欢迎语发送成功>>>>>>>>>>>>>>>");
                 }
             } catch (Exception e) {
@@ -217,27 +220,67 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
         weCustomerService.sendWelcomeMsg(weWelcomeMsg, corpId);
     }
 
+    /**
+     * 发送活码的欢迎语
+     *
+     * @param state          活码state
+     * @param welcomeCode    欢迎语code
+     * @param userId         员工id
+     * @param externalUserId 客户id
+     * @param corpId         企业id
+     */
+    private void sendEmpleCodeWelcomeMsg(String state, String welcomeCode, String userId, String externalUserId, String corpId) {
+        WeWelcomeMsg.WeWelcomeMsgBuilder weWelcomeMsgBuilder = WeWelcomeMsg.builder().welcome_code(welcomeCode);
+        SelectWeEmplyCodeWelcomeMsgVO messageMap = weEmpleCodeService.selectWelcomeMsgByState(state, corpId);
+        if (WelcomeMsgTypeEnum.COMMON_WELCOME_MSG_TYPE.getType().equals(messageMap.getWelcomeMsgType())) {
+            weEmpleCodeService.buildCommonWelcomeMsg(messageMap, corpId, externalUserId);
+            //给好友发送消息
+            CompletableFuture.runAsync(() -> {
+                try {
+                    sendMessageToNewExternalUserId(weWelcomeMsgBuilder, messageMap, getCustomerName(corpId,externalUserId), corpId, userId, externalUserId, state);
+                } catch (Exception e) {
+                    log.error("异步发送欢迎语消息异常：ex:{}", ExceptionUtils.getStackTrace(e));
+                }
+            });
+        } else if (WelcomeMsgTypeEnum.REDEEM_CODE_WELCOME_MSG_TYPE.getType().equals(messageMap.getWelcomeMsgType())) {
+            handleRedeemCodeWelcomeMsg(state, userId, externalUserId, corpId, weWelcomeMsgBuilder, messageMap, getCustomerName(corpId,externalUserId));
+        }
+    }
+
+    /**
+     * 获取客户名称
+     *
+     * @param corpId         企业Id
+     * @param externalUserid 客户id
+     * @return 客户名称
+     */
+    public String getCustomerName(String corpId, String externalUserid) {
+        GetExternalDetailResp resp = weCustomerClient.getV2(externalUserid, corpId);
+        if (resp == null || resp.getExternalContact() == null || StringUtils.isBlank(resp.getExternalContact()
+                                                                                         .getName())) {
+            return StringUtils.EMPTY;
+        }
+        return resp.getExternalContact().getName();
+    }
+
 
     /**
      * 活码欢迎语发送
      *
      * @param state          渠道
-     * @param welcomeCode    欢迎语code
      * @param userId         成员id
      * @param externalUserId 客户id
      */
-    private void empleCodeHandle(String state, String welcomeCode, String userId, String externalUserId, String corpId) {
-        log.info("执行发送活码欢迎语empleCodeHandle>>>>>>>>>>>>>>>");
+    private void empleCodeHandle(String state, String userId, String externalUserId, String corpId) {
+        log.info("活码处理开始empleCodeHandle>>>>>>>>>>>>>>>");
         try {
-            WeWelcomeMsg.WeWelcomeMsgBuilder weWelcomeMsgBuilder = WeWelcomeMsg.builder().welcome_code(welcomeCode);
-            SelectWeEmplyCodeWelcomeMsgVO messageMap = weEmpleCodeService.selectWelcomeMsgByState(state, corpId, externalUserId);
-
+            SelectWeEmplyCodeWelcomeMsgVO messageMap = weEmpleCodeService.selectWelcomeMsgByState(state, corpId);
             if (null != messageMap && org.apache.commons.lang3.StringUtils.isNotBlank(messageMap.getEmpleCodeId())) {
                 String empleCodeId = messageMap.getEmpleCodeId();
                 //更新活码数据统计
                 weEmpleCodeAnalyseService.saveWeEmpleCodeAnalyse(corpId, userId, externalUserId, empleCodeId, true);
-                // 活码统计数据记录
-                empleStatisticCount(corpId, userId, state);
+                // 更新Redis中的数据
+                empleStatisticRedisCache.addNewCustomerCnt(corpId, DateUtils.dateTime(new Date()), Long.valueOf(empleCodeId), userId);
                 //查询外部联系人与通讯录关系数据
                 WeFlowerCustomerRel weFlowerCustomerRel = weFlowerCustomerRelService
                         .getOne(new LambdaQueryWrapper<WeFlowerCustomerRel>()
@@ -250,19 +293,6 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
                 //更新活码添加方式
                 weFlowerCustomerRel.setState(state);
                 weFlowerCustomerRelService.updateById(weFlowerCustomerRel);
-                if (WelcomeMsgTypeEnum.COMMON_WELCOME_MSG_TYPE.getType().equals(messageMap.getWelcomeMsgType())) {
-                    weEmpleCodeService.buildCommonWelcomeMsg(messageMap, corpId, externalUserId);
-                    //给好友发送消息
-                    CompletableFuture.runAsync(() -> {
-                        try {
-                            sendMessageToNewExternalUserId(weWelcomeMsgBuilder, messageMap, weCustomer.getName(), corpId, userId, externalUserId, state);
-                        } catch (Exception e) {
-                            log.error("异步发送欢迎语消息异常：ex:{}", ExceptionUtils.getStackTrace(e));
-                        }
-                    });
-                } else if (WelcomeMsgTypeEnum.REDEEM_CODE_WELCOME_MSG_TYPE.getType().equals(messageMap.getWelcomeMsgType())) {
-                    handleRedeemCodeWelcomeMsg(state, userId, externalUserId, corpId, weWelcomeMsgBuilder, messageMap, weFlowerCustomerRel);
-                }
                 //为外部联系人添加员工活码标签
                 setEmplyCodeTag(weFlowerCustomerRel, empleCodeId, messageMap.getTagFlag());
                 // 打标签后休眠1S , 避免出现打标签后又打备注提示接口调用频繁 Tower 任务: 客户扫活码加好友之后没有自动备注 ( https://tower.im/teams/636204/todos/69053 )
@@ -310,15 +340,15 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
     /**
      * 处理兑换码欢迎语
      *
-     * @param state                 渠道
-     * @param userId                员工id
-     * @param externalUserId        外部联系人id
-     * @param corpId                企业id
-     * @param weWelcomeMsgBuilder   {@link WeWelcomeMsg.WeWelcomeMsgBuilder}
-     * @param messageMap            {@link SelectWeEmplyCodeWelcomeMsgVO}
-     * @param weFlowerCustomerRel   {@link WeFlowerCustomerRel}
+     * @param state               渠道
+     * @param userId              员工id
+     * @param externalUserId      外部联系人id
+     * @param corpId              企业id
+     * @param weWelcomeMsgBuilder {@link WeWelcomeMsg.WeWelcomeMsgBuilder}
+     * @param messageMap          {@link SelectWeEmplyCodeWelcomeMsgVO}
+     * @param customerName        {@link WeFlowerCustomerRel}
      */
-    private void handleRedeemCodeWelcomeMsg(String state, String userId, String externalUserId, String corpId, WeWelcomeMsg.WeWelcomeMsgBuilder weWelcomeMsgBuilder, SelectWeEmplyCodeWelcomeMsgVO messageMap, WeFlowerCustomerRel weFlowerCustomerRel) {
+    private void handleRedeemCodeWelcomeMsg(String state, String userId, String externalUserId, String corpId, WeWelcomeMsg.WeWelcomeMsgBuilder weWelcomeMsgBuilder, SelectWeEmplyCodeWelcomeMsgVO messageMap, String customerName) {
         RLock rLock = null;
         boolean isHaveLock = false;
         try {
@@ -328,7 +358,7 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
             if (isHaveLock) {
                 weEmpleCodeService.buildRedeemCodeActivityWelcomeMsg(messageMap, corpId, externalUserId);
                 //同步发送消息
-                sendMessageToNewExternalUserId(weWelcomeMsgBuilder, messageMap, weFlowerCustomerRel.getRemark(), corpId, userId, externalUserId, state);
+                sendMessageToNewExternalUserId(weWelcomeMsgBuilder, messageMap, customerName, corpId, userId, externalUserId, state);
                 log.info("[欢迎语回调]活动欢迎语处理完成，活动id:{},corpId:{}}", messageMap.getCodeActivityId(), corpId);
             }
         } catch (InterruptedException e) {
@@ -483,7 +513,7 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
             if (messageMap.getMaterialList().size() > WeConstans.MAX_ATTACHMENT_NUM) {
                 throw new CustomException(ResultTip.TIP_ATTACHMENT_OVER);
             }
-            buildWeEmplyWelcomeMsg(messageMap.getSource(), messageMap.getScenario(), userId, state, corpId, weWelcomeMsgBuilder, messageMap.getMaterialList(), attachmentList);
+            buildWeEmplyWelcomeMsg(messageMap.getSource(), messageMap.getScenario(), userId, state, corpId, messageMap.getMaterialList(), attachmentList);
         }
 
         // 3.调用企业微信接口发送欢迎语
@@ -523,8 +553,8 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
     }
 
 
-    private void buildWeEmplyWelcomeMsg(Integer source, String scenario, String userId, String state, String corpId, WeWelcomeMsg.WeWelcomeMsgBuilder builder, List<AddWeMaterialDTO> weMaterialList, List<Attachment> attachmentList) {
-        if (StringUtils.isBlank(corpId) || CollectionUtils.isEmpty(weMaterialList) || builder == null) {
+    private void buildWeEmplyWelcomeMsg(Integer source, String scenario, String userId, String state, String corpId, List<AddWeMaterialDTO> weMaterialList, List<Attachment> attachmentList) {
+        if (StringUtils.isBlank(corpId) || CollectionUtils.isEmpty(weMaterialList)) {
             throw new CustomException(ResultTip.TIP_MISS_CORP_ID);
         }
         Attachments attachments;

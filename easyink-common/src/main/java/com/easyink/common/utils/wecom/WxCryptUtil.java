@@ -1,11 +1,16 @@
 package com.easyink.common.utils.wecom;
 
+import cn.hutool.core.util.RandomUtil;
+import com.easyink.common.exception.AesException;
 import com.easyink.common.exception.wecom.WeComException;
 import com.google.common.base.CharMatcher;
 import com.google.common.io.BaseEncoding;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import me.chanjar.weixin.common.util.RandomUtils;
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.xml.sax.InputSource;
@@ -19,6 +24,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import java.io.StringReader;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
 import java.util.Arrays;
 
 /**
@@ -115,9 +121,47 @@ public class WxCryptUtil {
         if (!signature.equals(msgSignature)) {
             throw new WeComException("加密消息签名校验失败");
         }
-
         // 解密
         return decrypt(cipherText);
+    }
+
+    /**
+     * 补位
+     *
+     * @param plaintext
+     * @return
+     */
+    private static String padPlaintext(String plaintext) {
+        int blockSize = 16;
+        int paddingLength = blockSize - (plaintext.length() % blockSize);
+
+        StringBuilder paddedPlaintext = new StringBuilder(plaintext);
+        for (int i = 0; i < paddingLength; i++) {
+            paddedPlaintext.append((char)paddingLength);
+        }
+
+        return paddedPlaintext.toString();
+    }
+
+    /**
+     * 加密aes
+     *
+     * @param plaintext 明文
+     * @return
+     */
+    public String encryptAES(String plaintext) {
+        byte[] encryptedBytes = new byte[0];
+        try {
+            Cipher cipher = Cipher.getInstance("AES/CBC/NoPadding");
+            SecretKeySpec secretKey = new SecretKeySpec(this.aesKey, "AES");
+            IvParameterSpec iv = new IvParameterSpec(Arrays.copyOfRange(this.aesKey, 0, 16));
+            cipher.init(Cipher.ENCRYPT_MODE, secretKey, iv);
+            encryptedBytes = cipher.doFinal(padPlaintext(plaintext).getBytes(StandardCharsets.UTF_8));
+        } catch (Exception e) {
+            log.error("[aes加密]异常,text:{},e:{}", plaintext, ExceptionUtils.getStackTrace(e));
+        }
+        return Base64.encodeBase64String(encryptedBytes);
+
     }
 
     /**
@@ -171,4 +215,75 @@ public class WxCryptUtil {
             return this.decrypt(echoStr);
         }
     }
+
+    /**
+     * 生成签名
+     *
+     * @param timeStamp
+     * @param nonce
+     * @param randomStr
+     * @return
+     */
+    public String encryptSign(String timeStamp, String nonce, String randomStr) {
+        return SHA1.getSHA1(this.token, timeStamp, nonce, randomStr);
+    }
+
+    /**
+     * 生成echoStr
+     * @param corpId 企业id
+     * @return
+     */
+    public String genEchoStr(String text ,String corpId) {
+        ByteGroup byteCollector = new ByteGroup();
+        byte[] randomStrBytes = text.getBytes(CHARSET);
+        byte[] textBytes = text.getBytes(CHARSET);
+        byte[] networkBytesOrder = getNetworkBytesOrder(textBytes.length);
+        byte[] receiveidBytes = corpId.getBytes(CHARSET);
+        // randomStr + networkBytesOrder + text + receiveid
+        byteCollector.addBytes(randomStrBytes);
+        byteCollector.addBytes(networkBytesOrder);
+        byteCollector.addBytes(textBytes);
+        byteCollector.addBytes(receiveidBytes);
+        // ... + pad: 使用自定义的填充方式对明文进行补位填充
+        byte[] padBytes = PKCS7Encoder.encode(byteCollector.size());
+        byteCollector.addBytes(padBytes);
+        // 获得最终的字节流, 未加密
+        byte[] unencrypted = byteCollector.toBytes();
+        try {
+            // 设置加密模式为AES的CBC模式
+            Cipher cipher = Cipher.getInstance("AES/CBC/NoPadding");
+            SecretKeySpec keySpec = new SecretKeySpec(aesKey, "AES");
+            IvParameterSpec iv = new IvParameterSpec(aesKey, 0, 16);
+            cipher.init(Cipher.ENCRYPT_MODE, keySpec, iv);
+            // 加密
+            byte[] encrypted = cipher.doFinal(unencrypted);
+            // 使用BASE64对加密后的字符串进行编码
+            String base64Encrypted = Base64.encodeBase64String(encrypted);
+            return base64Encrypted;
+        } catch (Exception e) {
+            log.error("[生成echoStr]生成异常,corpId:{}, e:{}", corpId, ExceptionUtils.getStackTrace(e));
+        }
+        return StringUtils.EMPTY;
+    }
+
+    // 生成4个字节的网络字节序
+    byte[] getNetworkBytesOrder(int sourceNumber) {
+        byte[] orderBytes = new byte[4];
+        orderBytes[3] = (byte) (sourceNumber & 0xFF);
+        orderBytes[2] = (byte) (sourceNumber >> 8 & 0xFF);
+        orderBytes[1] = (byte) (sourceNumber >> 16 & 0xFF);
+        orderBytes[0] = (byte) (sourceNumber >> 24 & 0xFF);
+        return orderBytes;
+    }
+
+
+    private static String bytesToHex(byte[] bytes) {
+        StringBuilder sb = new StringBuilder();
+        for (byte b : bytes) {
+            sb.append(String.format("%02x", b));
+        }
+        return sb.toString();
+    }
+
+
 }

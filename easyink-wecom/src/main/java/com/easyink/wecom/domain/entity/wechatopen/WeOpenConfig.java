@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 /**
  * 类名: 企业公众号配置表实体
  *
- * @author : wangzimo
+ * @author : silver_chariot
  * @date : 2022-07-25 14:01:57
  */
 @Data

@@ -56,9 +56,28 @@ public interface WeEmpleCodeAnalyseService extends IService<WeEmpleCodeAnalyse> 
     /**
      * 获取企业下所有活码-员工对应的统计数据
      *
+     * @param corpId          企业ID
+     * @param date            日期 格式为YYYY-MM-DD
+     * @param empleCodeIdList 活码ID列表
+     * @return 统计数据
+     */
+    List<WeEmpleCodeStatistic> getEmpleStatisticData(String corpId, String date, List<Long> empleCodeIdList);
+
+    /**
+     * 根据EmpleCodeId获取UserId
+     *
+     * @param corpId 企业ID
+     * @param empleCodeIdList 活码ID列表
+     * @return userid列表
+     */
+    List<String> selectUserIds(String corpId, List<Long> empleCodeIdList);
+
+    /**
+     * 初始化企业下所有活码-员工对应的统计数据
+     *
      * @param corpId 企业ID
      * @param date 日期 格式为YYYY-MM-DD
      * @return 统计数据
      */
-    List<WeEmpleCodeStatistic> getEmpleStatisticData(String corpId, String date);
+    List<WeEmpleCodeStatistic> initData(String corpId, List<Long> empleCodeIdList, String date);
 }

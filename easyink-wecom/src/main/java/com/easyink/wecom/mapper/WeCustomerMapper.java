@@ -126,6 +126,15 @@ public interface WeCustomerMapper extends BaseMapper<WeCustomer> {
     Integer countCustomerNum(@Param("corpId") String corpId);
 
     /**
+     * 根据客户状态企业id和时间获取去重客户数量
+     *
+     * @param corpId 企业ID
+     * @param time 时间，格式为YYYY-MM-DD 23:59:59
+     * @return 去重客户数量
+     */
+    Integer countCustomerNumByTime(@Param("corpId") String corpId, @Param("time") String time);
+
+    /**
      * 批量更新/插入 客户基本信息
      *
      * @param list 客户基本信息集合 {@link List<WeCustomer>}
