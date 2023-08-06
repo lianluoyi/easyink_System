@@ -442,7 +442,7 @@ public class StringUtils extends org.apache.commons.lang3.StringUtils {
      */
     public static int weCustomTypeJudgment(String str) {
         if (isNotEmpty(str)) {
-            if (str.startsWith("wo") || str.startsWith("wm")) {
+            if ((str.startsWith("wo") || str.startsWith("wm")) && !str.startsWith(USER_ID_PREFIX)) {
                 return WeConstans.ID_TYPE_EX;
             }
             if (str.startsWith("wb")) {

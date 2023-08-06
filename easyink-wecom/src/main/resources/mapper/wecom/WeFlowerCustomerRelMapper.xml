@@ -411,4 +411,79 @@
         </if>
         AND wfcr.status IN ('${@com.easyink.common.enums.CustomerStatusEnum@NORMAL.code}', '${@com.easyink.common.enums.CustomerStatusEnum@DRAIN.code}')
     </select>
+    <!--根据开始，结束时间和员工ID，获取员工维度-截止时间下的有效客户数-->
+    <select id="getCurrNewCustomerCntByUser"
+            resultType="com.easyink.wecom.domain.vo.statistics.CustomerOverviewVO">
+        SELECT user_id AS userId, COUNT(external_userid) AS currentNewCustomerCnt
+        FROM we_flower_customer_rel
+        WHERE corp_id = #{corpId}
+        AND `status` IN ('${@com.easyink.common.enums.CustomerStatusEnum@NORMAL.code}',
+        '${@com.easyink.common.enums.CustomerStatusEnum@TO_BE_TRANSFERRED.code}',
+        '${@com.easyink.common.enums.CustomerStatusEnum@TRANSFERRING.code}')
+        <if test="beginTime != null and beginTime != ''">
+            AND `create_time` &gt;= #{beginTime}
+        </if>
+        <if test="endTime != null and endTime != ''">
+            AND `create_time` &lt;= #{endTime}
+        </if>
+        <if test="userIds != null and userIds.size() > 0">
+            AND user_id IN
+            <foreach collection="userIds" item="userId" open="(" separator="," close=")">
+                #{userId}
+            </foreach>
+        </if>
+        GROUP BY user_id
+    </select>
+    <!--根据开始，结束时间和员工ID，获取日期维度-截止时间下的有效客户数-->
+    <select id="getCurrNewCustomerCntByTime"
+            resultType="com.easyink.wecom.domain.vo.statistics.CustomerOverviewVO">
+        SELECT DATE_FORMAT(wfcr.create_time, '%Y-%m-%d') AS xTime, COUNT(wfcr.external_userid) AS currentNewCustomerCnt
+        FROM we_flower_customer_rel wfcr
+        LEFT JOIN we_user wu ON wu.user_id = wfcr.user_id AND wu.corp_id = wfcr.corp_id
+        LEFT JOIN we_department wd ON wd.id = wu.main_department AND wd.corp_id = wu.corp_id
+        WHERE wfcr.corp_id = #{corpId}
+        ${params.dataScope}
+        AND wu.is_activate = ${@com.easyink.common.constant.WeConstans@WE_USER_IS_ACTIVATE}
+        AND wfcr.`status` IN ('${@com.easyink.common.enums.CustomerStatusEnum@NORMAL.code}',
+        '${@com.easyink.common.enums.CustomerStatusEnum@TO_BE_TRANSFERRED.code}',
+        '${@com.easyink.common.enums.CustomerStatusEnum@TRANSFERRING.code}')
+        <if test="beginTime != null and beginTime != ''">
+            AND wfcr.`create_time` &gt;= #{beginTime}
+        </if>
+        <if test="endTime != null and endTime != ''">
+            AND wfcr.`create_time` &lt;= #{endTime}
+        </if>
+        <if test="userIds != null and userIds.size() > 0">
+            AND wfcr.user_id IN
+            <foreach collection="userIds" item="userId" open="(" separator="," close=")">
+                #{userId}
+            </foreach>
+        </if>
+        GROUP BY xTime
+    </select>
+    <!--根据（数据权限），开始，结束时间，获取截止时间下的有效客户数-->
+    <select id="getCurrentNewCustomerCntByDataScope" resultType="java.lang.Integer">
+        SELECT COUNT(wfcr.external_userid) AS currentNewCustomerCnt
+        FROM we_flower_customer_rel wfcr
+        LEFT JOIN we_user wu ON wu.user_id = wfcr.user_id AND wu.corp_id = wfcr.corp_id
+        LEFT JOIN we_department wd ON wd.id = wu.main_department AND wd.corp_id = wu.corp_id
+        WHERE wfcr.corp_id = #{corpId}
+        ${params.dataScope}
+        AND wu.is_activate = ${@com.easyink.common.constant.WeConstans@WE_USER_IS_ACTIVATE}
+        AND wfcr.`status` IN ('${@com.easyink.common.enums.CustomerStatusEnum@NORMAL.code}',
+        '${@com.easyink.common.enums.CustomerStatusEnum@TO_BE_TRANSFERRED.code}',
+        '${@com.easyink.common.enums.CustomerStatusEnum@TRANSFERRING.code}')
+        <if test="beginTime != null and beginTime != ''">
+            AND wfcr.`create_time` &gt;= #{beginTime}
+        </if>
+        <if test="endTime != null and endTime != ''">
+            AND wfcr.`create_time` &lt;= #{endTime}
+        </if>
+        <if test="userIds != null and userIds.size() > 0">
+            AND wfcr.user_id IN
+            <foreach collection="userIds" item="userId" open="(" separator="," close=")">
+                #{userId}
+            </foreach>
+        </if>
+    </select>
 </mapper>

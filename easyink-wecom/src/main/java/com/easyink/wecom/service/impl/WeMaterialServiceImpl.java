@@ -6,6 +6,7 @@ import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.dtflys.forest.exceptions.ForestRuntimeException;
 import com.easyink.common.config.RuoYiConfig;
+import com.easyink.common.constant.Constants;
 import com.easyink.common.constant.WeConstans;
 import com.easyink.common.enums.ResultTip;
 import com.easyink.common.enums.WeCategoryMediaTypeEnum;
@@ -37,10 +38,13 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.validation.constraints.NotNull;
 import java.io.BufferedInputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -211,9 +215,15 @@ public class WeMaterialServiceImpl extends ServiceImpl<WeMaterialMapper, WeMater
             throw new CustomException("请求参数不能为空");
         }
         int fileLength;
-        try (
-                InputStream inputStream = new URL(url).openConnection().getInputStream();
-        ) {
+        InputStream inputStream;
+        try {
+            // 路径不包含"/profile"，直接使用URL获取inputStream流
+            if (!url.contains(Constants.RESOURCE_PREFIX)) {
+                inputStream = new URL(url).openConnection().getInputStream();
+            } else {
+                // 本地上传，将url路径转换为绝对路径，从文件中获取inputStream流
+                inputStream = Files.newInputStream(Paths.get(url.replace(Constants.RESOURCE_PREFIX, RuoYiConfig.getProfile())));
+            }
             // 获取文件的长度
             BufferedInputStream bufferedInputStream = new BufferedInputStream(inputStream);
             fileLength = bufferedInputStream.available();
@@ -241,11 +251,17 @@ public class WeMaterialServiceImpl extends ServiceImpl<WeMaterialMapper, WeMater
         InputStream inputStream = null;
         try {
             conn = null;
-            URL materialUrl = new URL(url);
-            conn = (HttpURLConnection) materialUrl.openConnection();
-            conn.setRequestMethod("GET");
-            conn.setConnectTimeout(20 * 1000);
-            inputStream = conn.getInputStream();
+            // 路径不包含"/profile"，直接使用URL获取inputStream流
+            if (!url.contains(Constants.RESOURCE_PREFIX)) {
+                URL materialUrl = new URL(url);
+                conn = (HttpURLConnection) materialUrl.openConnection();
+                conn.setRequestMethod("GET");
+                conn.setConnectTimeout(20 * 1000);
+                inputStream = conn.getInputStream();
+            } else {
+                // 本地上传，将url路径转换为绝对路径，从文件中获取inputStream流
+                inputStream = Files.newInputStream(Paths.get(url.replace(Constants.RESOURCE_PREFIX, RuoYiConfig.getProfile())));
+            }
             return weMediaClient.uploadAttachment(inputStream, name, mediaType, attachmentType, corpId);
         } catch (IOException e) {
             log.error("附件朋友圈素材上传异常 corpId:{},url:{},e:{}", corpId, url, ExceptionUtils.getStackTrace(e));

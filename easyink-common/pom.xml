@@ -299,21 +299,21 @@
         <dependency>
             <groupId>ws.schild</groupId>
             <artifactId>jave-core</artifactId>
-            <version>3.0.0</version>
+            <version>3.2.0</version>
         </dependency>
 
         <!-- 在windows上开发 开发机可实现压缩效果 window64位 -->
         <dependency>
             <groupId>ws.schild</groupId>
             <artifactId>jave-nativebin-win64</artifactId>
-            <version>3.0.0</version>
+            <version>3.2.0</version>
         </dependency>
 
         <!-- 在linux上部署 linux服务器需要这个才能生效 linux64位 -->
         <dependency>
             <groupId>ws.schild</groupId>
             <artifactId>jave-nativebin-linux64</artifactId>
-            <version>3.0.0</version>
+            <version>3.2.0</version>
         </dependency>
 
         <dependency>

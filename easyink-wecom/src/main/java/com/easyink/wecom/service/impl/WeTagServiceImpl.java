@@ -5,6 +5,7 @@ import cn.hutool.core.util.ArrayUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.easyink.common.annotation.DataScope;
+import com.easyink.common.constant.Constants;
 import com.easyink.common.constant.GenConstants;
 import com.easyink.common.constant.tag.TagStatisticConstants;
 import com.easyink.common.core.domain.AjaxResult;
@@ -19,7 +20,6 @@ import com.easyink.common.utils.poi.ExcelUtil;
 import com.easyink.wecom.client.WeCropTagClient;
 import com.easyink.wecom.client.WeCustomerClient;
 import com.easyink.wecom.domain.*;
-import com.easyink.wecom.domain.dto.WeResultDTO;
 import com.easyink.wecom.domain.dto.customer.CustomerTagEdit;
 import com.easyink.wecom.domain.dto.statistics.WeTagStatisticsDTO;
 import com.easyink.wecom.domain.dto.tag.WeCropGroupTagDTO;
@@ -556,12 +556,19 @@ public class WeTagServiceImpl extends ServiceImpl<WeTagMapper, WeTag> implements
         return true;
     }
 
+    /**
+     * 根据标签ID列表获取标签名
+     *
+     * @param tagIds 标签ID列表
+     * @return 标签名列表
+     */
     @Override
-    public List<String> getTagNameByIds(String corpId, List<String> tagIds) {
-        if (StringUtils.isBlank(corpId)) {
-            throw new CustomException(ResultTip.TIP_MISS_CORP_ID);
+    public List<String> getTagNameByIds(List<String> tagIds) {
+        if (CollectionUtils.isEmpty(tagIds)) {
+            return new ArrayList<>();
         }
-        List<WeTag> weTagList = weTagMapper.selectList(new LambdaQueryWrapper<WeTag>().in(WeTag::getTagId, tagIds));
+        // 根据标签ID，获取状态为正常的标签信息
+        List<WeTag> weTagList = weTagMapper.selectList(new LambdaQueryWrapper<WeTag>().in(WeTag::getTagId, tagIds).eq(WeTag::getStatus, Constants.NORMAL_CODE));
         if (CollectionUtils.isEmpty(weTagList)) {
             return new ArrayList<>();
         }

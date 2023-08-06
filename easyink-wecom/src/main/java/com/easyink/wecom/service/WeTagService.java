@@ -133,9 +133,8 @@ public interface WeTagService extends IService<WeTag> {
     /**
      * 根据标签ID列表获取标签名
      *
-     * @param corpId 企业ID
      * @param tagIds 标签ID列表
      * @return 标签名列表
      */
-    List<String> getTagNameByIds(String corpId, List<String> tagIds);
+    List<String> getTagNameByIds(List<String> tagIds);
 }

@@ -1,5 +1,7 @@
 package com.easyink.wecom.domain.dto.moment;
 
+import com.easyink.common.config.RuoYiConfig;
+import com.easyink.common.constant.Constants;
 import com.easyink.common.constant.WeConstans;
 import com.easyink.common.enums.GroupMessageType;
 import com.easyink.common.utils.StringUtils;
@@ -21,6 +23,9 @@ import ws.schild.jave.EncoderException;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 /**
  * 类名： MomentAttachment
@@ -88,11 +93,19 @@ public class MomentAttachment {
      * @return
      */
     private static boolean checkVideo(WeWordsDetailEntity detailEntity){
-        if (!GroupMessageType.VIDEO.getType().equals(detailEntity.getMediaType().toString())){
+        if (!GroupMessageType.VIDEO.getType().equals(detailEntity.getMediaType().toString()) || StringUtils.isBlank(detailEntity.getUrl())){
             return false;
         }
         try {
-            File file = FileUtils.getFileByUrl(detailEntity.getUrl());
+            String url = detailEntity.getUrl();
+            File file;
+            // 路径不包含"/profile"，直接使用URL获取文件
+            if (!url.contains(Constants.RESOURCE_PREFIX)) {
+                file = FileUtils.getFileByUrl(url);
+            } else {
+                // 本地上传，将url路径转换为绝对路径获取文件
+                file = new File(url.replace(Constants.RESOURCE_PREFIX, RuoYiConfig.getProfile()));
+            }
             return FileUtils.getDuration(file) <= 30;
         } catch (IOException | EncoderException e) {
             log.error("朋友圈获取视频临时文件失败 e:{}", ExceptionUtils.getStackTrace(e));

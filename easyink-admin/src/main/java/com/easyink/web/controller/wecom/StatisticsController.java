@@ -71,7 +71,7 @@ public class StatisticsController extends BaseController {
     @ApiOperation("获取客户概况-数据总览-员工维度")
     public TableDataInfo<CustomerOverviewVO> getCustomerOverViewOfUser(@RequestBody @Validated CustomerOverviewDTO dto) {
         dto.setCorpId(LoginTokenService.getLoginUser().getCorpId());
-        return getDataTable(weUserCustomerMessageStatisticsService.getCustomerOverViewOfUser(dto, true));
+        return PageInfoUtil.getDataTable(weUserCustomerMessageStatisticsService.getCustomerOverViewOfUser(dto), dto.getPageNum(), dto.getPageSize());
     }
 
     @PostMapping("/getCustomerTagTableView")

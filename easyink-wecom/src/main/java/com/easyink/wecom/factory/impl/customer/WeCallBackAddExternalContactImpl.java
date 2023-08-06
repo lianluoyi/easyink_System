@@ -448,8 +448,8 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
                 log.info("setEmplyCodeTag 员工活码 开始批量打标签！");
                 //查询这个tagId对应的groupId
                 List<String> tagIdList = tagList.stream().map(WeEmpleCodeTag::getTagId).filter(Objects::nonNull).collect(Collectors.toList());
-                //获取标签名字
-                List<String> tagNameList = tagList.stream().map(WeEmpleCodeTag::getTagName).filter(Objects::nonNull).collect(Collectors.toList());
+                // 获取有效的标签名称
+                List<String> tagNameList = weTagService.getTagNameByIds(tagIdList);
                 weCustomerService.singleMarkLabel(weFlowerCustomerRel.getCorpId(), weFlowerCustomerRel.getUserId(), weFlowerCustomerRel.getExternalUserid(), tagIdList, weUser.getName());
                 recordCodeTag(weFlowerCustomerRel.getCorpId(),weUser,weFlowerCustomerRel.getExternalUserid(),tagNameList,empleCodeId);
             }

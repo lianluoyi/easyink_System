@@ -143,7 +143,7 @@ ruoyi:
       - /test/**
       - /getPublicKey
       - /url
-      - /wecom/transferData/*
+      - /wecom/transferData/**
 
 
 # 开发环境配置
@@ -531,7 +531,31 @@ wechatopen:
 decrypt:
     # 解密unionId的密钥
     unionIdKey: ${DECRYPT_UNIONID_KEY:}
-
-
-
+#线程池参数配置
+thread-pool-prop:
+#  回调处理线程池参数
+  handleCallback:
+    corePoolSize: ${THREAD_POOL_HANDLE_CALLBACK_CORE_SIZE:50}
+    maxPoolSize: ${THREAD_POOL_HANDLE_CALLBACK_MAX_SIZE:200}
+    queueCapacity: ${THREAD_POOL_HANDLE_CALLBACK_QUEUE_SIZE:120}
+#  表单处理线程池参数
+  formTask:
+    corePoolSize: ${THREAD_POOL_FORM_TASK_CORE_SIZE:20}
+    maxPoolSize: ${THREAD_POOL_FORM_TASK_MAX_SIZE:100}
+    queueCapacity: ${THREAD_POOL_FORM_TASK_QUEUE_SIZE:30}
+#  批量打标签线程池参数
+  batchTag:
+    corePoolSize: ${THREAD_POOL_BATCH_TAG_CORE_SIZE:50}
+    maxPoolSize: ${THREAD_POOL_BATCH_TAG_MAX_SIZE:200}
+    queueCapacity: ${THREAD_POOL_BATCH_TAG_QUEUE_SIZE:100}
+#  同步回调客户线程池参数
+  syncCustomer:
+    corePoolSize: ${THREAD_POOL_SYNC_CUSTOMER_CORE_SIZE:50}
+    maxPoolSize: ${THREAD_POOL_SYNC_CUSTOMER_MAX_SIZE:200}
+    queueCapacity: ${THREAD_POOL_SYNC_CUSTOMER_QUEUE_SIZE:100}
+#  转发回调线程池参数
+  sendCallback:
+    corePoolSize: ${THREAD_POOL_SEND_CALLBACK_CORE_SIZE:50}
+    maxPoolSize: ${THREAD_POOL_SEND_CALLBACK_MAX_SIZE:200}
+    queueCapacity: ${THREAD_POOL_SEND_CALLBACK_QUEUE_SIZE:100}
 

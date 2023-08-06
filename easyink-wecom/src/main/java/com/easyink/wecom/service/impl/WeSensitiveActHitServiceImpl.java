@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.easyink.common.annotation.DataScope;
 import com.easyink.common.constant.WeConstans;
 import com.easyink.common.core.domain.RootEntity;
+import com.easyink.common.core.domain.entity.WeCorpAccount;
 import com.easyink.common.core.domain.wecom.WeUser;
 import com.easyink.common.enums.WeSensitiveActEnum;
 import com.easyink.common.utils.DateUtils;
@@ -18,10 +19,13 @@ import com.easyink.wecom.login.util.LoginTokenService;
 import com.easyink.wecom.mapper.WeCustomerMapper;
 import com.easyink.wecom.mapper.WeSensitiveActHitMapper;
 import com.easyink.wecom.mapper.WeUserMapper;
+import com.easyink.wecom.service.WeCorpAccountService;
 import com.easyink.wecom.service.WeSensitiveActHitService;
 import com.easyink.wecom.service.WeSensitiveActService;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -39,6 +43,7 @@ import java.util.stream.Collectors;
  * @date 2021/1/13 9:05
  */
 @Service
+@Slf4j
 public class WeSensitiveActHitServiceImpl extends ServiceImpl<WeSensitiveActHitMapper, WeSensitiveActHit> implements WeSensitiveActHitService {
     @Autowired
     private WeSensitiveActService weSensitiveActService;
@@ -48,10 +53,65 @@ public class WeSensitiveActHitServiceImpl extends ServiceImpl<WeSensitiveActHitM
     private WeCustomerMapper weCustomerMapper;
     @Autowired
     private WeSensitiveActHitMapper weSensitiveActHitMapper;
+    private final WeCorpAccountService weCorpAccountService;
+
+    public WeSensitiveActHitServiceImpl(WeCorpAccountService weCorpAccountService) {
+        this.weCorpAccountService = weCorpAccountService;
+    }
 
     @Override
     public WeSensitiveActHit selectWeSensitiveActHitById(Long id) {
         return getById(id);
+    }
+    /**
+     * 更新敏感行为信息
+     *
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updateHistorySensitive() {
+        List<WeCorpAccount> weCorpAccountList = weCorpAccountService.listOfAuthCorpInternalWeCorpAccount();
+        if (CollectionUtils.isEmpty(weCorpAccountList)) {
+            log.info("[更新敏感行为信息] 当前无可更新信息的企业，请检查配置或联系管理员");
+            return;
+        }
+        weCorpAccountList.forEach(corpAccount -> {
+            String corpId = corpAccount.getCorpId();
+            log.info("[更新敏感行为信息] 开始更新敏感行为信息，当前企业corpId:{}", corpId);
+            try {
+                // 最终需要更新数据的列表
+                List<WeSensitiveActHit> updateList = new ArrayList<>();
+                // 获取企业下的所有敏感行为记录信息
+                List<WeSensitiveActHit> actHits = list(new LambdaQueryWrapper<WeSensitiveActHit>().eq(WeSensitiveActHit::getCorpId, corpId));
+                if (CollectionUtils.isEmpty(actHits)) {
+                    log.info("[更新敏感行为信息] 当前企业未开通会话存档或无敏感行为记录，当前企业corpId:{}", corpId);
+                    return;
+                }
+                for (WeSensitiveActHit actHit : actHits) {
+                    // 若两个数据都不为空， 且头像信息都不为空，则跳过
+                    if (StringUtils.isNotBlank(actHit.getOperator()) && StringUtils.isNotBlank(actHit.getOperateTarget())) {
+                        if (StringUtils.isNotBlank(JSONObject.parseObject(actHit.getOperateTarget()).getString("avatar")) && StringUtils.isNotBlank(JSONObject.parseObject(actHit.getOperator()).getString("avatar"))) {
+                            continue;
+                        }
+                    }
+                    // 获取操作对象（客户）信息
+                    actHit.setOperateTarget(this.getUserOrCustomerName(WeConstans.ID_TYPE_EX, actHit.getOperateTargetId(), corpId));
+                    // 获取操作人（员工）信息
+                    actHit.setOperator(this.getUserOrCustomerName(WeConstans.ID_TYPE_USER, actHit.getOperatorId(), corpId));
+                    // 添加进需要更新的列表
+                    updateList.add(actHit);
+                }
+                if (CollectionUtils.isEmpty(updateList)) {
+                    log.info("[更新敏感行为信息] 当前企业无需要更新的敏感行为信息，当前企业corpId:{}", corpId);
+                    return;
+                }
+                // 更新数据
+                this.saveOrUpdateBatch(updateList);
+                log.info("[更新敏感行为信息] 更新敏感行为信息结束，当前更新企业corpId:{}, 更新的信息:{}", corpId, updateList);
+            } catch (Exception e) {
+                log.info("[更新敏感行为信息] 更新敏感行为信息异常，异常的企业corpId:{}, 异常原因:{}", corpId, ExceptionUtils.getStackTrace(e));
+            }
+        });
     }
 
     @Override

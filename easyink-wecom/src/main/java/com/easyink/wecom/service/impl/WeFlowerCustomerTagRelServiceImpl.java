@@ -1,9 +1,12 @@
 package com.easyink.wecom.service.impl;
 
 import cn.hutool.core.util.ObjectUtil;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.easyink.common.utils.DateUtils;
 import com.easyink.common.utils.StringUtils;
+import com.easyink.common.utils.sql.BatchInsertUtil;
+import com.easyink.wecom.domain.WeFlowerCustomerRel;
 import com.easyink.wecom.domain.WeFlowerCustomerTagRel;
 import com.easyink.wecom.domain.vo.customer.WeCustomerVO;
 import com.easyink.wecom.mapper.WeFlowerCustomerTagRelMapper;
@@ -12,6 +15,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -149,6 +153,20 @@ public class WeFlowerCustomerTagRelServiceImpl extends ServiceImpl<WeFlowerCusto
                     vo.getWeFlowerCustomerTagRels().add(tagRel);
                 }
             }
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void syncTagFromRemote(WeFlowerCustomerRel localRel, List<WeFlowerCustomerTagRel> tagRelList) {
+        if(localRel == null || CollectionUtils.isEmpty(tagRelList)) {
+            return;
+        }
+        remove(new LambdaQueryWrapper<WeFlowerCustomerTagRel>()
+                .eq(WeFlowerCustomerTagRel::getFlowerCustomerRelId, localRel.getId())
+        );
+        if (CollectionUtils.isNotEmpty(tagRelList)) {
+            BatchInsertUtil.doInsert(tagRelList, this::batchInsert);
         }
     }
 }

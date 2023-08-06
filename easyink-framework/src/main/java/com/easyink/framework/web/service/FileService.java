@@ -3,6 +3,8 @@ package com.easyink.framework.web.service;
 
 import com.easyink.common.config.RuoYiConfig;
 import com.easyink.common.constant.WeConstans;
+import com.easyink.common.utils.DateUtils;
+import com.easyink.common.utils.StringUtils;
 import com.easyink.common.utils.file.FileUploadUtils;
 import com.easyink.common.utils.file.FileUtils;
 import com.easyink.framework.web.domain.server.SysFile;
@@ -52,8 +54,12 @@ public class FileService {
                 if (!osFile.exists()) {
                     osFile.mkdirs();
                 }
-                fileName = FileUploadUtils.upload(osFile.getPath(), file);
-                imgUrlPrefix = RuoYiConfig.getProfile();
+                // 上传至本地编码日期路径下
+                FileUploadUtils.upload(osFile.getPath(), file);
+                // 使用原始文件名
+                fileName = file.getOriginalFilename();
+                // 获取文件资源映射前缀
+                imgUrlPrefix = FileUploadUtils.getPathFileName(osFile.getPath()) + DateUtils.datePath() + WeConstans.SLASH;
             }
             return SysFile.builder()
                     .fileName(fileName)
@@ -80,9 +86,22 @@ public class FileService {
             String urlfileName;
             String imgUrlPrefix;
             //开启云上传
-            //开启云上传开关则云上传，不然上传本地
-            urlfileName = FileUploadUtils.upload2Cos(file, ruoYiConfig.getFile().getCos(), fileName);
-            imgUrlPrefix = ruoYiConfig.getFile().getCos().getCosImgUrlPrefix();
+            if (ruoYiConfig.getFile().isStartCosUpload()) {
+                //开启云上传开关则云上传，不然上传本地
+                urlfileName = FileUploadUtils.upload2Cos(file, ruoYiConfig.getFile().getCos(), fileName);
+                imgUrlPrefix = ruoYiConfig.getFile().getCos().getCosImgUrlPrefix();
+            } else {
+                //本地上传
+                File osFile = new File(RuoYiConfig.getProfile());
+                if (!osFile.exists()) {
+                    osFile.mkdirs();
+                }
+                // 上传至本地编码日期路径下
+                FileUploadUtils.upload(osFile.getPath(), file);
+                // 使用原始文件名
+                urlfileName = fileName;
+                imgUrlPrefix = FileUploadUtils.getPathFileName(osFile.getPath()) + DateUtils.datePath() + WeConstans.SLASH;
+            }
             return SysFile.builder()
                     .fileName(urlfileName)
                     .imgUrlPrefix(imgUrlPrefix)

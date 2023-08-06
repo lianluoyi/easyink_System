@@ -89,6 +89,26 @@ public class SysShortUrlMapping {
         return JSON.parseObject(this.appendInfo, FormShortUrlAppendInfo.class);
     }
 
+    /**
+     * 获取活码短链的附加信息中的corpId
+     *
+     * @return corpId
+     */
+    public String getEmpleAppendInfoCorpId() {
+        if ((StringUtils.isBlank(this.appendInfo))) {
+            return null;
+        }
+        // 员工活码，type = 3
+        if (ShortCodeType.EMPLE_CODE.getCode().equals(this.type)) {
+            return JSON.parseObject(this.appendInfo, EmpleCodeShortUrlAppendInfo.class).getCorpId();
+        }
+        // 群活码，type = 4
+        if (ShortCodeType.GROUP_CODE.getCode().equals(this.type)) {
+          return JSON.parseObject(this.appendInfo, GroupCodeShortUrlAppendInfo.class).getCorpId();
+        }
+        return null;
+    }
+
 
     /**
      * 获取附加信息

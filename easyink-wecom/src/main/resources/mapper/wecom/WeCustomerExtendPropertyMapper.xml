@@ -168,7 +168,7 @@
         <if test="name != null and name != ''">AND wcep.name LIKE CONCAT('%',#{name},'%')</if>
         <if test="status != null">AND wcep.status = #{status}</if>
         <if test="required != null">AND wcep.required = #{required}</if>
-        ORDER BY wcep.property_sort, epmo.id
+        ORDER BY wcep.property_sort, epmo.option_sort
     </select>
     <!--    根据客户id获取扩展属性-->
     <select id="getPropByCustomer" resultType="com.easyink.common.core.domain.wecom.BaseExtendPropertyRel">

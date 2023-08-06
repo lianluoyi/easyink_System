@@ -62,7 +62,6 @@ import com.easyink.wecom.domain.vo.sop.CustomerSopVO;
 import com.easyink.wecom.domain.vo.unionid.GetUnionIdVO;
 import com.easyink.wecom.login.util.LoginTokenService;
 import com.easyink.wecom.mapper.WeCustomerMapper;
-import com.easyink.wecom.mapper.WeCustomerTrajectoryMapper;
 import com.easyink.wecom.mapper.WeExternalUseridMappingMapper;
 import com.easyink.wecom.service.*;
 import com.easyink.wecom.service.wechatopen.WechatOpenService;
@@ -137,10 +136,6 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
 
     @Autowired
     private WeUpdateIDClient convertIDClient;
-
-    @Autowired
-    private WeCustomerTrajectoryMapper weCustomerTrajectoryMapper;
-
     @Autowired
     private WeTagService weTagService;
 
@@ -375,31 +370,45 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
             throw new CustomException(ResultTip.TIP_GENERAL_PARAM_ERROR);
         }
         String corpId = weCustomer.getCorpId();
+        if (!hasFilterCustomer(weCustomer, corpId))  {
+            return Collections.emptyList();
+        }
+        // 查询客户
+        PageInfoUtil.startPage();
+        List<WeCustomerVO> list = weCustomerMapper.selectWeCustomerV3(weCustomer);
+        // 根据返回的结果获取需要的标签详情
+        weFlowerCustomerTagRelService.setTagForCustomers(corpId, list);
+        // 根据返回的结果获取需要的扩展字段
+        weCustomerExtendPropertyService.setExtendPropertyForCustomers(corpId, list);
+        return list;
+    }
+
+    /**
+     * 判断是否有过滤条件的客户
+     *
+     * @param weCustomer 客户实体
+     * @param corpId     企业ID
+     * @return true 存在
+     */
+    private boolean hasFilterCustomer(WeCustomer weCustomer, String corpId) {
         // 根据自定义字段 筛选满足条件 external_userid和 user_id
         if (CollectionUtils.isNotEmpty(weCustomer.getExtendProperties())) {
-             List<WeCustomerRel> extendCustomers = extendProperties(weCustomer);
+            List<WeCustomerRel> extendCustomers = extendProperties(weCustomer);
             if (CollectionUtils.isEmpty(extendCustomers)) {
-                return Collections.emptyList();
+                return false;
             }
             weCustomer.setExtendList(extendCustomers);
 
         }
         //  标签筛选满足条件 external_userid和 user_id
         if(StringUtils.isNotBlank(weCustomer.getTagIds())) {
-            List<Long> tagFilterCustomers = weTagService.getCustomerByTags(corpId,weCustomer.getTagIds());
+            List<Long> tagFilterCustomers = weTagService.getCustomerByTags(corpId, weCustomer.getTagIds());
             if(CollectionUtils.isEmpty(tagFilterCustomers)) {
-                return Collections.emptyList();
+                return false;
             }
             weCustomer.setRelIds(tagFilterCustomers);
         }
-        // 查询客户
-        PageInfoUtil.startPage();
-        List<WeCustomerVO> list = weCustomerMapper.selectWeCustomerV3(weCustomer);
-        // 根据返回的结果获取需要的标签详情
-        weFlowerCustomerTagRelService.setTagForCustomers(corpId,list) ;
-        // 根据返回的结果获取需要的扩展字段
-        weCustomerExtendPropertyService.setExtendPropertyForCustomers(corpId, list) ;
-        return list ;
+        return true;
     }
 
     /**
@@ -800,12 +809,13 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
         if (StringUtils.isAnyBlank(weCustomer.getCorpId())) {
             throw new CustomException(ResultTip.TIP_GENERAL_PARAM_ERROR);
         }
-        List<WeCustomerVO> list = this.selectWeCustomerListV3(weCustomer);
-        // 根据externalUserId去重
-        Set<String> set = list.stream().map(WeCustomerVO::getExternalUserid).collect(Collectors.toSet());
+        String corpId = weCustomer.getCorpId();
+        if (!hasFilterCustomer(weCustomer, corpId))  {
+            return WeCustomerSumVO.empty();
+        }
+        Integer ignoreDuplicateCnt  = weCustomerMapper.ignoreDuplicateCustomerCnt(weCustomer) ;
         return WeCustomerSumVO.builder()
-                .totalCount(list.size())
-                .ignoreDuplicateCount(set.size())
+                .ignoreDuplicateCount(ignoreDuplicateCnt)
                 .build();
     }
 
@@ -1141,7 +1151,6 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public void updateExternalContactV2(String corpId, String userId, String externalUserid) {
         if (StringUtils.isAnyBlank(corpId, userId, externalUserid)) {
             log.info("更新客户,参数缺失,corpId:{},userId:{},externalUserid:{}", corpId, userId, externalUserid);
@@ -1163,21 +1172,14 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
                 .eq(WeFlowerCustomerRel::getUserId, userId)
                 .last(GenConstants.LIMIT_1)
         );
-
         // 根据本地客户跟进人关系和返回标签组构建 客户标签关系实体
         List<WeFlowerCustomerTagRel> tagRelList = resp.getTagRelList(localRel);
-
         // 3. 数据更新：插入/更新数据库里的客户信息,员工客户关系
         this.insert(resp.getRemoteCustomer());
-
-        // 4. 数据更新：清除所有旧的标签关系,插入当前标签关系
-        weFlowerCustomerTagRelService.remove(new LambdaQueryWrapper<WeFlowerCustomerTagRel>()
-                .eq(WeFlowerCustomerTagRel::getFlowerCustomerRelId, localRel.getId())
-        );
-        if (CollectionUtils.isNotEmpty(tagRelList)) {
-            BatchInsertUtil.doInsert(tagRelList, list -> weFlowerCustomerTagRelService.batchInsert(list));
-        }
+        // 4. 同步远端标签关系到本地
+        weFlowerCustomerTagRelService.syncTagFromRemote(localRel, tagRelList);
     }
+
 
     /**
      * 调用企业微信接口发送好友欢迎语

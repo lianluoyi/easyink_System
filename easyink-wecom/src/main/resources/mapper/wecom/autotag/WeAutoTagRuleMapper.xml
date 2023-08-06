@@ -235,6 +235,9 @@
         <if test="status != null">
             AND r.status = #{status}
         </if>
+        <if test="id != null">
+            AND r.id = #{id}
+        </if>
         ORDER BY r.create_time DESC
     </select>
     <select id="keywordInfo" resultMap="keywordInfoMap">

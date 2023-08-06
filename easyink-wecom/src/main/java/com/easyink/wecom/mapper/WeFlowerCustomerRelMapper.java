@@ -3,6 +3,9 @@ package com.easyink.wecom.mapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.easyink.wecom.domain.WeFlowerCustomerRel;
 import com.easyink.wecom.domain.WeUserBehaviorData;
+import com.easyink.wecom.domain.dto.statistics.CustomerOverviewDTO;
+import com.easyink.wecom.domain.dto.statistics.StatisticsDTO;
+import com.easyink.wecom.domain.vo.statistics.CustomerOverviewVO;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 
@@ -124,4 +127,28 @@ public interface WeFlowerCustomerRelMapper extends BaseMapper<WeFlowerCustomerRe
      * @return 客户关系列表 {@link WeFlowerCustomerRel }
      */
     List<WeFlowerCustomerRel> getByMobiles(@Param("corpId") String corpId, @Param("mobiles") List<String> mobiles);
+    /**
+     * 根据开始，结束时间和员工ID，获取员工维度-截止时间下的有效客户数
+     *
+     * @param corpId    企业ID
+     * @param beginTime 开始时间，格式为YYYY-MM-DD 00:00:00
+     * @param endTime   结束时间，格式为YYYY-MM-DD 23:59:59
+     * @return {@link CustomerOverviewVO}
+     */
+    List<CustomerOverviewVO> getCurrNewCustomerCntByUser(@Param("corpId") String corpId, @Param("beginTime") String beginTime, @Param("endTime") String endTime, @Param("userIds") List<String> userIds);
+    /**
+     * 根据(数据权限），开始，结束时间和员工ID，获取日期维度-截止时间下的有效客户数
+     *
+     * @param dto {@link CustomerOverviewDTO}
+     * @return {@link CustomerOverviewVO}
+     */
+    List<CustomerOverviewVO> getCurrNewCustomerCntByTime(CustomerOverviewDTO dto);
+
+    /**
+     * 根据（数据权限），开始，结束时间，获取数据总览-截止时间下的有效客户数
+     *
+     * @param dto {@link StatisticsDTO}
+     * @return 有效客户数
+     */
+    Integer getCurrentNewCustomerCntByDataScope(StatisticsDTO dto);
 }

@@ -22,6 +22,8 @@ import java.util.List;
 public class TagRuleQuery extends BaseEntity {
     @ApiModelProperty("规则名称")
     private String ruleName;
+    @ApiModelProperty("规则ID")
+    private Long id;
     @ApiModelProperty("标签id列表")
     private List<String> tagIdList;
     @ApiModelProperty("创建人")

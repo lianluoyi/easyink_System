@@ -215,7 +215,7 @@ public class WeOperationsCenterSopTask {
      */
     private void executeGroupSopTask(Integer sopType, String content, String name, String corpId, Long sopId, List<WeSopUserIdAndTargetIdVO> groupSopScopeList, List<WeOperationsCenterSopRulesEntity> sopRules, Date nowDate, int radarChannelType) {
         if (StringUtils.isBlank(corpId) || sopId == null || CollectionUtils.isEmpty(groupSopScopeList) || CollectionUtils.isEmpty(sopRules)) {
-            log.error("weOperationsCenterSopTask.executeGroupSopTask 数据为空！不再继续执行.corpId={},sopId={},groupSopScopeList={},sopRules={}", corpId, sopId, JSONObject.toJSONString(groupSopScopeList), JSONObject.toJSONString(sopRules));
+            log.info("weOperationsCenterSopTask.executeGroupSopTask 数据为空！不再继续执行.corpId={},sopId={},groupSopScopeList={},sopRules={}", corpId, sopId, JSONObject.toJSONString(groupSopScopeList), JSONObject.toJSONString(sopRules));
             return;
         }
         List<String> userIdList;
@@ -465,8 +465,8 @@ public class WeOperationsCenterSopTask {
 
         //存在群接收者目标数据
         if (CollectionUtils.isNotEmpty(list)) {
-            Map<String, Date> dateMap = list.stream().collect(Collectors.toMap(WeOperationsCenterSopScopeEntity::getTargetId, WeOperationsCenterSopScopeEntity::getCreateTime));
-
+            // 查找SOP详情
+            WeOperationsCenterSopEntity sopEntity = sopService.getById(sopId);
             List<String> collect = list.stream().map(WeOperationsCenterSopScopeEntity::getTargetId).collect(Collectors.toList());
             //查询群对应的群主
             LambdaQueryWrapper<WeGroup> weGroupWrapper = new LambdaQueryWrapper<>();
@@ -474,7 +474,7 @@ public class WeOperationsCenterSopTask {
                     .in(WeGroup::getChatId, collect);
             groupList = weGroupService.list(weGroupWrapper);
             for (WeGroup weGroup : groupList) {
-                resultList.add(new WeSopUserIdAndTargetIdVO(weGroup.getOwner(), weGroup.getChatId(), weGroup.getGroupName(), dateMap.get(weGroup.getChatId())));
+                resultList.add(new WeSopUserIdAndTargetIdVO(weGroup.getOwner(), weGroup.getChatId(), weGroup.getGroupName(), sopEntity.getCreateTime()));
             }
         }
         return resultList;

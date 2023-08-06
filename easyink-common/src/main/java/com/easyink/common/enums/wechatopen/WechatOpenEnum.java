@@ -50,6 +50,8 @@ public class WechatOpenEnum {
         UNKNOWN(-1, "未知"),
         RADAR(1, "雷达"),
         FORM(2, "智能表单"),
+        EMPLE_CODE(3, "员工活码"),
+        GROUP_CODE(4, "群活码"),
         ;
         @Getter
         private Integer code;

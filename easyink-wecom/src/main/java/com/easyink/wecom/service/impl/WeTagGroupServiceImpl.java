@@ -211,6 +211,8 @@ public class WeTagGroupServiceImpl extends ServiceImpl<WeTagGroupMapper, WeTagGr
             //移除本地
             removeWeTags.forEach(v -> v.setStatus(Constants.DELETE_CODE));
             weTagService.updatWeTagsById(removeWeTags);
+            // 删除标签-员工-客户关系
+            delFlowerTagRel(removeWeTags.stream().map(WeTag::getTagId).collect(Collectors.toList()), weTagGroup.getCorpId());
         }
 
 
@@ -230,6 +232,10 @@ public class WeTagGroupServiceImpl extends ServiceImpl<WeTagGroupMapper, WeTagGr
             log.error("批量删除标签组，企业id不能为空");
             throw new BaseException("批量删除标签组失败");
         }
+        // 获取标签组下的所有标签ID，内部调用，标签组id唯一，不需要企业ID
+        List<WeTag> weTags = weTagService.list(new LambdaQueryWrapper<WeTag>().select(WeTag::getTagId).in(WeTag::getGroupId, ids));
+        // 删除标签-客户-员工关系
+        delFlowerTagRel(weTags.stream().map(WeTag::getTagId).collect(Collectors.toList()), corpId);
         int returnCode = weTagGroupMapper.deleteWeTagGroupByIds(ids, corpId);
 
         //标签组id唯一，是内部调用，所以不需要corpId

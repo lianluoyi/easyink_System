@@ -118,6 +118,7 @@ public class WeSensitiveActHit extends BaseEntity {
     private String corpId;
 
     @ApiModelProperty("主部门id")
+    @TableField(exist = false)
     private Long mainDepartment;
 
 

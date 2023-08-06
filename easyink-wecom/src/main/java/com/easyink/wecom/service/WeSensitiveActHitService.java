@@ -65,4 +65,9 @@ public interface WeSensitiveActHitService extends IService<WeSensitiveActHit> {
 
     void hitWeSensitiveAct1(String corpId, List<ChatInfoVO> chatDataList);
 
+    /**
+     * 更新敏感行为信息
+     *
+     */
+    void updateHistorySensitive();
 }

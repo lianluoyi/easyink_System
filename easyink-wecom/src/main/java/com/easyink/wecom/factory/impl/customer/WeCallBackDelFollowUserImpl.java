@@ -12,6 +12,7 @@ import com.easyink.common.enums.MessageType;
 import com.easyink.common.enums.ResultTip;
 import com.easyink.common.exception.CustomException;
 import com.easyink.common.utils.DateUtils;
+import com.easyink.common.utils.DictUtils;
 import com.easyink.common.utils.TagRecordUtil;
 import com.easyink.wecom.client.WeMessagePushClient;
 import com.easyink.wecom.domain.WeCustomer;
@@ -20,7 +21,6 @@ import com.easyink.wecom.domain.dto.WeMessagePushDTO;
 import com.easyink.wecom.domain.dto.message.TextMessageDTO;
 import com.easyink.wecom.domain.vo.WeUserVO;
 import com.easyink.wecom.domain.vo.WxCpXmlMessageVO;
-import com.easyink.wecom.domain.vo.autotag.TagInfoVO;
 import com.easyink.wecom.domain.vo.customerloss.CustomerLossTagVO;
 import com.easyink.wecom.factory.WeEventStrategy;
 import com.easyink.wecom.mapper.WeUserMapper;
@@ -35,7 +35,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * @author admin
@@ -138,9 +137,9 @@ public class WeCallBackDelFollowUserImpl extends WeEventStrategy {
             // state 为空表示不是从活码加的外部联系人
             if (weFlowerCustomerRel != null && StringUtils.isNotBlank(weFlowerCustomerRel.getState())) {
                 weEmpleCodeAnalyseService.saveWeEmpleCodeAnalyse(corpId, message.getUserId(), message.getExternalUserId(), weFlowerCustomerRel.getState(), false);
+                // 更新Redis中的数据
+                empleStatisticRedisCache.addLossCustomerCnt(corpId, DateUtils.dateTime(new Date()), Long.valueOf(weFlowerCustomerRel.getState()), message.getUserId());
             }
-            // 更新Redis中的数据
-            empleStatisticRedisCache.addLossCustomerCnt(corpId, DateUtils.dateTime(new Date()), Long.valueOf(weFlowerCustomerRel.getState()), message.getUserId());
             // 客户轨迹:记录删除跟进成员事件
             weCustomerTrajectoryService.saveActivityRecord(corpId, message.getUserId(), message.getExternalUserId(),
                     CustomerTrajectoryEnums.SubType.DEL_USER.getType());
@@ -186,12 +185,13 @@ public class WeCallBackDelFollowUserImpl extends WeEventStrategy {
             return;
         }
         String content = tagRecordUtil.buildLossTagContent(weUserVO.getUserName());
-        List<String> tagName = weTagService.selectTagByIds(addTagIds).stream().map(TagInfoVO::getTagName).collect(Collectors.toList());
+        // 获取有效的标签名称
+        List<String> tagName = weTagService.getTagNameByIds(addTagIds);
         if (CollectionUtils.isEmpty(tagName)){
             log.info("记录流失客户打标签信息动态时,查询标签异常");
             return;
         }
-        String detail = String.join(",", tagName);
+        String detail = String.join(DictUtils.SEPARATOR, tagName);
         //保存信息动态
         weCustomerTrajectoryService.saveCustomerTrajectory(corpId,userId,externalUserId,content,detail);
     }

@@ -233,17 +233,6 @@ public class WeCustomerExtendPropertyServiceImpl extends ServiceImpl<WeCustomerE
             property.setCorpId(corpId);
             list.add(property);
         }
-        // 删除property中的多选框选项重新插入，这样可以不用排序，直接用传过来的顺序排序
-        List<Long> removeExtendPropertyIds = new ArrayList<>();
-        list.forEach(it -> {
-            // 记录extendPropertyId
-            removeExtendPropertyIds.add(it.getId());
-            // 将多选框id置为空，重新插入
-            it.getOptionList().forEach(option -> option.setId(null));
-        });
-        if (CollectionUtils.isNotEmpty(removeExtendPropertyIds)) {
-            extendPropertyMultipleOptionService.remove(new LambdaQueryWrapper<ExtendPropertyMultipleOption>().in(ExtendPropertyMultipleOption::getExtendPropertyId, removeExtendPropertyIds));
-        }
         this.editBatch(list, corpId);
     }
 

@@ -18,13 +18,12 @@ import com.easyink.wecom.domain.vo.redeemcode.RedeemCodeAlarmUserVO;
 import com.easyink.wecom.domain.vo.redeemcode.WeRedeemCodeActivityVO;
 import com.easyink.wecom.login.util.LoginTokenService;
 import com.easyink.wecom.mapper.redeemcode.WeRedeemCodeActivityMapper;
+import com.easyink.wecom.mapper.redeemcode.WeRedeemCodeMapper;
 import com.easyink.wecom.service.redeemcode.WeRedeemCodeActivityService;
-import com.easyink.wecom.service.redeemcode.WeRedeemCodeService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,8 +42,12 @@ import java.util.List;
 public class WeRedeemCodeActivityServiceImpl extends ServiceImpl<WeRedeemCodeActivityMapper, WeRedeemCodeActivity> implements WeRedeemCodeActivityService {
 
 
-    @Autowired
-    private WeRedeemCodeService weRedeemCodeService;
+    private final WeRedeemCodeMapper weRedeemCodeMapper;
+
+    public WeRedeemCodeActivityServiceImpl(WeRedeemCodeMapper weRedeemCodeMapper) {
+        this.weRedeemCodeMapper = weRedeemCodeMapper;
+    }
+
 
     /**
      * 新增兑换码活动
@@ -168,7 +171,7 @@ public class WeRedeemCodeActivityServiceImpl extends ServiceImpl<WeRedeemCodeAct
         }
         this.baseMapper.deleteAlarmUser(ids);
         //删除兑换码库存
-        weRedeemCodeService.remove(new LambdaQueryWrapper<WeRedeemCode>().in(WeRedeemCode::getActivityId, ids));
+        weRedeemCodeMapper.delete(new LambdaQueryWrapper<WeRedeemCode>().in(WeRedeemCode::getActivityId, ids));
         //删除兑换码活动
         return this.baseMapper.deleteBatchByIds(corpId, ids);
     }

@@ -11,6 +11,7 @@ import com.easyink.common.exception.file.FileNameLengthLimitExceededException;
 import com.easyink.common.exception.file.FileSizeLimitExceededException;
 import com.easyink.common.exception.file.InvalidExtensionException;
 import com.easyink.common.utils.DateUtils;
+import com.easyink.common.utils.ExceptionUtil;
 import com.easyink.common.utils.StringUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.qcloud.cos.COSClient;
@@ -23,12 +24,17 @@ import com.qcloud.cos.model.PutObjectResult;
 import com.qcloud.cos.region.Region;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URLConnection;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 /**
  * 文件上传工具类
@@ -115,7 +121,7 @@ public class FileUploadUtils {
             throw new FileNameLengthLimitExceededException(FileUploadUtils.DEFAULT_FILE_NAME_LENGTH);
         }
         assertAllowed(file, MimeTypeUtils.getDefaultAllowedExtension());
-        return getPathFileName(baseDir, fileName);
+        return fileName;
     }
 
     /**
@@ -133,15 +139,14 @@ public class FileUploadUtils {
     public static String upload(String baseDir, MultipartFile file, String[] allowedExtension)
             throws FileSizeLimitExceededException, IOException, FileNameLengthLimitExceededException, InvalidExtensionException {
         int fileNamelength = 0;
-        String pathFileName = StringUtils.EMPTY;
+        String fileName = StringUtils.EMPTY;
         if (file != null) {
             checkFile(file, allowedExtension, fileNamelength);
-            String fileName = extractFilename(file);
+            fileName = extractFilename(file);
             File desc = getAbsoluteFile(baseDir, fileName);
             file.transferTo(desc);
-            pathFileName = getPathFileName(baseDir, fileName);
         }
-        return pathFileName;
+        return fileName;
     }
 
     /**
@@ -320,19 +325,66 @@ public class FileUploadUtils {
      * @return 新的文件Url
      */
     public static String reUploadFile(String url, RuoYiConfig ruoYiConfig, String fileName, String corpId) {
-        String imgUrlPrefix = null;
+        String newUrl = null;
         try {
-            // 获取原始的文件流
-            InputStream inputStream = FileUtils.downloadFile(url);
-            // 以新的文件名称重新上传，获取文件名
-            FileUploadUtils.reUpload2CosFileByName(inputStream, fileName, ruoYiConfig.getFile().getCos());
-            // COS的url前缀
-            imgUrlPrefix = ruoYiConfig.getFile().getCos().getCosImgUrlPrefix();
+            // 路径不包含"/profile"，直接使用URL获取inputStream流
+            if (!url.contains(Constants.RESOURCE_PREFIX)) {
+                // 获取原始的文件流
+                InputStream inputStream = FileUtils.downloadFile(url);
+                // COS的url前缀
+                String imgUrlPrefix = ruoYiConfig.getFile().getCos().getCosImgUrlPrefix();
+                // 以新的文件名称重新上传，获取文件名
+                FileUploadUtils.reUpload2CosFileByName(inputStream, fileName, ruoYiConfig.getFile().getCos());
+                newUrl = imgUrlPrefix + fileName;
+            } else {
+                // 本地上传，将url路径转换为绝对路径获取文件
+                File file = new File(url.replace(Constants.RESOURCE_PREFIX, RuoYiConfig.getProfile()));
+                // 将文件使用新的文件名称转换为Multipart对象
+                MultipartFile multipartFile = convertToMultipartFile(file, fileName);
+                // 获取日期编码后的文件名
+                fileName = extractFilename(multipartFile);
+                // 获取文件上传的绝对路径
+                File desc = getAbsoluteFile(RuoYiConfig.getProfile(), fileName);
+                // 上传文件到绝对路径
+                multipartFile.transferTo(desc);
+                // 拼接本地资源映射地址
+                newUrl = getPathFileName(RuoYiConfig.getProfile()) + fileName;
+            }
         } catch (IOException e) {
             log.info("[重新上传] 重新获取新的文件名URL异常，corpId:{}，上传的文件名:{}", corpId, fileName);
         }
         // 返回拼接好的文件Url
-        return imgUrlPrefix == null ? StringUtils.EMPTY : imgUrlPrefix + fileName;
+        return newUrl;
+    }
+
+    /**
+     * 转换为multipart对象
+     *
+     * @param file 文件
+     * @param newFileName 新文件名
+     * @return MultipartFile
+     */
+    public static MultipartFile convertToMultipartFile(File file, String newFileName) {
+        try {
+            // 读取文件内容
+            FileInputStream fileInputStream = new FileInputStream(file);
+
+            // 使用MockMultipartFile构造器创建MultipartFile对象
+            MultipartFile multipartFile = new MockMultipartFile(
+                    // 文件名
+                    newFileName,
+                    // originalFilename
+                    newFileName,
+                    // content type（可以根据需要设置）
+                    null,
+                    // 文件内容的输入流
+                    fileInputStream
+            );
+            return multipartFile;
+        } catch (IOException e) {
+            log.info("[重新上传文件] 转换文件multipart类型异常，异常原因：{}", ExceptionUtils.getStackTrace(e));
+            return null;
+        }
     }
 
     /**
@@ -371,7 +423,7 @@ public class FileUploadUtils {
 
         File desc = getAbsoluteFile(baseDir, fileName);
         file.transferTo(desc);
-        return getPathFileName(baseDir, fileName);
+        return getPathFileName(baseDir) + fileName;
     }
 
     /**
@@ -398,14 +450,14 @@ public class FileUploadUtils {
         return desc;
     }
 
-    private static String getPathFileName(String uploadDir, String fileName) {
+    public static String getPathFileName(String uploadDir) {
         int dirLastIndex = RuoYiConfig.getProfile().length() + 1;
         String currentDir = StringUtils.substring(uploadDir, dirLastIndex);
         String pathFileName;
         if (org.apache.commons.lang3.StringUtils.isBlank(currentDir)) {
-            pathFileName = Constants.RESOURCE_PREFIX + WeConstans.SLASH + fileName;
+            pathFileName = Constants.RESOURCE_PREFIX + WeConstans.SLASH;
         } else {
-            pathFileName = Constants.RESOURCE_PREFIX + WeConstans.SLASH + currentDir + WeConstans.SLASH + fileName;
+            pathFileName = Constants.RESOURCE_PREFIX + WeConstans.SLASH + currentDir + WeConstans.SLASH;
         }
         return pathFileName;
     }

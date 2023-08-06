@@ -77,8 +77,8 @@
           AND wocss.sop_id = #{sopId} AND wocss.type = ${@com.easyink.common.constant.WeConstans@SOP_USE_DEPARTMENT}
     </select>
 
-    <insert id="batchSave">
-        INSERT IGNORE INTO we_operations_center_sop_scope (
+    <insert id="batchSaveOrUpdate">
+        INSERT INTO we_operations_center_sop_scope (
         corp_id
         ,sop_id
         ,target_id
@@ -95,6 +95,8 @@
             #{item.type}
             )
         </foreach>
+        ON DUPLICATE KEY UPDATE
+        target_id = VALUES(target_id)
     </insert>
 
 </mapper>

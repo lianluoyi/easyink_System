@@ -14,4 +14,18 @@
             WHERE id = #{item.id}
         </foreach>
     </update>
+    <!--批量插入或更新扩展属性值-->
+    <insert id="batchSaveOrUpdate">
+        INSERT INTO extend_property_multiple_option (id, extend_property_id, multiple_value, option_sort)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+            #{item.id},#{item.extendPropertyId},#{item.multipleValue},#{item.optionSort}
+            )
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+        extend_property_id = VALUES(extend_property_id),
+        multiple_value = VALUES(multiple_value),
+        option_sort = VALUES(option_sort)
+    </insert>
 </mapper>

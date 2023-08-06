@@ -3,6 +3,7 @@ package com.easyink.wecom.interceptor;
 import cn.hutool.json.JSONUtil;
 import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.dtflys.forest.exceptions.ForestRuntimeException;
 import com.dtflys.forest.http.ForestRequest;
 import com.dtflys.forest.http.ForestRequestBody;
 import com.dtflys.forest.http.ForestResponse;
@@ -92,6 +93,11 @@ public class WeCustomerEditTagInterceptor extends WeAccessTokenInterceptor {
     @Override
     public void onSuccess(Object o, ForestRequest forestRequest, ForestResponse forestResponse) {
         log.info("url:【{}】,result:【{}】", forestRequest.getUrl(), forestResponse.getContent());
+        WeResultDTO weResultDto = JSONUtil.toBean(forestResponse.getContent(), WeResultDTO.class);
+        // 如果返回的状态码是84061，表示该客户与员工没有客户关系，抛出异常，不进行标签重试。
+        if (null != weResultDto.getErrcode() && !WeConstans.WE_SUCCESS_CODE.equals(weResultDto.getErrcode()) && WeConstans.NOT_EXIST_CONTACT.equals(weResultDto.getErrcode())) {
+            throw new ForestRuntimeException(forestResponse.getContent());
+        }
         // 非法标签重试
         retryMarkTag(forestRequest, forestResponse);
     }

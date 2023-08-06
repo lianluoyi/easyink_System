@@ -44,6 +44,8 @@ public class WeCallBackController {
     private final AppCallbackSettingService appCallbackSettingService;
     @Resource(name = "sendCallbackExecutor")
     private ThreadPoolTaskExecutor sendCallbackExecutor;
+    @Resource(name =  "handleCallbackExecutor")
+    private ThreadPoolTaskExecutor handleCallbackExecutor ;
 
 
     @Autowired
@@ -76,7 +78,7 @@ public class WeCallBackController {
             log.info("企微回调通知接口 wxCpXmlMessage:{}", JSON.toJSONString(wxCpXmlMessage));
             WeCallBackEventFactory factory = weEventHandle.factory(wxCpXmlMessage.getEvent());
             if (factory != null) {
-                Threads.SINGLE_THREAD_POOL.submit(() -> factory.eventHandle(wxCpXmlMessage));
+                handleCallbackExecutor.submit(() -> factory.eventHandle(wxCpXmlMessage));
             } else {
                 log.info("[企微回调通知接口]该回调事件不存在对应的处理,{}", wxCpXmlMessage.getEvent());
             }
@@ -145,7 +147,7 @@ public class WeCallBackController {
             String event = StringUtils.isNotBlank(wxCpXmlMessage.getInfoType()) ? wxCpXmlMessage.getInfoType() : wxCpXmlMessage.getEvent();
             WeCallBackEventFactory factory = weEventHandle.factory(event);
             if (factory != null) {
-                Threads.SINGLE_THREAD_POOL.submit(() -> factory.eventHandle(wxCpXmlMessage));
+                handleCallbackExecutor.submit(() -> factory.eventHandle(wxCpXmlMessage));
             } else {
                 throw new CustomException(ResultTip.TIP_STRATEGY_IS_EMPTY);
             }
