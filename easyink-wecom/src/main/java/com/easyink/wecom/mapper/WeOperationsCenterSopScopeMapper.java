@@ -31,5 +31,5 @@ public interface WeOperationsCenterSopScopeMapper extends BaseMapper<WeOperation
      *
      * @param list list
      */
-    void batchSave(List<WeOperationsCenterSopScopeEntity> list);
+    void batchSaveOrUpdate(List<WeOperationsCenterSopScopeEntity> list);
 }

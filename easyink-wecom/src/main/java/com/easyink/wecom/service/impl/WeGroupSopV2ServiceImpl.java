@@ -8,6 +8,7 @@ import com.easyink.common.enums.ResultTip;
 import com.easyink.common.enums.WeOperationsCenterSop;
 import com.easyink.common.exception.CustomException;
 import com.easyink.common.utils.DateUtils;
+import com.easyink.common.utils.DictUtils;
 import com.easyink.common.utils.bean.BeanUtils;
 import com.easyink.wecom.domain.*;
 import com.easyink.wecom.domain.dto.customersop.AddWeCustomerSopDTO;
@@ -158,6 +159,8 @@ public class WeGroupSopV2ServiceImpl implements WeGroupSopV2Service {
         }
         //指定范围
         if (!WeOperationsCenterSop.SopTypeEnum.ACTIVITY.getSopType().equals(sopType)) {
+            // 删除原来的作用范围
+            sopScopeService.remove(new LambdaQueryWrapper<WeOperationsCenterSopScopeEntity>().eq(WeOperationsCenterSopScopeEntity::getSopId, sopId));
             sopScopeService.updateSopScope(corpId, sopId, userIdList, departmentIdList);
         } else{
             WeOperationsCenterSopScopeEntity sopScopeEntity= new WeOperationsCenterSopScopeEntity();
@@ -197,6 +200,8 @@ public class WeGroupSopV2ServiceImpl implements WeGroupSopV2Service {
         sopFilterService.updateGroupSopFilter(groupSopFilterEntity, sopType, sopFilter.getCycleStart(), sopFilter.getCycleEnd());
         //指定群聊|指定员工|群日历
         if (WeOperationsCenterSop.FilterTypeEnum.SPECIFY.getFilterType().equals(filterType) || WeOperationsCenterSop.SopTypeEnum.GROUP_CALENDAR.getSopType().equals(sopType)) {
+            // 删除原来的作用范围
+            sopScopeService.remove(new LambdaQueryWrapper<WeOperationsCenterSopScopeEntity>().eq(WeOperationsCenterSopScopeEntity::getSopId, sopId));
             //此处用不到部门
             sopScopeService.updateSopScope(corpId, sopId, chatIdList, null);
         }
@@ -223,9 +228,10 @@ public class WeGroupSopV2ServiceImpl implements WeGroupSopV2Service {
                 WeOperationsCenterSopScopeEntity sopScope = new WeOperationsCenterSopScopeEntity();
                 BeanUtils.copyProperties(sopScopeEntity, sopScope);
                 sopScope.setTargetId(chatId);
+                sopScope.setType(WeConstans.SOP_USE_CUSTOMER_CHAT);
                 sopScopeEntityList.add(sopScope);
             });
-            sopScopeService.batchSave(sopScopeEntityList);
+            sopScopeService.batchSaveOrUpdate(sopScopeEntityList);
         } else {
             //筛选群聊
             WeOperationsCenterGroupSopFilterEntity sopFilter = getGroupSopFilterEntity(corpId, sopId, addWeGroupSopDTO.getSopFilter());
@@ -376,7 +382,7 @@ public class WeGroupSopV2ServiceImpl implements WeGroupSopV2Service {
             }
             //保存sop作用部门
             if(StringUtils.isNotBlank(addWeGroupSopDTO.getSopCustomerFilter().getDepartments())) {
-                List<String> departmentIds = Arrays.asList(addWeGroupSopDTO.getSopCustomerFilter().getDepartments());
+                List<String> departmentIds = Arrays.asList(addWeGroupSopDTO.getSopCustomerFilter().getDepartments().split(DictUtils.SEPARATOR));
                 departmentIds.forEach(departmentId -> {
                     WeOperationsCenterSopScopeEntity sopScope = new WeOperationsCenterSopScopeEntity();
                     BeanUtils.copyProperties(sopScopeEntity, sopScope);
@@ -452,10 +458,11 @@ public class WeGroupSopV2ServiceImpl implements WeGroupSopV2Service {
                 sopScope.setCreateTime(new Date());
             }
             sopScope.setTargetId(userId);
+            sopScope.setType(WeConstans.SOP_USE_CUSTOMER_CHAT);
             weOperationsCenterSopScopeEntities.add(sopScope);
         });
         //批量保存作用范围
-        sopScopeService.batchSave(weOperationsCenterSopScopeEntities);
+        sopScopeService.batchSaveOrUpdate(weOperationsCenterSopScopeEntities);
     }
 
     private List<String> filterCustomer(AddWeCustomerSopDTO weCustomerSopDTO, List<String> customerIds) {

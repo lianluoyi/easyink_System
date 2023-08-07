@@ -33,7 +33,6 @@ public class WeEventChangeExternalContactImpl implements WeCallBackEventFactory 
             //三方应用的回调客户群通知不处理
             return;
         }
-
         String changeType = message.getChangeType();
         log.info("回调客户事件通知,通知类型：{},企业ID：{}", changeType, message.getToUserName());
         weStrategyBeanFactory.getResource(changeType, message);

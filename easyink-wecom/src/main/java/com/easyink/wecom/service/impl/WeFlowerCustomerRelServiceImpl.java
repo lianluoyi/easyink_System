@@ -324,6 +324,31 @@ public class WeFlowerCustomerRelServiceImpl extends ServiceImpl<WeFlowerCustomer
     }
 
     /**
+     * 根据开始，结束时间，获取截止时间下的有效客户数
+     *
+     * @param corpId    企业ID
+     * @param beginTime 开始时间，格式为YYYY-MM-DD 00:00:00
+     * @param endTime   结束时间，格式为YYYY-MM-DD 23:59:59
+     * @param userIds
+     * @return 有效客户数
+     */
+    @Override
+    public Integer getCurrentNewCustomerCnt(String corpId, String beginTime, String endTime, List<String> userIds) {
+        if (StringUtils.isAnyBlank(corpId, beginTime, endTime)) {
+            return null;
+        }
+        LambdaQueryWrapper<WeFlowerCustomerRel> queryWrapper = new LambdaQueryWrapper<WeFlowerCustomerRel>()
+                .eq(WeFlowerCustomerRel::getCorpId, corpId)
+                .in(WeFlowerCustomerRel::getStatus, CustomerStatusEnum.NORMAL.getCode(), CustomerStatusEnum.TO_BE_TRANSFERRED.getCode(), CustomerStatusEnum.TRANSFERRING.getCode())
+                .gt(WeFlowerCustomerRel::getCreateTime, DateUtils.parseBeginDay(beginTime))
+                .lt(WeFlowerCustomerRel::getCreateTime, DateUtils.parseEndDay(endTime));
+        if (org.apache.commons.collections4.CollectionUtils.isNotEmpty(userIds)) {
+            queryWrapper.in(WeFlowerCustomerRel::getUserId, userIds);
+        }
+        return this.count(queryWrapper);
+    }
+
+    /**
      * 更新已流失重新添加回来的客户状态
      *
      * @param corpId 企业ID

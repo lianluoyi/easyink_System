@@ -291,4 +291,8 @@ public class Constants {
      * TAB 空格字符
      */
     public static final String TAB = " ";
+    /**
+     * 默认的新客留存率值
+     */
+    public static final String EMPTY_RETAIN_RATE_VALUE = "-";
 }

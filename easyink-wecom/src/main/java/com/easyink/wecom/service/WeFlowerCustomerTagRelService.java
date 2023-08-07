@@ -1,6 +1,7 @@
 package com.easyink.wecom.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.easyink.wecom.domain.WeFlowerCustomerRel;
 import com.easyink.wecom.domain.WeFlowerCustomerTagRel;
 import com.easyink.wecom.domain.vo.customer.WeCustomerVO;
 
@@ -120,4 +121,11 @@ public interface WeFlowerCustomerTagRelService extends IService<WeFlowerCustomer
      * @param list   客户列表 {@link WeCustomerVO }
      */
     void setTagForCustomers(String corpId, List<WeCustomerVO> list);
+
+    /**
+     * 从远端同步标签
+     * @param localRel 本地的客户关系
+     * @param tagRelList 同步到的客户-标签关系
+     */
+    void syncTagFromRemote(WeFlowerCustomerRel localRel, List<WeFlowerCustomerTagRel> tagRelList);
 }

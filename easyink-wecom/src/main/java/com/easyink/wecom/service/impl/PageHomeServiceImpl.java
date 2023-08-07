@@ -3,6 +3,7 @@ package com.easyink.wecom.service.impl;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.easyink.common.constant.Constants;
 import com.easyink.common.constant.GroupConstants;
 import com.easyink.common.constant.RedisKeyConstants;
 import com.easyink.common.constant.WeConstans;
@@ -180,11 +181,10 @@ public class PageHomeServiceImpl implements PageHomeService {
                                                                               .size() - 2);
         DateTime beginTime = DateUtil.beginOfDay(new Date());
         DateTime endTime = DateUtil.endOfDay(new Date());
-        //获取今日添加客户数量 查询正常和流失状态的客户
+        // 获取今日添加客户数量，所有状态的客户数
         int newCustomerCount = weFlowerCustomerRelService.count(new LambdaQueryWrapper<WeFlowerCustomerRel>()
                 .eq(WeFlowerCustomerRel::getCorpId, corpId)
-                .between(WeFlowerCustomerRel::getCreateTime, beginTime, endTime)
-                .in(WeFlowerCustomerRel::getStatus, CustomerStatusEnum.NORMAL.getCode().toString(), CustomerStatusEnum.DRAIN.getCode().toString()));
+                .between(WeFlowerCustomerRel::getCreateTime, beginTime, endTime));
         //今日群新增人数
         int groupMemberCount = weGroupMemberService.count(new LambdaQueryWrapper<WeGroupMember>()
                 .eq(WeGroupMember::getCorpId, corpId)
@@ -214,6 +214,8 @@ public class PageHomeServiceImpl implements PageHomeService {
                 .between(WeGroup::getCreateTime, beginTime, endTime)
 
         );
+        // 截止今日有效客户数
+        int currentNewCustomerCnt = weFlowerCustomerRelService.getCurrentNewCustomerCnt(corpId, DateUtils.parseBeginDay(DateUtils.dateTime(new Date())), DateUtils.parseEndDay(DateUtils.dateTime(new Date())), null);
         // 群聊客户总数
         // 由于 官方统计接口统计的群聊成员数是包含离职员工,但是获取客户群详情的成员里面不包含离职员工
         // 所以我们无法统计正确的统计今日 群聊成员数, 此处和产品商量后 今日群成员数直接返回0给前端
@@ -229,7 +231,7 @@ public class PageHomeServiceImpl implements PageHomeService {
         today.setNegativeFeedbackCnt(lossCount);
         today.setNegativeFeedbackCntDiff(lossCount - yesterday.getNegativeFeedbackCnt());
         //客户留存率和留存率差
-        String retentionRate = genRetentionRate(newCustomerCount, todayLossCnt);
+        String retentionRate = genRetentionRate(newCustomerCount, currentNewCustomerCnt);
         today.setNewContactRetentionRate(retentionRate);
         today.setNewContactRetentionRateDiff(genRetentionRateCliff(retentionRate, yesterday.getNewContactRetentionRate()));
         // 设置群聊总数、客户群人数总数 以及增幅
@@ -240,6 +242,7 @@ public class PageHomeServiceImpl implements PageHomeService {
         today.setNewContactLossCnt(todayLossCnt);
         today.setNewChatCnt(todayNewChatCnt);
         today.setNewChatCntDiff(todayNewChatCnt- yesterday.getNewChatCnt());
+        today.setCurrentNewCustomerCnt(currentNewCustomerCnt);
         //折线统计图，当天数据
         WePageCountDTO wePageCountDTO = today.getDataList()
                                              .get(today.getDataList()
@@ -253,6 +256,7 @@ public class PageHomeServiceImpl implements PageHomeService {
         wePageCountDTO.setTotalContactCnt(totalContactCnt);
         wePageCountDTO.setNewContactLossCnt(todayLossCnt);
         wePageCountDTO.setNewChatCnt(todayNewChatCnt);
+        wePageCountDTO.setCurrentNewCustomerCnt(currentNewCustomerCnt);
         List<WePageCountDTO> dataList = wePageStaticDataDto.getToday()
                                                            .getDataList();
         //删除今日数据，再加入修改后的
@@ -269,8 +273,8 @@ public class PageHomeServiceImpl implements PageHomeService {
      * @return 留存率的比较值
      */
     private String genRetentionRateCliff(String newRate, String oldRate) {
-        if (StringUtils.isAnyBlank(newRate, oldRate)) {
-            return BigDecimal.ZERO.toPlainString();
+        if (newRate.equals(Constants.EMPTY_RETAIN_RATE_VALUE) || oldRate.equals(Constants.EMPTY_RETAIN_RATE_VALUE)) {
+            return Constants.EMPTY_RETAIN_RATE_VALUE;
         }
         return new BigDecimal(newRate).subtract(new BigDecimal(oldRate))
                                       .stripTrailingZeros()
@@ -278,30 +282,25 @@ public class PageHomeServiceImpl implements PageHomeService {
     }
 
     /**
-     * 计算 留存率
+     * 计算 留存率 截止当前的有效客户数 / 新增客户数
      *
-     * @param newCnt  新客数
-     * @param lossCnt 流失数
+     * @param newCnt                新增客户数
+     * @param currentNewCustomerCnt 截止当前，有效客户数
      * @return 留存率
      */
-    public String genRetentionRate(Integer newCnt, Integer lossCnt) {
-        if (newCnt == null || lossCnt == null) {
-            return BigDecimal.ZERO.toString();
-        }
-        if (newCnt == 0) {
-            return new BigDecimal(100).toPlainString();
+    public String genRetentionRate(Integer newCnt, Integer currentNewCustomerCnt) {
+        if (newCnt == 0 || newCnt == null || currentNewCustomerCnt == null) {
+            return Constants.EMPTY_RETAIN_RATE_VALUE;
         }
         BigDecimal percent = new BigDecimal(100);
         // 百分比
         BigDecimal newCntDecimal = new BigDecimal(newCnt);
-        BigDecimal lossCntDecimal = new BigDecimal(lossCnt);
+        BigDecimal currCustomerCntDecimal = new BigDecimal(currentNewCustomerCnt);
         int scale = 2;
-        return percent.subtract(lossCntDecimal
-                              .multiply(percent)
-                              .divide(newCntDecimal, scale, RoundingMode.HALF_UP)
-                              .stripTrailingZeros()
-                      )
-                      .toPlainString();
+        return currCustomerCntDecimal
+                .multiply(percent)
+                .divide(newCntDecimal, scale, RoundingMode.HALF_UP)
+                .stripTrailingZeros().toPlainString();
 
     }
 
@@ -362,9 +361,13 @@ public class PageHomeServiceImpl implements PageHomeService {
         //获取本周数据
         WePageCountDTO newTime = getThisWeekWeUserBehaviorData(corpId);
         WePageCountDTO nowTimeGroupChatData = getThisWeekWeGroupStatisticData(corpId);
+        String beginWeek = DateUtil.beginOfWeek(new Date(), true).toString();
+        String endWeek = DateUtil.endOfWeek(new Date(), true).toString();
         if (nowTimeGroupChatData != null) {
             newTime.setGroupChatData(nowTimeGroupChatData);
         }
+        // 设置本周，截止当前的有效客户数
+        newTime.setCurrentNewCustomerCnt(weFlowerCustomerRelService.getCurrentNewCustomerCnt(corpId, beginWeek, endWeek, null));
         //redis中获取上周
         //客户统计
         WePageCountDTO lastTime = wePageStaticDataDto.getWeek()
@@ -372,6 +375,10 @@ public class PageHomeServiceImpl implements PageHomeService {
                                                      .get(wePageStaticDataDto.getWeek()
                                                                              .getDataList()
                                                                              .size() - 2);
+        String lastBeginWeek = DateUtil.beginOfWeek(DateUtil.lastWeek(), true).toString();
+        String lastEndWeek = DateUtil.endOfWeek(DateUtil.lastWeek(), true).toString();
+        // 设置上周，截止当前的有效客户数
+        lastTime.setCurrentNewCustomerCnt(weFlowerCustomerRelService.getCurrentNewCustomerCnt(corpId, lastBeginWeek, lastEndWeek, null));
         return setPageStaticData(newTime, lastTime, today, week);
 
     }
@@ -384,6 +391,10 @@ public class PageHomeServiceImpl implements PageHomeService {
         //获取本月数据
         WePageCountDTO newTime = getThisMonthWeUserBehaviorData(corpId);
         WePageCountDTO nowTimeGroupChatData = getThisMonthWeGroupStatisticData(corpId);
+        // 设置截止本月，有效客户数
+        String beginMouth = DateUtil.beginOfMonth(new Date()).toString();
+        String endMouth = DateUtil.endOfMonth(new Date()).toString();
+        newTime.setCurrentNewCustomerCnt(weFlowerCustomerRelService.getCurrentNewCustomerCnt(corpId, beginMouth, endMouth, null));
         if (nowTimeGroupChatData != null) {
             newTime.setGroupChatData(nowTimeGroupChatData);
         }
@@ -392,6 +403,10 @@ public class PageHomeServiceImpl implements PageHomeService {
                                                      .get(wePageStaticDataDto.getWeek()
                                                                              .getDataList()
                                                                              .size() - 2);
+        // 设置截止上月，有效客户数
+        String lastBeginMouth = DateUtil.beginOfMonth(DateUtil.lastMonth()).toString();
+        String lastEndMouth = DateUtil.endOfMonth(DateUtil.lastMonth()).toString();
+        lastTime.setCurrentNewCustomerCnt(weFlowerCustomerRelService.getCurrentNewCustomerCnt(corpId, lastBeginMouth, lastEndMouth, null));
         return setPageStaticData(newTime, lastTime, today, month);
     }
 
@@ -411,8 +426,10 @@ public class PageHomeServiceImpl implements PageHomeService {
         //群聊数量（原数据+今日加入）
         week.setNewMemberCnt(nowTime.getNewMemberCnt() + today.getNewMemberCnt());
         week.setNewMemberCntDiff(nowTime.getNewMemberCnt() - lastTime.getNewMemberCnt() + today.getNewMemberCnt());
-        // 新客留存率 (原数据 + 今日加入 )
-        String retentionRate = genRetentionRate(newCnt, periodLossCnt);
+        // 新客留存率 截止当前的有效客户数 / (原数据 + 今日加入新增客户数)
+        String retentionRate = genRetentionRate(newCnt, nowTime.getCurrentNewCustomerCnt());
+        // 设置本周的截止当前有效客户数
+        week.setCurrentNewCustomerCnt(nowTime.getCurrentNewCustomerCnt());
         week.setNewContactRetentionRate(retentionRate);
         week.setNewContactRetentionRateDiff(genRetentionRateCliff(retentionRate, lastTime.getNewContactRetentionRate()));
         // 群聊总数和 群聊人数总数
@@ -440,6 +457,7 @@ public class PageHomeServiceImpl implements PageHomeService {
         wePageCountDTO.setNewContactRetentionRate(retentionRate);
         wePageCountDTO.setNewChatCnt(newChatCnt);
         wePageCountDTO.setChatTotal(today.getChatTotal());
+        wePageCountDTO.setCurrentNewCustomerCnt(nowTime.getCurrentNewCustomerCnt());
         List<WePageCountDTO> dataList = week.getDataList();
         //删除本周，月数据，再加入修改后的
         dataList.remove(dataList.size() - 1);
@@ -503,12 +521,15 @@ public class PageHomeServiceImpl implements PageHomeService {
         if (nowTimeGroupChatData != null) {
             nowData.setGroupChatData(nowTimeGroupChatData);
         }
-
+        // 计算截止今日有效的客户数
+        nowData.setCurrentNewCustomerCnt(weFlowerCustomerRelService.getCurrentNewCustomerCnt(corpId, DateUtils.parseBeginDay(today), DateUtils.parseEndDay(today), null));
         //2、统计昨日
         String yesterday = DateUtil.yesterday()
                                    .toDateStr();
         //客户统计
         WePageCountDTO lastTime = weUserBehaviorDataService.getCountDataByDayNew(corpId, DateUtils.parseBeginDay(yesterday), DateUtils.parseEndDay(yesterday));
+        // 计算截止昨日有效的客户数
+        lastTime.setCurrentNewCustomerCnt(weFlowerCustomerRelService.getCurrentNewCustomerCnt(corpId, DateUtils.parseBeginDay(yesterday), DateUtils.parseEndDay(yesterday), null));
         //客户群统计
         WePageCountDTO lastGroupChatTime = weGroupStatisticService.getCountDataByDayNew(corpId, DateUtils.parseBeginDay(yesterday), DateUtils.parseEndDay(yesterday));
         if (lastGroupChatTime != null) {
@@ -529,7 +550,22 @@ public class PageHomeServiceImpl implements PageHomeService {
         List<WePageCountDTO> dayGroupChatCountData = weGroupStatisticService.getDayCountData(wePageStateQuery);
         // 查询每日的总客户数
         pageStaticData.setDataList(processWePageCountDTOList(dayCountData, dayGroupChatCountData));
-
+        // 为前14天设置截止当前时间，有效客户数
+        List<Date> dates = DateUtils.findDates(DateUtil.offsetDay(new Date(), -15), new Date());
+        for (Date date : dates) {
+            // 当前日期，格式为YYYY-MM-DD
+            String time = DateUtils.dateTime(date);
+            // 当前日期开始时间，格式为YYYY-MM-DD 00:00:00
+            String beginTime = DateUtils.parseBeginDay(time);
+            // 当前日期结束时间，格式为YYYY-MM-DD 23:59:59
+            String endTime = DateUtils.parseEndDay(time);
+            for (WePageCountDTO dayCountDatum : dayCountData) {
+                // 给对应时间设置截止当前时间的有效客户数
+                if (dayCountDatum.getXTime().equals(time)) {
+                    dayCountDatum.setCurrentNewCustomerCnt(weFlowerCustomerRelService.getCurrentNewCustomerCnt(corpId, beginTime, endTime, null));
+                }
+            }
+        }
         return pageStaticData;
     }
 
@@ -593,7 +629,15 @@ public class PageHomeServiceImpl implements PageHomeService {
         List<WePageCountDTO> weekGroupChatCountData = weGroupStatisticService.getWeekCountData(wePageStateQuery);
 
         pageStaticData.setDataList(processWePageCountDTOList(weekCountData, weekGroupChatCountData));
-
+        // 为前五周设置截止本周的有效客户数
+        for (int i = 1; i <= weekFew; i++) {
+            // 获取前 i 周的开始时间
+            String beginWeekTime = DateUtil.beginOfWeek(DateUtil.offsetWeek(new Date(), -i), true).toString();
+            // 获取前 i 周的结束时间
+            String endWeekTime = DateUtil.endOfWeek(DateUtil.offsetWeek(new Date(), -i), true).toString();
+            // 因为周数是按时间顺序排序的，weekFew间隔-1，就是当前周的前 i 周 的数据
+            weekCountData.get(weekFew - i).setCurrentNewCustomerCnt(weFlowerCustomerRelService.getCurrentNewCustomerCnt(corpId, beginWeekTime, endWeekTime, null));
+        }
         return pageStaticData;
     }
 
@@ -630,7 +674,15 @@ public class PageHomeServiceImpl implements PageHomeService {
         List<WePageCountDTO> monthGroupChatCountData = weGroupStatisticService.getMonthCountData(wePageStateQuery);
 
         pageStaticData.setDataList(processWePageCountDTOList(monthCountData, monthGroupChatCountData));
-
+        // 为前五月设置截止本月的有效客户数
+        for (int i = 1; i <= monthFew; i++) {
+            // 获取前 i 月的开始时间
+            String beginMouthTime = DateUtil.beginOfMonth(DateUtil.offsetMonth(new Date(), -i)).toString();
+            // 获取前 i 月的结束时间
+            String endMouthTime = DateUtil.endOfMonth(DateUtil.offsetMonth(new Date(), -i)).toString();
+            // 因为月数是按时间顺序排序的，monthFew间隔-1，就是当前月的前 i 月 的数据
+            pageStaticData.getDataList().get(monthFew - i).setCurrentNewCustomerCnt(weFlowerCustomerRelService.getCurrentNewCustomerCnt(corpId, beginMouthTime, endMouthTime, null));
+        }
         return pageStaticData;
     }
 
@@ -646,11 +698,12 @@ public class PageHomeServiceImpl implements PageHomeService {
         pageStaticData.setNewMemberCnt(nowTime.getNewMemberCnt());
         pageStaticData.setNewMemberCntDiff(nowTime.getNewMemberCnt() - lastTime.getNewMemberCnt());
         pageStaticData.setNewContactLossCnt(nowTime.getNewContactLossCnt());
-        String newContactRetentionRate = genRetentionRate(nowTime.getNewContactCnt(), nowTime.getNewContactLossCnt()  );
+        String newContactRetentionRate = genRetentionRate(nowTime.getNewContactCnt(), nowTime.getCurrentNewCustomerCnt());
         pageStaticData.setNewContactRetentionRate(newContactRetentionRate);
         pageStaticData.setNewContactRetentionRateDiff(genRetentionRateCliff(newContactRetentionRate, lastTime.getNewContactRetentionRate()));
         pageStaticData.setNewChatCnt(nowTime.getNewChatCnt());
         pageStaticData.setNewChatCntDiff(nowTime.getNewChatCnt() - lastTime.getNewChatCnt());
+        pageStaticData.setCurrentNewCustomerCnt(nowTime.getCurrentNewCustomerCnt());
         return pageStaticData;
     }
 }

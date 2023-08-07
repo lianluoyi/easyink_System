@@ -72,11 +72,8 @@ public class WeCallBackDelExternalContactImpl extends WeEventStrategy {
                 weSensitiveActHit.setCreateTime(new Date(message.getCreateTime() * 1000L));
                 weSensitiveActHit.setCreateBy("admin");
                 weSensitiveActHit.setOperatorId(message.getUserId());
-                weSensitiveActHitService.setUserOrCustomerInfo(weSensitiveActHit);
-
-                WeCustomer weCustomer = weCustomerService.selectWeCustomerById(message.getExternalUserId(), message.getToUserName());
-                weSensitiveActHit.setOperateTargetId(weCustomer.getExternalUserid());
                 weSensitiveActHit.setCorpId(message.getToUserName());
+                weSensitiveActHit.setOperateTargetId(message.getExternalUserId());
                 weSensitiveActHitService.setUserOrCustomerInfo(weSensitiveActHit);
                 weSensitiveActHitService.insertWeSensitiveActHit(weSensitiveActHit);
             }

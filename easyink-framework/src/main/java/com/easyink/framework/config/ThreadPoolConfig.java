@@ -1,10 +1,12 @@
 package com.easyink.framework.config;
 
 import com.easyink.common.utils.Threads;
+import com.easyink.framework.config.properties.ThreadPoolProperties;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -23,6 +25,9 @@ import java.util.concurrent.ThreadPoolExecutor;
 @Configuration
 @Slf4j
 public class ThreadPoolConfig {
+    @Autowired
+    private ThreadPoolProperties threadPoolProperties;
+
     // 核心线程池大小
     private int corePoolSize = 50;
 
@@ -38,14 +43,8 @@ public class ThreadPoolConfig {
     @Bean(name = "threadPoolTaskExecutor")
     @Primary
     public ThreadPoolTaskExecutor threadPoolTaskExecutor() {
-        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setMaxPoolSize(maxPoolSize);
-        executor.setCorePoolSize(corePoolSize);
-        executor.setQueueCapacity(queueCapacity);
-        executor.setKeepAliveSeconds(keepAliveSeconds);
-        // 线程池对拒绝任务(无线程可用)的处理策略
-        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
-        return executor;
+        ThreadPoolProperties.BaseThreadProperty prop = threadPoolProperties.getHandleCallback();
+        return init(prop.getCorePoolSize(), prop.getMaxPoolSize(), prop.getQueueCapacity(), prop.getKeepAliveSeconds(),"threadPool");
     }
 
     /**
@@ -64,13 +63,34 @@ public class ThreadPoolConfig {
     }
 
     /**
-     * 仲裁工单线程池
+     * 处理回调的线程池执行器
+     * @return
+     */
+    @Bean("handleCallbackExecutor")
+    public ThreadPoolTaskExecutor handleCallbackExecutor( ) {
+        ThreadPoolProperties.BaseThreadProperty prop = threadPoolProperties.getHandleCallback();
+        return init(prop.getCorePoolSize(), prop.getMaxPoolSize(), prop.getQueueCapacity(), prop.getKeepAliveSeconds(),"formTask");
+    }
+    /**
+     * 表单线程池执行器
+     *
+     * @return executor
+     */
+    @Bean("formTaskExecutor")
+    public ThreadPoolTaskExecutor formTaskExecutor() {
+        ThreadPoolProperties.BaseThreadProperty prop = threadPoolProperties.getFormTask();
+        return init(prop.getCorePoolSize(), prop.getMaxPoolSize(), prop.getQueueCapacity(), prop.getKeepAliveSeconds(),"formTask");
+    }
+
+    /**
+     * 批量标签线程池
      *
      * @return executor
      */
     @Bean("batchTagExecutor")
     public ThreadPoolTaskExecutor batchTagExecutor() {
-        return init(corePoolSize, maxPoolSize, queueCapacity, keepAliveSeconds, "batchTag");
+        ThreadPoolProperties.BaseThreadProperty prop = threadPoolProperties.getFormTask();
+        return init(prop.getCorePoolSize(), prop.getMaxPoolSize(), prop.getQueueCapacity(), prop.getKeepAliveSeconds(),"batchTag");
     }
 
     /**
@@ -80,7 +100,8 @@ public class ThreadPoolConfig {
      */
     @Bean("syncEditCustomerExecutor")
     public ThreadPoolTaskExecutor syncEditCustomerExecutor() {
-        return init(corePoolSize, maxPoolSize, queueCapacity, keepAliveSeconds, "syncEditCustomer");
+        ThreadPoolProperties.BaseThreadProperty prop = threadPoolProperties.getFormTask();
+        return init(prop.getCorePoolSize(), prop.getMaxPoolSize(), prop.getQueueCapacity(), prop.getKeepAliveSeconds(),"syncEditCustomer");
     }
 
     /**
@@ -90,7 +111,8 @@ public class ThreadPoolConfig {
      */
     @Bean("sendCallbackExecutor")
     public ThreadPoolTaskExecutor sendCallbackExecutor() {
-        return init(corePoolSize, maxPoolSize, queueCapacity, keepAliveSeconds, "sendCallback");
+        ThreadPoolProperties.BaseThreadProperty prop = threadPoolProperties.getFormTask();
+        return init(prop.getCorePoolSize(), prop.getMaxPoolSize(), prop.getQueueCapacity(), prop.getKeepAliveSeconds(), "sendCallback");
 
     }
 

@@ -102,7 +102,7 @@ public class WeCustomerController extends BaseController {
     @ApiOperation("查询企业客户统计数据")
     public AjaxResult<WeCustomerSumVO> sum(@RequestBody WeCustomerSearchDTO weCustomerSearchDTO) {
         WeCustomer weCustomer=weCustomerService.changeWecustomer(weCustomerSearchDTO);
-        //weCustomer.setCorpId(LoginTokenService.getLoginUser().getCorpId());
+        weCustomer.setCorpId(LoginTokenService.getLoginUser().getCorpId());
         return AjaxResult.success(weCustomerService.weCustomerCount(weCustomer));
     }
 

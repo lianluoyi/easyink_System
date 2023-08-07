@@ -63,7 +63,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.sql.Time;
-import java.sql.Wrapper;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -588,8 +587,8 @@ public class WeBatchTagTaskServiceImpl extends ServiceImpl<WeBatchTagTaskMapper,
             String content = tagRecordUtil.buildEditTagContent(createUserName, CustomerTrajectoryEnums.TagType.BATCH_TAG_TASK.getType());
             // 去除列表中标签为空的
             tagIdList.removeAll(Collections.singleton(null));
-            // 获取标签名称
-            List<String> tagNameList = weTagService.getTagNameByIds(corpId, tagIdList);
+            // 获取有效标签名称
+            List<String> tagNameList = weTagService.getTagNameByIds(tagIdList);
             if (CollectionUtils.isEmpty(tagNameList)) {
                 log.info("[批量打标签] 标签名称为空：tagIdList:{}", tagIdList);
                 return;

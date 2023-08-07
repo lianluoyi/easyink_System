@@ -7,10 +7,10 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.easyink.common.annotation.SysProperty;
 import com.easyink.common.constant.Constants;
 import com.easyink.common.constant.GenConstants;
-import com.easyink.common.core.domain.model.LoginUser;
 import com.easyink.common.core.domain.wecom.BaseExtendPropertyRel;
 import com.easyink.common.core.domain.wecom.WeUser;
 import com.easyink.common.enums.*;
+import com.easyink.common.utils.DictUtils;
 import com.easyink.common.utils.TagRecordUtil;
 import com.easyink.wecom.annotation.Convert2Cipher;
 import com.easyink.wecom.client.WeMessagePushClient;
@@ -23,14 +23,11 @@ import com.easyink.wecom.domain.entity.customer.WeCustomerExtendProperty;
 import com.easyink.wecom.domain.entity.form.WeForm;
 import com.easyink.wecom.domain.entity.form.WeFormOperRecord;
 import com.easyink.wecom.domain.entity.radar.WeRadar;
-import com.easyink.wecom.domain.query.autotag.TagRuleQuery;
 import com.easyink.wecom.domain.vo.autotag.TagRuleListVO;
 import com.easyink.wecom.domain.vo.sop.SopAttachmentVO;
-import com.easyink.wecom.login.util.LoginTokenService;
 import com.easyink.wecom.mapper.WeCustomerMapper;
 import com.easyink.wecom.mapper.WeCustomerTrajectoryMapper;
 import com.easyink.wecom.mapper.WeUserMapper;
-import com.easyink.wecom.mapper.autotag.WeAutoTagRuleMapper;
 import com.easyink.wecom.service.*;
 import com.easyink.wecom.service.autotag.*;
 import io.swagger.annotations.ApiModel;
@@ -38,7 +35,6 @@ import joptsimple.internal.Strings;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.beanutils.ConvertUtils;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.beans.BeanUtils;
@@ -546,7 +542,7 @@ public class WeCustomerTrajectoryServiceImpl extends ServiceImpl<WeCustomerTraje
             list.add(WeCustomerTrajectory.builder()
                     .corpId(corpId)
                     .userId(userId)
-                    .externalUserid(userId)
+                    .externalUserid(customerId)
                     .createDate(new Date())
                     .trajectoryType(CustomerTrajectoryEnums.Type.INFO.getDesc())
                     .content(content)
@@ -568,15 +564,24 @@ public class WeCustomerTrajectoryServiceImpl extends ServiceImpl<WeCustomerTraje
         }
         TagRecordUtil tagRecordUtil=new TagRecordUtil();
         List<WeCustomerTrajectory> list = new ArrayList<>();
-        for (WeAutoTagRule weAutoTagRule:weAutoTagRules){
-            String content=tagRecordUtil.buildAutoTagContent(weAutoTagRule.getRuleName());
-            List<String> tagNames = weAutoTagRuleHitGroupRecordTagRelService.list(
-                    new LambdaQueryWrapper<WeAutoTagRuleHitGroupRecordTagRel>()
-                            .eq(WeAutoTagRuleHitGroupRecordTagRel::getRuleId,weAutoTagRule.getId())
-                            .eq(WeAutoTagRuleHitGroupRecordTagRel::getGroupId,chatId))
-                    .stream().map(WeAutoTagRuleHitGroupRecordTagRel::getTagName).distinct().collect(Collectors.toList());
-            if (CollectionUtils.isEmpty(tagNames)){
-                log.info("记录新客入群自动标签信息动态时，获取规则下标签异常 ruleName:{}",weAutoTagRule.getRuleName());
+        for (WeAutoTagRule weAutoTagRule : weAutoTagRules) {
+            String content = tagRecordUtil.buildAutoTagContent(weAutoTagRule.getRuleName());
+            // 获取原始的客户标签命中记录
+            List<WeAutoTagRuleHitGroupRecordTagRel> originList = weAutoTagRuleHitGroupRecordTagRelService.list(new LambdaQueryWrapper<WeAutoTagRuleHitGroupRecordTagRel>()
+                                                                .eq(WeAutoTagRuleHitGroupRecordTagRel::getRuleId, weAutoTagRule.getId())
+                                                                .eq(WeAutoTagRuleHitGroupRecordTagRel::getGroupId, chatId));
+            if (CollectionUtils.isEmpty(originList)) {
+                continue;
+            }
+            // 获取原始的标签id
+            List<String> originTagIdList = originList.stream().map(WeAutoTagRuleHitGroupRecordTagRel::getTagId).collect(Collectors.toList());
+            // 获取有效的标签名称
+            List<String> effectTagNameList = weTagService.getTagNameByIds(originTagIdList);
+            if (CollectionUtils.isEmpty(effectTagNameList)) {
+                continue;
+            }
+            if (CollectionUtils.isEmpty(effectTagNameList)) {
+                log.info("记录新客入群自动标签信息动态时，获取规则下标签异常 ruleName:{}, corpId:{}, tagName:{}", weAutoTagRule.getRuleName(), corpId, effectTagNameList);
                 continue;
             }
             list.add(WeCustomerTrajectory.builder()
@@ -587,7 +592,7 @@ public class WeCustomerTrajectoryServiceImpl extends ServiceImpl<WeCustomerTraje
                     .trajectoryType(CustomerTrajectoryEnums.Type.INFO.getDesc())
                     .content(content)
                     .subType(CustomerTrajectoryEnums.SubType.EDIT_TAG.getType())
-                    .detail(String.join(",", tagNames))
+                    .detail(String.join(DictUtils.SEPARATOR, effectTagNameList))
                     .startTime(new Time(System.currentTimeMillis()))
                     .detailId(Constants.DEFAULT_ID)
                     .build());
@@ -606,24 +611,22 @@ public class WeCustomerTrajectoryServiceImpl extends ServiceImpl<WeCustomerTraje
         List<WeAutoTagRule> weAutoTagRules = weAutoTagRuleService.list(new LambdaQueryWrapper<WeAutoTagRule>().in(WeAutoTagRule::getId,ruleIdList));
         //需记录的信息动态
         List<WeCustomerTrajectory> list = new ArrayList<>();
-        for (WeAutoTagRule weAutoTagRule:weAutoTagRules){
+        for (WeAutoTagRule weAutoTagRule : weAutoTagRules) {
             String content = tagRecordUtil.buildAutoTagContent(weAutoTagRule.getRuleName());
             List<String> tagIds = weAutoTagKeywordTagRelService.list(new LambdaQueryWrapper<WeAutoTagKeywordTagRel>()
-                    .eq(WeAutoTagKeywordTagRel::getRuleId,weAutoTagRule.getId()))
+                            .eq(WeAutoTagKeywordTagRel::getRuleId, weAutoTagRule.getId()))
                     .stream().map(WeAutoTagKeywordTagRel::getTagId).collect(Collectors.toList());
-            if (CollectionUtils.isEmpty(tagIds)){
-                log.info("关键词打标签记录信息动态时，获取规则下标签id列表异常，ruleId:{}",weAutoTagRule.getId());
+            if (CollectionUtils.isEmpty(tagIds)) {
+                log.info("关键词打标签记录信息动态时，获取规则下标签id列表异常，ruleId:{}", weAutoTagRule.getId());
                 continue;
             }
-            List<WeTag> tagList = weTagService.list(new LambdaQueryWrapper<WeTag>()
-                    .eq(WeTag::getCorpId, corpId)
-                    .in(WeTag::getTagId, tagIds)
-            );
-            if (CollectionUtils.isEmpty(tagList)){
-                log.info("关键词打标签记录信息动态时，获取标签详情异常，tagIds:{}",tagIds);
+            List<String> tagNameList = weTagService.getTagNameByIds(tagIds);
+            if (CollectionUtils.isEmpty(tagNameList)) {
+                log.info("关键词打标签记录信息动态时，获取标签详情异常，tagIds:{}", tagIds);
                 continue;
             }
-            String detail = tagList.stream().map(WeTag::getName).collect(Collectors.joining(","));
+            // 组装标签名称
+            String detail = String.join(DictUtils.SEPARATOR, tagNameList);
             list.add(WeCustomerTrajectory.builder()
                     .corpId(corpId)
                     .userId(userId)

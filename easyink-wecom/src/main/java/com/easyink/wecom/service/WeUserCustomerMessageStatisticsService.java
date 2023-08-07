@@ -54,11 +54,10 @@ public interface WeUserCustomerMessageStatisticsService extends IService<WeUserC
     /**
      * 获取客户概况-员工情况
      *
-     * @param dto   {@link StatisticsDTO}
-     * @param pageFlag  是否分页
+     * @param dto {@link StatisticsDTO}
      * @return {@link CustomerOverviewVO}
      */
-    List<CustomerOverviewVO> getCustomerOverViewOfUser(CustomerOverviewDTO dto, Boolean pageFlag);
+    List<CustomerOverviewVO> getCustomerOverViewOfUser(CustomerOverviewDTO dto);
 
     /**
      * 获取客户概况-日期维度

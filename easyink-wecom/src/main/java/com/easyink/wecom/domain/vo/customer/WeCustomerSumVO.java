@@ -16,8 +16,10 @@ import lombok.Data;
 @Builder
 public class WeCustomerSumVO {
 
-    @ApiModelProperty(value = "客户总数")
-    private Integer totalCount;
     @ApiModelProperty(value = "去重后的客户总数")
     private Integer ignoreDuplicateCount;
+
+    public static WeCustomerSumVO empty() {
+        return WeCustomerSumVO.builder().ignoreDuplicateCount(0).build();
+    }
 }

@@ -22,4 +22,13 @@ public interface ExtendPropertyMultipleOptionMapper extends BaseMapper<ExtendPro
      * @return
      */
     Integer insertOrUpdate(@Param("list") List<ExtendPropertyMultipleOption> list);
+
+
+    /**
+     * 批量插入或更新扩展属性值
+     *
+     * @param list 拓展属性值列表
+     * @return 结果
+     */
+    Integer batchSaveOrUpdate(@Param("list") List<ExtendPropertyMultipleOption> list);
 }

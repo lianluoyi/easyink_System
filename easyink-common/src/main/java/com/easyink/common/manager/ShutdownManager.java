@@ -27,7 +27,6 @@ public class ShutdownManager {
     private void shutdownAsyncManager() {
         try {
             logger.info("====关闭后台线程池====");
-            Threads.shutdownAndAwaitTermination(Threads.SINGLE_THREAD_POOL);
             logger.info("====关闭后台任务任务线程池====");
             AsyncManager.me().shutdown();
 

@@ -1,6 +1,5 @@
 package com.easyink.wecom.service.impl.radar;
 
-import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -13,7 +12,6 @@ import com.easyink.common.core.domain.wecom.WeUser;
 import com.easyink.common.core.page.PageDomain;
 import com.easyink.common.core.page.TableSupport;
 import com.easyink.common.enums.AttachmentTypeEnum;
-import com.easyink.common.enums.CustomerTrajectoryEnums;
 import com.easyink.common.enums.MessageType;
 import com.easyink.common.enums.ResultTip;
 import com.easyink.common.enums.radar.*;
@@ -22,14 +20,13 @@ import com.easyink.common.shorturl.enums.ShortUrlTypeEnum;
 import com.easyink.common.shorturl.model.RadarShortUrlAppendInfo;
 import com.easyink.common.shorturl.model.SysShortUrlMapping;
 import com.easyink.common.utils.DateUtils;
+import com.easyink.common.utils.DictUtils;
 import com.easyink.common.utils.TagRecordUtil;
 import com.easyink.common.utils.sql.SqlUtil;
 import com.easyink.wecom.annotation.Convert2Cipher;
 import com.easyink.wecom.client.WeMessagePushClient;
 import com.easyink.wecom.domain.WeCustomer;
-import com.easyink.wecom.domain.WeCustomerTrajectory;
 import com.easyink.wecom.domain.WeFlowerCustomerRel;
-import com.easyink.wecom.domain.WeTag;
 import com.easyink.wecom.domain.dto.WeMessagePushDTO;
 import com.easyink.wecom.domain.dto.common.AttachmentParam;
 import com.easyink.wecom.domain.dto.message.TextMessageDTO;
@@ -40,7 +37,6 @@ import com.easyink.wecom.domain.entity.radar.WeRadar;
 import com.easyink.wecom.domain.entity.radar.WeRadarChannel;
 import com.easyink.wecom.domain.entity.radar.WeRadarTag;
 import com.easyink.wecom.domain.entity.radar.WeRadarUrl;
-import com.easyink.wecom.domain.vo.autotag.TagInfoVO;
 import com.easyink.wecom.domain.vo.radar.WeRadarVO;
 import com.easyink.wecom.handler.shorturl.RadarShortUrlHandler;
 import com.easyink.wecom.login.util.LoginTokenService;
@@ -62,12 +58,9 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.sql.Time;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * ClassName： WeRadarServiceImpl
@@ -499,12 +492,13 @@ public class WeRadarServiceImpl extends ServiceImpl<WeRadarMapper, WeRadar> impl
         }
         TagRecordUtil tagRecordUtil=new TagRecordUtil();
         String content=tagRecordUtil.buildRadarContent(radar.getRadarTitle());
-        List<String> tagName = weTagService.selectTagByIds(tagIdList).stream().map(TagInfoVO::getTagName).collect(Collectors.toList());
+        // 获取有效的标签名称
+        List<String> tagName = weTagService.getTagNameByIds(tagIdList);
         if (CollectionUtils.isEmpty(tagName)){
             log.info("记录点击雷达链接打标签信息动态时,获取标签名列表异常");
             return;
         }
-        String detail = String.join(",", tagName);
+        String detail = String.join(DictUtils.SEPARATOR, tagName);
         //保存信息动态
         weCustomerTrajectoryService.saveCustomerTrajectory(customer.getCorpId(),user.getUserId(),customer.getExternalUserid(),content,detail);
     }

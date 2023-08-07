@@ -36,15 +36,13 @@
         SUM(IFNULL(ubd.replied_within_thirty_min_customer_cnt, 0)) as replied_within_thirty_min_customer_cnt,
         SUM(IFNULL(ubd.all_chat_cnt, 0)) as all_chat_cnt,
         IFNULL(sum(ubd.user_active_chat_cnt),0) as userActiveChatCnt,
-        <if test="newContactRetentionRateSort != null and newContactRetentionRateSort != ''">
-            IF(IFNULL(SUM(ubd.new_contact_cnt), 0) = 0, 100, CAST((SUM(ubd.new_contact_cnt) - IFNULL(SUM(ubd.new_customer_loss_cnt), 0)) *1./ SUM(ubd.new_contact_cnt) as decimal(8,2))) as newContactRetentionRate,
-        </if>
         <if test="newContactStartTalkRateSort != null and newContactStartTalkRateSort != ''">
             IF(IFNULL(SUM(ubd.new_contact_cnt), 0) = 0, 0, CAST(IFNULL(SUM(ubd.new_contact_speak_cnt), 0) *1./ SUM(ubd.new_contact_cnt) as decimal(8,2))) as newContactStartTalkRate,
         </if>
         <if test="serviceResponseRateSort != null and serviceResponseRateSort != ''">
             IF(IFNULL(SUM(ubd.user_active_chat_cnt), 0) = 0, 0, CAST(IFNULL(SUM(ubd.replied_within_thirty_min_customer_cnt), 0) *1./ SUM(ubd.user_active_chat_cnt) as decimal(8,2))) as serviceResponseRate,
         </if>
+        wu.`user_id`,
         wu.`user_name`,
         wd.`name` departmentName,
         wu.`head_image_url` userHeadImage
@@ -78,9 +76,6 @@
         </if>
         <if test="newContactCntSort != null and newContactCntSort != ''">
             ORDER BY newContactCnt ${newContactCntSort}
-        </if>
-        <if test="newContactRetentionRateSort != null and newContactRetentionRateSort != ''">
-            ORDER BY newContactRetentionRate ${newContactRetentionRateSort}
         </if>
         <if test="newContactStartTalkRateSort != null and newContactStartTalkRateSort != ''">
             ORDER BY newContactStartTalkRate ${newContactStartTalkRateSort}

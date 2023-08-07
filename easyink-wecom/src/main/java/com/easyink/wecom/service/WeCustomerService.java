@@ -79,7 +79,6 @@ public interface WeCustomerService extends IService<WeCustomer> {
      */
     void syncWeCustomerV2(String corpId);
 
-
     /**
      * 调用企微根据corpId获取离职员工列表
      *

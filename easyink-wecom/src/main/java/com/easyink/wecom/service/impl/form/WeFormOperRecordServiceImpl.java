@@ -4,7 +4,6 @@ import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.easyink.common.constant.Constants;
 import com.easyink.common.constant.UserConstants;
 import com.easyink.common.constant.form.FormConstants;
 import com.easyink.common.core.domain.AjaxResult;
@@ -18,11 +17,11 @@ import com.easyink.common.enums.ResultTip;
 import com.easyink.common.exception.CustomException;
 import com.easyink.common.service.ISysUserService;
 import com.easyink.common.utils.DateUtils;
+import com.easyink.common.utils.DictUtils;
 import com.easyink.common.utils.TagRecordUtil;
 import com.easyink.common.utils.poi.ExcelUtil;
 import com.easyink.wecom.client.WeMessagePushClient;
 import com.easyink.wecom.domain.WeCustomer;
-import com.easyink.wecom.domain.WeCustomerTrajectory;
 import com.easyink.wecom.domain.WeFlowerCustomerRel;
 import com.easyink.wecom.domain.dto.WeMessagePushDTO;
 import com.easyink.wecom.domain.dto.form.FormCommitDTO;
@@ -33,7 +32,6 @@ import com.easyink.wecom.domain.entity.form.WeFormOperRecord;
 import com.easyink.wecom.domain.enums.form.FormOperEnum;
 import com.easyink.wecom.domain.model.form.CustomerLabelSettingModel;
 import com.easyink.wecom.domain.model.form.FormResultModel;
-import com.easyink.wecom.domain.vo.autotag.TagInfoVO;
 import com.easyink.wecom.domain.vo.form.FormCustomerOperRecordExportVO;
 import com.easyink.wecom.domain.vo.form.FormCustomerOperRecordVO;
 import com.easyink.wecom.domain.vo.form.FormOperRecordDetailVO;
@@ -57,7 +55,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.sql.Time;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -297,12 +294,13 @@ public class WeFormOperRecordServiceImpl extends ServiceImpl<WeFormOperRecordMap
         }
         TagRecordUtil tagRecordUtil=new TagRecordUtil();
         String content=tagRecordUtil.buildFormContent(weForm.getFormName(),type);
-        List<String> tagName = weTagService.selectTagByIds(tagIdList).stream().map(TagInfoVO::getTagName).collect(Collectors.toList());
-        if (CollectionUtils.isEmpty(tagName)){
+        // 获取有效的标签名称
+        List<String> tagNameList = weTagService.getTagNameByIds(tagIdList);
+        if (CollectionUtils.isEmpty(tagNameList)){
             log.info("记录表单操作信息动态时,获取标签名列表异常");
             return;
         }
-        String detail = String.join(",", tagName);
+        String detail = String.join(DictUtils.SEPARATOR, tagNameList);
         //保存信息动态
         weCustomerTrajectoryService.saveCustomerTrajectory(corpId,weUser.getUserId(),customer.getExternalUserid(),content,detail);
     }

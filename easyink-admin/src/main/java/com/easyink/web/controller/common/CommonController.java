@@ -99,7 +99,7 @@ public class CommonController {
             String filePath = RuoYiConfig.getUploadPath();
             // 上传并返回新文件名称
             String fileName = FileUploadUtils.upload(filePath, file);
-            String url = serverConfig.getUrl() + fileName;
+            String url = serverConfig.getUrl() + FileUploadUtils.getPathFileName(filePath) + fileName;
             AjaxResult ajax = AjaxResult.success();
             ajax.put("fileName", fileName);
             ajax.put("url", url);
@@ -120,7 +120,7 @@ public class CommonController {
             String filePath = RuoYiConfig.getUploadPath();
             // 上传并返回新文件名称
             String fileName = FileUploadUtils.uploadCert(filePath, file);
-            String url = serverConfig.getUrl() + fileName;
+            String url = serverConfig.getUrl() + FileUploadUtils.getPathFileName(filePath) + fileName;
             AjaxResult ajax = AjaxResult.success();
             ajax.put("fileName", fileName);
             ajax.put("url", url);

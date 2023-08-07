@@ -5,21 +5,20 @@ import com.easyink.common.config.WechatOpenConfig;
 import com.easyink.common.enums.ResultTip;
 import com.easyink.common.exception.CustomException;
 import com.easyink.common.shorturl.enums.ShortUrlTypeEnum;
-import com.easyink.common.shorturl.model.BaseShortUrlAppendInfo;
-import com.easyink.common.shorturl.model.EmpleCodeShortUrlAppendInfo;
 import com.easyink.common.shorturl.model.GroupCodeShortUrlAppendInfo;
 import com.easyink.common.shorturl.model.SysShortUrlMapping;
 import com.easyink.wecom.client.WechatOpenClient;
 import com.easyink.wecom.domain.WeGroupCode;
+import com.easyink.wecom.domain.entity.wechatopen.WeOpenConfig;
 import com.easyink.wecom.domain.vo.groupcode.GroupCodeActivityFirstVO;
 import com.easyink.wecom.mapper.WeEmpleCodeMapper;
 import com.easyink.wecom.service.WeGroupCodeService;
+import com.easyink.wecom.service.wechatopen.WechatOpenService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 import org.yaml.snakeyaml.util.UriEncoder;
 
-import java.net.URLEncoder;
 
 import static com.easyink.common.constant.miniapp.MiniAppConst.*;
 
@@ -35,8 +34,8 @@ public class GroupCodeShortUrlHandler extends EmpleCodeShortUrlHandler<GroupCode
 
     private final WeGroupCodeService weGroupCodeService;
 
-    public GroupCodeShortUrlHandler(WechatOpenConfig wechatOpenConfig, WechatOpenClient wechatOpenClient, WeEmpleCodeMapper weempleCodeMapper, WeGroupCodeService weGroupCodeService) {
-        super(wechatOpenConfig, wechatOpenClient, weempleCodeMapper);
+    public GroupCodeShortUrlHandler(WechatOpenConfig wechatOpenConfig, WechatOpenClient wechatOpenClient, WeEmpleCodeMapper weempleCodeMapper, WeGroupCodeService weGroupCodeService, WechatOpenService wechatOpenService) {
+        super(wechatOpenConfig, wechatOpenClient, weempleCodeMapper, wechatOpenService);
         this.weGroupCodeService = weGroupCodeService;
     }
 
@@ -97,5 +96,16 @@ public class GroupCodeShortUrlHandler extends EmpleCodeShortUrlHandler<GroupCode
                                       .replace(IS_OPEN_TIP, UriEncoder.encode(StringUtils.isNotBlank(actualCode.getIsOpenTip()) ? actualCode.getIsOpenTip() : StringUtils.EMPTY))
                                       .replace(SERVICE_QR_CODE, UriEncoder.encode(StringUtils.isNotBlank(actualCode.getServiceQrCode()) ? actualCode.getServiceQrCode() : StringUtils.EMPTY))
                                       .replace(GROUP_NAME, UriEncoder.encode(StringUtils.isNotBlank(actualCode.getGroupName()) ? actualCode.getGroupName() : StringUtils.EMPTY));
+    }
+
+    /**
+     * 通过短链获取公众号配置
+     *
+     * @param shortCode {@link SysShortUrlMapping}
+     * @return WeOpenConfig
+     */
+    @Override
+    public WeOpenConfig getWeOpenConfig(SysShortUrlMapping shortCode) {
+        return super.getWeOpenConfig(shortCode);
     }
 }

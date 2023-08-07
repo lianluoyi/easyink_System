@@ -813,6 +813,10 @@ public class WeConstans {
      */
     public static final Integer SOP_USE_DEPARTMENT = 1;
     public static final Integer SOP_USE_EMPLOYEE = 2;
+    /**
+     * 运营中心，新增SOP 活动SOP，群SOP指定群聊。 使用客户/群聊，type = 0;
+     */
+    public static final Integer SOP_USE_CUSTOMER_CHAT = 0;
 
     /**
      * 默认alterData1值

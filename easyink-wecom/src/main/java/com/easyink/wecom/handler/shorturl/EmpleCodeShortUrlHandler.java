@@ -1,9 +1,12 @@
 package com.easyink.wecom.handler.shorturl;
 
 import com.alibaba.fastjson.JSON;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.easyink.common.config.WechatOpenConfig;
+import com.easyink.common.constant.GenConstants;
 import com.easyink.common.constant.miniapp.MiniAppConst;
 import com.easyink.common.enums.ResultTip;
+import com.easyink.common.enums.ShortCodeType;
 import com.easyink.common.exception.CustomException;
 import com.easyink.common.shorturl.enums.ShortUrlTypeEnum;
 import com.easyink.common.shorturl.model.BaseShortUrlAppendInfo;
@@ -15,6 +18,7 @@ import com.easyink.wecom.domain.req.GenerateUrlLinkReq;
 import com.easyink.wecom.domain.resp.GenerateUrlLinkResp;
 import com.easyink.wecom.domain.vo.WeEmpleCodeVO;
 import com.easyink.wecom.mapper.WeEmpleCodeMapper;
+import com.easyink.wecom.service.wechatopen.WechatOpenService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -33,6 +37,7 @@ public class EmpleCodeShortUrlHandler<T extends BaseShortUrlAppendInfo> extends 
     private final WechatOpenConfig wechatOpenConfig;
     private final WechatOpenClient wechatOpenClient;
     private final WeEmpleCodeMapper weempleCodeMapper;
+    private final WechatOpenService wechatOpenService;
 
     @Override
     protected String handleByMapping(SysShortUrlMapping mapping) {
@@ -62,9 +67,26 @@ public class EmpleCodeShortUrlHandler<T extends BaseShortUrlAppendInfo> extends 
         return ShortUrlTypeEnum.USER_CODE;
     }
 
+    /**
+     * 通过短链获取公众号配置
+     *
+     * @param shortCode {@link SysShortUrlMapping}
+     * @return WeOpenConfig
+     */
     @Override
     public WeOpenConfig getWeOpenConfig(SysShortUrlMapping shortCode) {
-        throw new CustomException(ResultTip.TIP_GENERAL_NOT_FOUND);
+        if (shortCode == null) {
+            throw new CustomException(ResultTip.TIP_APPEND_MISSING);
+        }
+        String corpId = shortCode.getEmpleAppendInfoCorpId();
+        if (corpId == null) {
+            throw new CustomException(ResultTip.TIP_MISS_CORP_ID);
+        }
+        WeOpenConfig config = wechatOpenService.getOne(new LambdaQueryWrapper<WeOpenConfig>().eq(WeOpenConfig::getCorpId, corpId).last(GenConstants.LIMIT_1));
+        if (config == null) {
+            throw new CustomException(ResultTip.TIP_NO_OFFICAIL_ACCOUNT_CONFIG);
+        }
+        return config;
     }
 
     /**

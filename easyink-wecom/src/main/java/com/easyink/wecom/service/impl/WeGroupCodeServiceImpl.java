@@ -2,10 +2,10 @@ package com.easyink.wecom.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
-import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.easyink.common.config.RuoYiConfig;
+import com.easyink.common.constant.Constants;
 import com.easyink.common.constant.GroupCodeConstants;
 import com.easyink.common.constant.WeConstans;
 import com.easyink.common.core.domain.entity.WeCorpAccount;
@@ -13,7 +13,6 @@ import com.easyink.common.enums.ResultTip;
 import com.easyink.common.enums.code.GroupCodeTypeEnum;
 import com.easyink.common.enums.wecom.ServerTypeEnum;
 import com.easyink.common.exception.CustomException;
-import com.easyink.common.shorturl.model.EmpleCodeShortUrlAppendInfo;
 import com.easyink.common.shorturl.model.GroupCodeShortUrlAppendInfo;
 import com.easyink.common.utils.DateUtils;
 import com.easyink.common.utils.QREncode;
@@ -664,8 +663,14 @@ public class WeGroupCodeServiceImpl extends ServiceImpl<WeGroupCodeMapper, WeGro
         WeCorpAccount weCorpAccount = weCorpAccountService.findValidWeCorpAccount(weGroupCode.getCorpId());
         String content = weCorpAccount.getH5DoMainName() + "/#/groupCode?id=" + weGroupCode.getId();
         try {
-            String fileName = FileUploadUtils.upload2Cos(QREncode.getQRCodeMultipartFile(content, weGroupCode.getAvatarUrl()), ruoYiConfig.getFile().getCos());
-            weGroupCode.setCodeUrl(ruoYiConfig.getFile().getCos().getCosImgUrlPrefix() + fileName);
+            String fileName;
+            if (ruoYiConfig.getFile().isStartCosUpload()) {
+                fileName = FileUploadUtils.upload2Cos(QREncode.getQRCodeMultipartFile(content, weGroupCode.getAvatarUrl()), ruoYiConfig.getFile().getCos());
+                weGroupCode.setCodeUrl(ruoYiConfig.getFile().getCos().getCosImgUrlPrefix() + fileName);
+            } else {
+                fileName = FileUploadUtils.upload(RuoYiConfig.getProfile(), QREncode.getQRCodeMultipartFile(content, weGroupCode.getAvatarUrl()));
+                weGroupCode.setCodeUrl(weCorpAccount.getH5DoMainName() + Constants.RESOURCE_PREFIX + WeConstans.SLASH + fileName);
+            }
         } catch (IOException e) {
             log.error("上传客户群活码异常: ex:{}", ExceptionUtils.getStackTrace(e));
         }

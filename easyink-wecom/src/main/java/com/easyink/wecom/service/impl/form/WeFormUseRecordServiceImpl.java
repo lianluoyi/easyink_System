@@ -66,7 +66,7 @@ public class WeFormUseRecordServiceImpl extends ServiceImpl<WeFormUseRecordMappe
         // 处理顺序,按照formIdList的顺序填充查询出来的数据
         List<FormSimpleInfoVO> resultList = new ArrayList<>();
         for (Integer id : formIdList) {
-            collect.stream().filter(it -> it.getFormId().equals(id)).findFirst().ifPresent(resultList::add);
+            collect.stream().filter(it -> it.getFormId().equals(id.toString())).findFirst().ifPresent(resultList::add);
         }
         return resultList;
     }

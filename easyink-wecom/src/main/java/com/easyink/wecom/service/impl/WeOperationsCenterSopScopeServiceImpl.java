@@ -6,7 +6,7 @@ import com.easyink.common.constant.WeConstans;
 import com.easyink.common.enums.ResultTip;
 import com.easyink.common.enums.WeExceptionTip;
 import com.easyink.common.exception.CustomException;
-import com.easyink.common.exception.wecom.WeComException;
+import com.easyink.common.utils.sql.BatchInsertUtil;
 import com.easyink.wecom.domain.WeOperationsCenterSopScopeEntity;
 import com.easyink.wecom.mapper.WeOperationsCenterSopScopeMapper;
 import com.easyink.wecom.service.WeOperationsCenterSopScopeService;
@@ -73,11 +73,6 @@ public class WeOperationsCenterSopScopeServiceImpl extends ServiceImpl<WeOperati
         if (StringUtils.isBlank(corpId) || sopId == null) {
             throw new CustomException(ResultTip.TIP_GENERAL_BAD_REQUEST);
         }
-        //先删除数据 再重新插入
-        LambdaQueryWrapper<WeOperationsCenterSopScopeEntity> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(WeOperationsCenterSopScopeEntity::getCorpId, corpId)
-                .eq(WeOperationsCenterSopScopeEntity::getSopId, sopId);
-        baseMapper.delete(wrapper);
         List<WeOperationsCenterSopScopeEntity> addList = new ArrayList<>();
         List<WeOperationsCenterSopScopeEntity> departmentRelInfoList = new ArrayList<>();
         if (CollectionUtils.isNotEmpty(userIdList)){
@@ -92,7 +87,8 @@ public class WeOperationsCenterSopScopeServiceImpl extends ServiceImpl<WeOperati
             addList.addAll(departmentRelInfoList);
         }
         if (CollectionUtils.isNotEmpty(addList)) {
-            baseMapper.batchSave(addList);
+            // 分批批量插入或更新
+            BatchInsertUtil.doInsert(addList, list -> baseMapper.batchSaveOrUpdate(list));
         }
     }
 
@@ -106,10 +102,10 @@ public class WeOperationsCenterSopScopeServiceImpl extends ServiceImpl<WeOperati
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void batchSave(List<WeOperationsCenterSopScopeEntity> list) {
+    public void batchSaveOrUpdate(List<WeOperationsCenterSopScopeEntity> list) {
         if (CollectionUtils.isEmpty(list)){
             throw new CustomException(WeExceptionTip.WE_EXCEPTION_TIP_41035);
         }
-        baseMapper.batchSave(list);
+        baseMapper.batchSaveOrUpdate(list);
     }
 }

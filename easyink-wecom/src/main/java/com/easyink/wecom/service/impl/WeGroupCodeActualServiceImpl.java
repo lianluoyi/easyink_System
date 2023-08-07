@@ -141,6 +141,9 @@ public class WeGroupCodeActualServiceImpl extends ServiceImpl<WeGroupCodeActualM
             weGroupCodeActualMapper.updateScanTimesByChatId(chatId, memberChangeCnt);
         }
         WeGroupCodeActual weGroupCodeActual = weGroupCodeActualMapper.selectOne(new LambdaQueryWrapper<WeGroupCodeActual>().eq(WeGroupCodeActual::getChatId, chatId));
+        if (weGroupCodeActual == null) {
+            return;
+        }
         //更新status状态
         if (weGroupCodeActual.getScanCodeTimesLimit() <= weGroupCodeActual.getScanCodeTimes()) {
             weGroupCodeActual.setStatus(WeConstans.WE_CUSTOMER_MSG_RESULT_DEFALE);

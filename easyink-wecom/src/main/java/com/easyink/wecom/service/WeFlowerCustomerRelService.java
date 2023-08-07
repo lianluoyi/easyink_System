@@ -136,4 +136,15 @@ public interface WeFlowerCustomerRelService extends IService<WeFlowerCustomerRel
      * @return 结果
      */
     Integer updateLossExternalUser(String corpId, String userId, String external_userid);
+
+    /**
+     * 根据开始，结束时间，获取截止时间下的有效客户数
+     *
+     * @param corpId    企业ID
+     * @param beginTime 开始时间，格式为YYYY-MM-DD 00:00:00
+     * @param endTime   结束时间，格式为YYYY-MM-DD 23:59:59
+     * @param userIds
+     * @return 有效客户数
+     */
+    Integer getCurrentNewCustomerCnt(String corpId, String beginTime, String endTime, List<String> userIds);
 }

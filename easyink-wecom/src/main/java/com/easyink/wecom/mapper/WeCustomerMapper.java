@@ -217,4 +217,12 @@ public interface WeCustomerMapper extends BaseMapper<WeCustomer> {
      */
 
     List<WeCustomerVO> selectWeCustomerV3(WeCustomer weCustomer);
+
+    /**
+     * 查看客户去重后的总数
+     *
+     * @param weCustomer 查询客户条件
+     * @return 去重后的总数
+     */
+    Integer ignoreDuplicateCustomerCnt(WeCustomer weCustomer);
 }

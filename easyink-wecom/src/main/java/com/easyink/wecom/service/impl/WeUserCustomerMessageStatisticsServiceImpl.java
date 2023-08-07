@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.easyink.common.annotation.DataScope;
+import com.easyink.common.constant.Constants;
 import com.easyink.common.constant.GenConstants;
 import com.easyink.common.constant.WeConstans;
 import com.easyink.common.core.domain.AjaxResult;
@@ -16,7 +17,6 @@ import com.easyink.common.enums.StaffActivateEnum;
 import com.easyink.common.utils.DateUtils;
 import com.easyink.common.utils.bean.BeanUtils;
 import com.easyink.common.utils.poi.ExcelUtil;
-import com.easyink.common.utils.sql.BatchInsertUtil;
 import com.easyink.wecom.domain.WeUserBehaviorData;
 import com.easyink.wecom.domain.dto.statistics.*;
 import com.easyink.wecom.domain.entity.WeUserCustomerMessageStatistics;
@@ -25,10 +25,7 @@ import com.easyink.wecom.domain.vo.ConversationArchiveVO;
 import com.easyink.wecom.domain.vo.statistics.*;
 import com.easyink.wecom.mapper.*;
 import com.easyink.wecom.mapper.form.WeFormCustomerFeedbackMapper;
-import com.easyink.wecom.service.WeConversationArchiveService;
-import com.easyink.wecom.service.WeUserBehaviorDataService;
-import com.easyink.wecom.service.WeUserCustomerMessageStatisticsService;
-import com.easyink.wecom.service.WeUserService;
+import com.easyink.wecom.service.*;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import lombok.RequiredArgsConstructor;
@@ -36,14 +33,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.springframework.aop.framework.AopContext;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
 /**
@@ -65,7 +57,7 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
     private final WeUserBehaviorDataMapper weUserBehaviorDataMapper;
     private final WeFormCustomerFeedbackMapper weFormCustomerFeedbackMapper;
     private final WeFlowerCustomerRelMapper weFlowerCustomerRelMapper;
-
+    private final WeFlowerCustomerRelService weFlowerCustomerRelService;
     private final WeCorpAccountMapper weCorpAccountMapper;
 
     /**
@@ -348,22 +340,72 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
         if (dto.getEndTime() == null) {
             dto.setEndTime(DateUtils.parseBeginDay(DateUtils.dateTime(DateUtils.getYesterday(new Date()))));
         }
-        return weUserBehaviorDataMapper.getCustomerOverViewOfTotal(dto);
+        CustomerOverviewVO resultData = weUserBehaviorDataMapper.getCustomerOverViewOfTotal(dto);
+        resultData.setCurrentNewCustomerCnt(weFlowerCustomerRelMapper.getCurrentNewCustomerCntByDataScope(dto));
+        return resultData;
     }
 
+    /**
+     * 获取客户概况-员工情况
+     *
+     * @param dto {@link StatisticsDTO}
+     * @return {@link CustomerOverviewVO}
+     */
     @Override
     @DataScope
-    public List<CustomerOverviewVO> getCustomerOverViewOfUser(CustomerOverviewDTO dto, Boolean pageFlag) {
+    public List<CustomerOverviewVO> getCustomerOverViewOfUser(CustomerOverviewDTO dto) {
         if (!isHaveDataScope(dto)) {
             return new ArrayList<>();
         }
         if (dto.getEndTime() == null) {
             dto.setEndTime(DateUtils.parseBeginDay(DateUtils.dateTime(DateUtils.getYesterday(new Date()))));
         }
-        if (Boolean.TRUE.equals(pageFlag)) {
-            startPage(dto);
+        // 获取结果列表
+        List<CustomerOverviewVO> resultList = weUserBehaviorDataMapper.getCustomerOverViewOfUser(dto);
+        if (CollectionUtils.isEmpty(resultList)) {
+            return new ArrayList<>();
         }
-        return weUserBehaviorDataMapper.getCustomerOverViewOfUser(dto);
+        List<String> userIds = resultList.stream().map(CustomerOverviewVO::getUserId).collect(Collectors.toList());
+        // 获取根据开始，结束时间和员工ID，获取截止时间下的有效客户数
+        List<CustomerOverviewVO> currNewCustomerCntByUser = weFlowerCustomerRelMapper.getCurrNewCustomerCntByUser(dto.getCorpId(), dto.getBeginTime(), dto.getEndTime(), userIds);
+        if (CollectionUtils.isEmpty(currNewCustomerCntByUser)) {
+            return resultList;
+        }
+        for (CustomerOverviewVO resultModel : resultList) {
+            for (CustomerOverviewVO overviewVO : currNewCustomerCntByUser) {
+                if (resultModel.getUserId().equals(overviewVO.getUserId())) {
+                    // 为对应的员工设置截止当前时间的有效客户数
+                    resultModel.setCurrentNewCustomerCnt(overviewVO.getCurrentNewCustomerCnt());
+                }
+            }
+        }
+        // 对新客留存率进行排序
+        sortNewContactRetainRate(resultList, dto.getNewContactRetentionRateSort());
+        return resultList;
+    }
+
+    /**
+     * 对新客留存率进行排序
+     *
+     * @param resultList 结果列表
+     * @param newContactRetentionRateSort 新客留存率排序方式 ASC：正序， DESC：倒序
+     */
+    private void sortNewContactRetainRate(List<CustomerOverviewVO> resultList, String newContactRetentionRateSort) {
+        if (newContactRetentionRateSort == null || CollectionUtils.isEmpty(resultList)) {
+            return;
+        }
+        // 对新客留存率单独排序，因String类型的排序，会导致100%比90.XX%小，所以转换为Double类型排序
+        resultList.sort(Comparator.comparing(item -> {
+            // 如果值为"-"，无法排序，使用自然排序器，直接返回null
+            if (Constants.EMPTY_RETAIN_RATE_VALUE.equals(item.getNewContactRetentionRate())) {
+                return null;
+            }
+            // 如果是倒序排序，则对转换的值取反
+            if (GenConstants.DESC.equals(newContactRetentionRateSort)) {
+                return -Double.parseDouble(item.getNewContactRetentionRate());
+            }
+            return Double.parseDouble(item.getNewContactRetentionRate());
+        }, Comparator.nullsLast(Comparator.naturalOrder())));
     }
 
     /**
@@ -410,6 +452,8 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
         Date beginTime = DateUtils.dateTime(DateUtils.YYYY_MM_DD, dto.getBeginTime());
         Date endTime = DateUtils.dateTime(DateUtils.YYYY_MM_DD, dto.getEndTime());
         List<Date> dates = DateUtils.findDates(beginTime, endTime);
+        // 获取日期维度下，截止当前时间的有效客户数
+        List<CustomerOverviewVO> currNewCustomerCntByTime = weFlowerCustomerRelMapper.getCurrNewCustomerCntByTime(dto);
         // 最终需要返回的数据VO列表
         List<CustomerOverviewDateVO> resultList = new ArrayList<>();
         for (Date date : dates) {
@@ -436,11 +480,46 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
                             ,chatCnt);
                 }
             }
+            for (CustomerOverviewVO customerOverviewVO : currNewCustomerCntByTime) {
+                if (customerOverviewDateVO.getXTime().equals(customerOverviewVO.getXTime())) {
+                    // 为对应日期设置截止日期下的有效客户数
+                    customerOverviewDateVO.setCurrentNewCustomerCnt(customerOverviewVO.getCurrentNewCustomerCnt());
+                }
+            }
             resultList.add(customerOverviewDateVO);
         }
-        // 根据排序规则进行排序
-        StatisticsEnum.CustomerOverviewSortTypeEnum.sort(dto, resultList);
+        if (StatisticsEnum.CustomerOverviewSortTypeEnum.NEW_CONTACT_RETENTION_RATE_SORT.getSortName().equals(dto.getSortName())) {
+            // 新客留存率单独排序
+            sortDateNewContactRetainRate(resultList, dto.getSortType());
+        } else {
+            // 根据排序规则进行排序
+            StatisticsEnum.CustomerOverviewSortTypeEnum.sort(dto, resultList);
+        }
         return resultList;
+    }
+
+    /**
+     * 对新客留存率进行排序
+     *
+     * @param resultList 结果列表
+     * @param sortType 新客留存率排序方式 ASC：正序， DESC：倒序
+     */
+    private void sortDateNewContactRetainRate(List<CustomerOverviewDateVO> resultList, String sortType) {
+        if (sortType == null || CollectionUtils.isEmpty(resultList)) {
+            return;
+        }
+        // 对新客留存率单独排序，因String类型的排序，会导致100%比90.XX%小，所以转换为Double类型排序
+        resultList.sort(Comparator.comparing(item -> {
+            // 如果值为"-"，无法排序，使用自然排序器，直接返回null
+            if (Constants.EMPTY_RETAIN_RATE_VALUE.equals(item.getNewContactRetentionRate())) {
+                return null;
+            }
+            // 如果是倒序排序，则对转换的值取反
+            if (GenConstants.DESC.equals(sortType)) {
+                return -Double.parseDouble(item.getNewContactRetentionRate());
+            }
+            return Double.parseDouble(item.getNewContactRetentionRate());
+        }, Comparator.nullsLast(Comparator.naturalOrder())));
     }
 
     /**
@@ -653,7 +732,7 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
     @DataScope
     public AjaxResult exportCustomerOverViewOfUser(CustomerOverviewDTO dto) {
         String sheetName = "客户概况报表";
-        List<CustomerOverviewVO> list = getCustomerOverViewOfUser(dto, false);
+        List<CustomerOverviewVO> list = getCustomerOverViewOfUser(dto);
         // 导出
         list.forEach(CustomerOverviewVO::bindExportData);
         ExcelUtil<CustomerOverviewVO> util = new ExcelUtil<>(CustomerOverviewVO.class);

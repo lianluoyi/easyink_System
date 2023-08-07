@@ -990,6 +990,11 @@
         LEFT JOIN  we_customer wc ON wc.external_userid=wfcr.external_userid AND wc.corp_id = wfcr.corp_id
         LEFT JOIN we_user wu ON wu.user_id=wfcr.user_id AND wu.corp_id = wc.corp_id
         LEFT JOIN we_department wd ON wc.corp_id = wd.corp_id AND wu.main_department = wd.id
+        <include refid="customerCondition"/>
+        ORDER BY
+        wfcr.create_time DESC
+    </select>
+    <sql id="customerCondition">
         <where>
             wfcr.corp_id = #{corpId}
             <choose>
@@ -998,7 +1003,7 @@
                 </when>
                 <otherwise>
                     AND wfcr.status != '${@com.easyink.common.enums.CustomerStatusEnum@DELETE.code}'
-<!--                    AND wfcr.del_flag = 0-->
+                    <!--                    AND wfcr.del_flag = 0-->
                 </otherwise>
             </choose>
             ${params.dataScope}
@@ -1094,15 +1099,24 @@
                 </foreach>
             </if>
         </where>
-        ORDER BY
-        wfcr.create_time DESC
-    </select>
+    </sql>
     <!--根据客户状态企业id和时间获取去重客户数量-->
     <select id="countCustomerNumByTime" resultType="java.lang.Integer">
         <include refid="countCustomer"/>
         <if test="time != null and time != ''">
             AND create_time &lt;= #{time}
         </if>
+    </select>
+<!--    查询客户去重后的总数-->
+    <select id="ignoreDuplicateCustomerCnt" resultType="java.lang.Integer">
+        SELECT COUNT(DISTINCT wc.external_userid)
+        FROM
+        we_flower_customer_rel wfcr
+        LEFT JOIN  we_customer wc ON wc.external_userid=wfcr.external_userid AND wc.corp_id = wfcr.corp_id
+        LEFT JOIN we_user wu ON wu.user_id=wfcr.user_id AND wu.corp_id = wc.corp_id
+        LEFT JOIN we_department wd ON wc.corp_id = wd.corp_id AND wu.main_department = wd.id
+        <include refid="customerCondition"/>
+
     </select>
 
 

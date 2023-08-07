@@ -49,6 +49,6 @@ public interface WeOperationsCenterSopScopeService extends IService<WeOperations
      *
      * @param list list
      */
-    void batchSave(List<WeOperationsCenterSopScopeEntity> list);
+    void batchSaveOrUpdate(List<WeOperationsCenterSopScopeEntity> list);
 }
 

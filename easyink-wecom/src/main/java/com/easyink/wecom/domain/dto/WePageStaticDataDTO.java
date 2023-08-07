@@ -1,5 +1,7 @@
 package com.easyink.wecom.domain.dto;
 
+import com.easyink.common.constant.Constants;
+import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -119,29 +121,29 @@ public class WePageStaticDataDTO {
          * 新增客户群人数（相比之前)
          */
         private Integer newChatCntDiff ;
+        @ApiModelProperty("截止到现在的有效客户数，客户状态为正常、待继承、转接中（0、3、4）")
+        private Integer currentNewCustomerCnt;
 
 
         /**
-         * 获取新客留存率   流失客户数/ 新增客户数
+         * 获取新客留存率   截止当前的有效客户数 / 新增客户数
          * @return 新客留存率
          */
         public String getNewContactRetentionRate() {
-            if( newContactLossCnt == null ||  newContactCnt == null  ) {
-                return BigDecimal.ZERO.toPlainString();
+            if (newContactCnt == 0 || newContactCnt == null || currentNewCustomerCnt == null) {
+                return Constants.EMPTY_RETAIN_RATE_VALUE;
             }
             if(newContactCnt == 0) {
                 return new BigDecimal(100).toPlainString();
             }
             // 百分比
             BigDecimal newCntDecimal = new BigDecimal(newContactCnt) ;
-            BigDecimal lossCntDecimal = new BigDecimal(newContactLossCnt) ;
+            BigDecimal currCustomerCntDecimal = new BigDecimal(currentNewCustomerCnt) ;
             int scale = 2 ;
-            return new BigDecimal(100).subtract(lossCntDecimal
-                                  .multiply(new BigDecimal(100))
-                                  .divide(newCntDecimal, scale, RoundingMode.HALF_UP)
-                                  .stripTrailingZeros()
-                          )
-                          .toPlainString();
+            return currCustomerCntDecimal
+                    .multiply(new BigDecimal(100))
+                    .divide(newCntDecimal, scale, RoundingMode.HALF_UP)
+                    .stripTrailingZeros().toPlainString();
         }
 
     }

@@ -1,6 +1,7 @@
 package com.easyink.web.controller.wecom.transfer;
 
 import com.easyink.common.core.domain.AjaxResult;
+import com.easyink.wecom.service.WeSensitiveActHitService;
 import com.easyink.wecom.service.WeUserCustomerMessageStatisticsService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class WeComTransferController {
 
     private final WeUserCustomerMessageStatisticsService weUserCustomerMessageStatisticsService;
+    private final WeSensitiveActHitService weSensitiveActHitService;
 
     @PostMapping("/updateUserActiveChatCnt")
     @ApiOperation("更新历史数据中员工主动发起的会话数")
@@ -30,4 +32,10 @@ public class WeComTransferController {
         return AjaxResult.success();
     }
 
+    @PostMapping("/update/sensitive/history/data")
+    @ApiOperation("更新历史敏感行为操作人和操作对象信息")
+    public AjaxResult updateSensitive() {
+        weSensitiveActHitService.updateHistorySensitive();
+        return AjaxResult.success();
+    }
 }

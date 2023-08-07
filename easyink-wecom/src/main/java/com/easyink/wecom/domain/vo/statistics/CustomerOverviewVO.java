@@ -1,7 +1,10 @@
 package com.easyink.wecom.domain.vo.statistics;
 
 import com.easyink.common.annotation.Excel;
+import com.easyink.common.constant.Constants;
+import com.easyink.common.constant.GenConstants;
 import com.easyink.wecom.domain.vo.UserBaseVO;
+import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -82,29 +85,28 @@ public class CustomerOverviewVO extends UserBaseVO {
      */
     private Integer userActiveChatCnt;
 
+    @ApiModelProperty("截止到现在的有效客户数，客户状态为正常、待继承、转接中（0、3、4）")
+    private Integer currentNewCustomerCnt = 0;
+
     /**
-     * 获取新客留存率   流失客户数/ 新增客户数
+     * 获取新客留存率   截止当前的有效客户数 / 新增客户数
      *
      * @return 新客留存率
      */
     public String getNewContactRetentionRate() {
-        if (newContactCnt == null || newContactLossCnt == null) {
-            return BigDecimal.ZERO.toPlainString();
+        if (newContactCnt == null || newContactCnt == 0) {
+            return Constants.EMPTY_RETAIN_RATE_VALUE;
         }
         BigDecimal percent = new BigDecimal(100);
-        if(newContactCnt == 0) {
-            return percent.toPlainString();
-        }
         // 百分比
         BigDecimal newCntDecimal = new BigDecimal(newContactCnt);
-        BigDecimal lossCntDecimal = new BigDecimal(newContactLossCnt);
+        BigDecimal currCustomerCntDecimal = new BigDecimal(currentNewCustomerCnt);
         int scale = 2;
-        // 计算留存率  新客数-流失数/新客数
-        return  newCntDecimal.subtract(lossCntDecimal)
-                        .multiply(percent)
-                        .divide(newCntDecimal, scale, RoundingMode.HALF_UP)
-                        .stripTrailingZeros()
-                .toPlainString();
+        // 计算留存率  截止当前的有效客户数 / 新增客户数
+        return currCustomerCntDecimal
+                .multiply(percent)
+                .divide(newCntDecimal, scale, RoundingMode.HALF_UP)
+                .stripTrailingZeros().toPlainString();
     }
 
     /**
@@ -162,9 +164,13 @@ public class CustomerOverviewVO extends UserBaseVO {
      * 导出框架不能直接使用get方法获取属性值
      */
     public void bindExportData() {
-        newContactRetentionRate = getNewContactRetentionRate() + "%";
-        newContactStartTalkRate = getNewContactStartTalkRate() + "%";
-        serviceResponseRate = getServiceResponseRate() + "%";
+        if (newContactCnt == null || newContactCnt == 0) {
+            newContactRetentionRate = getNewContactRetentionRate() + Constants.EMPTY_RETAIN_RATE_VALUE;
+        } else {
+            newContactRetentionRate = getNewContactRetentionRate() + GenConstants.PERCENT;
+        }
+        newContactStartTalkRate = getNewContactStartTalkRate() + GenConstants.PERCENT;
+        serviceResponseRate = getServiceResponseRate() + GenConstants.PERCENT;
     }
 
 

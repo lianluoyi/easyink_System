@@ -28,15 +28,33 @@ import java.util.stream.Collectors;
 @Slf4j
 public class ExtendPropertyMultipleOptionServiceImpl extends ServiceImpl<ExtendPropertyMultipleOptionMapper, ExtendPropertyMultipleOption> implements ExtendPropertyMultipleOptionService {
 
+    private final ExtendPropertyMultipleOptionMapper extendPropertyMultipleOptionMapper;
+
+    public ExtendPropertyMultipleOptionServiceImpl(ExtendPropertyMultipleOptionMapper extendPropertyMultipleOptionMapper) {
+        this.extendPropertyMultipleOptionMapper = extendPropertyMultipleOptionMapper;
+    }
 
     @Override
     public void edit(List<ExtendPropertyMultipleOption> list, Long propId) {
         if (CollectionUtils.isEmpty(list)) {
             throw new CustomException(ResultTip.TIP_MULTIPLE_OPTION_MISSING);
         }
-        // 目前前端只传了修改后的list, 需要先清除后添加或修改
-        remove(new LambdaQueryWrapper<ExtendPropertyMultipleOption>().eq(ExtendPropertyMultipleOption::getExtendPropertyId, propId));
-        saveOrUpdateBatch(list);
+        // 获取原来的所有额外属性字段列表
+        List<ExtendPropertyMultipleOption> originList = list(new LambdaQueryWrapper<ExtendPropertyMultipleOption>().eq(ExtendPropertyMultipleOption::getExtendPropertyId, propId));
+        // 去除当前编辑后还存在的字段属性
+        originList.removeAll(list);
+        // 获取要删除的id
+        List<Long> removeIdList = originList.stream().map(ExtendPropertyMultipleOption::getId).collect(Collectors.toList());
+        if (CollectionUtils.isNotEmpty(removeIdList)) {
+            // 不为空，则删除
+            removeByIds(removeIdList);
+        }
+        for (int i = 0; i < list.size(); i++) {
+            // 按照列表的顺序，给属性值排序
+            list.get(i).setOptionSort(i + 1);
+        }
+        // 批量插入或更新
+        extendPropertyMultipleOptionMapper.batchSaveOrUpdate(list);
     }
 
     @Override

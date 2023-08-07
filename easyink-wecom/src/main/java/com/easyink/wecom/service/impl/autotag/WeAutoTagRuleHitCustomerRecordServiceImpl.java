@@ -143,6 +143,10 @@ public class WeAutoTagRuleHitCustomerRecordServiceImpl extends ServiceImpl<WeAut
             TagRuleQuery tagRuleQuery =new TagRuleQuery();
             tagRuleQuery.setTagIdList(sceneIdList.stream().map(String::valueOf).collect(Collectors.toList()));
             tagRuleQuery.setCorpId(corpId);
+            // 状态为启用
+            tagRuleQuery.setStatus(true);
+            // 指定的规则id
+            tagRuleQuery.setId(ruleId);
             List<TagRuleListVO> sceneRuleName = weAutoTagRuleMapper.listCustomer(tagRuleQuery);
             // 组装记录数据
             batchAddRecordList.add(new WeAutoTagRuleHitCustomerRecord(ruleId, corpId, customerId, userId, date));
