@@ -1,7 +1,9 @@
 package com.easyink.wecom.client;
 
 import com.dtflys.forest.annotation.*;
+import com.easyink.wecom.domain.dto.emplecode.CustomerAssistantDTO;
 import com.easyink.wecom.domain.dto.WeExternalContactDTO;
+import com.easyink.wecom.domain.dto.emplecode.CustomerAssistantResp;
 import com.easyink.wecom.domain.dto.transfer.*;
 import com.easyink.wecom.interceptor.WeAccessTokenInterceptor;
 import org.springframework.stereotype.Component;
@@ -19,13 +21,10 @@ public interface WeExternalContactClient {
 
     @Post(url = "/externalcontact/add_contact_way")
     WeExternalContactDTO addContactWay(@Body WeExternalContactDTO.WeContactWay weContactWay, @Header("corpid") String corpId);
-
     @Post(url = "/externalcontact/update_contact_way")
     WeExternalContactDTO updateContactWay(@Body WeExternalContactDTO.WeContactWay weContactWay, @Header("corpid") String corpId);
-
     @Post(url = "/externalcontact/del_contact_way")
     WeExternalContactDTO delContactWay(@Body WeExternalContactDTO.WeContactWay weContactWay, @Header("corpid") String corpId);
-
     @Post(url = "/externalcontact/get_contact_way")
     WeExternalContactDTO getContactWay(@Query("config_id") String configId, @Header("corpid") String corpId);
 

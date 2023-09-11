@@ -183,6 +183,18 @@ public class WeEmpleCodeAnalyseServiceImpl extends ServiceImpl<WeEmpleCodeAnalys
         return resultList;
     }
 
+    @Override
+    public List<WeEmpleCodeAnalyse> getAnalyseDataByEmpleCodeId(String corpId, String beginDate, String endDate, List<Long> empleCodeIdList) {
+        if (StringUtils.isAnyBlank(corpId, beginDate, endDate) || CollectionUtils.isEmpty(empleCodeIdList)) {
+            return Collections.emptyList();
+        }
+        return this.list(new LambdaQueryWrapper<WeEmpleCodeAnalyse>()
+                   .in(WeEmpleCodeAnalyse::getEmpleCodeId, empleCodeIdList)
+                   .eq(WeEmpleCodeAnalyse::getCorpId, corpId)
+                   .ge(WeEmpleCodeAnalyse::getTime, beginDate)
+                   .le(WeEmpleCodeAnalyse::getTime, endDate));
+    }
+
     /**
      * 初始化数据
      *
@@ -293,6 +305,38 @@ public class WeEmpleCodeAnalyseServiceImpl extends ServiceImpl<WeEmpleCodeAnalys
     }
 
     /**
+     * 保存获客链接统计信息
+     *
+     * @param corpId         企业ID
+     * @param userId         员工ID
+     * @param externalUserId 客户ID
+     * @param channelId      渠道ID
+     * @param assistantId
+     * @return boolean 结果
+     */
+    @Override
+    public boolean saveAssistantAnalyse(String corpId, String userId, String externalUserId, String channelId, String assistantId, Boolean addFlag) {
+        try {
+            if (StringUtils.isBlank(corpId) || StringUtils.isBlank(userId) || StringUtils.isBlank(externalUserId) || StringUtils.isBlank(channelId) || addFlag == null) {
+                throw new CustomException(ResultTip.TIP_GENERAL_BAD_REQUEST);
+            }
+            WeEmpleCodeAnalyse weEmpleCodeAnalyse = new WeEmpleCodeAnalyse();
+            weEmpleCodeAnalyse.setCorpId(corpId);
+            weEmpleCodeAnalyse.setEmpleCodeId(Long.valueOf(assistantId));
+            weEmpleCodeAnalyse.setChannelId(Long.parseLong(channelId));
+            weEmpleCodeAnalyse.setUserId(userId);
+            weEmpleCodeAnalyse.setExternalUserId(externalUserId);
+            weEmpleCodeAnalyse.setTime(new Date());
+            weEmpleCodeAnalyse.setType(addFlag);
+            baseMapper.insert(weEmpleCodeAnalyse);
+            return true;
+        } catch (Exception e) {
+            log.error("saveWeEmpleCodeAnalyse error!! e={}", ExceptionUtils.getStackTrace(e));
+            return false;
+        }
+    }
+
+    /**
      * 保存员工活码数据统计
      */
     @Override
@@ -305,6 +349,7 @@ public class WeEmpleCodeAnalyseServiceImpl extends ServiceImpl<WeEmpleCodeAnalys
             WeEmpleCodeAnalyse weEmpleCodeAnalyse = new WeEmpleCodeAnalyse();
             weEmpleCodeAnalyse.setCorpId(corpId);
             weEmpleCodeAnalyse.setEmpleCodeId(Long.parseLong(state));
+            weEmpleCodeAnalyse.setChannelId(0L);
             weEmpleCodeAnalyse.setUserId(userId);
             weEmpleCodeAnalyse.setExternalUserId(externalUserId);
             weEmpleCodeAnalyse.setTime(new Date());

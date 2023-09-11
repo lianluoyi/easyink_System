@@ -1,13 +1,16 @@
 package com.easyink.wecom.utils;
 
 import cn.hutool.core.io.FileUtil;
+import com.easyink.common.constant.Constants;
 import com.easyink.common.constant.WeConstans;
+import com.easyink.common.core.domain.entity.WeCorpAccount;
 import com.easyink.common.enums.AttachmentTypeEnum;
 import com.easyink.common.enums.ResultTip;
 import com.easyink.common.exception.CustomException;
 import com.easyink.common.utils.StringUtils;
 import com.easyink.wecom.domain.dto.WeMediaDTO;
 import com.easyink.wecom.domain.dto.common.*;
+import com.easyink.wecom.service.WeCorpAccountService;
 import com.easyink.wecom.service.WeMaterialService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,10 +27,12 @@ import org.springframework.stereotype.Component;
 public class AttachmentService {
 
     private final WeMaterialService weMaterialService;
+    private final WeCorpAccountService weCorpAccountService;
 
     @Autowired
-    public AttachmentService(WeMaterialService weMaterialService) {
+    public AttachmentService(WeMaterialService weMaterialService, WeCorpAccountService weCorpAccountService) {
         this.weMaterialService = weMaterialService;
+        this.weCorpAccountService = weCorpAccountService;
     }
 
 
@@ -38,16 +43,16 @@ public class AttachmentService {
         }
         switch (param.getTypeEnum()) {
             case IMAGE:
-                return buildImage(param.getPicUrl(), param.getTypeEnum(), corpId);
+                return buildImage(param.getPicUrl(), param.getTypeEnum(), corpId, param.getContent());
             case LINK:
-                return buildLink(param.getContent(), param.getPicUrl(), param.getDescription(), param.getUrl(), param.getTypeEnum());
+                return buildLink(param.getContent(), param.getPicUrl(), param.getDescription(), param.getUrl(), param.getTypeEnum(), corpId);
             case RADAR:
             case FORM:
                 return buildRadar(param.getContent(), param.getPicUrl(), param.getDescription(), param.getUrl(), param.getTypeEnum());
             case MINIPROGRAM:
                 return buildMiniprogram(param.getContent(), param.getPicUrl(), param.getDescription(), param.getUrl(), param.getTypeEnum(), corpId);
             case FILE:
-                return buildFile(param.getPicUrl(), param.getTypeEnum(), corpId);
+                return buildFile(param.getPicUrl(), param.getTypeEnum(), corpId, param.getContent());
             case VIDEO:
                 return buildVideo(param.getContent(), param.getPicUrl(), param.getDescription(), param.getUrl(), param.getTypeEnum(), corpId);
             default:
@@ -90,11 +95,11 @@ public class AttachmentService {
             picUrl = WeConstans.DEFAULT_VIDEO_COVER_URL;
             // 描述信息
             String desc = WeConstans.CLICK_SEE_VIDEO;
-            attachments = buildLink(content, picUrl, desc, useUrl, AttachmentTypeEnum.LINK);
+            attachments = buildLink(content, picUrl, desc, useUrl, AttachmentTypeEnum.LINK, corpId);
             return attachments;
         }
         attachments = new Attachments();
-        WeMediaDTO weMediaDto = weMaterialService.uploadTemporaryMaterial(picUrl, type.getTypeStr(), FileUtil.getName(picUrl), corpId);
+        WeMediaDTO weMediaDto = weMaterialService.uploadTemporaryMaterial(picUrl, type.getTypeStr(), content, corpId);
         if (weMediaDto == null) {
             toE();
         }
@@ -106,12 +111,12 @@ public class AttachmentService {
     /**
      * 构建文件
      */
-    private Attachments buildFile(String picUrl, AttachmentTypeEnum type, String corpId) {
+    private Attachments buildFile(String picUrl, AttachmentTypeEnum type, String corpId, String filename) {
         if (StringUtils.isEmpty(picUrl)) {
             return null;
         }
         Attachments attachments = new Attachments();
-        WeMediaDTO weMediaDto = weMaterialService.uploadTemporaryMaterial(picUrl, type.getTypeStr(), FileUtil.getName(picUrl), corpId);
+        WeMediaDTO weMediaDto = weMaterialService.uploadTemporaryMaterial(picUrl, type.getTypeStr(), filename, corpId);
         if (weMediaDto == null) {
             toE();
         }
@@ -145,7 +150,7 @@ public class AttachmentService {
     /**
      * 构建链接
      */
-    private Attachments buildLink(String content, String picUrl, String description, String url, AttachmentTypeEnum type) {
+    private Attachments buildLink(String content, String picUrl, String description, String url, AttachmentTypeEnum type, String corpId) {
         if (StringUtils.isEmpty(content) || StringUtils.isEmpty(url)) {
             return null;
         }
@@ -153,7 +158,7 @@ public class AttachmentService {
         attachments.setMsgtype(type.getTypeStr());
         attachments.setLink(Link.builder()
                 .title(content)
-                .picurl(picUrl)
+                .picurl(weCorpAccountService.getUrl(picUrl, corpId))
                 .desc(description)
                 .url(url)
                 .build());
@@ -163,12 +168,12 @@ public class AttachmentService {
     /**
      * 构建图片
      */
-    private Attachments buildImage(String picUrl, AttachmentTypeEnum type, String corpId) {
+    private Attachments buildImage(String picUrl, AttachmentTypeEnum type, String corpId, String filename) {
         if (StringUtils.isEmpty(picUrl)) {
             return null;
         }
         Attachments attachments = new Attachments();
-        WeMediaDTO weMediaDto = weMaterialService.uploadTemporaryMaterial(picUrl, type.getTypeStr(), FileUtil.getName(picUrl), corpId);
+        WeMediaDTO weMediaDto = weMaterialService.uploadTemporaryMaterial(picUrl, type.getTypeStr(), filename, corpId);
         if (weMediaDto == null) {
             toE();
         }
@@ -181,6 +186,5 @@ public class AttachmentService {
         log.error("AttachmentService文件上传失败");
         throw new CustomException(ResultTip.TIP_GENERAL_BAD_REQUEST);
     }
-
 
 }

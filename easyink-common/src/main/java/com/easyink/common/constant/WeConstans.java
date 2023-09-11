@@ -94,6 +94,11 @@ public class WeConstans {
     public static final String TEXT = "text";
 
     /**
+     * 创建企业群发发送客户最大数量
+     */
+    public static final Integer MAX_SEND_CNT = 10000;
+
+    /**
      * 侧边栏判断是否全选：0 全选 1 非全选
      */
     public static final String CHECK_ALL = "0";

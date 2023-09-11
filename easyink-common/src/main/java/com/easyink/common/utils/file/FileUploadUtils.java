@@ -11,7 +11,6 @@ import com.easyink.common.exception.file.FileNameLengthLimitExceededException;
 import com.easyink.common.exception.file.FileSizeLimitExceededException;
 import com.easyink.common.exception.file.InvalidExtensionException;
 import com.easyink.common.utils.DateUtils;
-import com.easyink.common.utils.ExceptionUtil;
 import com.easyink.common.utils.StringUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.qcloud.cos.COSClient;
@@ -26,6 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.util.DigestUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
@@ -33,8 +33,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URLConnection;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 
 /**
  * 文件上传工具类
@@ -194,35 +192,44 @@ public class FileUploadUtils {
 
 
     /**
-     * 文件上传
+     * 上传文件至COS
      *
-     * @param file             上传的文件
-     * @return 返回上传成功的文件名
-     * @throws FileSizeLimitExceededException       如果超出最大大小
-     * @throws FileNameLengthLimitExceededException 文件名太长
-     * @throws IOException                          比如读写文件出错时
+     * @param file {@link MultipartFile}
+     * @param cosConfig {@link CosConfig}
+     * @return 上传后的文件名称
+     * @throws FileSizeLimitExceededException 文件超出限制大小
+     * @throws IOException IO异常
+     * @throws FileNameLengthLimitExceededException 文件名称超长
      */
     public static String upload2Cos(MultipartFile file, CosConfig cosConfig)
             throws FileSizeLimitExceededException, IOException, FileNameLengthLimitExceededException {
-        int fileNamelength = 0;
-        String fileName = StringUtils.EMPTY;
-        if (file != null) {
-            checkFile(file,fileNamelength);
-            fileName = extractFilename(file);
-            uploadCosClient(cosConfig, fileName, file);
-
-        }
-        return fileName;
+        return upload2Cos(file, cosConfig, null);
     }
 
-    public static String upload2Cos(MultipartFile file, CosConfig cosConfig, String fileName)
+    /**
+     * 上传文件至COS
+     *
+     * @param file {@link MultipartFile}
+     * @param cosConfig {@link CosConfig}
+     * @param filename 文件名称
+     * @return 上传后的文件名称
+     * @throws FileSizeLimitExceededException 文件超出限制大小
+     * @throws IOException IO异常
+     * @throws FileNameLengthLimitExceededException 文件名称超长
+     */
+    public static String upload2Cos(MultipartFile file, CosConfig cosConfig, String filename)
             throws FileSizeLimitExceededException, IOException, FileNameLengthLimitExceededException {
-        int fileNamelength = 0;
-        if (file != null) {
-            checkFile(file, fileNamelength);
-            uploadCosClient(cosConfig, fileName, file);
+        if (file == null) {
+            return null;
         }
-        return fileName;
+        int fileNameLength = 0;
+        String md5Name;
+        // 校验文件大小，文件名称大小，文件类型
+        checkFile(file, fileNameLength);
+        // 获取MD5名称
+        md5Name = getMd5Name(file, filename);
+        uploadCosClient(cosConfig, md5Name, file);
+        return md5Name;
     }
 
     private static void uploadCosClient(CosConfig cosConfig, String fileName, MultipartFile file) throws IOException {
@@ -316,7 +323,7 @@ public class FileUploadUtils {
     }
 
     /**
-     * 以新的文件名称重新上传文件
+     * 以新的文件名称重新上传文件-自V1.31.3重构文件上传代码后弃用，文件上传请使用uploadV2方法
      *
      * @param url 文件url
      * @param ruoYiConfig {@link RuoYiConfig}
@@ -324,11 +331,12 @@ public class FileUploadUtils {
      * @param corpId 企业ID
      * @return 新的文件Url
      */
+    @Deprecated
     public static String reUploadFile(String url, RuoYiConfig ruoYiConfig, String fileName, String corpId) {
         String newUrl = null;
         try {
-            // 路径不包含"/profile"，直接使用URL获取inputStream流
-            if (!url.contains(Constants.RESOURCE_PREFIX)) {
+            // 路径不以"/profile"开头，直接使用URL获取inputStream流
+            if (!url.startsWith(Constants.RESOURCE_PREFIX)) {
                 // 获取原始的文件流
                 InputStream inputStream = FileUtils.downloadFile(url);
                 // COS的url前缀
@@ -552,5 +560,120 @@ public class FileUploadUtils {
             }
         }
         return extension;
+    }
+
+    /**
+     * 《本地文件上传第二版》
+     * 该方法根据文件内容转换成MD5值，创建一个本地文件，并将上传的文件内容写入。
+     *
+     * @param file             上传的文件内容
+     * @param allowedExtension 上传的文件类型
+     * @return 返回上传成功的文件资源映射路径
+     * @throws FileSizeLimitExceededException       如果超出最大大小
+     * @throws FileNameLengthLimitExceededException 文件名太长
+     * @throws IOException                          比如读写文件出错时
+     * @throws InvalidExtensionException            文件校验异常
+     */
+    public static String uploadV2(MultipartFile file, String[] allowedExtension)
+            throws FileSizeLimitExceededException, IOException, FileNameLengthLimitExceededException, InvalidExtensionException {
+        return uploadV2(null, file, allowedExtension);
+    }
+
+    /**
+     * 《本地文件上传第二版》
+     * 该方法根据文件名称和内容转换成MD5值，创建一个本地文件，并将上传的文件内容写入。
+     *
+     * @param filename         上传的文件名称
+     * @param file             上传的文件内容
+     * @param allowedExtension 上传的文件类型
+     * @return 返回上传成功的文件资源映射路径
+     * @throws FileSizeLimitExceededException       如果超出最大大小
+     * @throws FileNameLengthLimitExceededException 文件名太长
+     * @throws IOException                          比如读写文件出错时
+     * @throws InvalidExtensionException            文件校验异常
+     */
+    public static String uploadV2(String filename, MultipartFile file, String[] allowedExtension)
+            throws FileSizeLimitExceededException, IOException, FileNameLengthLimitExceededException, InvalidExtensionException {
+        if (file == null) {
+            return null;
+        }
+        int filenameLength = 0;
+        String md5Name;
+        // 校验文件大小，文件名称大小，文件类型
+        checkFile(file, allowedExtension, filenameLength);
+        // 获取MD5名称
+        md5Name = getMd5Name(file, filename);
+        // 根据MD5名称，获取创建本地文件的完整路径
+        String createFilePath = getCreateFilePath(md5Name);
+        // 创建本地文件
+        File desc = createNewLocalFile(createFilePath);
+        // 将上传的文件数据写入本地文件
+        file.transferTo(desc);
+        return getPathFileName(RuoYiConfig.getUploadPath()) + DateUtils.datePath() + WeConstans.SLASH + md5Name;
+    }
+
+    /**
+     * 根据MD5名称，获取本地创建文件的路径
+     *
+     * @param md5Name 文件MD5名称
+     * @return 本地创建文件路径
+     */
+    private static String getCreateFilePath(String md5Name) {
+        if (StringUtils.isBlank(md5Name)) {
+            return null;
+        }
+        return RuoYiConfig.getUploadPath() + WeConstans.SLASH + DateUtils.datePath() + WeConstans.SLASH + md5Name;
+    }
+
+    /**
+     * 根据指定的FileName，MultipartFile文件的内容获取MD5值，作为文件名称。
+     *
+     * @param file 上传的文件 {@link MultipartFile}
+     * @return 转换MD5后的文件名称 + 后缀
+     * @throws IOException
+     */
+    public static String getMd5Name(MultipartFile file, String filename) throws IOException {
+        if (file == null) {
+            throw new CustomException(ResultTip.TIP_MULTIPART_FILE_NOT_EXISTS);
+        }
+        // 获取文件字节数组
+        byte[] bytes = file.getBytes();
+        // 计算字节数组的 MD5 值
+        String md5Hex = DigestUtils.md5DigestAsHex(bytes);
+        if (StringUtils.isBlank(filename)) {
+            // 文件名为空，使用原始的文件名称
+            filename = file.getOriginalFilename();
+        }
+        // 获取文件的后缀名
+        String fileExtension = filename.substring(filename.lastIndexOf("."));
+        return md5Hex + fileExtension;
+    }
+
+    /**
+     * 以文件的完整路径，创建需要上传的空文件。
+     * example: C:/ruoyi/uploadPath/YYYY/MM/DD/filename.jpg
+     *
+     * @param uploadDir 上传的文件完整路径 + 文件名称
+     * @return {@link File}
+     * @throws IOException
+     */
+    private static File createNewLocalFile(String uploadDir) throws IOException {
+        // 创建文件
+        File desc = new File(uploadDir);
+        // 判断父目录是否存在
+        if (!desc.getParentFile().exists()) {
+            // 不存在则创建
+            desc.getParentFile().mkdirs();
+        }
+        // 判断文件是否存在
+        if (!desc.exists()) {
+            // 不存在则创建新文件
+            boolean isCreate = desc.createNewFile();
+            // 创建失败
+            if (!isCreate) {
+                log.error("本地文件创建失败，文件完整路径:{}", uploadDir);
+            }
+        }
+        return desc;
     }
 }

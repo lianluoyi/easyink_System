@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.easyink.wecom.mapper.WeEmpleCodeWarnConfigMapper">
+
+    <!--更新或插入获客链接告警配置信息-->
+    <insert id="saveOrUpdateConfig">
+        INSERT INTO we_emple_code_warn_config
+        (corp_id, link_unavailable_switch, link_unavailable_users, alarm_creater, alarm_other_user, balance_low_switch, balance_low_users, balance_exhausted_switch, balance_exhausted_users, quota_expire_soon_switch, quota_expire_soon_users, `type`, update_time, update_by)
+        VALUES
+        (#{corpId}, #{linkUnavailableSwitch}, #{linkUnavailableUsers}, #{alarmCreater}, #{alarmOtherUser}, #{balanceLowSwitch}, #{balanceLowUsers}, #{balanceExhaustedSwitch}, #{balanceExhaustedUsers}, #{quotaExpireSoonSwitch}, #{quotaExpireSoonUsers}, #{type}, #{updateTime}, #{updateBy})
+        ON DUPLICATE KEY UPDATE
+            link_unavailable_switch = VALUES(link_unavailable_switch),
+            link_unavailable_users = VALUES(link_unavailable_users),
+            alarm_creater = VALUES(alarm_creater),
+            alarm_other_user = VALUES(alarm_other_user),
+            balance_low_switch = VALUES(balance_low_switch),
+            balance_low_users = VALUES(balance_low_users),
+            balance_exhausted_switch = VALUES(balance_exhausted_switch),
+            balance_exhausted_users = VALUES(balance_exhausted_users),
+            quota_expire_soon_switch = VALUES(quota_expire_soon_switch),
+            quota_expire_soon_users = VALUES(quota_expire_soon_users),
+            type = VALUES(type),
+            update_time = VALUES(update_time),
+            update_by = VALUES(update_by)
+    </insert>
+    <!--获取获客链接告警配置信息-->
+    <select id="getConfig" resultType="com.easyink.wecom.domain.vo.WeEmpleCodeWarnConfigVO">
+        SELECT corp_id, link_unavailable_switch, link_unavailable_users,
+               alarm_creater, alarm_other_user, balance_low_switch, balance_low_users,
+               balance_exhausted_switch, balance_exhausted_users, quota_expire_soon_switch, quota_expire_soon_users, `type`
+        FROM we_emple_code_warn_config
+        WHERE corp_id = #{corpId}
+    </select>
+
+</mapper>

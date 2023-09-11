@@ -71,7 +71,7 @@
         wcm.content,
         wcm.chat_type,
         wcm.setting_time,
-        (SELECT count(*) FROM `we_customer_messgaeResult` wcmr where wcmr.message_id=wcm.message_id and `status` !=2) as
+        (SELECT count(*) FROM `we_customer_messgaeResult` wcmr where wcmr.message_id=wcm.message_id) as
         expect_send,
         (SELECT count(*) FROM `we_customer_messgaeResult` wcmr where wcmr.message_id=wcm.message_id and `status`=1) as
         actual_send,

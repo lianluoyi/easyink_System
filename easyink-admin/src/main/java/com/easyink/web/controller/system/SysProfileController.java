@@ -10,11 +10,13 @@ import com.easyink.common.core.domain.model.LoginUser;
 import com.easyink.common.core.domain.wecom.WeUser;
 import com.easyink.common.enums.BusinessType;
 import com.easyink.common.enums.MediaType;
+import com.easyink.common.exception.file.InvalidExtensionException;
 import com.easyink.common.service.ISysUserService;
 import com.easyink.common.token.TokenService;
 import com.easyink.common.utils.SecurityUtils;
 import com.easyink.common.utils.ServletUtils;
 import com.easyink.common.utils.file.FileUploadUtils;
+import com.easyink.common.utils.file.MimeTypeUtils;
 import com.easyink.wecom.client.WeMediaClient;
 import com.easyink.wecom.client.WeUserClient;
 import com.easyink.wecom.domain.dto.WeMediaDTO;
@@ -118,13 +120,14 @@ public class SysProfileController extends BaseController {
     @Log(title = "用户头像", businessType = BusinessType.UPDATE)
     @PostMapping("/avatar")
     @ApiOperation("头像上传")
-    public AjaxResult avatar(@RequestParam("avatarfile") MultipartFile file, String fileName) throws IOException {
+    public AjaxResult avatar(@RequestParam("avatarfile") MultipartFile file, String fileName) throws IOException, InvalidExtensionException {
         if (!file.isEmpty()) {
             FileUploadUtils.fileSuffixVerify(fileName, ruoYiConfig.getFile().getAllowUploadExtensionList());
             LoginUser loginUser = tokenService.getLoginUser(ServletUtils.getRequest());
             //判断是系统用户（超管）还是企微用户
             if (loginUser.isSuperAdmin()) {
-                String avatar = FileUploadUtils.upload(RuoYiConfig.getAvatarPath(), file);
+                // 获取资源映射前缀
+                String avatar = FileUploadUtils.uploadV2(fileName, file, MimeTypeUtils.getDefaultAllowedExtension());
                 userService.updateUserAvatar(loginUser.getUsername(), avatar);
                 AjaxResult ajax = AjaxResult.success();
                 ajax.put("imgUrl", avatar);

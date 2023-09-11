@@ -99,8 +99,8 @@ public class MomentAttachment {
         try {
             String url = detailEntity.getUrl();
             File file;
-            // 路径不包含"/profile"，直接使用URL获取文件
-            if (!url.contains(Constants.RESOURCE_PREFIX)) {
+            // 路径不以"/profile"开头，直接使用URL获取文件
+            if (!url.startsWith(Constants.RESOURCE_PREFIX)) {
                 file = FileUtils.getFileByUrl(url);
             } else {
                 // 本地上传，将url路径转换为绝对路径获取文件

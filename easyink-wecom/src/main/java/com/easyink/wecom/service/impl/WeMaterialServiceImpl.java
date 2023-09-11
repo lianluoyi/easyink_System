@@ -217,8 +217,8 @@ public class WeMaterialServiceImpl extends ServiceImpl<WeMaterialMapper, WeMater
         int fileLength;
         InputStream inputStream;
         try {
-            // 路径不包含"/profile"，直接使用URL获取inputStream流
-            if (!url.contains(Constants.RESOURCE_PREFIX)) {
+            // 路径不以"/profile"开头，直接使用URL获取inputStream流
+            if (!url.startsWith(Constants.RESOURCE_PREFIX)) {
                 inputStream = new URL(url).openConnection().getInputStream();
             } else {
                 // 本地上传，将url路径转换为绝对路径，从文件中获取inputStream流
@@ -251,8 +251,8 @@ public class WeMaterialServiceImpl extends ServiceImpl<WeMaterialMapper, WeMater
         InputStream inputStream = null;
         try {
             conn = null;
-            // 路径不包含"/profile"，直接使用URL获取inputStream流
-            if (!url.contains(Constants.RESOURCE_PREFIX)) {
+            // 路径不以"/profile"开头，直接使用URL获取inputStream流
+            if (!url.startsWith(Constants.RESOURCE_PREFIX)) {
                 URL materialUrl = new URL(url);
                 conn = (HttpURLConnection) materialUrl.openConnection();
                 conn.setRequestMethod("GET");

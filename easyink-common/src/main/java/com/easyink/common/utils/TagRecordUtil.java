@@ -38,6 +38,25 @@ public class TagRecordUtil {
     }
 
     /**
+     * 组装员工活码记录文案
+     *
+     * @param sceneName 活动场景
+     * @param userName 员工姓名
+     * @return 组装后文案
+     */
+    public String buildAssistantContent(String sceneName, String userName) {
+        if (StringUtils.isEmpty(sceneName)){
+            sceneName = EMPTY_STRING;
+        }
+        if (StringUtils.isEmpty(userName)){
+            userName = EMPTY_STRING;
+        }
+        return CustomerTrajectoryEnums.TagType.CUSTOMER_ASSISTANT_TAG.getDesc()
+                .replace(GenConstants.ACTIVITY_SCENE, sceneName)
+                .replace(GenConstants.USER_NAME, userName);
+    }
+
+    /**
      * 组装新客进群打标签记录文案
      *
      * @param codeName 活码名称

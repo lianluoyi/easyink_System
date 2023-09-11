@@ -256,12 +256,13 @@ public class StatisticsController extends BaseController {
     @ApiOperation("活码统计-员工维度")
     public TableDataInfo<EmpleCodeUserVO> listEmpleUser(@RequestBody EmpleCodeStatisticDTO dto) {
         dto.setCorpId(LoginTokenService.getLoginUser().getCorpId());
-        startPage();
+        // 预设置分页参数
+        PageInfoUtil.setPage();
         List<EmpleCodeUserVO> list = weEmpleCodeStatisticService.listEmpleUser(dto);
         return getDataTable(list);
     }
 
-    @PreAuthorize("@ss.hasPermi('stastistic:codeStatistics:export')")
+    @PreAuthorize("@ss.hasPermi('stastistic:channelStatistics:export')")
     @PostMapping("/emplecode/user/export")
     @ApiOperation("活码统计-员工维度-导出报表")
     public AjaxResult exportEmpleUser(@RequestBody EmpleCodeStatisticDTO dto) {
@@ -273,12 +274,12 @@ public class StatisticsController extends BaseController {
     @ApiOperation(("活码统计-活码维度"))
     public TableDataInfo<EmpleCodeVO> listEmple(@RequestBody EmpleCodeStatisticDTO dto) {
         dto.setCorpId(LoginTokenService.getLoginUser().getCorpId());
-        startPage();
+        PageInfoUtil.setPage();
         List<EmpleCodeVO> list = weEmpleCodeStatisticService.listEmple(dto);
         return getDataTable(list);
     }
 
-    @PreAuthorize("@ss.hasPermi('stastistic:codeStatistics:export')")
+    @PreAuthorize("@ss.hasPermi('stastistic:channelStatistics:export')")
     @PostMapping("/emplecode/emple/export")
     @ApiOperation("活码统计-活码维度-导出报表")
     public AjaxResult exportEmple(@RequestBody EmpleCodeStatisticDTO dto) {
@@ -293,7 +294,7 @@ public class StatisticsController extends BaseController {
         return getDataTable(weEmpleCodeStatisticService.listEmpleDate(dto));
     }
 
-    @PreAuthorize("@ss.hasPermi('stastistic:codeStatistics:export')")
+    @PreAuthorize("@ss.hasPermi('stastistic:channelStatistics:export')")
     @PostMapping("/emplecode/date/export")
     @ApiOperation("活码统计-日期维度-导出报表")
     public AjaxResult exportEmpleDate(@RequestBody EmpleCodeStatisticDTO dto) {

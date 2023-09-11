@@ -5,7 +5,6 @@ import com.easyink.common.config.ServerConfig;
 import com.easyink.common.constant.Constants;
 import com.easyink.common.core.domain.AjaxResult;
 import com.easyink.common.core.domain.FileVo;
-import com.easyink.common.exception.CustomException;
 import com.easyink.common.utils.StringUtils;
 import com.easyink.common.utils.file.FileUploadUtils;
 import com.easyink.common.utils.file.FileUtils;
@@ -26,7 +25,6 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.regex.Pattern;
 
 /**
  * 类名: CommonController
@@ -170,15 +168,11 @@ public class CommonController {
         FileUploadUtils.fileSuffixVerify(fileName, ruoYiConfig.getFile().getAllowUploadExtensionList());
         try {
             SysFile sysFile;
-            if (StringUtils.isNotBlank(fileName)) {
-                sysFile = fileService.upload2Cos(file, fileName);
-            } else {
-                sysFile = fileService.upload(file);
-            }
+            sysFile = fileService.upload2CosV2(file, fileName);
             return AjaxResult.success(
                     FileVo.builder()
                             .fileName(sysFile.getFileName())
-                            .url(sysFile.getImgUrlPrefix() + sysFile.getFileName())
+                            .url(sysFile.getImgUrlPrefix())
                             .build()
             );
         } catch (Exception e) {

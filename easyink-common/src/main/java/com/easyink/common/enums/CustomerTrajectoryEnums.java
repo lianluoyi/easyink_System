@@ -291,7 +291,11 @@ public class CustomerTrajectoryEnums {
         /**
          * 批量打标签任务
          */
-        BATCH_TAG_TASK("batch_tag_task", "${createBy}给客户打上标签：")
+        BATCH_TAG_TASK("batch_tag_task", "${createBy}给客户打上标签："),
+        /**
+         * 通过获客链接打标签
+         */
+        CUSTOMER_ASSISTANT_TAG("customer_assistant_tag", "客户点击获客链接\"${activityScene}\"添加员工${userName}，被打上标签：")
         ;
         /**
          * 子类型标识

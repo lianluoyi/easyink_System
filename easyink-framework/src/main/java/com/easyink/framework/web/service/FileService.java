@@ -3,10 +3,11 @@ package com.easyink.framework.web.service;
 
 import com.easyink.common.config.RuoYiConfig;
 import com.easyink.common.constant.WeConstans;
+import com.easyink.common.exception.file.InvalidExtensionException;
 import com.easyink.common.utils.DateUtils;
-import com.easyink.common.utils.StringUtils;
 import com.easyink.common.utils.file.FileUploadUtils;
 import com.easyink.common.utils.file.FileUtils;
+import com.easyink.common.utils.file.MimeTypeUtils;
 import com.easyink.framework.web.domain.server.SysFile;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -33,11 +34,12 @@ public class FileService {
     private RuoYiConfig ruoYiConfig;
 
     /**
-     * 文件上传
+     * 文件上传-方法已在EasyInk V1.32.0版本弃用，请使用upload2CosV2()方法
      *
      * @param file 文件
      * @throws IOException IO异常
      */
+    @Deprecated
     public SysFile upload(MultipartFile file) throws IOException {
         try {
             //只校验文件大小，不校验扩展名
@@ -74,11 +76,12 @@ public class FileService {
     }
 
     /**
-     * 文件上传
+     * 文件上传-方法已在EasyInk V1.32.0版本弃用，请使用upload2CosV2()方法
      *
      * @param file 文件
      * @throws IOException IO异常
      */
+    @Deprecated
     public SysFile upload2Cos(MultipartFile file, String fileName) throws IOException {
         try {
             //只校验文件大小，不校验扩展名
@@ -136,5 +139,40 @@ public class FileService {
         }
     }
 
+    /**
+     * 《文件上传第二版》
+     * 说明：因上传文件涉及到的功能繁多，原有的逻辑无法满足，所以重构文件上传方法，将文件内容转MD5作为文件名上传，防止因文件名相同覆盖文件。
+     * 该方法根据传来的MultipartFile格式的文件和fileName参数，进行云存储/本地上传。
+     *
+     * @param file     {@link MultipartFile} 文件内容
+     * @param fileName 文件名称
+     * @return {@link SysFile} filename-返回给前端的文件名；imgUrlPrefix-上传后的文件访问路径【配置的云存储地址 / 本地的资源映射地址 “/profile/YYYY/MM/DD/”】
+     * @throws IOException IO异常
+     * @since 2023-08-07 EasyInk V1.32.0
+     */
+    public SysFile upload2CosV2(MultipartFile file, String fileName) throws IOException, InvalidExtensionException {
+        try {
+            // 只校验文件大小，不校验扩展名
+            FileUploadUtils.assertFileSize(file);
+            // 返回的上传文件前缀地址
+            String filePrefix;
+            if (ruoYiConfig.getFile().isStartCosUpload()) {
+                // 上传至云存储
+                String returnFilename = FileUploadUtils.upload2Cos(file, ruoYiConfig.getFile().getCos(), fileName);
+                // 获取云存储Url前缀地址
+                filePrefix = ruoYiConfig.getFile().getCos().getCosImgUrlPrefix() + returnFilename;
+            } else {
+                // 上传文件至本地，并获取本地上传资源映射地址
+                filePrefix = FileUploadUtils.uploadV2(fileName, file, MimeTypeUtils.getDefaultAllowedExtension());
+            }
+            return SysFile.builder()
+                    .fileName(fileName)
+                    .imgUrlPrefix(filePrefix)
+                    .build();
+        } catch (Exception e) {
+            log.error("文件上传异常：ex{}", ExceptionUtils.getStackTrace(e));
+            throw e;
+        }
+    }
 
 }

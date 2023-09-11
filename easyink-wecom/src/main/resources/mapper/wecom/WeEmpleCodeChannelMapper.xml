@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.easyink.wecom.mapper.WeEmpleCodeChannelMapper">
+    <!--删除自定义渠道-->
+    <delete id="delChannel">
+        UPDATE we_emple_code_channel SET del_flag = 1, create_by = #{updateBy}, create_time = #{updateTime} WHERE id = #{channelId}
+    </delete>
+    <!--查询自定义渠道-->
+    <select id="listChannel" resultType="com.easyink.wecom.domain.vo.WeEmpleCodeChannelVO">
+        SELECT id AS channelId, `name`, channel_url, create_by, create_time, del_flag
+        FROM we_emple_code_channel
+        WHERE emple_code_id = #{empleCodeId}
+        <if test="name != null">
+            AND `name` LIKE CONCAT("%", #{name}, "%")
+        </if>
+        <if test="defaultUrl != null">
+            AND channel_url != #{defaultUrl}
+        </if>
+        GROUP BY id
+        ORDER BY create_time DESC
+    </select>
+    <!--获取获客链接下对应的所有渠道id(包含已删除）-->
+    <select id="getAllAssistantChannel" resultType="java.lang.Long">
+        SELECT id FROM we_emple_code_channel WHERE emple_code_id = #{empleCodeId}
+    </select>
+    <!--获取获客链接默认渠道id-->
+    <select id="getDefaultChannelIdByUrl" resultType="java.lang.String">
+        SELECT id FROM we_emple_code_channel WHERE channel_url = #{channelUrl}
+    </select>
+    <!--根据id获取渠道信息，包含已删除的渠道-->
+    <select id="listChannelByIds" resultType="com.easyink.wecom.domain.WeEmpleCodeChannel">
+        SELECT name, id FROM we_emple_code_channel WHERE 1=1
+        <if test="channelIdList != null and channelIdList.size() > 0">
+            AND id IN
+            <foreach collection="channelIdList" item="channelId" open="(" separator="," close=")">
+                #{channelId}
+            </foreach>
+        </if>
+    </select>
+    <!--根据渠道id获取渠道信息（包含已删除的）-->
+    <select id="getChannelById" resultType="com.easyink.wecom.domain.WeEmpleCodeChannel">
+        SELECT id, emple_code_id, del_flag FROM we_emple_code_channel WHERE id = #{channelId}
+    </select>
+    <!--根据获客链接id获取所有的渠道id列表（包含已删除的渠道）-->
+    <select id="getChannelIdByEmpleIds" resultType="java.lang.Long">
+        SELECT id FROM we_emple_code_channel WHERE
+        emple_code_id IN
+        <if test="empleCodeIdList != null and empleCodeIdList.size() > 0">
+            <foreach collection="empleCodeIdList" item="empleCodeId" open="(" separator="," close=")">
+                #{empleCodeId}
+            </foreach>
+        </if>
+    </select>
+</mapper>

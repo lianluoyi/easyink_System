@@ -8,10 +8,7 @@ import com.easyink.wecom.domain.WeUserRole;
 import com.easyink.wecom.domain.dto.BatchUpdateUserInfoDTO;
 import com.easyink.wecom.domain.dto.QueryUserDTO;
 import com.easyink.wecom.domain.dto.transfer.TransferResignedUserListDTO;
-import com.easyink.wecom.domain.vo.BatchUpdateUserInfoVO;
-import com.easyink.wecom.domain.vo.WeUserBriefInfoVO;
-import com.easyink.wecom.domain.vo.WeUserInfoVO;
-import com.easyink.wecom.domain.vo.WeUserVO;
+import com.easyink.wecom.domain.vo.*;
 import com.easyink.wecom.domain.vo.transfer.TransferResignedUserVO;
 
 import java.util.List;
@@ -320,5 +317,14 @@ public interface WeUserService extends IService<WeUser> {
      * @return
      */
     String getOpenUserId(String corpId, String userId);
+
+    /**
+     * 获取用户信息
+     *
+     * @param users 员工id，用逗号分隔
+     * @param corpId 企业id
+     * @return 员工信息列表
+     */
+    List<UserVO> getUserInfo(String users, String corpId);
 
 }

@@ -31,10 +31,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -161,19 +158,18 @@ public class WeCustomerMessageServiceImpl extends ServiceImpl<WeCustomerMessageM
      */
     @Async
     void singleSendMessage(CustomerMessagePushDTO customerMessagePushDTO, WeCustomerMessagePushDTO messagePushDto, Long messageId, List<String> msgId, List<WeCustomer> customers) {
+        if (customerMessagePushDTO == null || CollectionUtils.isEmpty(customers) || messageId == null) {
+            log.info("[员工群发消息] 参数缺失，停止处理，customerMessagePushDTO:{}，customers:{}，messageId:{}", customerMessagePushDTO, customers, messageId);
+            return;
+        }
         final Set<String> userIds = customers.stream().map(WeCustomer::getUserId).collect(Collectors.toSet());
         for (String userId : userIds) {
             messagePushDto.setSender(userId);
-            //查找该员工对应的客户
-            messagePushDto.setExternal_userid(SpringUtils.getBean(WeCustomerMessagePushService.class).getExternalUserIds(customerMessagePushDTO.getCorpId(),
-                    customerMessagePushDTO.getPushRange(),
-                    userId,
-                    customerMessagePushDTO.getDepartment(),
-                    customerMessagePushDTO.getTag(),
-                    customerMessagePushDTO.getFilterTags(),
-                    customerMessagePushDTO.getGender(),
-                    customerMessagePushDTO.getCustomerStartTime(),
-                    customerMessagePushDTO.getCustomerEndTime()).stream().map(WeCustomer::getExternalUserid).collect(Collectors.toList()));
+            // 获取该员工对应的客户, V1.32.0（不需要再次去查询最新的员工对应客户信息，直接使用创建群发任务时存储的客户信息来发送）Tower 任务: 群发详情数据异常 ( https://tower.im/teams/636204/todos/74183 )
+            List<String> external_userIds = customers.stream()
+                                                     .filter(item -> userId.equals(item.getUserId()))
+                                                     .map(WeCustomer::getExternalUserid).collect(Collectors.toList());
+            messagePushDto.setExternal_userid(external_userIds);
             childMessage(messagePushDto, customerMessagePushDTO);
             //调用企微接口发送
             sendMessage(messagePushDto, customerMessagePushDTO.getCorpId(), messageId, msgId);
@@ -210,6 +206,7 @@ public class WeCustomerMessageServiceImpl extends ServiceImpl<WeCustomerMessageM
                 weCustomerMessgaeResultService.update(updateWrapper.set(WeCustomerMessgaeResult::getStatus, MessageStatusEnum.MINI_PROGRAM_ERROR.getType())
                         .set(WeCustomerMessgaeResult::getRemark, MessageStatusEnum.MINI_PROGRAM_ERROR.getName()));
             } else if (WeExceptionTip.WE_EXCEPTION_TIP_40058.getCode().equals(errcode)) {
+                log.info("[企业群发消息] 传递的参数异常，messagePushDTO:{}, corpId:{}", messagePushDto, corpId);
                 weCustomerMessgaeResultService.update(updateWrapper.set(WeCustomerMessgaeResult::getStatus, MessageStatusEnum.PARAM_ERROR.getType())
                         .set(WeCustomerMessgaeResult::getRemark, MessageStatusEnum.PARAM_ERROR.getName()));
             }

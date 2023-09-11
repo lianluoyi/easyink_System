@@ -422,6 +422,28 @@ public class WeCorpAccountServiceImpl extends ServiceImpl<WeCorpAccountMapper, W
         return StringUtils.EMPTY;
     }
 
+
+    /**
+     * 获取url路径
+     *
+     * @param url 文件url
+     * @param corpId 企业ID
+     * @return 实际url路径
+     */
+    @Override
+    public String getUrl(String url, String corpId) {
+        if (com.easyink.common.utils.StringUtils.isAnyBlank(url, corpId)) {
+            return com.easyink.common.utils.StringUtils.EMPTY;
+        }
+        // 获取企业配置的H5Domain域名信息
+        WeCorpAccount weCorpAccount = this.findValidWeCorpAccount(corpId);
+        if (url.startsWith(Constants.RESOURCE_PREFIX)) {
+            // 拼接访问路径
+            return weCorpAccount.getH5DoMainName() + WeConstans.SLASH + url;
+        }
+        return url;
+    }
+
     /**
      * 删除企业配置
      *

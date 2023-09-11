@@ -174,6 +174,14 @@ public class PageInfoUtil {
     }
 
     /**
+     * 预设置分页参数
+     */
+    public static void setPage() {
+        PageDomain pageDomain = TableSupport.buildPageRequest();
+        setPage(pageDomain.getPageNum(), pageDomain.getPageSize());
+    }
+
+    /**
      * 开始分页,从session获取分页参数
      */
     public static void startPage() {

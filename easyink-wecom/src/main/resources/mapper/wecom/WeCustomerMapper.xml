@@ -88,7 +88,7 @@
             </if>
             <if test="filterTags != null and filterTags !=''">
                 <if test="filterTags.indexOf(',') != -1">
-                    AND wfcr.id NOT IN ( SELECT rel1.flower_customer_rel_id FROM we_flower_customer_tag_rel rel1 WHERE
+                    AND wfcr.external_userid NOT IN ( SELECT rel1.external_userid FROM we_flower_customer_tag_rel rel1 WHERE
                     rel1.tag_id in
                     <foreach item="item" index="index" collection="filterTags.split(',')" open="(" separator=","
                              close=")">
@@ -97,9 +97,15 @@
                     )
                 </if>
                 <if test="filterTags.indexOf(',') == -1">
-                    AND wfcr.id NOT IN ( SELECT rel2.flower_customer_rel_id FROM we_flower_customer_tag_rel rel2 WHERE
+                    AND wfcr.external_userid NOT IN ( SELECT rel2.external_userid FROM we_flower_customer_tag_rel rel2 WHERE
                     rel2.tag_id = #{filterTags} )
                 </if>
+            </if>
+            <if test="filterExternalList != null and filterExternalList.size() > 0">
+                AND wfcr.external_userid NOT IN
+                <foreach collection="filterExternalList" item="externalUserId" separator="," open="(" close=")">
+                    #{externalUserId}
+                </foreach>
             </if>
             <if test="status !=null">
                 AND wfcr.status=#{status}
@@ -962,9 +968,68 @@
             AND name like concat('%', #{customerName}, '%')
         </if>
     </select>
+    <select id="selectExportCustomer" resultMap="WeCustomerResultV2" >
+        SELECT wc.corp_id,wc.external_userid,
+        wc.`name`,
+        wc.avatar,
+        wc.type,
+        wc.gender,
+        wc.unionid,
+        wc.birthday,
+        wc.corp_name,
+        wc.corp_full_name,
+        wc.position,
+        wc.is_open_chat,
+        wfcr.id as relId,
+        wfcr.user_id,
+        wfcr.remark,
+        wfcr.description,
+        wfcr.remark_mobiles,
+        wfcr.create_time,
+        wfcr.remark_corp_name,
+        wfcr.oper_userid,
+        wfcr.add_way,
+        wfcr.state,
+        wfcr.status,
+        wfcr.address,
+        wfcr.email,
+        wfcr.wechat_channel,
+        wu.user_name,
+        wu.dimission_time,
+        wfcrf.tag_id,
+        wfcrf.flower_customer_rel_id,
+        wcepr.corp_id as wceprCorpId,
+        wcepr.external_userid as wceprExternalUserid,
+        wcepr.property_value,
+        wcepr.extend_property_id,
+        wcepr.user_id as wceprUserId,
+        wd.name as department
+        FROM
+        we_customer wc
+        LEFT JOIN we_flower_customer_rel wfcr ON wc.external_userid=wfcr.external_userid AND wc.corp_id = wfcr.corp_id
+        LEFT JOIN we_user wu ON wu.user_id=wfcr.user_id AND wu.corp_id = wc.corp_id
+        LEFT JOIN we_flower_customer_tag_rel wfcrf ON wfcrf.flower_customer_rel_id = wfcr.id
+        LEFT JOIN we_customer_extend_property_rel wcepr ON wcepr.corp_id = wc.corp_id AND wcepr.external_userid =
+        wc.external_userid and wfcr.user_id = wcepr.user_id
+        LEFT JOIN we_department wd ON wc.corp_id = wd.corp_id AND wu.main_department = wd.id
+        <include refid="customerCondition"/>
+        LIMIT 5000
+    </select>
 <!--    查询客户列表 -->
     <select id="selectWeCustomerV3" resultType="com.easyink.wecom.domain.vo.customer.WeCustomerVO">
-        SELECT wc.corp_id,wc.external_userid,
+        SELECT
+        <include refid="customerColumn"/>
+        FROM
+        we_flower_customer_rel wfcr
+        LEFT JOIN  we_customer wc ON wc.external_userid=wfcr.external_userid AND wc.corp_id = wfcr.corp_id
+        LEFT JOIN we_user wu ON wu.user_id=wfcr.user_id AND wu.corp_id = wc.corp_id
+        LEFT JOIN we_department wd ON wc.corp_id = wd.corp_id AND wu.main_department = wd.id
+        <include refid="customerCondition"/>
+        ORDER BY
+        wfcr.create_time DESC
+    </select>
+    <sql id="customerColumn">
+        wc.corp_id,wc.external_userid,
         wc.`name`,
         wc.avatar,
         wc.type,
@@ -985,18 +1050,14 @@
         wu.user_name,
         wd.name as department,
         wd.name as departmentName
-        FROM
-        we_flower_customer_rel wfcr
-        LEFT JOIN  we_customer wc ON wc.external_userid=wfcr.external_userid AND wc.corp_id = wfcr.corp_id
-        LEFT JOIN we_user wu ON wu.user_id=wfcr.user_id AND wu.corp_id = wc.corp_id
-        LEFT JOIN we_department wd ON wc.corp_id = wd.corp_id AND wu.main_department = wd.id
-        <include refid="customerCondition"/>
-        ORDER BY
-        wfcr.create_time DESC
-    </select>
+    </sql>
+
     <sql id="customerCondition">
         <where>
             wfcr.corp_id = #{corpId}
+            <if test="lastId != null and lastId != ''" >
+                AND wfcr.id >= #{lastId}
+            </if>
             <choose>
                 <when test="status != null">
                     AND wfcr.status= #{status}

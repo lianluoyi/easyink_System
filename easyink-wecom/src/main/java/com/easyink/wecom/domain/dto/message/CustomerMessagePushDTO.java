@@ -37,6 +37,12 @@ public class CustomerMessagePushDTO implements Cloneable {
     @ApiModelProperty("过滤标签id列表用逗号隔开")
     private String filterTags;
 
+    @ApiModelProperty("过滤员工列表，用逗号隔开")
+    private String filterUsers;
+
+    @ApiModelProperty("过滤部门列表，用逗号隔开")
+    private String filterDepartments;
+
     @ApiModelProperty(value = "外部联系人性别 0-未知 1-男性 2-女性 -1-全部")
     private Integer gender;
 
@@ -54,6 +60,12 @@ public class CustomerMessagePushDTO implements Cloneable {
 
     @ApiModelProperty(value = "员工序列")
     private List<UserVO> userList;
+
+    @ApiModelProperty(value = "过滤的员工序列")
+    private List<UserVO> filterUserList;
+
+    @ApiModelProperty(value = "过滤的部门序列")
+    private List<DepartmentVO> filterDepartmentList;
 
     @ApiModelProperty("发送时间 为空表示立即发送 ，不为空为指定时间发送")
     private String settingTime;

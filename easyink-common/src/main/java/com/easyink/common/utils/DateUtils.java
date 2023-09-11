@@ -61,6 +61,16 @@ public class DateUtils extends org.apache.commons.lang3.time.DateUtils {
     public static final String END_TIME_SUFFIX = " 23:59:59";
 
     /**
+     * 分钟开始后缀
+     */
+    public static final String BEGIN_MINUTE_SUFFIX = ":00";
+
+    /**
+     * 分钟结束后缀
+     */
+    public static final String END_MINUTE_SUFFIX = ":59";
+
+    /**
      * 获取当前Date型日期
      *
      * @return Date() 当前日期
@@ -361,6 +371,38 @@ public class DateUtils extends org.apache.commons.lang3.time.DateUtils {
             }
         }
         return getTargetDate(dayTime, END_TIME_SUFFIX);
+    }
+
+    /**
+     * 把传入结束时间转换成 yyyy-MM-dd HH:MM:59格式
+     *
+     * @param time 传入日期字符串，正确格式为:2020-10-01 12:12
+     * @return 获取截止分钟字符串, 格式：2020-10-01 12:12:59
+     */
+    public static String parseEndMinute(String time) {
+        if (StringUtils.isBlank(time)) {
+            return null;
+        }
+        if (!isMatchFormat(time, YYYY_MM_DD_HH_MM)) {
+            return time;
+        }
+        return time + END_MINUTE_SUFFIX;
+    }
+
+    /**
+     * 把传入结束时间转换成 yyyy-MM-dd HH:MM:00格式
+     *
+     * @param time 传入日期字符串，正确格式为:2020-10-01 12:12
+     * @return 获取截止分钟字符串, 格式：2020-10-01 12:12:00
+     */
+    public static String parseBeginMinute(String time) {
+        if (StringUtils.isBlank(time)) {
+            return null;
+        }
+        if (!isMatchFormat(time, YYYY_MM_DD_HH_MM)) {
+            return time;
+        }
+        return time + BEGIN_MINUTE_SUFFIX;
     }
 
     /**
@@ -705,4 +747,25 @@ public class DateUtils extends org.apache.commons.lang3.time.DateUtils {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern(pattern);
         return previousDate.format(formatter);
     }
+
+    /**
+     * 比较两个日期的大小
+     *
+     * @param date1 日期1，格式为YYYY-MM-DD
+     * @param date2 日期2，格式为YYYY-MM-DD
+     * @return true date1 大于 date2； false date1 小于 date2
+     * @throws ParseException 格式转换异常
+     */
+    public static Boolean after(String date1, String date2) {
+        SimpleDateFormat sdf = new SimpleDateFormat(YYYY_MM_DD);
+        try {
+            Date d1 = sdf.parse(date1);
+            Date d2 = sdf.parse(date2);
+            return d1.after(d2);
+        } catch (ParseException e) {
+            log.warn("[比较两个日期的大小] 日期格式转换有误，ex:{}", ExceptionUtils.getStackTrace(e));
+        }
+        return false;
+    }
+
 }

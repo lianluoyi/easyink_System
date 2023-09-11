@@ -123,6 +123,10 @@ public class WeGroup extends RootEntity {
     @ApiModelProperty(value = "客户群标签")
     private List<WeGroupTagRelDetail> tagList;
 
+    @TableField(exist = false)
+    @ApiModelProperty(value = "过滤的群id列表")
+    private List<String> filterChatIds;
+
     public void setBeginTime(String beginTime) {
         if (StringUtils.isNotBlank(beginTime)) {
             try {

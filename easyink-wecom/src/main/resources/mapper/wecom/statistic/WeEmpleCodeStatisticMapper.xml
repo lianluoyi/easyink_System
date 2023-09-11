@@ -56,10 +56,10 @@
         WHERE
         corp_id = #{corpId}
         AND `status` NOT IN ('${@com.easyink.common.enums.CustomerStatusEnum@DRAIN.code}', '${@com.easyink.common.enums.CustomerStatusEnum@DELETE.code}')
-        <if test="empleCodeIdList != null and empleCodeIdList.size() > 0">
-            AND state IN
-            <foreach collection="empleCodeIdList" item="empleCodeId" open="(" separator="," close=")">
-                #{empleCodeId}
+        <if test="externalUserIdList != null and externalUserIdList.size() > 0">
+            AND external_userid IN
+            <foreach collection="externalUserIdList" item="externalUserId" open="(" separator="," close=")">
+                #{externalUserId}
             </foreach>
         </if>
         <if test="userIds != null and userIds.size() > 0">
@@ -205,10 +205,10 @@
         WHERE
         corp_id = #{corpId}
         AND `status` NOT IN ('${@com.easyink.common.enums.CustomerStatusEnum@DRAIN.code}', '${@com.easyink.common.enums.CustomerStatusEnum@DELETE.code}')
-        <if test="empleCodeIdList != null and empleCodeIdList.size() > 0">
-            AND state IN
-            <foreach collection="empleCodeIdList" item="empleCodeId" open="(" separator="," close=")">
-                #{empleCodeId}
+        <if test="externalUserIdList != null and externalUserIdList.size() > 0">
+            AND external_userid IN
+            <foreach collection="externalUserIdList" item="externalUserId" open="(" separator="," close=")">
+                #{externalUserId}
             </foreach>
         </if>
         <if test="userIds != null and userIds.size() > 0">

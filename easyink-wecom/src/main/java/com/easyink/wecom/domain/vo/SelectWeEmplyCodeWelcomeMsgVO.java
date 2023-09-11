@@ -26,6 +26,9 @@ public class SelectWeEmplyCodeWelcomeMsgVO {
      */
     private String scenario;
 
+    @ApiModelProperty("获客链接url")
+    private String qrCode;
+
     /**
      * 欢迎语-文本
      */

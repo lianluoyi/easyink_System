@@ -81,6 +81,7 @@ public enum ResultTip {
     NO_OFFICIAL_ACCOUNT_CONFIG(1024,"未配置公众号，请联系管理员前往【系统设置】配置"),
     TIP_LOCK_CONFIG_MISSING(1025, "AppID或AppSecret错误，请重新配置"),
     TIP_ILLEGAL_TRUSTEDIP(1026, "企业可信IP配置失败"),
+    TIP_MULTIPART_FILE_NOT_EXISTS(1027, "上传的Multipart文件内容不存在"),
 
 
     //运营模块返回码
@@ -170,6 +171,12 @@ public enum ResultTip {
     TIP_NO_EFFECTIVE_TAG(2092,"标签不存在"),
     TIP_NO_EXPORT_DATA(2093, "没有要导出的数据"),
     TIP_FAIL_RE_UPLOAD_FILE(2094, "重新上传文件获取路径失败，请联系管理员检查配置"),
+    TIP_DELETE_ASSISTANT_LINK_NO_FIND(2095, "没有找到需要删除的获客链接"),
+    TIP_DELETE_EMPLE_CHANNEL_NO_FIND(2096, "没有找到需要删除的自定义渠道"),
+    TIP_EMPLE_CHANNEL_REPEAT(2097, "自定义渠道名称已存在"),
+    TIP_ASSISTANT_NOT_FIND(2098, "获客链接信息未找到"),
+    TIP_MESSAGE_PUSH_EXTRA_NUM(2099, "每次最多可给1万个客户群发，当前已超出，请分批群发"),
+    TIP_GET_CORP_QUOTA_FAIL(2100, "未从企微获取到企业获客助手链接额度信息"),
 
     //员工模块错误码
     TIP_PARAM_NAME_MISSING(3001, "请填写完整的员工信息"),

@@ -45,6 +45,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.text.ParseException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 /**
  * 类名： 群发消息服务类
@@ -158,9 +159,13 @@ public class WeCustomerMessagePushServiceImpl implements WeCustomerMessagePushSe
         // 发给客户
         if (WeConstans.SEND_MESSAGE_CUSTOMER.equals(customerMessagePushDTO.getPushType())) {
             //查询客户信息列表
-            customers.addAll(getExternalUserIds(corpId, customerMessagePushDTO.getPushRange(), customerMessagePushDTO.getStaffId(), customerMessagePushDTO.getDepartment(), customerMessagePushDTO.getTag(), customerMessagePushDTO.getFilterTags(), customerMessagePushDTO.getGender(), customerMessagePushDTO.getCustomerStartTime(), customerMessagePushDTO.getCustomerEndTime()));
+            customers.addAll(getExternalUserIds(corpId, customerMessagePushDTO.getPushRange(), customerMessagePushDTO.getStaffId(), customerMessagePushDTO.getDepartment(), customerMessagePushDTO.getTag(), customerMessagePushDTO.getFilterTags(), customerMessagePushDTO.getGender(), customerMessagePushDTO.getCustomerStartTime(), customerMessagePushDTO.getCustomerEndTime(), customerMessagePushDTO.getFilterUsers(), customerMessagePushDTO.getFilterDepartments()));
             if (CollectionUtils.isEmpty(customers)) {
                 throw new CustomException(ResultTip.TIP_NO_CUSTOMER);
+            }
+            // 判断发送的客户是否超出最大限制
+            if (customers.size() >= WeConstans.MAX_SEND_CNT) {
+                throw new CustomException(ResultTip.TIP_MESSAGE_PUSH_EXTRA_NUM);
             }
         } else {
             //发给客户群
@@ -187,17 +192,56 @@ public class WeCustomerMessagePushServiceImpl implements WeCustomerMessagePushSe
                 if (CollectionUtils.isEmpty(staffIds)) {
                     throw new CustomException(ResultTip.TIP_CHECK_STAFF);
                 }
+                // 需要过滤的群组id
+                List<String> filterChatIds = new ArrayList<>();
+                // 过滤员工
+                if (StringUtils.isNotBlank(customerMessagePushDTO.getFilterUsers())) {
+                    weGroup.setUserIds(customerMessagePushDTO.getFilterUsers());
+                    filterChatIds.addAll(getFilterChatIds(weGroup));
+                }
+                // 过滤部门下的员工所属的群聊id
+                if (StringUtils.isNotBlank(customerMessagePushDTO.getFilterDepartments())) {
+                    List<String> userIdsByFilterDepartment = weUserService.listOfUserId(loginUser.getCorpId(), customerMessagePushDTO.getFilterDepartments().split(StrUtil.COMMA));
+                    // 不为空，查询部门下的员工所属的群id列表
+                    if (CollectionUtils.isNotEmpty(userIdsByFilterDepartment)) {
+                        weGroup.setUserIds(StringUtils.join(userIdsByFilterDepartment, WeConstans.COMMA));
+                        filterChatIds.addAll(getFilterChatIds(weGroup));
+                    }
+                }
                 customerMessagePushDTO.setStaffId(StringUtils.join(staffIds, WeConstans.COMMA));
                 //通过员工id查询群列表
                 weGroup.setUserIds(customerMessagePushDTO.getStaffId());
+                // 设置过滤群组id
+                weGroup.setFilterChatIds(filterChatIds);
                 //查出权限下的群
                 groups.addAll(weGroupService.selectWeGroupList(weGroup));
+                // 设置权限下的群的群主id，作为通知条件
+                customerMessagePushDTO.setStaffId(StringUtils.join(groups.stream().map(WeGroup::getOwner).distinct().collect(Collectors.toList()), WeConstans.COMMA));
             }
             if (CollectionUtils.isEmpty(groups)) {
                 throw new CustomException(ResultTip.TIP_NO_GROUP);
             }
         }
         return CollectionUtils.isEmpty(customers) ? groups.size() : customers.size();
+    }
+
+    /**
+     * 获取需要过滤的群id列表
+     *
+     * @param weGroup {@link WeGroup}
+     * @return 群id列表
+     */
+    private List<String> getFilterChatIds(WeGroup weGroup) {
+        if (weGroup == null || StringUtils.isBlank(weGroup.getCorpId())) {
+            return Collections.emptyList();
+        }
+        // 根据条件获取群信息
+        List<WeGroup> weGroups = weGroupService.selectWeGroupList(weGroup);
+        if (CollectionUtils.isEmpty(weGroups)) {
+            return Collections.emptyList();
+        }
+        // 需要过滤的群组id
+        return weGroups.stream().map(WeGroup::getChatId).collect(Collectors.toList());
     }
 
     private void sendMessage(CustomerMessagePushDTO customerMessagePushDTO, Long messageId, List<WeCustomer> customers) throws ParseException, JsonProcessingException {
@@ -332,29 +376,48 @@ public class WeCustomerMessagePushServiceImpl implements WeCustomerMessagePushSe
      * @param customerMessagePushDTO
      */
     private void buildUserAndDepartmentInfo(String corpId, String department, String staffId, CustomerMessagePushDTO customerMessagePushDTO) {
+        // 所属部门不为空，查找所属部门的信息
         if (StringUtils.isNotBlank(department)) {
-            final List<WeDepartment> departments = departmentService.list(new LambdaQueryWrapper<WeDepartment>()
-                    .eq(WeDepartment::getCorpId, corpId)
-                    .in(WeDepartment::getId, Arrays.asList(department.split(StrUtil.COMMA))));
-            List<DepartmentVO> departmentList = new ArrayList<>();
-            for (WeDepartment item : departments) {
-                DepartmentVO departmentVO = new DepartmentVO(String.valueOf(item.getId()), item.getName(), String.valueOf(item.getParentId()), item.getMainDepartmentName());
-                departmentList.add(departmentVO);
-            }
-            customerMessagePushDTO.setDepartmentList(departmentList);
+            customerMessagePushDTO.setDepartmentList(getDepartmentInfo(department, corpId));
         }
+        // 所属员工不为空，查找所属员工的信息
         if (StringUtils.isNotBlank(staffId)) {
-            final List<WeUser> users = weUserService.list(new LambdaQueryWrapper<WeUser>()
-                    .eq(WeUser::getCorpId, corpId)
-                    .in(WeUser::getUserId, Arrays.asList(staffId.split(StrUtil.COMMA))));
-            List<UserVO> userList = new ArrayList<>();
-            for (WeUser item : users) {
-                UserVO userVO = new UserVO();
-                BeanUtils.copyProperties(item, userVO);
-                userList.add(userVO);
-            }
-            customerMessagePushDTO.setUserList(userList);
+            customerMessagePushDTO.setUserList(weUserService.getUserInfo(staffId, corpId));
         }
+        // 过滤部门不为空，查找过滤部门的信息
+        if (StringUtils.isNotBlank(customerMessagePushDTO.getFilterDepartments())) {
+            customerMessagePushDTO.setFilterDepartmentList(getDepartmentInfo(customerMessagePushDTO.getFilterDepartments(), corpId));
+        }
+        // 过滤员工不为空，查找过滤员工的信息
+        if (StringUtils.isNotBlank(customerMessagePushDTO.getFilterUsers())) {
+            customerMessagePushDTO.setFilterUserList(weUserService.getUserInfo(customerMessagePushDTO.getFilterUsers(), corpId));
+        }
+    }
+
+    /**
+     * 获取部门信息
+     *
+     * @param department 部门id，用逗号分隔
+     * @param corpId 企业ID
+     * @return 部门信息列表
+     */
+    private List<DepartmentVO> getDepartmentInfo(String department, String corpId) {
+        if (StringUtils.isAnyBlank(department, corpId)) {
+            return Collections.emptyList();
+        }
+        List<DepartmentVO> departmentVOList = new ArrayList<>();
+        // 获取部门信息
+        List<WeDepartment> departments = departmentService.list(new LambdaQueryWrapper<WeDepartment>()
+                                                          .eq(WeDepartment::getCorpId, corpId)
+                                                          .in(WeDepartment::getId, Arrays.asList(department.split(StrUtil.COMMA))));
+        if (CollectionUtils.isEmpty(departments)) {
+            return Collections.emptyList();
+        }
+        for (WeDepartment item : departments) {
+            DepartmentVO departmentVO = new DepartmentVO(String.valueOf(item.getId()), item.getName(), String.valueOf(item.getParentId()), item.getMainDepartmentName());
+            departmentVOList.add(departmentVO);
+        }
+        return departmentVOList;
     }
 
     @Override
@@ -445,16 +508,18 @@ public class WeCustomerMessagePushServiceImpl implements WeCustomerMessagePushSe
     /**
      * 客户的外部联系人id列表，仅在chat_type为single时有效，不可与sender同时为空，最多可传入1万个客户
      *
-     * @param corpId     企业id
-     * @param pushRange  消息范围 0 全部客户  1 指定客户
-     * @param staffId    员工id
-     * @param tag        客户标签id列表
-     * @param filterTags 过滤用的标签
-     * @param gender     性别
+     * @param corpId            企业id
+     * @param pushRange         消息范围 0 全部客户  1 指定客户
+     * @param staffId           员工id
+     * @param tag               客户标签id列表
+     * @param filterTags        过滤用的标签
+     * @param gender            性别
+     * @param filterUsers       过滤员工
+     * @param filterDepartments
      * @return {@link List<WeCustomer>} 客户的外部联系人id列表
      */
     @Override
-    public List<WeCustomer> getExternalUserIds(String corpId, String pushRange, String staffId, String departmentIds, String tag, String filterTags, Integer gender, Date startTime, Date endTime) {
+    public List<WeCustomer> getExternalUserIds(String corpId, String pushRange, String staffId, String departmentIds, String tag, String filterTags, Integer gender, Date startTime, Date endTime, String filterUsers, String filterDepartments) {
         //校验CorpId
         StringUtils.checkCorpId(corpId);
         if (pushRange.equals(WeConstans.SEND_MESSAGE_CUSTOMER_ALL)) {
@@ -472,6 +537,8 @@ public class WeCustomerMessagePushServiceImpl implements WeCustomerMessagePushSe
             weCustomer.setCorpId(corpId);
             weCustomer.setTagIds(tag);
             weCustomer.setFilterTags(filterTags);
+            weCustomer.setFilterUsers(filterUsers);
+            weCustomer.setFilterDepartments(filterDepartments);
             weCustomer.setGender(String.valueOf(gender));
             weCustomer.setCustomerStartTime(startTime);
             weCustomer.setCustomerEndTime(endTime);

@@ -139,4 +139,13 @@ public interface WeCorpAccountService extends IService<WeCorpAccount> {
      * @param corpId 企业ID
      */
     void delWeCorpAccount(String corpId);
+
+    /**
+     * 获取url路径
+     *
+     * @param url 文件url
+     * @param corpId 企业ID
+     * @return 实际url路径
+     */
+    String getUrl(String url, String corpId);
 }

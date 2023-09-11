@@ -120,6 +120,9 @@
             AND wc.corp_id = #{corpId}
             AND wfor.commit_flag = TRUE
             AND wfor.`external_user_id` IS NOT NULL
+        <if test="channelType != null">
+            AND wfor.`channel_type`= #{channelType}
+        </if>
         ORDER BY wfor.`commit_time` DESC
     </select>
 

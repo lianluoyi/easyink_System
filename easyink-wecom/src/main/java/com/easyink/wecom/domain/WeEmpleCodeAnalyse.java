@@ -34,6 +34,10 @@ public class WeEmpleCodeAnalyse {
     @TableField("emple_code_id")
     private Long empleCodeId;
 
+    @ApiModelProperty("获客链接渠道id")
+    @TableField("channel_id")
+    private Long channelId;
+
     @ApiModelProperty(value = "企业成员userId")
     @TableField("user_id")
     private String userId;

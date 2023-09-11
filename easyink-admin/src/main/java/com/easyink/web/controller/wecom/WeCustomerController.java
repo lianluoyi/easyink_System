@@ -1,7 +1,5 @@
 package com.easyink.web.controller.wecom;
 
-import cn.hutool.core.util.PageUtil;
-import com.dtflys.forest.annotation.Get;
 import com.easyink.common.annotation.Log;
 import com.easyink.common.constant.WeConstans;
 import com.easyink.common.core.controller.BaseController;
@@ -11,24 +9,19 @@ import com.easyink.common.core.page.TableDataInfo;
 import com.easyink.common.enums.BusinessType;
 import com.easyink.common.utils.PageInfoUtil;
 import com.easyink.common.utils.StringUtils;
-import com.easyink.common.utils.sql.SqlUtil;
-import com.easyink.wecom.domain.dto.WeCustomerSearchDTO;
-import com.easyink.wecom.domain.vo.AllocateWeCustomerResp;
 import com.easyink.wecom.domain.WeCustomer;
+import com.easyink.wecom.domain.dto.WeCustomerSearchDTO;
 import com.easyink.wecom.domain.dto.customer.EditCustomerDTO;
 import com.easyink.wecom.domain.dto.tag.RemoveWeCustomerTagDTO;
 import com.easyink.wecom.domain.entity.WeCustomerExportDTO;
-import com.easyink.wecom.domain.vo.WeLeaveAllocateVO;
 import com.easyink.wecom.domain.vo.WeMakeCustomerTagVO;
 import com.easyink.wecom.domain.vo.customer.WeCustomerSumVO;
 import com.easyink.wecom.domain.vo.customer.WeCustomerUserListVO;
 import com.easyink.wecom.domain.vo.customer.WeCustomerVO;
 import com.easyink.wecom.login.util.LoginTokenService;
 import com.easyink.wecom.service.WeCustomerService;
-import com.github.pagehelper.PageHelper;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiParam;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -37,7 +30,6 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 /**
@@ -122,7 +114,12 @@ public class WeCustomerController extends BaseController {
     @ApiOperation("导出企业微信客户列表")
     public <T> AjaxResult<T> export(@RequestBody WeCustomerExportDTO dto) {
         dto.setCorpId(LoginTokenService.getLoginUser().getCorpId());
-        return weCustomerService.export(dto);
+        log.info("[导出客户]开始导出,corpId:{}", dto.getCorpId());
+        long startTime = System.currentTimeMillis();
+        AjaxResult<T> export = weCustomerService.export(dto);
+        long endTime = System.currentTimeMillis();
+        log.info("[导出客户]导出完成,corpId:{} , time:{} ", dto.getCorpId(), ( endTime - startTime) /  1000.00D);
+        return export;
     }
 
     /**

@@ -3,28 +3,27 @@ package com.easyink.wecom.service.impl.statistic;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.easyink.common.constant.GenConstants;
+import com.easyink.common.constant.emple.CustomerAssistantConstants;
 import com.easyink.common.core.domain.AjaxResult;
 import com.easyink.common.core.domain.entity.WeCorpAccount;
 import com.easyink.common.core.domain.wecom.WeUser;
 import com.easyink.common.enums.CustomerStatusEnum;
+import com.easyink.common.enums.EmployCodeSourceEnum;
 import com.easyink.common.enums.ResultTip;
 import com.easyink.common.exception.CustomException;
 import com.easyink.common.utils.DateUtils;
 import com.easyink.common.utils.ExceptionUtil;
+import com.easyink.common.utils.PageInfoUtil;
 import com.easyink.common.utils.poi.ExcelUtil;
 import com.easyink.common.utils.sql.BatchInsertUtil;
-import com.easyink.wecom.domain.WeEmpleCodeAnalyse;
-import com.easyink.wecom.domain.WeEmpleCodeStatistic;
-import com.easyink.wecom.domain.WeFlowerCustomerRel;
+import com.easyink.wecom.domain.*;
 import com.easyink.wecom.domain.dto.statistics.EmpleCodeStatisticDTO;
 import com.easyink.wecom.domain.redis.RedisEmpleStatisticBaseModel;
 import com.easyink.wecom.domain.vo.statistics.emplecode.*;
+import com.easyink.wecom.mapper.WeEmpleCodeChannelMapper;
 import com.easyink.wecom.mapper.WeUserMapper;
 import com.easyink.wecom.mapper.statistic.WeEmpleCodeStatisticMapper;
-import com.easyink.wecom.service.WeCorpAccountService;
-import com.easyink.wecom.service.WeEmpleCodeAnalyseService;
-import com.easyink.wecom.service.WeEmpleCodeService;
-import com.easyink.wecom.service.WeFlowerCustomerRelService;
+import com.easyink.wecom.service.*;
 import com.easyink.wecom.service.statistic.WeEmpleCodeStatisticService;
 import com.easyink.wecom.utils.redis.EmpleStatisticRedisCache;
 import lombok.extern.slf4j.Slf4j;
@@ -56,27 +55,29 @@ public class WeEmpleCodeStatisticImpl extends ServiceImpl<WeEmpleCodeStatisticMa
     private final WeEmpleCodeService weEmpleCodeService;
 
     private final WeCorpAccountService weCorpAccountService;
+    private final WeEmpleCodeChannelMapper weEmpleCodeChannelMapper;
 
     /**
      * 活码维度报表名称
      */
-    private final String EMPLE_NAME = "活码统计报表（活码维度）";
+    private final String EMPLE_NAME = "渠道统计报表（活码维度）";
     /**
      * 员工维度报表名称
      */
-    private final String EMPLE_USER_NAME = "活码统计报表（员工维度）";
+    private final String EMPLE_USER_NAME = "渠道统计报表（员工维度）";
     /**
      * 日期维度报表名称
      */
-    private final String EMPLE_DATE_NAME = "活码统计报表（日期维度）";
+    private final String EMPLE_DATE_NAME = "渠道统计报表（日期维度）";
 
     @Lazy
-    public WeEmpleCodeStatisticImpl(WeUserMapper weUserMapper, WeFlowerCustomerRelService weFlowerCustomerRelService, WeEmpleCodeAnalyseService weEmpleCodeAnalyseService, WeEmpleCodeService weEmpleCodeService, WeCorpAccountService weCorpAccountService) {
+    public WeEmpleCodeStatisticImpl(WeUserMapper weUserMapper, WeFlowerCustomerRelService weFlowerCustomerRelService, WeEmpleCodeAnalyseService weEmpleCodeAnalyseService, WeEmpleCodeService weEmpleCodeService, WeCorpAccountService weCorpAccountService, WeEmpleCodeChannelMapper weEmpleCodeChannelMapper) {
         this.weUserMapper = weUserMapper;
         this.weFlowerCustomerRelService = weFlowerCustomerRelService;
         this.weEmpleCodeAnalyseService = weEmpleCodeAnalyseService;
         this.weEmpleCodeService = weEmpleCodeService;
         this.weCorpAccountService = weCorpAccountService;
+        this.weEmpleCodeChannelMapper = weEmpleCodeChannelMapper;
     }
 
     /**
@@ -103,15 +104,17 @@ public class WeEmpleCodeStatisticImpl extends ServiceImpl<WeEmpleCodeStatisticMa
             // 处理缓存数据
             handleTotalRedisData(dto.getEndDate(), dto.getCorpId(), dto.getEmpleCodeIdList(), dto.getUserIds(), baseVO);
         }
+        // 用于查询的state来源列表
+        List<String> findStateList = getFindStateList(dto.getEmpleCodeIdList());
         // 存在数据，则查询活码对应的截止当前时间下，新增客户数
         LambdaQueryWrapper<WeFlowerCustomerRel> queryWrapper = new LambdaQueryWrapper<>();
         // 统计we_flower_customer_rel表中state = 活码id，status != 1,2，时间为截止日期（YYYY-MM-DD HH:MM:DD） 的记录数
         queryWrapper.eq(WeFlowerCustomerRel::getCorpId, dto.getCorpId())
                 .notIn(WeFlowerCustomerRel::getStatus, CustomerStatusEnum.DRAIN.getCode(), CustomerStatusEnum.DELETE.getCode())
-                .gt(WeFlowerCustomerRel::getCreateTime, DateUtils.parseBeginDay(dto.getBeginDate()))
-                .lt(WeFlowerCustomerRel::getCreateTime, DateUtils.parseEndDay(dto.getEndDate()));
-        if (CollectionUtils.isNotEmpty(dto.getEmpleCodeIdList())) {
-            queryWrapper.in(WeFlowerCustomerRel::getState, dto.getEmpleCodeIdList());
+                .ge(WeFlowerCustomerRel::getCreateTime, DateUtils.parseBeginDay(dto.getBeginDate()))
+                .le(WeFlowerCustomerRel::getCreateTime, DateUtils.parseEndDay(dto.getEndDate()));
+        if (CollectionUtils.isNotEmpty(findStateList)) {
+            queryWrapper.in(WeFlowerCustomerRel::getState, findStateList);
         }
         if (CollectionUtils.isNotEmpty(dto.getUserIds())) {
             queryWrapper.in(WeFlowerCustomerRel::getUserId, dto.getUserIds());
@@ -130,16 +133,13 @@ public class WeEmpleCodeStatisticImpl extends ServiceImpl<WeEmpleCodeStatisticMa
      */
     @Override
     public List<EmpleCodeUserVO> listEmpleUser(EmpleCodeStatisticDTO dto) {
-        if (dto == null || StringUtils.isBlank(dto.getCorpId())) {
-            throw new CustomException(ResultTip.TIP_MISS_CORP_ID);
-        }
-        // 活码id为空，无查询数据
-        if (CollectionUtils.isEmpty(dto.getEmpleCodeIdList())) {
-            return new ArrayList<>();
+        if (dto == null || StringUtils.isBlank(dto.getCorpId()) || CollectionUtils.isEmpty(dto.getEmpleCodeIdList())) {
+            throw new CustomException(ResultTip.TIP_PARAM_MISSING);
         }
         // 设置部门下的员工id列表
         setUserListByDepartment(dto);
         // 获取统计数据
+        PageInfoUtil.startPage();
         List<EmpleCodeUserVO> resultList = this.baseMapper.listEmpleUser(dto);
         if (CollectionUtils.isEmpty(resultList)) {
             return new ArrayList<>();
@@ -149,8 +149,13 @@ public class WeEmpleCodeStatisticImpl extends ServiceImpl<WeEmpleCodeStatisticMa
             // 处理缓存的数据
             handleUserRedisData(dto.getEndDate(), dto.getCorpId(), dto.getEmpleCodeIdList(), resultList);
         }
-        // 获取截止当前时间，员工对应的新增客户数
-        List<EmpleCodeUserVO> userCustomerRels = this.baseMapper.listUserCustomerRel(dto.getCorpId(), dto.getEmpleCodeIdList(), dto.getUserIds(), DateUtils.parseEndDay(dto.getEndDate()), DateUtils.parseBeginDay(dto.getBeginDate()));
+        // 获取analyse表所有的客户id列表
+        List<String> externalUseridList = getFindExternalUserIdList(dto);
+        if (CollectionUtils.isEmpty(externalUseridList)) {
+            return resultList;
+        }
+        // 获取截止当前时间每个员工对应的有效客户数
+        List<EmpleCodeUserVO> userCustomerRels = this.baseMapper.listUserCustomerRel(dto.getCorpId(), externalUseridList, dto.getUserIds(), DateUtils.parseEndDay(dto.getEndDate()), DateUtils.parseBeginDay(dto.getBeginDate()));
         if (CollectionUtils.isNotEmpty(userCustomerRels)) {
             // 为对应的员工设置截止当前时间，员工对应的新增客户数
             for (EmpleCodeUserVO empleCodeUserVO : resultList) {
@@ -187,15 +192,13 @@ public class WeEmpleCodeStatisticImpl extends ServiceImpl<WeEmpleCodeStatisticMa
      */
     @Override
     public List<EmpleCodeVO> listEmple(EmpleCodeStatisticDTO dto) {
-        if (dto == null || StringUtils.isBlank(dto.getCorpId())) {
-            throw new CustomException(ResultTip.TIP_MISS_CORP_ID);
-        }
-        if (CollectionUtils.isEmpty(dto.getEmpleCodeIdList())) {
-            return new ArrayList<>();
+        if (dto == null || StringUtils.isBlank(dto.getCorpId()) || CollectionUtils.isEmpty(dto.getEmpleCodeIdList())) {
+            throw new CustomException(ResultTip.TIP_PARAM_MISSING);
         }
         // 设置部门下的员工id列表
         setUserListByDepartment(dto);
         // 获取统计数据
+        PageInfoUtil.startPage();
         List<EmpleCodeVO> resultList = this.baseMapper.listEmple(dto);
         if (CollectionUtils.isEmpty(resultList)) {
             return new ArrayList<>();
@@ -205,14 +208,25 @@ public class WeEmpleCodeStatisticImpl extends ServiceImpl<WeEmpleCodeStatisticMa
             // 处理缓存的数据
             handleEmpleRedisData(dto.getEndDate(), dto.getCorpId(), dto.getEmpleCodeIdList(), resultList, dto.getUserIds());
         }
-        // 获取截止查询时间，活码对应的新增客户数
-        List<EmpleCodeVO> empleUserCustomerRels = this.baseMapper.listStateUserCustomerRel(dto.getCorpId(), dto.getEmpleCodeIdList(), dto.getUserIds(), DateUtils.parseEndDay(dto.getEndDate()), DateUtils.parseBeginDay(dto.getBeginDate()));
+        // 用于查询的state来源列表
+        List<String> findStateList = getFindStateList(dto.getEmpleCodeIdList());
+        if (CollectionUtils.isEmpty(findStateList)) {
+            return resultList;
+        }
+        // 获取截止当前时间每个活码对应的有效客户
+        List<EmpleCodeVO> empleUserCustomerRels = this.baseMapper.listStateUserCustomerRel(dto.getCorpId(), findStateList, dto.getUserIds(), DateUtils.parseEndDay(dto.getEndDate()), DateUtils.parseBeginDay(dto.getBeginDate()));
         if (CollectionUtils.isNotEmpty(empleUserCustomerRels)) {
             // 根据活码id为对应的活码设置截止当前时间，员工对应的新增客户数
             for (EmpleCodeVO empleCodeVO : resultList) {
                 for (EmpleCodeVO empleRels : empleUserCustomerRels) {
+                    // 如果是获客链接的state，截取掉"hk"后，到we_emple_code_channel表查询对应的获客链接id
+                    if (empleRels.getEmpleCodeId().startsWith(CustomerAssistantConstants.STATE_PREFIX)) {
+                        String channelId = empleRels.getEmpleCodeId().replace(CustomerAssistantConstants.STATE_PREFIX, StringUtils.EMPTY);
+                        WeEmpleCodeChannel channelInfo = weEmpleCodeChannelMapper.getChannelById(channelId);
+                        empleRels.setEmpleCodeId(String.valueOf(channelInfo.getEmpleCodeId()));
+                    }
                     if (empleCodeVO.getEmpleCodeId().equals(empleRels.getEmpleCodeId())) {
-                        empleCodeVO.setCurrentNewCustomerCnt(empleRels.getCurrentNewCustomerCnt());
+                        empleCodeVO.handleCurrentNewCustomerCnt(empleRels.getCurrentNewCustomerCnt());
                     }
                 }
             }
@@ -270,8 +284,13 @@ public class WeEmpleCodeStatisticImpl extends ServiceImpl<WeEmpleCodeStatisticMa
             // 处理缓存数据
             handleDateRedisData(dto.getEndDate(), dto.getCorpId(), dto.getEmpleCodeIdList(), dto.getUserIds(), statisticList);
         }
-        // 获取截止当前时间，日期下，所有的活码对应的新增客户数
-        List<EmpleCodeDateVO> empleUserCustomerRels = this.baseMapper.listEmpleDateUserCustomerRel(dto.getCorpId(), dto.getEmpleCodeIdList(), dto.getUserIds(), DateUtils.parseEndDay(dto.getEndDate()));
+        // 获取analyse表所有的客户id列表
+        List<String> externalUseridList = getFindExternalUserIdList(dto);
+        if (CollectionUtils.isEmpty(externalUseridList)) {
+            return handleResultList(statisticList, dto);
+        }
+        // 获取截止当前时间每个日期对应的有效客户数
+        List<EmpleCodeDateVO> empleUserCustomerRels = this.baseMapper.listEmpleDateUserCustomerRel(dto.getCorpId(), externalUseridList, dto.getUserIds(), DateUtils.parseEndDay(dto.getEndDate()));
         // 为对应的日期设置截止当前时间，员工对应的新增客户数
         if (CollectionUtils.isNotEmpty(empleUserCustomerRels)) {
             for (EmpleCodeDateVO empleCodeDateVO : statisticList) {
@@ -283,8 +302,7 @@ public class WeEmpleCodeStatisticImpl extends ServiceImpl<WeEmpleCodeStatisticMa
             }
         }
         // 组装结果数据
-        List<EmpleCodeDateVO> resultList = handleResultList(statisticList, dto);
-        return resultList;
+        return handleResultList(statisticList, dto);
     }
 
     /**
@@ -567,5 +585,69 @@ public class WeEmpleCodeStatisticImpl extends ServiceImpl<WeEmpleCodeStatisticMa
         } else {
             dto.setUserIds(weUserList.stream().map(WeUser::getUserId).collect(Collectors.toList()));
         }
+    }
+
+    /**
+     * 获取查询的客户id列表条件
+     *
+     * @param dto {@link EmpleCodeStatisticDTO}
+     * @return 客户id列表
+     */
+    private List<String> getFindExternalUserIdList(EmpleCodeStatisticDTO dto) {
+        if (dto == null || StringUtils.isAnyBlank(dto.getBeginDate(), dto.getEndDate(), dto.getCorpId()) || CollectionUtils.isEmpty(dto.getEmpleCodeIdList())) {
+            return Collections.emptyList();
+        }
+        // 根据日期，活码id/获客链接id，获取查询的活码/获客链接下对应的analyse表统计数据
+        List<WeEmpleCodeAnalyse> analyseList = weEmpleCodeAnalyseService.getAnalyseDataByEmpleCodeId(dto.getCorpId(), dto.getBeginDate(), dto.getEndDate(), dto.getEmpleCodeIdList());
+        if (CollectionUtils.isEmpty(analyseList)) {
+            return Collections.emptyList();
+        }
+        // 没有员工id查询条件，则查询所有的员工id列表数据
+        if (CollectionUtils.isEmpty(dto.getUserIds())) {
+            dto.setUserIds(analyseList.stream().map(WeEmpleCodeAnalyse::getUserId).collect(Collectors.toList()));
+        }
+        // 获取analyse表所有的客户id列表
+        return analyseList.stream().map(WeEmpleCodeAnalyse::getExternalUserId).collect(Collectors.toList());
+    }
+
+    /**
+     * 获取员工活码/获客链接查询的state来源条件列表
+     *
+     * @param empleCodeIdList 活码/获客链接id列表
+     * @return 查询state来源条件列表
+     */
+    private List<String> getFindStateList(List<Long> empleCodeIdList) {
+        if (CollectionUtils.isEmpty(empleCodeIdList)) {
+            return Collections.emptyList();
+        }
+        List<String> findStateList;
+        // 查询活码/获客链接信息
+        List<WeEmpleCode> weEmpleCodes = weEmpleCodeService.listByIds(empleCodeIdList);
+        if (CollectionUtils.isEmpty(weEmpleCodes)) {
+            return Collections.emptyList();
+        }
+        // 获取查询的活码中是获客链接的id列表
+        List<Long> assistantIdList = weEmpleCodes.stream()
+                .filter(item -> EmployCodeSourceEnum.CUSTOMER_ASSISTANT.getSource().equals(item.getSource()))
+                .map(WeEmpleCode::getId).collect(Collectors.toList());
+        // 没有获客链接相关的id列表，则表示全部都是员工活码或群活码的id
+        if (CollectionUtils.isEmpty(assistantIdList)) {
+            findStateList = empleCodeIdList.stream().map(Object::toString).collect(Collectors.toList());
+        } else {
+            // 存在获客链接id，筛选掉获客id
+            findStateList = weEmpleCodes.stream()
+                    .map(WeEmpleCode::getId)
+                    .filter(assistantIdList::contains)
+                    .map(Object::toString).collect(Collectors.toList());
+            // 根据获客链接id列表获取所有的渠道id列表（包含已删除的渠道）
+            List<Long> channelIdList = weEmpleCodeChannelMapper.getChannelIdByEmpleIds(assistantIdList);
+            // 不为空，将"hk_"拼接上渠道id，作为获客链接的state来源添加到查询列表
+            if (CollectionUtils.isNotEmpty(channelIdList)) {
+                for (Long channelId : channelIdList) {
+                    findStateList.add(CustomerAssistantConstants.STATE_PREFIX + channelId.toString());
+                }
+            }
+        }
+        return findStateList;
     }
 }

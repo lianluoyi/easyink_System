@@ -67,6 +67,19 @@ public class WxCpXmlMessageVO extends WxCpXmlMessage {
     @XStreamConverter(value = XStreamCDataConverter.class)
     private String mainDepartment;
 
+    /******************************************************
+     * 以下字段为获客助手增加字段
+     *******************************************************/
+    @XStreamAlias("LinkId")
+    @XStreamConverter(value = XStreamCDataConverter.class)
+    private String linkId;
+
+    @XStreamAlias("ExpireTime")
+    private Long expireTime;
+
+    @XStreamAlias("ExpireQuotaNum")
+    private Integer expireQuotaNum;
+
     /********************************************************
      * 以下字段为三方应用增加字段
      ********************************************************/
