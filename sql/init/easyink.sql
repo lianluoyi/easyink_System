@@ -271,13 +271,13 @@ INSERT INTO `sys_job`
 VALUES (6, '定时消息群发', 'SYSTEM', 'ryTask.messageTask', '0 */2 * * * ?', '1', '1', '0', 'admin', '2021-02-10 10:07:22',
         'admin', '2021-07-27 09:09:55', '');
 INSERT INTO `sys_job`
-VALUES (7, '联系客户统计数据拉取', 'SYSTEM', 'UserBehaviorDataTak.getUserBehaviorData()', '0 30 5 * * ?', '1', '1', '0', 'admin',
+VALUES (7, '联系客户统计数据拉取', 'SYSTEM', 'UserBehaviorDataTak.getUserBehaviorData()', '0 30 6 * * ?', '1', '1', '0', 'admin',
         '2021-02-25 16:47:59', 'admin', '2021-02-25 23:45:03', '');
 INSERT INTO `sys_job`
-VALUES (8, '群聊数据统计数据拉取', 'SYSTEM', 'GroupChatStatisticTask.getGroupChatData()', '0 0 6 * * ?', '1', '1', '0', 'admin',
+VALUES (8, '群聊数据统计数据拉取', 'SYSTEM', 'GroupChatStatisticTask.getGroupChatData()', '0 0 7 * * ?', '1', '1', '0', 'admin',
         '2021-02-25 16:49:44', '', '2021-02-25 23:45:05', '');
 INSERT INTO `sys_job`
-VALUES (9, '首页数据统计', 'SYSTEM', 'PageHomeDataTask.getPageHomeDataData()', '0 30 6 * * ?', '1', '1', '0', 'admin',
+VALUES (9, '首页数据统计', 'SYSTEM', 'PageHomeDataTask.getPageHomeDataData()', '0 30 7 * * ?', '1', '1', '0', 'admin',
         '2021-02-25 16:52:23', '', '2021-02-25 23:45:07', '');
 INSERT INTO `sys_job`
 VALUES (10, '删除过期素材', 'SYSTEM', 'RemoveMaterialTask.removeExpireMaterial()', '0 0 4 * * ? ', '1', '1', '0', 'admin',
@@ -316,7 +316,7 @@ INSERT INTO `sys_job`
 VALUES (20, '定期查询客户分配情况任务', 'SYSTEM', 'transferResultTask.execute', '0 */5 * * * ?', '2', '1', '0', 'admin',
         '2021-12-01 18:25:03', 'admin', '2021-12-01 18:25:51', '');
 INSERT INTO `sys_job`
-VALUES (21, '数据统计定时任务', 'SYSTEM', 'DataStatisticsTask.getDataStatistics()', '0 30 7 * * ?', '2', '1', '0', 'admin',
+VALUES (21, '数据统计定时任务', 'SYSTEM', 'DataStatisticsTask.getDataStatistics()', '0 0 8 * * ?', '2', '1', '0', 'admin',
         '2023-02-13 16:34:13', '', NULL, '');
 -- 2023--6-8 silver_chariot 增加定时任务  Tower 任务: 执行批量打标签导致系统无法使用 ( https://tower.im/teams/636204/todos/69816 )
 INSERT INTO `sys_job` (`job_id`, `job_name`, `job_group`, `invoke_target`, `cron_expression`, `misfire_policy`,
@@ -333,6 +333,11 @@ INSERT INTO `sys_job`(`job_id`, `job_name`, `job_group`, `invoke_target`, `cron_
                       `concurrent`, `status`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`)
 VALUES ('24', '每日活码统计数据定时任务(传参日期格式:YYYY-MM-DD)', 'SYSTEM', 'EmpleStatisticTask.getEmpleStatisticDateData('''')', '0 0 3 * * ?', '2', '1',
         '0', 'admin', '2023-07-07 19:50:41', '', '2023-07-07 19:50:46', '');
+-- 2023-08-28 lcy 添加更新获客链接消耗情况定时任务 Tower 任务: 回调处理，应用通知、角色权限 ( https://tower.im/teams/636204/todos/73968 )
+INSERT INTO `sys_job`(`job_id`, `job_name`, `job_group`, `invoke_target`, `cron_expression`, `misfire_policy`,
+                      `concurrent`, `status`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`)
+VALUES ('25', '更新获客链接消耗情况定时任务', 'SYSTEM', 'customerAssistantSituationTask.getCustomerAssistantSituationData()', '0 0 0 * * ?', '2', '1',
+        '0', 'admin', '2023-08-28 11:09:36', '', '2023-08-28 11:09:48', '');
 
 -- ----------------------------
 -- Table structure for sys_menu
@@ -1026,8 +1031,19 @@ INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`
 INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`, `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES (2326, '导出打标任务报表', 2285, 53, '', NULL, 1, 'F', '0', '0', 'wecom:batchtag:export', '#', 'admin', '2023-06-07 09:49:51', '', NULL, '');
 -- 2023-07-10 lcy 补交initSQL Tower 任务: 初始化环境活码统计功能异常 ( https://tower.im/teams/636204/todos/71799 )
 INSERT INTO `sys_menu`(`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`, `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES (2327, '引流分析', 2312, 2, 'drainageAnalysis', NULL, 1, 'M', '0', '0', '', 'drainageAnalysis', 'admin', '2023-07-04 13:54:14', 'admin', '2023-07-05 17:42:47', '');
-INSERT INTO `sys_menu`(`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`, `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES (2328, '活码统计', 2327, 1, 'codeStatistics', 'drainageAnalysis/codeStatistics/index', 1, 'C', '0', '0', NULL, '#', 'admin', '2023-07-04 13:58:05', '', NULL, '');
-INSERT INTO `sys_menu`(`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`, `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES (2329, '导出报表', 2328, 1, '', NULL, 1, 'F', '0', '0', 'stastistic:codeStatistics:export', '#', 'admin', '2023-07-10 15:24:12', 'admin', '2023-07-10 18:10:25', '');
+INSERT INTO `sys_menu`(`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`, `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES (2328, '渠道统计', 2327, 1, 'channelStatistics', 'drainageAnalysis/channelStatistics/index', 1, 'C', '0', '0', NULL, '#', 'admin', '2023-07-04 13:58:05', '', NULL, '');
+INSERT INTO `sys_menu`(`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`, `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES (2329, '导出报表', 2328, 1, '', NULL, 1, 'F', '0', '0', 'stastistic:channelStatistics:export', '#', 'admin', '2023-07-10 15:24:12', 'admin', '2023-07-10 18:10:25', '');
+-- 2023-08-27 lcy 新增获客助手菜单和权限 Tower 任务: 回调处理，应用通知、角色权限 ( https://tower.im/teams/636204/todos/73968 )
+INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`, `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES (2330, '获客助手', 2052, 50, 'customerAssistant', 'drainageCode/customerAssistant', 1, 'C', '0', '0', NULL, '#', 'admin', '2023-08-14 10:41:34', '', NULL, '');
+INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`, `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES (2331, '获客情况', 2330, 1, '', NULL, 1, 'F', '0', '0', 'customer:assistant:situation', '#', 'admin', '2023-08-27 21:54:26', '', NULL, '');
+INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`, `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES (2332, '新增链接', 2330, 2, '', NULL, 1, 'F', '0', '0', 'customer:assistant:add', '#', 'admin', '2023-08-27 21:55:58', '', NULL, '');
+INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`, `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES (2333, '编辑链接', 2330, 3, '', NULL, 1, 'F', '0', '0', 'customer:assistant:edit', '#', 'admin', '2023-08-27 21:56:27', '', NULL, '');
+INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`, `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES (2334, '删除链接', 2330, 4, '', NULL, 1, 'F', '0', '0', 'customer:assistant:delete', '#', 'admin', '2023-08-27 21:57:02', 'admin', '2023-08-27 21:57:30', '');
+INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`, `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES (2335, '导出报表', 2330, 5, '', NULL, 1, 'F', '0', '0', 'customer:assistant:export', '#', 'admin', '2023-08-27 21:57:58', '', NULL, '');
+INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`, `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES (2336, '获客链接详情', 2052, 13, 'customerAssistantDetail', 'drainageCode/customerAssistant/detail', 1, 'P', '1', '0', '', '#', 'admin', '2023-08-17 15:42:45', 'admin', '2023-08-27 21:55:38', '');
+INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`, `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES (2337, '新增获客链接', 2052, 14, 'customerAssistantAdd', 'drainageCode/customerAssistant/add', 1, 'P', '1', '0', '', '#', 'admin', '2023-08-18 14:58:11', 'admin', '2023-08-27 21:55:33', '');
+-- 2023-08-30 lcy 前端新增路由 Tower 任务: 回调处理，应用通知、角色权限 ( https://tower.im/teams/636204/todos/73968 )
+INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`, `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES (2338, '编辑获客链接', 2052, 15, 'customerAssistantEdit', 'drainageCode/customerAssistant/add', 1, 'P', '1', '0', '', '#', 'admin', '2023-08-30 09:19:32', 'admin', '2023-08-30 09:20:07', '');
 -- ----------------------------
 -- Table structure for sys_role
 -- ----------------------------
@@ -1419,6 +1435,8 @@ CREATE TABLE `we_customer_messageoriginal`
     `group`               varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '群组名称id',
     `tag`                 varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '客户标签id列表',
     `filter_tags`         varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '过滤标签id列表',
+    `filter_users`        varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '过滤员工id列表',
+    `filter_departments`  varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '过滤部门id列表',
     `gender`              tinyint(1) NOT NULL DEFAULT 0 COMMENT '外部联系人性别 0-未知 1-男性 2-女性 -1-全部',
     `push_type`           varchar(2) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci    NOT NULL DEFAULT '' COMMENT '群发类型 0 发给客户 1 发给客户群',
     `message_type`        varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci   NOT NULL DEFAULT '' COMMENT '消息类型 0 图片消息 2视频 3文件 4 文本消息   5 链接消息   6 小程序消息 用逗号隔开',
@@ -1567,18 +1585,20 @@ CREATE TABLE `we_emple_code`
     `id`                         bigint(20) NOT NULL,
     `corp_id`                    varchar(64)   NOT NULL DEFAULT '' COMMENT '授权企业ID',
     `config_id`                  varchar(50)   NOT NULL DEFAULT '' COMMENT '新增联系方式的配置id',
+    `link_id`                    varchar(50)   NOT NULL DEFAULT '' COMMENT '获客链接id，由企微返回，用于编辑，删除获客链接',
     `code_type`                  tinyint(4) NOT NULL DEFAULT '2' COMMENT '活码类型:1:单人;2:多人;3:批量',
     `skip_verify`                tinyint(4) NOT NULL DEFAULT '1' COMMENT '自动成为好友:0：否，1：全天，2：时间段',
-    `scenario`                   varchar(300)  NOT NULL DEFAULT '' COMMENT '活动场景',
+    `scenario`                   varchar(300)  NOT NULL DEFAULT '' COMMENT '活动场景/获客链接名称',
+    `description`                varchar(64)   NOT NULL DEFAULT '' COMMENT '获客链接场景描述，最大64个字符',
     `welcome_msg`                varchar(2000) NOT NULL DEFAULT '' COMMENT '欢迎语',
     `create_by`                  varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '创建人',
     `create_time`                datetime      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `del_flag`                   tinyint(4) NOT NULL DEFAULT '0' COMMENT '0:正常;1:删除;',
-    `qr_code`                    varchar(100)  NOT NULL DEFAULT '' COMMENT '二维码链接',
+    `qr_code`                    varchar(100)  NOT NULL DEFAULT '' COMMENT '二维码链接/获客链接',
     `update_by`                  varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '更新者',
     `update_time`                datetime      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `state`                      varchar(30)   NOT NULL DEFAULT '' COMMENT '用于区分客户具体是通过哪个「联系我」添加。不能超过30个字符',
-    `source`                     tinyint(4) NOT NULL DEFAULT '0' COMMENT '来源类型：0：活码创建，1：新客建群创建',
+    `source`                     tinyint(4) NOT NULL DEFAULT '0' COMMENT '来源类型：0：活码创建，1：新客建群创建，3：获客链接创建',
     `remark_type`                tinyint(2) NOT NULL DEFAULT '0' COMMENT '备注类型：0：不备注，1：在昵称前，2：在昵称后',
     `remark_name`                varchar(32)   NOT NULL DEFAULT '' COMMENT '备注名',
     `effect_time_open`           varchar(8)    NOT NULL DEFAULT '' COMMENT '开启时间 HH:mm',
@@ -2738,12 +2758,13 @@ CREATE TABLE `we_emple_code_analyse`
     `id`              bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
     `corp_id`         varchar(64) NOT NULL DEFAULT '' COMMENT '企业ID',
     `emple_code_id`   bigint(20) NOT NULL DEFAULT '0' COMMENT '员工活码主键ID',
+    `channel_id`      bigint(20) NOT NULL DEFAULT '0' COMMENT '获客链接渠道id',
     `user_id`         varchar(64) NOT NULL DEFAULT '' COMMENT '企业成员userId',
     `external_userid` varchar(32) NOT NULL DEFAULT '' COMMENT '客户ID',
     `time`            date        NOT NULL COMMENT 'type为1时是添加时间，type为0时是流失时间',
     `type`            tinyint(1) NOT NULL COMMENT '1:新增，0:流失',
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uniq_corpid_codeid_userid_extid_type_time` (`corp_id`,`emple_code_id`,`user_id`,`external_userid`,`type`,`time`) USING BTREE COMMENT '唯一索引'
+    UNIQUE KEY `uniq_corpid_codeid_channelid_userid_extid_type_time` (`corp_id`,`emple_code_id`,`channel_id`,`user_id`,`external_userid`,`type`,`time`) USING BTREE COMMENT '唯一索引'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
@@ -3753,3 +3774,51 @@ CREATE TABLE `app_callback_setting` (
                                         PRIMARY KEY (`id`),
                                         KEY `uniq_corp_url` (`corp_id`,`callback_url`) USING BTREE
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COMMENT='API-消息订阅配置表';
+
+-- 2023-08-22 lcy 创建获客链接-渠道表 Tower 任务: 新增、编辑、删除获客链接 ( https://tower.im/teams/636204/todos/73572 )
+DROP TABLE IF EXISTS we_emple_code_channel;
+CREATE TABLE `we_emple_code_channel`
+(
+    `id`            bigint(20) NOT NULL COMMENT '获客自定义渠道id',
+    `emple_code_id` bigint(20) NOT NULL DEFAULT '0' COMMENT '获客链接id',
+    `name`          varchar(16)  NOT NULL DEFAULT '' COMMENT '自定义渠道名称（不超过16个字符）',
+    `channel_url`   varchar(255) NOT NULL DEFAULT '' COMMENT '自定义渠道的url（主渠道url?customer_channel= "hk_" + {渠道id}）',
+    `create_time`   datetime     NOT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '创建时间',
+    `create_by`     varchar(64)  NOT NULL DEFAULT '' COMMENT '创建人id',
+    `update_time`   datetime     NOT NULL COMMENT '更新时间',
+    `update_by`     varchar(64)  NOT NULL DEFAULT '' COMMENT '更新人id',
+    `del_flag`      tinyint(1) NOT NULL COMMENT '删除状态 0：正常，1：删除',
+    PRIMARY KEY (`id`),
+    KEY `idx_emple_code_id_name` (`emple_code_id`,`name`) USING BTREE COMMENT '获客链接id-自定义渠道名称普通索引'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='获客链接-渠道表';
+
+-- 2023-08-23 lcy 新增获客链接告警配置表 Tower 任务: 告警设置、新增、编辑、删除、查询自定义渠道接口 ( https://tower.im/teams/636204/todos/73966 )
+DROP TABLE IF EXISTS we_emple_code_warn_config;
+CREATE TABLE we_emple_code_warn_config
+(
+    `corp_id`                  varchar(64) NOT NULL DEFAULT '' COMMENT '企业ID',
+    `link_unavailable_switch`  tinyint(1) NOT NULL COMMENT '链接不可用通知开关 True：开启，False：关闭',
+    `link_unavailable_users`   text        NOT NULL COMMENT '链接不可用通知员工，多个用逗号隔开',
+    `alarm_creater`            tinyint(1) NOT NULL COMMENT '链接不可用是否通知链接创建人，True：通知创建人，False：不通知创建人',
+    `alarm_other_user`         tinyint(1) NOT NULL COMMENT '链接不可用是否通知其他员工，True：通知其他员工，False：不通知其他员工',
+    `balance_low_switch`       tinyint(1) NOT NULL COMMENT '额度即将耗尽通知开关 True：开启，False：关闭',
+    `balance_low_users`        text        NOT NULL COMMENT '额度即将耗尽通知员工，多个用逗号隔开',
+    `balance_exhausted_switch` tinyint(1) NOT NULL COMMENT '额度已耗尽通知开关 True：开启，False：关闭',
+    `balance_exhausted_users`  text        NOT NULL COMMENT '额度已耗尽通知员工，多个用逗号隔开',
+    `quota_expire_soon_switch` tinyint(1) NOT NULL COMMENT '获客额度即将过期通知开关',
+    `quota_expire_soon_users`  text        NOT NULL COMMENT '获客额度即将过期通知员工，多个用逗号隔开',
+    `type`                     tinyint(1) NOT NULL COMMENT '告警类型 True：每次都告警，False：每天只告警一次',
+    `update_time`              datetime    NOT NULL COMMENT '变更时间',
+    `update_by`                varchar(64) NOT NULL COMMENT '变更人id',
+    PRIMARY KEY (`corp_id`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='获客链接告警配置表';
+
+-- 2023-08-24 lcy 新增获客链接主页获客情况表 Tower 任务: 详情-数据总览，客户、渠道、日期维度统计，导出报表 ( https://tower.im/teams/636204/todos/73967 )
+CREATE TABLE `we_emple_code_situation`
+(
+    `corp_id`          varchar(64) NOT NULL COMMENT '企业ID',
+    `new_customer_cnt` int(11) NOT NULL DEFAULT '0' COMMENT '今日新增客户数',
+    `total`            int(11) NOT NULL DEFAULT '0' COMMENT '累计新增客户数（历史累计使用量），企微官方获取',
+    `balance`          int(11) DEFAULT '0' COMMENT '剩余使用量，企微官方获取',
+    PRIMARY KEY (`corp_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='获客助手-主页获客情况统计表';

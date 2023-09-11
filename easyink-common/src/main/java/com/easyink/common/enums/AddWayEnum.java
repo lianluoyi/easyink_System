@@ -23,6 +23,7 @@ public enum AddWayEnum {
     THIRD(8, "安装第三方应用时自动添加的客服人员"),
     EMAIL(9, "搜索邮箱"),
     VIDEO_OFFICIAL(10, "视频号主页添加"),
+    CUSTOMER_ACQUISITION(16, "通过获客链接添加"),
     INNER_USER_SHARE(201, "内部成员共享"),
     TRANSFER(202, "管理员/负责人分配");
     /**

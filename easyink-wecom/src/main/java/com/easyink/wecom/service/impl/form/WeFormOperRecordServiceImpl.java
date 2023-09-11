@@ -381,7 +381,7 @@ public class WeFormOperRecordServiceImpl extends ServiceImpl<WeFormOperRecordMap
     }
 
     @Override
-    public List<FormOperRecordDetailVO> getFormResult(Long formId) {
+    public List<FormOperRecordDetailVO> getFormResult(Long formId, Integer channelType) {
         if (formId == null) {
             throw new CustomException(ResultTip.TIP_PARAM_MISSING);
         }
@@ -389,7 +389,7 @@ public class WeFormOperRecordServiceImpl extends ServiceImpl<WeFormOperRecordMap
         if (weForm == null) {
             return new ArrayList<>();
         }
-        List<FormOperRecordDetailVO> formResult = this.baseMapper.getFormResult(formId, LoginTokenService.getLoginUser().getCorpId());
+        List<FormOperRecordDetailVO> formResult = this.baseMapper.getFormResult(formId, LoginTokenService.getLoginUser().getCorpId(), channelType);
         if (CollectionUtils.isEmpty(formResult)) {
             return new ArrayList<>();
         }

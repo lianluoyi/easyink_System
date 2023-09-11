@@ -2,9 +2,11 @@ package com.easyink.wecom.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.easyink.wecom.domain.WeEmpleCode;
+import com.easyink.wecom.domain.WeEmpleCodeUseScop;
 import com.easyink.wecom.domain.dto.WeEmpleCodeDTO;
 import com.easyink.wecom.domain.dto.WeExternalContactDTO;
 import com.easyink.wecom.domain.dto.emplecode.AddWeEmpleCodeDTO;
+import com.easyink.wecom.domain.dto.emplecode.FindAssistantDTO;
 import com.easyink.wecom.domain.dto.emplecode.FindWeEmpleCodeDTO;
 import com.easyink.wecom.domain.vo.*;
 import com.easyink.wecom.domain.vo.statistics.emplecode.EmpleCodeByNameVO;
@@ -35,6 +37,15 @@ public interface WeEmpleCodeService extends IService<WeEmpleCode> {
      */
     List<WeEmpleCodeVO> selectWeEmpleCodeList(FindWeEmpleCodeDTO weEmpleCode);
 
+
+    /**
+     * 查询获客链接列表
+     *
+     * @param assistantDTO {@link FindAssistantDTO}
+     * @return {@link List< GetWeEmployCodeVO >}
+     */
+    List<WeEmpleCodeVO> selectAssistantList(FindAssistantDTO assistantDTO);
+
     /**
      * 新增员工活码
      *
@@ -42,6 +53,31 @@ public interface WeEmpleCodeService extends IService<WeEmpleCode> {
      * @return 结果
      */
     void insertWeEmpleCode(AddWeEmpleCodeDTO weEmpleCode);
+
+    /**
+     * 处理活码统计表数据
+     *
+     * @param userIdList 员工ID列表
+     * @param corpId 企业ID
+     * @param empleCodeId 活码ID
+     */
+    void handleEmpleStatisticData(List<String > userIdList, String corpId, Long empleCodeId);
+
+    /**
+     * 根据使用范围获取userId列表
+     *
+     * @param useScops 活码使用范围
+     * @param corpId 企业ID
+     * @return userId列表
+     */
+    List<String> getUserIdByScope(List<WeEmpleCodeUseScop> useScops, String corpId);
+
+    /**
+     * 保存附件顺序
+     *
+     * @param weEmpleCode
+     */
+    void buildMaterialSort(AddWeEmpleCodeDTO weEmpleCode);
 
     /**
      * 修改员工活码
@@ -77,6 +113,15 @@ public interface WeEmpleCodeService extends IService<WeEmpleCode> {
      * @return
      */
     SelectWeEmplyCodeWelcomeMsgVO selectWelcomeMsgByState(String state, String corpId);
+
+    /**
+     * 通过id定位员工活码/获客链接
+     *
+     * @param id     员工活码ID/获客链接ID
+     * @param corpId 企业ID
+     * @return {@link SelectWeEmplyCodeWelcomeMsgVO}
+     */
+    SelectWeEmplyCodeWelcomeMsgVO selectWelcomeMsgById(String id, String corpId);
 
     /**
      * 获取员工二维码
@@ -132,6 +177,14 @@ public interface WeEmpleCodeService extends IService<WeEmpleCode> {
     void buildCommonWelcomeMsg(SelectWeEmplyCodeWelcomeMsgVO messageMap, String corpId, String externalUserId);
 
     /**
+     * 构建获客链接普通欢迎语及附件
+     *
+     * @param messageMap {@link SelectWeEmplyCodeWelcomeMsgVO}
+     * @param corpId     企业ID
+     */
+    void buildCustomerAssistantWelcomeMsg(SelectWeEmplyCodeWelcomeMsgVO messageMap, String corpId);
+
+    /**
      * 构建兑换码活动欢迎语及附件
      *
      * @param messageMap
@@ -164,4 +217,12 @@ public interface WeEmpleCodeService extends IService<WeEmpleCode> {
      * @return 活码ID列表
      */
     List<Long> getEffectEmpleCodeId(String corpId, String date);
+
+    /**
+     * 根据附件排序查找添加素材
+     *
+     * @param employCode
+     * @param corpId
+     */
+    void buildEmployCodeMaterial(WeEmpleCodeVO employCode, String corpId);
 }

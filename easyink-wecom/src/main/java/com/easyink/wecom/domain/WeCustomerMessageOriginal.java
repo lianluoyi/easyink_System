@@ -60,6 +60,18 @@ public class WeCustomerMessageOriginal extends BaseEntity {
     @TableField("tag")
     private String tag;
 
+    @ApiModelProperty(value = "客户过滤标签id，多个用逗号隔开")
+    @TableField("filter_tags")
+    private String filterTags;
+
+    @ApiModelProperty(value = "过滤员工id，多个用逗号隔开")
+    @TableField("filter_users")
+    private String filterUsers;
+
+    @ApiModelProperty(value = "过滤部门id，多个用逗号隔开")
+    @TableField("filter_departments")
+    private String filterDepartments;
+
     @ApiModelProperty(value = "群组名称id")
     @TableField(exist = false)
     private String group;

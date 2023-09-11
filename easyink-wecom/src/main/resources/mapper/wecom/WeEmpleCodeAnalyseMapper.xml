@@ -104,7 +104,7 @@
                                       '${@com.easyink.common.enums.CustomerStatusEnum@TRANSFERRING.code}' ) THEN 1 ELSE 0 END) AS retainCustomerCnt
         FROM we_emple_code_analyse weca
         LEFT JOIN we_flower_customer_rel wfcr ON weca.corp_id = wfcr.corp_id
-        AND weca.emple_code_id = wfcr.state AND weca.user_id = wfcr.user_id
+        AND weca.user_id = wfcr.user_id
         AND weca.external_userid = wfcr.external_userid
         AND wfcr.create_time &lt;= DATE_FORMAT(weca.`time`, '%Y-%m-%d 23:59:59')
         AND wfcr.delete_time &lt;= wfcr.create_time
@@ -123,6 +123,205 @@
     <select id="selectUserIdsById" resultType="java.lang.String">
         SELECT DISTINCT user_id FROM we_emple_code_analyse WHERE corp_id = #{corpId} AND emple_code_id = #{empleCodeId}
     </select>
+    <!--获客链接-详情数据总览-->
+    <select id="getAssistantDetailTotal" resultType="com.easyink.wecom.domain.vo.emple.CustomerAssistantDetailTotalVO">
+        SELECT
+        SUM(CASE WHEN weca.`type` = '${@com.easyink.common.enums.WeEmpleCodeAnalyseTypeEnum@ADD.type}' THEN 1 ELSE 0 END) AS accumulateCustomerCnt,
+        SUM(CASE WHEN weca.`type` = '${@com.easyink.common.enums.WeEmpleCodeAnalyseTypeEnum@ADD.type}' and `time` = #{time} THEN 1 ELSE 0 END) AS newCustomerCnt,
+        SUM(CASE WHEN weca.`type` = '${@com.easyink.common.enums.WeEmpleCodeAnalyseTypeEnum@DEL.type}' and `time` = #{time} THEN 1 ELSE 0 END) AS lossCustomerCnt
+        FROM we_emple_code_analyse weca LEFT JOIN we_flower_customer_rel wfcr ON weca.corp_id = wfcr.corp_id
+        AND weca.user_id = wfcr.user_id
+        AND weca.external_userid = wfcr.external_userid
+        AND wfcr.create_time &lt;= DATE_FORMAT(#{time}, '%Y-%m-%d 23:59:59')
+        WHERE weca.corp_id = #{corpId}
+        <if test="channelIdList != null and channelIdList.size() > 0">
+            AND weca.channel_id IN
+            <foreach collection="channelIdList" item="channelId" open="(" separator="," close=")">
+                #{channelId}
+            </foreach>
+        </if>
+    </select>
+    <!--获客链接-详情-渠道新增客户数排行-->
+    <select id="getChannelRangeList" resultType="com.easyink.wecom.domain.vo.emple.ChannelDetailRangeVO">
+        SELECT
+        SUM(CASE WHEN weca.`type` = '${@com.easyink.common.enums.WeEmpleCodeAnalyseTypeEnum@ADD.type}' THEN 1 ELSE 0 END) AS newCustomerCnt,
+        wecc.`name`
+        FROM we_emple_code_analyse weca INNER JOIN we_emple_code_channel wecc ON wecc.id = weca.channel_id
+        WHERE weca.corp_id = #{corpId}
+        <if test="channelIdList != null and channelIdList.size() > 0">
+            AND weca.channel_id IN
+            <foreach collection="channelIdList" item="channelId" open="(" separator="," close=")">
+                #{channelId}
+            </foreach>
+        </if>
+        <if test="beginTime != null and beginTime != ''">
+            AND `time` &gt;= #{beginTime}
+        </if>
+        <if test="endTime != null and endTime != ''">
+            AND `time` &lt;= #{endTime}
+        </if>
+        GROUP BY wecc.`name`
+    </select>
+    <!--获客链接-详情-趋势图-->
+    <select id="getChannelChartList" resultType="com.easyink.wecom.domain.vo.emple.ChannelDetailChartVO">
+        SELECT
+            `time`,
+            SUM(CASE WHEN `type` = '${@com.easyink.common.enums.WeEmpleCodeAnalyseTypeEnum@ADD.type}' THEN 1 ELSE 0 END) AS newCustomerCnt,
+            SUM(CASE WHEN `type` = '${@com.easyink.common.enums.WeEmpleCodeAnalyseTypeEnum@DEL.type}' THEN 1 ELSE 0 END) AS lossCustomerCnt
+        FROM we_emple_code_analyse
+        WHERE corp_id = #{corpId}
+        <if test="channelIdList != null and channelIdList.size() > 0">
+            AND channel_id IN
+            <foreach collection="channelIdList" item="channelId" open="(" separator="," close=")">
+                #{channelId}
+            </foreach>
+        </if>
+        <if test="beginTime != null and beginTime != ''">
+            AND `time` &gt;= #{beginTime}
+        </if>
+        <if test="endTime != null and endTime != ''">
+            AND `time` &lt;= #{endTime}
+        </if>
+        GROUP BY `time`
+    </select>
+    <!--获客链接详情-数据统计-客户维度-->
+    <select id="getDetailStatisticByCustomer"
+            resultType="com.easyink.wecom.domain.vo.emple.AssistantDetailStatisticCustomerVO">
+        SELECT
+            wc.`name` AS externalUserName, wc.`avatar` AS externalUserHeadImage, wc.external_userid, wu.user_name, wu.user_id, wd.`name` AS departmentName, DATE_FORMAT(wfcr.create_time,
+        '%Y-%m-%d %H:%i') AS addTime, weca.channel_id AS state
+        FROM we_emple_code_analyse weca
+        INNER JOIN we_customer wc ON weca.external_userid = wc.external_userid
+        INNER JOIN we_user wu ON weca.user_id = wu.user_id
+        INNER JOIN we_department wd ON wu.main_department = wd.id AND wd.corp_id = weca.corp_id
+        INNER JOIN we_flower_customer_rel wfcr
+        ON wfcr.external_userid = weca.external_userid AND wfcr.user_id = weca.user_id
+        WHERE weca.corp_id = #{corpId} AND weca.`type` = '${@com.easyink.common.enums.WeEmpleCodeAnalyseTypeEnum@ADD.type}'
+        <if test="name != null">
+            AND wc.name LIKE CONCAT("%", #{name}, "%")
+        </if>
+        <if test="userIds != null and userIds !=''">
+            <if test="userIds.indexOf(',') != -1">
+                AND wu.user_id in
+                <foreach item="item" index="index" collection="userIds.split(',')" open="(" separator="," close=")">
+                    #{item}
+                </foreach>
+            </if>
+            <if test="userIds.indexOf(',') == -1">
+                AND wu.user_id=#{userIds}
+            </if>
+        </if>
+        <if test="channelIdList != null and channelIdList.size() > 0">
+            AND weca.channel_id IN
+            <foreach collection="channelIdList" item="channelId" open="(" separator="," close=")">
+                #{channelId}
+            </foreach>
+        </if>
+        <if test="channelId != null">
+            AND weca.channel_id = #{channelId}
+        </if>
+        <if test="beginTime != null and beginTime != ''">
+            AND wfcr.create_time &gt;= #{beginTime}
+        </if>
+        <if test="endTime != null and endTime != ''">
+            AND wfcr.create_time &lt;= #{endTime}
+        </if>
+        ORDER BY addTime DESC
+    </select>
+    <!--获客链接详情-数据统计-渠道维度(新增客户数、流失客户数)-->
+    <select id="getDetailStatisticByChannel"
+            resultType="com.easyink.wecom.domain.vo.emple.AssistantDetailStatisticChannelVO">
+        SELECT SUM(CASE WHEN weca.`type` = '${@com.easyink.common.enums.WeEmpleCodeAnalyseTypeEnum@ADD.type}' THEN 1 ELSE 0 END) AS newCustomerCnt,
+               SUM(CASE WHEN weca.`type` = '${@com.easyink.common.enums.WeEmpleCodeAnalyseTypeEnum@DEL.type}' THEN 1 ELSE 0 END) AS lossCustomerCnt,
+               weca.channel_id,
+               wecc.`name`,
+               wecc.emple_code_id
+        FROM we_emple_code_analyse weca INNER JOIN we_emple_code_channel wecc ON wecc.id = weca.channel_id LEFT JOIN we_flower_customer_rel wfcr ON weca.corp_id = wfcr.corp_id AND weca.user_id = wfcr.user_id
+        AND weca.external_userid = wfcr.external_userid
+        WHERE weca.corp_id = #{corpId}
+        <if test="userIds != null and userIds !=''">
+            <if test="userIds.indexOf(',') != -1">
+                AND weca.user_id IN
+                <foreach item="item" index="index" collection="userIds.split(',')" open="(" separator="," close=")">
+                    #{item}
+                </foreach>
+            </if>
+            <if test="userIds.indexOf(',') == -1">
+                AND weca.user_id=#{userIds}
+            </if>
+        </if>
+        <if test="channelIdList != null and channelIdList.size() > 0">
+            AND weca.channel_id IN
+            <foreach collection="channelIdList" item="channelId" open="(" separator="," close=")">
+                #{channelId}
+            </foreach>
+        </if>
+        <if test="channelId != null">
+            AND weca.channel_id = #{channelId}
+        </if>
+        <if test="beginTime != null and beginTime != ''">
+            AND weca.`time` &gt;= DATE_FORMAT(#{beginTime}, '%Y-%m-%d')
+        </if>
+        <if test="endTime != null and endTime != ''">
+            AND weca.`time` &lt;= DATE_FORMAT(#{endTime}, '%Y-%m-%d')
+        </if>
+        GROUP BY weca.channel_id
+    </select>
+    <!--获客链接详情-数据统计-日期维度(新增客户数、流失客户数)-->
+    <select id="getDetailStatisticByDate"
+            resultType="com.easyink.wecom.domain.vo.emple.AssistantDetailStatisticDateVO">
+        SELECT SUM(CASE WHEN weca.`type` = '${@com.easyink.common.enums.WeEmpleCodeAnalyseTypeEnum@ADD.type}' THEN 1 ELSE 0 END) AS newCustomerCnt,
+        SUM(CASE WHEN weca.`type` = '${@com.easyink.common.enums.WeEmpleCodeAnalyseTypeEnum@DEL.type}' THEN 1 ELSE 0 END) AS lossCustomerCnt,
+        weca.`time` AS `date`
+        FROM we_emple_code_analyse weca INNER JOIN we_emple_code_channel wecc ON wecc.id = weca.channel_id LEFT JOIN we_flower_customer_rel wfcr ON weca.corp_id = wfcr.corp_id AND weca.user_id = wfcr.user_id
+        AND weca.external_userid = wfcr.external_userid
+        WHERE weca.corp_id = #{corpId}
+        <if test="userIds != null and userIds !=''">
+            <if test="userIds.indexOf(',') != -1">
+                AND weca.user_id IN
+                <foreach item="item" index="index" collection="userIds.split(',')" open="(" separator="," close=")">
+                    #{item}
+                </foreach>
+            </if>
+            <if test="userIds.indexOf(',') == -1">
+                AND weca.user_id=#{userIds}
+            </if>
+        </if>
+        <if test="channelIdList != null and channelIdList.size() > 0">
+            AND weca.channel_id IN
+            <foreach collection="channelIdList" item="channelId" open="(" separator="," close=")">
+                #{channelId}
+            </foreach>
+        </if>
+        <if test="channelId != null">
+            AND weca.channel_id = #{channelId}
+        </if>
+        <if test="beginTime != null and beginTime != ''">
+            AND weca.`time` &gt;= DATE_FORMAT(#{beginTime}, '%Y-%m-%d')
+        </if>
+        <if test="endTime != null and endTime != ''">
+            AND weca.`time` &lt;= DATE_FORMAT(#{endTime}, '%Y-%m-%d')
+        </if>
+        GROUP BY `date`
+    </select>
+    <!--获客链接-详情-数据总览-有效客户数-->
+    <select id="getAssistantDetailTotalCurrentNewCustomer"
+            resultType="com.easyink.wecom.domain.vo.emple.CustomerAssistantDetailTotalVO">
+        SELECT COUNT(0) AS currentNewCustomerCnt, state FROM we_flower_customer_rel WHERE corp_id = #{corpId}
+        <if test="stateList != null and stateList.size() > 0">
+        AND state IN
+            <foreach collection="stateList" item="state" open="(" separator="," close=")">
+                #{state}
+            </foreach>
+        </if>
+        <if test="time != null and time !=''">
+            AND create_time &gt;= DATE_FORMAT(#{time}, '%Y-%m-%d 00:00:00')
+            AND create_time &lt;= DATE_FORMAT(#{time}, '%Y-%m-%d 23:59:59')
+        </if>
+        AND status IN ('${@com.easyink.common.enums.CustomerStatusEnum@NORMAL.code}',
+        '${@com.easyink.common.enums.CustomerStatusEnum@TO_BE_TRANSFERRED.code}',
+        '${@com.easyink.common.enums.CustomerStatusEnum@TRANSFERRING.code}' )
+    </select>
 
 
     <insert id="insert" parameterType="com.easyink.wecom.domain.WeEmpleCodeAnalyse">
@@ -130,6 +329,7 @@
         (
         `corp_id`,
         `emple_code_id`,
+        `channel_id`,
         `user_id`,
         `external_userid`,
         `time`,
@@ -139,6 +339,7 @@
         (
         #{corpId},
         #{empleCodeId},
+        #{channelId},
         #{userId},
         #{externalUserId},
         #{time},

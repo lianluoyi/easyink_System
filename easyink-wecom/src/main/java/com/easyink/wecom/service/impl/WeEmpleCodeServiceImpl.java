@@ -1,11 +1,11 @@
 package com.easyink.wecom.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.io.FileUtil;
 import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.easyink.common.annotation.DataScope;
 import com.easyink.common.config.RuoYiConfig;
 import com.easyink.common.constant.WeConstans;
 import com.easyink.common.constant.redeemcode.RedeemCodeConstants;
@@ -15,15 +15,12 @@ import com.easyink.common.enums.code.WelcomeMsgTypeEnum;
 import com.easyink.common.exception.CustomException;
 import com.easyink.common.shorturl.model.EmpleCodeShortUrlAppendInfo;
 import com.easyink.common.utils.DateUtils;
-import com.easyink.common.utils.file.FileUploadUtils;
 import com.easyink.common.utils.spring.SpringUtils;
 import com.easyink.wecom.client.WeExternalContactClient;
 import com.easyink.wecom.domain.*;
-import com.easyink.wecom.domain.dto.AddWeMaterialDTO;
-import com.easyink.wecom.domain.dto.UpdateWeMaterialDTO;
-import com.easyink.wecom.domain.dto.WeEmpleCodeDTO;
-import com.easyink.wecom.domain.dto.WeExternalContactDTO;
+import com.easyink.wecom.domain.dto.*;
 import com.easyink.wecom.domain.dto.emplecode.AddWeEmpleCodeDTO;
+import com.easyink.wecom.domain.dto.emplecode.FindAssistantDTO;
 import com.easyink.wecom.domain.dto.emplecode.FindWeEmpleCodeDTO;
 import com.easyink.wecom.domain.entity.redeemcode.WeRedeemCode;
 import com.easyink.wecom.domain.vo.*;
@@ -145,6 +142,29 @@ public class WeEmpleCodeServiceImpl extends ServiceImpl<WeEmpleCodeMapper, WeEmp
         return weEmployCodeList;
     }
 
+    @DataScope
+    @Override
+    public List<WeEmpleCodeVO> selectAssistantList(FindAssistantDTO dto) {
+        if (StringUtils.isBlank(dto.getCorpId())) {
+            throw new CustomException(ResultTip.TIP_MISS_CORP_ID);
+        }
+        List<WeEmpleCodeVO> assistantList = this.baseMapper.selectAssistantList(dto);
+        if (CollectionUtils.isEmpty(assistantList)) {
+            return assistantList;
+        }
+        List<Long> assistantIdList = assistantList.stream().map(WeEmpleCode::getId).collect(Collectors.toList());
+        // 查询使用人
+        List<WeEmpleCodeUseScop> useScopeList = weEmpleCodeUseScopService.selectWeEmpleCodeUseScopListByIds(assistantIdList, dto.getCorpId());
+        // 查询使用部门(查询使用人时需要用businessId关联we_user表，活码使用部门时不传入businessId)
+        List<WeEmpleCodeUseScop> departmentScopeList = weEmpleCodeUseScopService.selectDepartmentWeEmpleCodeUseScopListByIds(assistantIdList);
+        assistantList.forEach(employCode -> {
+            // 设置获客链接使用人/部门对象
+            setUserData(employCode, useScopeList, departmentScopeList);
+
+        });
+        return assistantList;
+    }
+
     /**
      * 组装数据（员工活码=>素材数据，新客建群=>添加人数、群活码数据、群实际数据）
      *
@@ -192,7 +212,8 @@ public class WeEmpleCodeServiceImpl extends ServiceImpl<WeEmpleCodeMapper, WeEmp
      * @param employCode
      * @param corpId
      */
-    private void buildEmployCodeMaterial(WeEmpleCodeVO employCode, String corpId) {
+    @Override
+    public void buildEmployCodeMaterial(WeEmpleCodeVO employCode, String corpId) {
         if (WelcomeMsgTypeEnum.COMMON_WELCOME_MSG_TYPE.getType().equals(employCode.getWelcomeMsgType())) {
             if (!ArrayUtils.isEmpty(employCode.getMaterialSort())) {
                 List<AddWeMaterialDTO> materialList = weMaterialService.getListByMaterialSort(employCode.getMaterialSort(), corpId);
@@ -314,7 +335,8 @@ public class WeEmpleCodeServiceImpl extends ServiceImpl<WeEmpleCodeMapper, WeEmp
      * @param corpId 企业ID
      * @param empleCodeId 活码ID
      */
-    private void handleEmpleStatisticData(List<String > userIdList, String corpId, Long empleCodeId) {
+    @Override
+    public void handleEmpleStatisticData(List<String > userIdList, String corpId, Long empleCodeId) {
         if (StringUtils.isBlank(corpId) || empleCodeId == null || CollectionUtils.isEmpty(userIdList)) {
             return;
         }
@@ -356,9 +378,10 @@ public class WeEmpleCodeServiceImpl extends ServiceImpl<WeEmpleCodeMapper, WeEmp
      *
      * @param useScops 活码使用范围
      * @param corpId 企业ID
-     * @return
+     * @return userId列表
      */
-    private List<String> getUserIdByScope(List<WeEmpleCodeUseScop> useScops, String corpId) {
+    @Override
+    public List<String> getUserIdByScope(List<WeEmpleCodeUseScop> useScops, String corpId) {
         if (CollectionUtils.isEmpty(useScops) || StringUtils.isBlank(corpId)) {
             return new ArrayList<>();
         }
@@ -429,6 +452,18 @@ public class WeEmpleCodeServiceImpl extends ServiceImpl<WeEmpleCodeMapper, WeEmp
             throw new CustomException(ResultTip.TIP_GENERAL_BAD_REQUEST);
         }
         SelectWeEmplyCodeWelcomeMsgVO welcomeMsgVO = this.baseMapper.selectWelcomeMsgByState(state, corpId);
+        if (welcomeMsgVO == null) {
+            return null;
+        }
+        return welcomeMsgVO;
+    }
+
+    @Override
+    public SelectWeEmplyCodeWelcomeMsgVO selectWelcomeMsgById(String id, String corpId) {
+        if (StringUtils.isBlank(id) || StringUtils.isBlank(corpId)) {
+            throw new CustomException(ResultTip.TIP_GENERAL_BAD_REQUEST);
+        }
+        SelectWeEmplyCodeWelcomeMsgVO welcomeMsgVO = this.baseMapper.selectWelcomeMsgById(id, corpId);
         if (welcomeMsgVO == null) {
             return null;
         }
@@ -529,7 +564,8 @@ public class WeEmpleCodeServiceImpl extends ServiceImpl<WeEmpleCodeMapper, WeEmp
      *
      * @param weEmpleCode
      */
-    private void buildMaterialSort(AddWeEmpleCodeDTO weEmpleCode) {
+    @Override
+    public void buildMaterialSort(AddWeEmpleCodeDTO weEmpleCode) {
         if (WelcomeMsgTypeEnum.COMMON_WELCOME_MSG_TYPE.getType().equals(weEmpleCode.getWelcomeMsgType())) {
             //插入素材附件
             if (CollectionUtils.isNotEmpty(weEmpleCode.getMaterialList())) {
@@ -537,6 +573,9 @@ public class WeEmpleCodeServiceImpl extends ServiceImpl<WeEmpleCodeMapper, WeEmp
                 setMaterialSort(materialList, weEmpleCode);
                 //将素材附件顺序保存到weEmpleCode
                 weEmpleCode.setMaterialSort(getMaterialSort(materialList));
+            } else {
+                // 素材列表为空，将之前的素材排序清空
+                weEmpleCode.setMaterialSort(new String[]{});
             }
         } else if (WelcomeMsgTypeEnum.REDEEM_CODE_WELCOME_MSG_TYPE.getType().equals(weEmpleCode.getWelcomeMsgType())) {
             if (CollectionUtils.isNotEmpty(weEmpleCode.getCodeSuccessMaterialList())) {
@@ -574,16 +613,6 @@ public class WeEmpleCodeServiceImpl extends ServiceImpl<WeEmpleCodeMapper, WeEmp
                     UpdateWeMaterialDTO weMaterialDTO = new UpdateWeMaterialDTO();
                     BeanUtils.copyProperties(materialDTO, weMaterialDTO);
                     weMaterialDTO.setCorpId(corpId);
-                    // 如果是图片、文件、视频类型数据，且文件名和原来的Url中的文件名不一致
-                    if ((Objects.equals(MediaType.IMAGE.getType(), weMaterialDTO.getMediaType().toString()) || Objects.equals(MediaType.FILE.getType(), weMaterialDTO.getMediaType().toString()) || Objects.equals(MediaType.VIDEO.getType(), weMaterialDTO.getMediaType().toString())) && !weMaterialDTO.getMaterialName().equals(FileUtil.getName(weMaterialDTO.getMaterialUrl()))) {
-                        String newFileUrl = FileUploadUtils.reUploadFile(weMaterialDTO.getMaterialUrl(), ruoYiConfig, weMaterialDTO.getMaterialName(), corpId);
-                        if (StringUtils.isBlank(newFileUrl)) {
-                            throw new CustomException(ResultTip.TIP_FAIL_RE_UPLOAD_FILE);
-                        }
-                        // 设置改名后的文件Url
-                        weMaterialDTO.setMaterialUrl(newFileUrl);
-                        materialDTO.setMaterialUrl(newFileUrl);
-                    }
                     // 如果判断是从素材库取出的素材，且内容有被修改，则插入一条新的数据，不更新原来的素材库中的内容
                     if (WeTempMaterialEnum.MATERIAL.getTempFlag().equals(weMaterialDTO.getTempFlag())) {
                         WeMaterial originalMaterial = weMaterialService.getById(materialDTO.getId());
@@ -753,6 +782,25 @@ public class WeEmpleCodeServiceImpl extends ServiceImpl<WeEmpleCodeMapper, WeEmp
                 String groupCodeId = welcomeMsgVO.getMaterialSort()[0];
                 String codeUrl = weGroupCodeService.getCodeUrlByIdAndCorpId(Long.parseLong(groupCodeId), corpId);
                 welcomeMsgVO.setGroupCodeUrl(codeUrl);
+            }
+        }
+    }
+
+    /**
+     * 构建获客链接普通欢迎语及附件
+     *
+     * @param messageMap {@link SelectWeEmplyCodeWelcomeMsgVO}
+     * @param corpId     企业ID
+     */
+    @Override
+    public void buildCustomerAssistantWelcomeMsg(SelectWeEmplyCodeWelcomeMsgVO messageMap, String corpId) {
+        if (StringUtils.isBlank(corpId) || messageMap == null) {
+            return;
+        }
+        if (messageMap.getMaterialSort() != null && messageMap.getMaterialSort().length != 0) {
+            // 获取素材详情
+            if (EmployCodeSourceEnum.CUSTOMER_ASSISTANT.getSource().equals(messageMap.getSource())) {
+                messageMap.setMaterialList(weMaterialService.getListByMaterialSort(messageMap.getMaterialSort(), corpId));
             }
         }
     }

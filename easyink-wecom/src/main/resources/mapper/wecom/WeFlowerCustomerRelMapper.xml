@@ -286,18 +286,18 @@
             <if test="wechatChannel != null">wechat_channel = VALUES(wechat_channel),</if>
         </trim>
     </insert>
-    <!--    批量更新客户关系的状态-->
+    <!--批量更新客户关系的状态、添加时间-->
     <insert id="batchUpdateStatus">
         INSERT INTO we_flower_customer_rel
-        (id, user_id, external_userid, corp_id,status)
+        (id, user_id, external_userid, corp_id, status, create_time)
         VALUES
         <foreach collection="list" item="item" separator=",">
             (
-            #{item.id},#{item.userId}, #{item.externalUserid}, #{item.corpId},#{item.status}
+            #{item.id},#{item.userId}, #{item.externalUserid}, #{item.corpId},#{item.status},#{item.createTime}
             )
         </foreach>
         ON DUPLICATE KEY UPDATE
-        `status`=VALUES(`status`)
+        `status`=VALUES(`status`),`create_time` = VALUES(`create_time`)
     </insert>
 
     <!--    转接员工客户关系-->
@@ -485,5 +485,123 @@
                 #{userId}
             </foreach>
         </if>
+    </select>
+    <!--获客链接详情-渠道维度-渠道累计客户数-->
+    <select id="getChannelRelAccumulateCnt" resultType="com.easyink.wecom.domain.vo.emple.WeEmpleCodeChannelRelVO">
+        SELECT SUM(CASE WHEN `type` = '${@com.easyink.common.enums.WeEmpleCodeAnalyseTypeEnum@ADD.type}' THEN 1 ELSE 0 END) AS customerCnt,
+               channel_id AS `state`
+        FROM we_emple_code_analyse WHERE corp_id = #{corpId}
+        <if test="userIds != null and userIds !=''">
+            <if test="userIds.indexOf(',') != -1">
+                AND user_id IN
+                <foreach item="item" index="index" collection="userIds.split(',')" open="(" separator="," close=")">
+                    #{item}
+                </foreach>
+            </if>
+            <if test="userIds.indexOf(',') == -1">
+                AND user_id = #{userIds}
+            </if>
+        </if>
+        <if test="channelIdList != null and channelIdList.size() > 0">
+            AND channel_id IN
+            <foreach collection="channelIdList" item="channelId" open="(" separator="," close=")">
+                #{channelId}
+            </foreach>
+        </if>
+        <if test="endTime != null and endTime != ''">
+            AND time &lt;= DATE_FORMAT(#{endTime}, '%Y-%m-%d')
+        </if>
+        GROUP BY `state`
+    </select>
+    <!--获客链接详情-渠道维度-渠道未流失的客户数（有效客户数）-->
+    <select id="getChannelRelEffectCnt" resultType="com.easyink.wecom.domain.vo.emple.WeEmpleCodeChannelRelVO">
+        SELECT SUM(CASE WHEN `status` IN ('${@com.easyink.common.enums.CustomerStatusEnum@NORMAL.code}',
+        '${@com.easyink.common.enums.CustomerStatusEnum@TO_BE_TRANSFERRED.code}',
+        '${@com.easyink.common.enums.CustomerStatusEnum@TRANSFERRING.code}' ) THEN 1 ELSE 0 END) AS customerCnt, state
+        FROM we_flower_customer_rel WHERE corp_id = #{corpId}
+        <if test="userIds != null and userIds !=''">
+            <if test="userIds.indexOf(',') != -1">
+                AND user_id IN
+                <foreach item="item" index="index" collection="userIds.split(',')" open="(" separator="," close=")">
+                    #{item}
+                </foreach>
+            </if>
+            <if test="userIds.indexOf(',') == -1">
+                AND user_id = #{userIds}
+            </if>
+        </if>
+        <if test="stateList != null and stateList.size() > 0">
+            AND state IN
+            <foreach collection="stateList" item="state" open="(" separator="," close=")">
+                #{state}
+            </foreach>
+        </if>
+        <if test="beginTime != null and beginTime != ''">
+            AND create_time &gt;= #{beginTime}
+        </if>
+        <if test="endTime != null and endTime != ''">
+            AND create_time &lt;= #{endTime}
+        </if>
+        GROUP BY state
+    </select>
+    <!--获客链接详情-日期维度-渠道累计客户数-->
+    <select id="getChannelDateRelAccumulateCnt"
+            resultType="com.easyink.wecom.domain.vo.emple.WeEmpleCodeChannelRelVO">
+        SELECT SUM(CASE WHEN `type` = '${@com.easyink.common.enums.WeEmpleCodeAnalyseTypeEnum@ADD.type}' THEN 1 ELSE 0 END) AS customerCnt,
+               `time` AS `date`
+        FROM we_emple_code_analyse WHERE corp_id = #{corpId}
+        <if test="userIds != null and userIds !=''">
+            <if test="userIds.indexOf(',') != -1">
+                AND user_id IN
+                <foreach item="item" index="index" collection="userIds.split(',')" open="(" separator="," close=")">
+                    #{item}
+                </foreach>
+            </if>
+            <if test="userIds.indexOf(',') == -1">
+                AND user_id = #{userIds}
+            </if>
+        </if>
+        <if test="channelIdList != null and channelIdList.size() > 0">
+            AND channel_id IN
+            <foreach collection="channelIdList" item="channelId" open="(" separator="," close=")">
+                #{channelId}
+            </foreach>
+        </if>
+        <if test="endTime != null and endTime != ''">
+            AND `time` &lt;= DATE_FORMAT(#{endTime}, '%Y-%m-%d')
+        </if>
+        GROUP BY `date`
+    </select>
+    <!--获客链接详情-日期维度-渠道未流失的客户数（有效客户数）-->
+    <select id="getChannelDateRelEffectCnt"
+            resultType="com.easyink.wecom.domain.vo.emple.WeEmpleCodeChannelRelVO">
+        SELECT SUM(CASE WHEN `status` IN ('${@com.easyink.common.enums.CustomerStatusEnum@NORMAL.code}',
+        '${@com.easyink.common.enums.CustomerStatusEnum@TO_BE_TRANSFERRED.code}',
+        '${@com.easyink.common.enums.CustomerStatusEnum@TRANSFERRING.code}' ) THEN 1 ELSE 0 END) AS customerCnt, DATE_FORMAT(create_time, '%Y-%m-%d') AS `date`
+        FROM we_flower_customer_rel WHERE corp_id = #{corpId}
+        <if test="userIds != null and userIds !=''">
+            <if test="userIds.indexOf(',') != -1">
+                AND user_id IN
+                <foreach item="item" index="index" collection="userIds.split(',')" open="(" separator="," close=")">
+                    #{item}
+                </foreach>
+            </if>
+            <if test="userIds.indexOf(',') == -1">
+                AND user_id = #{userIds}
+            </if>
+        </if>
+        <if test="stateList != null and stateList.size() > 0">
+            AND state IN
+            <foreach collection="stateList" item="state" open="(" separator="," close=")">
+                #{state}
+            </foreach>
+        </if>
+        <if test="beginTime != null and beginTime != ''">
+            AND create_time &gt;= #{beginTime}
+        </if>
+        <if test="endTime != null and endTime != ''">
+            AND create_time &lt;= #{endTime}
+        </if>
+        GROUP BY `date`
     </select>
 </mapper>

@@ -1,0 +1,3 @@
+-- 2023-08-16 lcy 群发消息原始信息表中添加过滤员工/过滤部门字段 Tower 任务: 群发过滤指定员工 ( https://tower.im/teams/636204/todos/72889 )
+ALTER TABLE we_customer_messageoriginal ADD COLUMN filter_users VARCHAR(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '过滤员工id列表';
+ALTER TABLE we_customer_messageoriginal ADD COLUMN filter_departments VARCHAR(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '过滤部门id列表';

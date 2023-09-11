@@ -34,4 +34,7 @@ public class FindWeEmpleCodeDTO {
 
     @ApiModelProperty(value = "来源",hidden = true)
     private Integer source;
+
+    @ApiModelProperty("链接url")
+    private String qrCode;
 }

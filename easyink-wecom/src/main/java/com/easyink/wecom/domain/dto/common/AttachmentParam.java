@@ -94,17 +94,17 @@ public class AttachmentParam {
         switch (typeEnum) {
             case IMAGE:
             case FILE:
-                return builder.picUrl(weMaterial.getMaterialUrl()).typeEnum(typeEnum).build();
+                return builder.picUrl(weMaterial.getMaterialUrl()).content(weMaterial.getMaterialName()).typeEnum(typeEnum).build();
             case LINK:
                 return builder.content(weMaterial.getMaterialName())
                         .picUrl(weMaterial.getCoverUrl())
                         .description(weMaterial.getDigest())
                         .url(weMaterial.getMaterialUrl()).typeEnum(typeEnum).build();
             case RADAR:
-                Integer radarChannelType = EmployCodeSourceEnum.NEW_GROUP.getSource().equals(source) ? RadarChannelEnum.NEW_IN_GROUP.getTYPE() : RadarChannelEnum.EMPLE_CODE.getTYPE();
+                Integer radarChannelType = EmployCodeSourceEnum.getFromOrRadarType(source);
                 return buildRadarAttachment(weMaterial.getExtraId(), radarChannelType, userId, corpId, scenario);
             case FORM:
-                Integer formChannelType = EmployCodeSourceEnum.NEW_GROUP.getSource().equals(source) ? FormChannelEnum.NEW_IN_GROUP.getCode() : FormChannelEnum.EMPLE_CODE.getCode();
+                Integer formChannelType = EmployCodeSourceEnum.getFromOrRadarType(source);
                 return ExtraMaterialUtils.getFormAttachment(weMaterial.getExtraId(), formChannelType, corpId, userId);
             case MINIPROGRAM:
                 return builder.content(weMaterial.getMaterialName())
@@ -112,7 +112,7 @@ public class AttachmentParam {
                         .description(weMaterial.getAppid())
                         .url(weMaterial.getMaterialUrl()).typeEnum(typeEnum).build();
             case VIDEO:
-                return builder.picUrl(weMaterial.getMaterialUrl()).description(weMaterial.getContent()).typeEnum(typeEnum).build();
+                return builder.picUrl(weMaterial.getMaterialUrl()).description(weMaterial.getContent()).content(weMaterial.getMaterialName()).typeEnum(typeEnum).build();
             default:
                 return null;
         }
@@ -138,9 +138,9 @@ public class AttachmentParam {
         }
         switch (typeEnum) {
             case IMAGE:
-                return builder.picUrl(attachment.getImageMessage().getPic_url()).typeEnum(typeEnum).build();
+                return builder.picUrl(attachment.getImageMessage().getPic_url()).content(attachment.getImageMessage().getTitle()).typeEnum(typeEnum).build();
             case FILE:
-                return builder.picUrl(attachment.getFileDTO().getFileUrl()).typeEnum(typeEnum).build();
+                return builder.picUrl(attachment.getFileDTO().getFileUrl()).content(attachment.getFileDTO().getTitle()).typeEnum(typeEnum).build();
             case LINK:
                 return builder.content(attachment.getLinkMessage().getTitle())
                         .picUrl(attachment.getLinkMessage().getPicurl())

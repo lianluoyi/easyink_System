@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.easyink.common.constant.Constants;
 import com.easyink.common.constant.GenConstants;
 import com.easyink.common.constant.WeConstans;
+import com.easyink.common.constant.emple.CustomerAssistantConstants;
 import com.easyink.common.core.domain.entity.WeCorpAccount;
 import com.easyink.common.enums.CustomerTrajectoryEnums;
 import com.easyink.common.enums.MessageType;
@@ -69,9 +70,11 @@ public class WeCallBackDelFollowUserImpl extends WeEventStrategy {
     private CustomerRedisCache customerRedisCache;
 
     private final EmpleStatisticRedisCache empleStatisticRedisCache;
+    private final CustomerAssistantService customerAssistantService;
 
-    public WeCallBackDelFollowUserImpl(EmpleStatisticRedisCache empleStatisticRedisCache) {
+    public WeCallBackDelFollowUserImpl(EmpleStatisticRedisCache empleStatisticRedisCache, CustomerAssistantService customerAssistantService) {
         this.empleStatisticRedisCache = empleStatisticRedisCache;
+        this.customerAssistantService = customerAssistantService;
     }
 
     @Override
@@ -134,11 +137,17 @@ public class WeCallBackDelFollowUserImpl extends WeEventStrategy {
                     .eq(WeFlowerCustomerRel::getExternalUserid, message.getExternalUserId())
                     .last(GenConstants.LIMIT_1)
             );
-            // state 为空表示不是从活码加的外部联系人
+            // state 为空，表示不是从活码/获客链接加的外部联系人
             if (weFlowerCustomerRel != null && StringUtils.isNotBlank(weFlowerCustomerRel.getState())) {
-                weEmpleCodeAnalyseService.saveWeEmpleCodeAnalyse(corpId, message.getUserId(), message.getExternalUserId(), weFlowerCustomerRel.getState(), false);
-                // 更新Redis中的数据
-                empleStatisticRedisCache.addLossCustomerCnt(corpId, DateUtils.dateTime(new Date()), Long.valueOf(weFlowerCustomerRel.getState()), message.getUserId());
+                if (isAssistantState(weFlowerCustomerRel.getState())) {
+                    // 获客链接添加的外部联系人删除处理
+                    customerAssistantService.callBackDelAssistantHandle(weFlowerCustomerRel.getState(), corpId, message.getExternalUserId(), message.getUserId());
+                } else {
+                    // 员工活码添加的外部联系人处理
+                    weEmpleCodeAnalyseService.saveWeEmpleCodeAnalyse(corpId, message.getUserId(), message.getExternalUserId(), weFlowerCustomerRel.getState(), false);
+                    // 更新Redis中的数据
+                    empleStatisticRedisCache.addLossCustomerCnt(corpId, DateUtils.dateTime(new Date()), Long.valueOf(weFlowerCustomerRel.getState()), message.getUserId());
+                }
             }
             // 客户轨迹:记录删除跟进成员事件
             weCustomerTrajectoryService.saveActivityRecord(corpId, message.getUserId(), message.getExternalUserId(),
@@ -147,6 +156,17 @@ public class WeCallBackDelFollowUserImpl extends WeEventStrategy {
             log.error("del_follow_user>>>>>>>>>>>>>param:{},ex:{}", JSON.toJSONString(message), ExceptionUtils.getStackTrace(e));
         }
     }
+
+    /**
+     * 判断是否是获客链接添加的state
+     *
+     * @param state 来源state
+     * @return true 是，false 不是
+     */
+    private Boolean isAssistantState(String state) {
+        return state.startsWith(CustomerAssistantConstants.STATE_PREFIX);
+    }
+
 
     /**
      * 为流失客户打标签

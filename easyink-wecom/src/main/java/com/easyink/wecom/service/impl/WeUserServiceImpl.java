@@ -1110,6 +1110,35 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
 
     }
 
+
+    /**
+     * 获取用户信息
+     *
+     * @param users 员工id，用逗号分隔
+     * @param corpId 企业id
+     * @return 员工信息列表
+     */
+    @Override
+    public List<UserVO> getUserInfo(String users, String corpId) {
+        if (com.easyink.common.utils.StringUtils.isAnyBlank(users, corpId)) {
+            return Collections.emptyList();
+        }
+        List<UserVO> userVOList = new ArrayList<>();
+        // 获取用户信息
+        List<WeUser> userlist = weUserService.list(new LambdaQueryWrapper<WeUser>()
+                .eq(WeUser::getCorpId, corpId)
+                .in(WeUser::getUserId, Arrays.asList(users.split(StrUtil.COMMA))));
+        if (CollectionUtils.isEmpty(userlist)) {
+            return Collections.emptyList();
+        }
+        for (WeUser user : userlist) {
+            UserVO userVO = new UserVO();
+            org.springframework.beans.BeanUtils.copyProperties(user, userVO);
+            userVOList.add(userVO);
+        }
+        return userVOList;
+    }
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public String getOpenUserId(String corpId, String userId) {

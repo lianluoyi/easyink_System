@@ -1,5 +1,6 @@
 package com.easyink.common.enums.radar;
 
+import com.easyink.common.enums.EmployCodeSourceEnum;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -24,7 +25,8 @@ public enum RadarChannelEnum {
     GROUP_SOP(7, "群SOP"),
     NEW_IN_GROUP(8, "新客进群"),
     GROUP_CALENDAR(9, "群日历"),
-    CUSTOMIZE(10, "自定义渠道");
+    CUSTOMIZE(10, "自定义渠道"),
+    CUSTOMER_ASSISTANT(12, "获客助手");
     private final Integer TYPE;
     private final String NAME;
 
@@ -52,4 +54,5 @@ public enum RadarChannelEnum {
         }
         return true;
     }
+
 }

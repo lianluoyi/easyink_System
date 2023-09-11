@@ -59,8 +59,8 @@ public class WeFormOperRecordController extends BaseController {
 
     @ApiOperation("获取表单详情")
     @GetMapping("/getFormResult")
-    public AjaxResult<FormOperRecordDetailVO> getFormResult(@ApiParam("表单id") @RequestParam("formId") @NotNull Long formId) {
-        return AjaxResult.success(weFormOperRecordService.getFormResult(formId));
+    public AjaxResult<FormOperRecordDetailVO> getFormResult(@ApiParam("表单id") @RequestParam("formId") @NotNull Long formId, @ApiParam("点击渠道") @RequestParam("channelType") Integer channelType) {
+        return AjaxResult.success(weFormOperRecordService.getFormResult(formId, channelType));
     }
 
     @ApiOperation("导出客户操作记录")

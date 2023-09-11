@@ -86,9 +86,10 @@ public interface WeFormOperRecordService extends IService<WeFormOperRecord> {
      * 获取客户表单详情
      *
      * @param formId            表单id
+     * @param channelType       点击渠道
      * @return  {@link FormOperRecordDetailVO}
      */
-    List<FormOperRecordDetailVO> getFormResult(Long formId);
+    List<FormOperRecordDetailVO> getFormResult(Long formId, Integer channelType);
 
     /**
      * 导出客户操作记录

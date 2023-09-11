@@ -274,7 +274,7 @@
             <if test="updateTime != null">update_time = #{updateTime},</if>
             <if test="remark != null">remark = #{remark},</if>
             <if test="seq != null and seq != ''">seq = #{seq},</if>
-            <if test="appLink != null and appLink != ''" > app_link = #{appLink} ,</if>
+            app_link = #{appLink} ,
         </trim>
         where id = #{id}
     </update>

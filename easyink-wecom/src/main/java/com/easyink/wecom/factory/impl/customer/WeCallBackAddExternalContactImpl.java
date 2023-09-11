@@ -9,7 +9,9 @@ import com.easyink.common.config.RuoYiConfig;
 import com.easyink.common.constant.Constants;
 import com.easyink.common.constant.GenConstants;
 import com.easyink.common.constant.WeConstans;
+import com.easyink.common.constant.emple.CustomerAssistantConstants;
 import com.easyink.common.constant.redeemcode.RedeemCodeConstants;
+import com.easyink.common.core.domain.entity.WeCorpAccount;
 import com.easyink.common.core.domain.wecom.WeUser;
 import com.easyink.common.core.redis.RedisCache;
 import com.easyink.common.enums.*;
@@ -30,6 +32,7 @@ import com.easyink.wecom.domain.vo.WxCpXmlMessageVO;
 import com.easyink.wecom.domain.vo.welcomemsg.WeEmployMaterialVO;
 import com.easyink.wecom.factory.WeEventStrategy;
 import com.easyink.wecom.mapper.WeCustomerTrajectoryMapper;
+import com.easyink.wecom.mapper.WeEmpleCodeChannelMapper;
 import com.easyink.wecom.mapper.WeEmpleCodeMapper;
 import com.easyink.wecom.mapper.statistic.WeEmpleCodeStatisticMapper;
 import com.easyink.wecom.service.*;
@@ -104,12 +107,18 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
 
     private final EmpleStatisticRedisCache empleStatisticRedisCache;
     private final WeEmpleCodeStatisticMapper weEmpleCodeStatisticMapper;
+    private final WeCorpAccountService weCorpAccountService;
+    private final WeEmpleCodeChannelMapper weEmpleCodeChannelMapper;
+    private final CustomerAssistantService customerAssistantService;
 
     @Autowired
-    public WeCallBackAddExternalContactImpl(WeUserService weUserService, EmpleStatisticRedisCache empleStatisticRedisCache, WeEmpleCodeStatisticMapper weEmpleCodeStatisticMapper) {
+    public WeCallBackAddExternalContactImpl(WeUserService weUserService, EmpleStatisticRedisCache empleStatisticRedisCache, WeEmpleCodeStatisticMapper weEmpleCodeStatisticMapper, WeCorpAccountService weCorpAccountService, WeEmpleCodeChannelMapper weEmpleCodeChannelMapper, CustomerAssistantService customerAssistantService) {
         this.weUserService = weUserService;
         this.empleStatisticRedisCache = empleStatisticRedisCache;
         this.weEmpleCodeStatisticMapper = weEmpleCodeStatisticMapper;
+        this.weCorpAccountService = weCorpAccountService;
+        this.weEmpleCodeChannelMapper = weEmpleCodeChannelMapper;
+        this.customerAssistantService = customerAssistantService;
     }
 
 
@@ -121,8 +130,13 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
         String corpId = message.getToUserName();
         // 收到新增客户回调后,先进行欢迎语处理
         if (message.getState() != null && message.getWelcomeCode() != null && !isFission(message.getState())) {
-            // 活码欢迎语处理
-            sendEmpleCodeWelcomeMsg(message.getState(), message.getWelcomeCode(), message.getUserId(), message.getExternalUserId(), corpId);
+            if (isAssistantState(message.getState())) {
+                // 获客链接欢迎语处理
+                sendCustomerAssistantWelcomeMsg(message.getState(), message.getWelcomeCode(), message.getUserId(), message.getExternalUserId(), corpId);
+            } else {
+                // 活码欢迎语处理
+                sendEmpleCodeWelcomeMsg(message.getState(), message.getWelcomeCode(), message.getUserId(), message.getExternalUserId(), corpId);
+            }
         } else if (message.getWelcomeCode() != null) {
             // 配置的欢迎语处理
             otherHandle(message.getWelcomeCode(), message.getUserId(), message.getExternalUserId(), corpId);
@@ -131,6 +145,16 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
         }
         //  存入redis 后续由定时任务与编辑客户回调一起处理,避免同时处理导致的锁表 Tower 任务: 好友活码打标签失败 ( https://tower.im/teams/636204/todos/70202 )
         customerRedisCache.saveCallback(message.getToUserName(), message.getUserId(), message.getExternalUserId(), message);
+    }
+
+    /**
+     * 判断是否是获客链接添加的state
+     *
+     * @param state 来源state
+     * @return true 是，false 不是
+     */
+    private Boolean isAssistantState(String state) {
+        return state.startsWith(CustomerAssistantConstants.STATE_PREFIX);
     }
 
     /**
@@ -159,12 +183,57 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
             log.error("[{}]:回调处理,更新客户信息异常,message:{},e:{}", message.getChangeType(), message, ExceptionUtils.getStackTrace(e));
         }
         weAutoTagRuleHitCustomerRecordService.makeTagToNewCustomer(message.getExternalUserId(), message.getUserId(), corpId);
-        if (message.getState() != null  && !isFission(message.getState())) {
+        // state存在，且不是任务裂变活码前缀，也不是获客链接前缀
+        if (message.getState() != null  && !isFission(message.getState()) && !message.getState().startsWith(CustomerAssistantConstants.STATE_PREFIX)) {
             // 活码处理
             empleCodeHandle(message.getState(), message.getUserId(), message.getExternalUserId(), corpId);
         }
+        // 获客链接处理
+        if (message.getState() != null && message.getState().startsWith(CustomerAssistantConstants.STATE_PREFIX)) {
+            customerAssistantService.callBackAddAssistantHandle(message.getState(), message.getUserId(), message.getExternalUserId(), corpId);
+        }
         // 客户轨迹记录 : 添加员工
         weCustomerTrajectoryService.saveActivityRecord(corpId, message.getUserId(), message.getExternalUserId(), CustomerTrajectoryEnums.SubType.ADD_USER.getType());
+    }
+
+    /**
+     * 发送获客链接的欢迎语
+     *
+     * @param state          活码state
+     * @param welcomeCode    欢迎语code
+     * @param userId         员工id
+     * @param externalUserId 客户id
+     * @param corpId         企业id
+     */
+    private void sendCustomerAssistantWelcomeMsg(String state, String welcomeCode, String userId, String externalUserId, String corpId) {
+        WeWelcomeMsg.WeWelcomeMsgBuilder weWelcomeMsgBuilder = WeWelcomeMsg.builder().welcome_code(welcomeCode);
+        SelectWeEmplyCodeWelcomeMsgVO messageMap = weEmpleCodeService.selectWelcomeMsgByState(state, corpId);
+        if (messageMap == null) {
+            // 将"hk_"前缀截取掉，得到渠道id作为state信息
+            String channelId = state.replace(CustomerAssistantConstants.STATE_PREFIX, StringUtils.EMPTY);
+            // 根据渠道id获取渠道对应的获客链接id信息
+            WeEmpleCodeChannel channel = weEmpleCodeChannelMapper.getChannelById(channelId);
+            // 若根据渠道id未查询到信息，则表示不是从获客链接添加的客户，停止处理
+            if (channel == null) {
+                log.info("[获客链接发送欢迎语] 未查询到该state对应的获客链接信息，state:{},corpId:{},userId:{},externalUserId:{}", state, corpId, userId, externalUserId);
+                return;
+            }
+            messageMap = weEmpleCodeService.selectWelcomeMsgById(String.valueOf(channel.getEmpleCodeId()), corpId);
+        }
+        if (WelcomeMsgTypeEnum.COMMON_WELCOME_MSG_TYPE.getType().equals(messageMap.getWelcomeMsgType())) {
+            weEmpleCodeService.buildCustomerAssistantWelcomeMsg(messageMap, corpId);
+            //给好友发送消息
+            SelectWeEmplyCodeWelcomeMsgVO finalMessageMap = messageMap;
+            CompletableFuture.runAsync(() -> {
+                try {
+                    sendMessageToNewExternalUserId(weWelcomeMsgBuilder, finalMessageMap, getCustomerName(corpId, externalUserId), corpId, userId, externalUserId, state);
+                } catch (Exception e) {
+                    log.error("异步发送欢迎语消息异常：ex:{}", ExceptionUtils.getStackTrace(e));
+                }
+            });
+        } else if (WelcomeMsgTypeEnum.REDEEM_CODE_WELCOME_MSG_TYPE.getType().equals(messageMap.getWelcomeMsgType())) {
+            handleRedeemCodeWelcomeMsg(state, userId, externalUserId, corpId, weWelcomeMsgBuilder, messageMap, getCustomerName(corpId, externalUserId));
+        }
     }
 
     private boolean checkParams(WxCpXmlMessageVO message) {
@@ -503,8 +572,7 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
             // 新客拉群创建的员工活码欢迎语图片(群活码图片)
             String codeUrl = messageMap.getGroupCodeUrl();
             if (StringUtils.isNotBlank(codeUrl)) {
-                String cosImgUrlPrefix = ruoYiConfig.getFile().getCos().getCosImgUrlPrefix();
-                buildWelcomeMsgImg(corpId, codeUrl, codeUrl.replaceAll(cosImgUrlPrefix, ""), attachmentList);
+                buildWelcomeMsgImg(corpId, codeUrl, getGroupCodeFilename(codeUrl, corpId), attachmentList);
             }
         }
         // 欢迎语发送素材
@@ -531,6 +599,29 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
         }
     }
 
+    /**
+     * 获取群聊二维码的图片文件名称
+     *
+     * @param codeUrl 群二维码URL
+     * @param corpId 企业ID
+     * @return 图片文件名称
+     */
+    private String getGroupCodeFilename(String codeUrl, String corpId) {
+        if (StringUtils.isAnyBlank(codeUrl, corpId)) {
+            log.info("[入群欢迎语] 获取不到发送的群二维码信息，codeUrl:{}, corpId:{}", codeUrl, corpId);
+            return StringUtils.EMPTY;
+        }
+        if (!codeUrl.startsWith(Constants.RESOURCE_PREFIX)) {
+            return codeUrl.replaceAll(ruoYiConfig.getFile().getCos().getCosImgUrlPrefix(), StringUtils.EMPTY);
+        }
+        // 获取企业配置的H5Domain域名信息
+        WeCorpAccount weCorpAccount = weCorpAccountService.findValidWeCorpAccount(corpId);
+        if (weCorpAccount == null) {
+            return StringUtils.EMPTY;
+        }
+        return codeUrl.replaceAll(weCorpAccount.getH5DoMainName() + WeConstans.SLASH + Constants.RESOURCE_PREFIX, StringUtils.EMPTY);
+    }
+
     private boolean isFission(String str) {
         return str.contains(WeConstans.FISSION_PREFIX);
     }
@@ -544,7 +635,7 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
      */
     private void buildWelcomeMsgImg(String corpId, String picUrl, String fileName, List<Attachment> attachmentList) {
 
-        AttachmentParam param = AttachmentParam.builder().picUrl(picUrl).typeEnum(AttachmentTypeEnum.IMAGE).build();
+        AttachmentParam param = AttachmentParam.builder().picUrl(picUrl).content(fileName).typeEnum(AttachmentTypeEnum.IMAGE).build();
         Attachments attachments = attachmentService.buildAttachment(param, corpId);
         if (attachments != null) {
             attachmentList.add(attachments);

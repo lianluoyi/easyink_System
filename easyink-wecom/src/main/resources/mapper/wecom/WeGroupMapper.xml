@@ -47,6 +47,12 @@
                 AND wg.status
                 in(${@com.easyink.common.constant.GroupConstants@NARMAL},${@com.easyink.common.constant.GroupConstants@OWNER_LEAVE_EXTEND_SUCCESS})
             </if>
+            <if test="filterChatIds != null and filterChatIds.size() > 0">
+                AND wg.chat_id NOT IN
+                <foreach collection="filterChatIds" item="chatId" separator="," open="(" close=")">
+                    #{chatId}
+                </foreach>
+            </if>
         </where>
         order by wg.create_time desc
     </select>

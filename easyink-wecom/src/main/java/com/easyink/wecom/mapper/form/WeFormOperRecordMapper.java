@@ -61,11 +61,12 @@ public interface WeFormOperRecordMapper extends BaseMapper<WeFormOperRecord> {
     /**
      * 获取客户提交表单详情
      *
-     * @param formId 表单id
-     * @param corpId 企业id
+     * @param formId      表单id
+     * @param corpId      企业id
+     * @param channelType 点击渠道
      * @return
      */
-    List<FormOperRecordDetailVO> getFormResult(@Param("formId") Long formId, @Param("corpId") String corpId);
+    List<FormOperRecordDetailVO> getFormResult(@Param("formId") Long formId, @Param("corpId") String corpId, @Param("channelType") Integer channelType);
 
 
 

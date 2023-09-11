@@ -5,8 +5,10 @@ import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.easyink.common.config.RuoYiConfig;
+import com.easyink.common.constant.Constants;
 import com.easyink.common.constant.WeConstans;
 import com.easyink.common.constant.redeemcode.RedeemCodeConstants;
+import com.easyink.common.core.domain.entity.WeCorpAccount;
 import com.easyink.common.enums.MediaType;
 import com.easyink.common.enums.ResultTip;
 import com.easyink.common.enums.AttachmentTypeEnum;
@@ -51,26 +53,25 @@ public class WeMsgTlpMaterialServiceImpl extends ServiceImpl<WeMsgTlpMaterialMap
     private WeMsgTlpMaterialService weMsgTlpMaterialService;
     private WeMaterialService weMaterialService;
     private WeWelcomeMsgClient weWelcomeMsgClient;
-    private WeFlowerCustomerRelService weFlowerCustomerRelService;
     private WeCustomerService weCustomerService;
     private WeUserService weUserService;
     private WeMsgTlpService weMsgTlpService;
     private AttachmentService attachmentService;
-
     private final RuoYiConfig ruoYiConfig;
+    private final WeCorpAccountService weCorpAccountService;
 
     @Lazy
     @Autowired
-    public WeMsgTlpMaterialServiceImpl(WeMsgTlpMaterialService weMsgTlpMaterialService, WeMaterialService weMaterialService, WeWelcomeMsgClient weWelcomeMsgClient, WeFlowerCustomerRelService weFlowerCustomerRelService, WeCustomerService weCustomerService, WeUserService weUserService, WeMsgTlpService weMsgTlpService, AttachmentService attachmentService, RuoYiConfig ruoYiConfig) {
+    public WeMsgTlpMaterialServiceImpl(WeMsgTlpMaterialService weMsgTlpMaterialService, WeMaterialService weMaterialService, WeWelcomeMsgClient weWelcomeMsgClient, WeCustomerService weCustomerService, WeUserService weUserService, WeMsgTlpService weMsgTlpService, AttachmentService attachmentService, RuoYiConfig ruoYiConfig, WeCorpAccountService weCorpAccountService) {
         this.weMsgTlpMaterialService = weMsgTlpMaterialService;
         this.weMaterialService = weMaterialService;
         this.weWelcomeMsgClient = weWelcomeMsgClient;
-        this.weFlowerCustomerRelService = weFlowerCustomerRelService;
         this.weCustomerService = weCustomerService;
         this.weUserService = weUserService;
         this.weMsgTlpService = weMsgTlpService;
         this.attachmentService = attachmentService;
         this.ruoYiConfig = ruoYiConfig;
+        this.weCorpAccountService = weCorpAccountService;
     }
 
     /**
@@ -228,28 +229,8 @@ public class WeMsgTlpMaterialServiceImpl extends ServiceImpl<WeMsgTlpMaterialMap
                 defaultMaterial.setDefaultMsgId(defaultMsgId);
                 // 判断类型是否为小程序
                 saveAppid(defaultMaterial);
-                // 保存重新上传的文件名
-                saveFileUrl(defaultMaterial, corpId);
             }
             weMsgTlpMaterialService.saveOrUpdateBatch(defaultMaterials);
-        }
-    }
-
-
-    /**
-     * 保存重新上传的文件名
-     *
-     * @param weMsgTlpMaterial {@link WeMsgTlpMaterial}
-     * @param corpId 企业ID
-     */
-    public void saveFileUrl(WeMsgTlpMaterial weMsgTlpMaterial, String corpId) {
-        // 判断是否为图片、文件、视频类型的素材，且文件名和原来的Url中的文件名不一致
-        if ((Objects.equals(weMsgTlpMaterial.getType(), WeMsgTlpEnum.IMAGE.getValue()) || Objects.equals(weMsgTlpMaterial.getType(), WeMsgTlpEnum.FILE.getValue()) || Objects.equals(weMsgTlpMaterial.getType(), WeMsgTlpEnum.VIDEO.getValue())) && !weMsgTlpMaterial.getContent().equals(FileUtil.getName(weMsgTlpMaterial.getPicUrl()))) {
-            String newFileUrl = FileUploadUtils.reUploadFile(weMsgTlpMaterial.getPicUrl(), ruoYiConfig, weMsgTlpMaterial.getContent(), corpId);
-            if (StringUtils.isBlank(newFileUrl)) {
-                throw new CustomException(ResultTip.TIP_FAIL_RE_UPLOAD_FILE);
-            }
-            weMsgTlpMaterial.setPicUrl(newFileUrl);
         }
     }
 
@@ -407,8 +388,6 @@ public class WeMsgTlpMaterialServiceImpl extends ServiceImpl<WeMsgTlpMaterialMap
             weMsgTlpMaterial = defaultMaterials.get(0);
             // 判断类型是否为小程序
             saveAppid(weMsgTlpMaterial);
-            // 保存重新上传的文件名
-            saveFileUrl(weMsgTlpMaterial, corpId);
             // 根据媒体类型构建DTO调用企业微信接口
             groupWelcomeMsgUpdateDTO = handleByMaterialType(weMsgTlpMaterial.getContent(), weMsgTlpMaterial.getPicUrl(), weMsgTlpMaterial.getDescription(), weMsgTlpMaterial.getUrl(), AttachmentTypeEnum.getByMessageType(weMsgTlpMaterial.getType()), groupWelcomeMsgUpdateDTO, corpId);
         }
@@ -590,17 +569,17 @@ public class WeMsgTlpMaterialServiceImpl extends ServiceImpl<WeMsgTlpMaterialMap
         // 根据url调用上传素材接口获取media_id
         switch (type) {
             case IMAGE:
-                handleImage(picUrl, messages, corpId);
+                handleImage(picUrl, messages, corpId, content);
                 break;
             case LINK:
             case RADAR:
-                handleLink(content, picUrl, description, url, messages);
+                handleLink(content, picUrl, description, url, messages, corpId);
                 break;
             case MINIPROGRAM:
                 handleMiniprogram(content, picUrl, description, url, messages, corpId);
                 break;
             case FILE:
-                handleFile(picUrl, messages, corpId);
+                handleFile(picUrl, messages, corpId, content);
                 break;
             case VIDEO:
                 handleVideo(content, picUrl, description, url, messages, corpId);
@@ -631,11 +610,11 @@ public class WeMsgTlpMaterialServiceImpl extends ServiceImpl<WeMsgTlpMaterialMap
             String desc = WeConstans.CLICK_SEE_VIDEO;
             // 封面图
             url = StringUtils.isNotEmpty(url) ? url : WeConstans.DEFAULT_VIDEO_COVER_URL;
-            handleLink(content, url, desc, picUrl, messages);
+            handleLink(content, url, desc, picUrl, messages, corpId);
             return;
         }
         Video video = new Video();
-        WeMediaDTO weMediaDTO = weMaterialService.uploadTemporaryMaterial(picUrl, MediaType.VIDEO.getMediaType(), FileUtil.getName(picUrl), corpId);
+        WeMediaDTO weMediaDTO = weMaterialService.uploadTemporaryMaterial(picUrl, MediaType.VIDEO.getMediaType(), content, corpId);
         if (weMediaDTO.getErrcode() != 0) {
             log.error("接口调用异常，errormsg: {}", weMediaDTO.getErrmsg());
             throw new CustomException(ResultTip.TIP_GENERAL_BAD_REQUEST);
@@ -648,10 +627,11 @@ public class WeMsgTlpMaterialServiceImpl extends ServiceImpl<WeMsgTlpMaterialMap
      * @param picUrl   图片url
      * @param messages 素材
      * @param corpId   企业id
+     * @param filename 文件名称
      */
-    private void handleFile(String picUrl, Messages messages, String corpId) {
+    private void handleFile(String picUrl, Messages messages, String corpId, String filename) {
         File file = new File();
-        WeMediaDTO weMediaDTO = weMaterialService.uploadTemporaryMaterial(picUrl, MediaType.FILE.getMediaType(), FileUtil.getName(picUrl), corpId);
+        WeMediaDTO weMediaDTO = weMaterialService.uploadTemporaryMaterial(picUrl, MediaType.FILE.getMediaType(), filename, corpId);
         if (weMediaDTO.getErrcode() != 0) {
             log.error("接口调用异常，errormsg: {}", weMediaDTO.getErrmsg());
             throw new CustomException(ResultTip.TIP_GENERAL_BAD_REQUEST);
@@ -676,7 +656,7 @@ public class WeMsgTlpMaterialServiceImpl extends ServiceImpl<WeMsgTlpMaterialMap
         miniProgram.setAppid(appid);
         miniProgram.setPage(page);
         // 调用素材上传获取media_id
-        WeMediaDTO weMediaDTO = weMaterialService.uploadTemporaryMaterial(picUrl, MediaType.IMAGE.getMediaType(), FileUtil.getName(picUrl), corpId);
+        WeMediaDTO weMediaDTO = weMaterialService.uploadTemporaryMaterial(weCorpAccountService.getUrl(picUrl, corpId), MediaType.IMAGE.getMediaType(), FileUtil.getName(picUrl), corpId);
         if (weMediaDTO.getErrcode() != 0) {
             log.error("接口调用异常，errormsg: {}", weMediaDTO.getErrmsg());
             throw new CustomException(ResultTip.TIP_GENERAL_BAD_REQUEST);
@@ -693,11 +673,12 @@ public class WeMsgTlpMaterialServiceImpl extends ServiceImpl<WeMsgTlpMaterialMap
      * @param description 图文消息的描述
      * @param url         图文消息的链接
      * @param messages    素材
+     * @param corpId      企业ID
      */
-    private void handleLink(String content, String picUrl, String description, String url, Messages messages) {
+    private void handleLink(String content, String picUrl, String description, String url, Messages messages, String corpId) {
         Link link = new Link();
         link.setTitle(content);
-        link.setPicurl(picUrl);
+        link.setPicurl(weCorpAccountService.getUrl(picUrl, corpId));
         link.setDesc(description);
         link.setUrl(url);
         messages.setLink(link);
@@ -708,12 +689,13 @@ public class WeMsgTlpMaterialServiceImpl extends ServiceImpl<WeMsgTlpMaterialMap
      *
      * @param picUrl   图片url
      * @param messages 素材
-     * @param corpId
+     * @param corpId   企业ID
+     * @param imgName  图片名称
      */
-    private void handleImage(String picUrl, Messages messages, String corpId) {
+    private void handleImage(String picUrl, Messages messages, String corpId, String imgName) {
         Image image = new Image();
         // 调用素材上传获取media_id
-        WeMediaDTO weMediaDTO = weMaterialService.uploadTemporaryMaterial(picUrl, MediaType.IMAGE.getMediaType(), FileUtil.getName(picUrl), corpId);
+        WeMediaDTO weMediaDTO = weMaterialService.uploadTemporaryMaterial(picUrl, MediaType.IMAGE.getMediaType(), imgName, corpId);
         if (weMediaDTO.getErrcode() != 0) {
             log.error("接口调用异常，errormsg: {}", weMediaDTO.getErrmsg());
             throw new CustomException(ResultTip.TIP_GENERAL_BAD_REQUEST);
@@ -740,4 +722,5 @@ public class WeMsgTlpMaterialServiceImpl extends ServiceImpl<WeMsgTlpMaterialMap
         text.setContent(realMsg);
         messages.setText(text);
     }
+
 }

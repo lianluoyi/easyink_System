@@ -3,7 +3,10 @@ package com.easyink.wecom.mapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.easyink.wecom.domain.WeEmpleCodeAnalyse;
 import com.easyink.wecom.domain.WeEmpleCodeStatistic;
+import com.easyink.wecom.domain.dto.emplecode.FindAssistantDetailStatisticCustomerDTO;
+import com.easyink.wecom.domain.dto.emplecode.FindChannelRangeChartDTO;
 import com.easyink.wecom.domain.dto.emplecode.FindWeEmpleCodeAnalyseDTO;
+import com.easyink.wecom.domain.vo.emple.*;
 import com.easyink.wecom.domain.vo.WeEmplyCodeAnalyseCountVO;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
@@ -79,4 +82,61 @@ public interface WeEmpleCodeAnalyseMapper extends BaseMapper<WeEmpleCodeAnalyse>
      * @return 统计数据
      */
     List<WeEmpleCodeStatistic> getEmpleStatisticDateData(@Param("corpId") String corpId, @Param("date") String date, @Param("empleCodeIdList") List<Long> empleCodeIdList);
+
+    /**
+     * 获客链接-详情-数据总览
+     *
+     * @param channelIdList 渠道id列表
+     * @return {@link CustomerAssistantDetailTotalVO}
+     */
+    CustomerAssistantDetailTotalVO getAssistantDetailTotal(@Param("channelIdList") List<Long> channelIdList, @Param("corpId") String corpId, @Param("time") String time);
+
+    /**
+     * 获客链接-详情-数据总览-有效客户数
+     *
+     * @param stateList state来源列表
+     * @return {@link CustomerAssistantDetailTotalVO}
+     */
+    CustomerAssistantDetailTotalVO getAssistantDetailTotalCurrentNewCustomer(@Param("stateList") List<String> stateList, @Param("corpId") String corpId, @Param("time") String time);
+
+
+    /**
+     * 获客链接-详情-渠道新增客户数排行
+     *
+     * @param findChannelRangeChartDTO {@link FindChannelRangeChartDTO}
+     * @return {@link ChannelDetailRangeVO}
+     */
+    List<ChannelDetailRangeVO> getChannelRangeList(FindChannelRangeChartDTO findChannelRangeChartDTO);
+
+    /**
+     * 获客链接-详情-趋势图
+     *
+     * @param findChannelRangeChartDTO {@link FindChannelRangeChartDTO}
+     * @return {@link ChannelDetailChartVO}
+     */
+    List<ChannelDetailChartVO> getChannelChartList(FindChannelRangeChartDTO findChannelRangeChartDTO);
+
+    /**
+     * 获客链接详情-数据统计-客户维度(新增客户数、流失客户数)
+     *
+     * @param dto {@link FindAssistantDetailStatisticCustomerDTO}
+     * @return {@link AssistantDetailStatisticCustomerVO}
+     */
+    List<AssistantDetailStatisticCustomerVO> getDetailStatisticByCustomer(FindAssistantDetailStatisticCustomerDTO dto);
+
+    /**
+     * 获客链接详情-数据统计-渠道维度(新增客户数、流失客户数)
+     *
+     * @param dto {@link FindAssistantDetailStatisticCustomerDTO}
+     * @return {@link AssistantDetailStatisticChannelVO}
+     */
+    List<AssistantDetailStatisticChannelVO> getDetailStatisticByChannel(FindAssistantDetailStatisticCustomerDTO dto);
+
+    /**
+     * 获客链接详情-数据统计-日期维度(新增客户数、流失客户数)
+     *
+     * @param dto {@link FindAssistantDetailStatisticCustomerDTO}
+     * @return {@link AssistantDetailStatisticDateVO}
+     */
+    List<AssistantDetailStatisticDateVO> getDetailStatisticByDate(FindAssistantDetailStatisticCustomerDTO dto);
 }

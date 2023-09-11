@@ -5,6 +5,7 @@ import com.easyink.wecom.domain.WeFlowerCustomerRel;
 import com.easyink.wecom.domain.WeUserBehaviorData;
 import com.easyink.wecom.domain.dto.statistics.CustomerOverviewDTO;
 import com.easyink.wecom.domain.dto.statistics.StatisticsDTO;
+import com.easyink.wecom.domain.vo.emple.WeEmpleCodeChannelRelVO;
 import com.easyink.wecom.domain.vo.statistics.CustomerOverviewVO;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
@@ -151,4 +152,51 @@ public interface WeFlowerCustomerRelMapper extends BaseMapper<WeFlowerCustomerRe
      * @return 有效客户数
      */
     Integer getCurrentNewCustomerCntByDataScope(StatisticsDTO dto);
+
+    /**
+     * 获客链接详情-渠道维度-渠道累计客户数
+     *
+     * @param channelIdList 渠道ID列表
+     * @param userIds       员工ID，多个用，隔开
+     * @param corpId        企业ID
+     * @param endTime       查询截止时间，格式为YYYY-MM-DD 23:59:59
+     * @return 各个渠道对应的累计客户数
+     */
+    List<WeEmpleCodeChannelRelVO> getChannelRelAccumulateCnt(@Param("channelIdList") List<Long> channelIdList, @Param("userIds") String userIds, @Param("corpId") String corpId, @Param("endTime") String endTime);
+
+    /**
+     * 获客链接详情-渠道维度-渠道未流失的客户数（有效客户数）
+     *
+     * @param stateList 来源state列表
+     * @param userIds 员工ID，多个用，隔开
+     * @param corpId 企业ID
+     * @param beginTime 查询开始时间，格式为YYYY-MM-DD HH:MM:00
+     * @param endTime 查询截止时间，格式为YYYY-MM-DD HH:MM:59
+     * @return 各个渠道对应的未流失的客户数（有效客户数）
+     */
+    List<WeEmpleCodeChannelRelVO> getChannelRelEffectCnt(@Param("stateList") List<String> stateList, @Param("userIds") String userIds, @Param("corpId") String corpId, @Param("beginTime") String beginTime, @Param("endTime") String endTime);
+
+    /**
+     * 获客链接详情-日期维度-渠道累计客户数
+     *
+     * @param channelIdList channelId列表
+     * @param userIds 员工ID，多个用，隔开
+     * @param corpId 企业ID
+     * @param endTime 查询截止时间，格式为YYYY-MM-DD 23:59:59
+     * @return 各个渠道对应的累计客户数
+     */
+    List<WeEmpleCodeChannelRelVO> getChannelDateRelAccumulateCnt(@Param("channelIdList") List<Long> channelIdList, @Param("userIds") String userIds, @Param("corpId") String corpId, @Param("endTime") String endTime);
+
+
+    /**
+     * 获客链接详情-日期维度-渠道未流失的客户数（有效客户数）
+     *
+     * @param stateList 来源state列表
+     * @param userIds 员工ID，多个用，隔开
+     * @param corpId 企业ID
+     * @param beginTime 查询开始时间，格式为YYYY-MM-DD HH:MM:00
+     * @param endTime 查询截止时间，格式为YYYY-MM-DD HH:MM:59
+     * @return 各个渠道对应的未流失的客户数（有效客户数）
+     */
+    List<WeEmpleCodeChannelRelVO> getChannelDateRelEffectCnt(@Param("stateList") List<String> stateList, @Param("userIds") String userIds, @Param("corpId") String corpId, @Param("beginTime") String beginTime, @Param("endTime") String endTime);
 }

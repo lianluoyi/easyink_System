@@ -3,6 +3,7 @@ package com.easyink.wecom.mapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.easyink.wecom.domain.WeEmpleCode;
 import com.easyink.wecom.domain.dto.WeEmpleCodeDTO;
+import com.easyink.wecom.domain.dto.emplecode.FindAssistantDTO;
 import com.easyink.wecom.domain.dto.emplecode.FindWeEmpleCodeDTO;
 import com.easyink.wecom.domain.vo.*;
 import com.easyink.wecom.domain.vo.statistics.emplecode.EmpleCodeByNameVO;
@@ -37,6 +38,14 @@ public interface WeEmpleCodeMapper extends BaseMapper<WeEmpleCode> {
      * @return {@link List<GetWeEmployCodeVO>}
      */
     List<WeEmpleCodeVO> selectWeEmpleCodeList(FindWeEmpleCodeDTO weEmpleCode);
+
+    /**
+     * 查询获客链接列表
+     *
+     * @param assistantDTO {@link FindAssistantDTO}
+     * @return {@link List< GetWeEmployCodeVO >}
+     */
+    List<WeEmpleCodeVO> selectAssistantList(FindAssistantDTO assistantDTO);
 
     /**
      * 新增员工活码
@@ -91,6 +100,15 @@ public interface WeEmpleCodeMapper extends BaseMapper<WeEmpleCode> {
     SelectWeEmplyCodeWelcomeMsgVO selectWelcomeMsgByState(@Param("state") String state, @Param("corpId") String corpId);
 
     /**
+     * 通过id定位员工活码/获客链接
+     *
+     * @param id     员工活码ID/获客链接ID
+     * @param corpId 企业ID
+     * @return {@link SelectWeEmplyCodeWelcomeMsgVO}
+     */
+    SelectWeEmplyCodeWelcomeMsgVO selectWelcomeMsgById(@Param("id") String id, @Param("corpId") String corpId);
+
+    /**
      * 根据HHmm查询时间段通过好友的员工活码数据
      *
      * @param HHmm
@@ -139,4 +157,22 @@ public interface WeEmpleCodeMapper extends BaseMapper<WeEmpleCode> {
      * @return {@link EmpleCodeByNameVO}
      */
     List<EmpleCodeByNameVO> listByName(FindWeEmpleCodeDTO dto);
+
+    /**
+     * 根据链接id获取链接名称和创建人信息（已删除的也能获取）
+     *
+     * @param linkId 获客链接ID
+     * @param corpId 企业ID
+     * @return 获客链接名称
+     */
+    WeEmpleCode getAssistantByLinkId(@Param("linkId") String linkId, @Param("corpId") String corpId);
+
+    /**
+     * 根据链接id删除获客链接（逻辑删除）
+     *
+     * @param linkId 获客链接ID
+     * @param corpId 企业ID
+     * @return 结果
+     */
+    Integer removeAssistantByLinkId(@Param("linkId") String linkId, @Param("corpId") String corpId);
 }

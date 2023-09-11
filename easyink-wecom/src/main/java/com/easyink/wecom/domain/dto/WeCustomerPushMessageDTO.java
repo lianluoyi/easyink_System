@@ -1,5 +1,6 @@
 package com.easyink.wecom.domain.dto;
 
+import com.easyink.common.utils.DateUtils;
 import com.easyink.wecom.domain.WeCustomer;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -8,6 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.Date;
+import java.util.List;
 
 /**
  * 类名： WeCustomerPushMessageDTO
@@ -23,6 +25,12 @@ import java.util.Date;
 public class WeCustomerPushMessageDTO extends WeCustomer {
 
     private String filterTags;
+    @ApiModelProperty("过滤员工列表，用逗号隔开")
+    private String filterUsers;
+    @ApiModelProperty("过滤部门列表，用逗号隔开")
+    private String filterDepartments;
+    @ApiModelProperty("过滤员工添加的客户列表")
+    private List<String> filterExternalList;
     @ApiModelProperty("开始时间")
     private Date customerStartTime;
     @ApiModelProperty("结束时间")
@@ -38,5 +46,14 @@ public class WeCustomerPushMessageDTO extends WeCustomer {
         this.setCorpId(corpId);
         this.setDepartmentIds(departmentIds);
         this.setPushRange(pushRange);
+    }
+
+    /**
+     * 转换截止日期格式
+     *
+     * @return 格式为YYYY-MM-DD 23:59:59 的日期
+     */
+    public Date getCustomerEndTime() {
+        return DateUtils.getEndOfDay(customerEndTime);
     }
 }

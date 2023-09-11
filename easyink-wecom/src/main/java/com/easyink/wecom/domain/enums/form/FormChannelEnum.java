@@ -1,5 +1,6 @@
 package com.easyink.wecom.domain.enums.form;
 
+import com.easyink.common.enums.EmployCodeSourceEnum;
 import com.easyink.common.enums.radar.RadarChannelEnum;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -26,6 +27,7 @@ public enum FormChannelEnum {
     GROUP_CALENDAR(RadarChannelEnum.GROUP_CALENDAR.getTYPE(), RadarChannelEnum.GROUP_CALENDAR.getNAME()),
 
     PROMOTION(11, "推广"),
+    CUSTOMER_ASSISTANT(RadarChannelEnum.CUSTOMER_ASSISTANT.getTYPE(), RadarChannelEnum.CUSTOMER_ASSISTANT.getNAME())
     ;
     @Getter
     private final Integer code;
@@ -44,4 +46,5 @@ public enum FormChannelEnum {
         }
         return Arrays.stream(values()).filter(a -> code.equals(a.getCode())).findFirst().orElse(UNKNOWN);
     }
+
 }

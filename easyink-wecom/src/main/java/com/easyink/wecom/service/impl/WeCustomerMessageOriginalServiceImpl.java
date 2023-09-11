@@ -70,13 +70,6 @@ public class WeCustomerMessageOriginalServiceImpl extends ServiceImpl<WeCustomer
             return new CustomerMessagePushVO();
         }
         CustomerMessagePushVO customerMessagePushDetail = weCustomerMessageOriginalMapper.findCustomerMessagePushDetail(messageId, corpId);
-        //检查是否已经同步发送结果
-        if (weCustomerMessgaeResultMapper.checkSendStatus(messageId) == 0) {
-            //拉取消息发送结果
-            List<String> msgids = new ArrayList<>();
-            msgids.add(customerMessagePushDetail.getMsgid());
-            CompletableFuture.runAsync(() -> syncSendResult(msgids, messageId, corpId));
-        }
         return customerMessagePushDetail;
     }
 
@@ -107,18 +100,6 @@ public class WeCustomerMessageOriginalServiceImpl extends ServiceImpl<WeCustomer
             msgIds.forEach(msgId -> {
                 QueryCustomerMessageStatusResultDataObjectDTO dataObjectDto = new QueryCustomerMessageStatusResultDataObjectDTO();
                 dataObjectDto.setMsgid(msgId);
-                //如果为空说明消息没有下发成功，则跳过拉取，具体的发送状态在详情显示
-                if (StringUtils.isBlank(msgId)) {
-                    WeCustomerMessage message = weCustomerMessageService.getById(messageId);
-                    //已尝试发送则修改结果状态
-                    if (MessageStatusEnum.SEND_SUCCEED.getType().equals(message.getCheckStatus())) {
-                        weCustomerMessgaeResultMapper.update(null, new LambdaUpdateWrapper<WeCustomerMessgaeResult>()
-                                .eq(WeCustomerMessgaeResult::getMessageId, messageId)
-                                .set(WeCustomerMessgaeResult::getStatus, MessageStatusEnum.PARAM_ERROR.getType())
-                                .set(WeCustomerMessgaeResult::getRemark, MessageStatusEnum.PARAM_ERROR.getName()));
-                    }
-                    return;
-                }
                 //拉取发送结果
                 QueryCustomerMessageStatusResultDTO queryCustomerMessageStatusResultDTO = weCustomerMessagePushClient.queryCustomerMessageStatus(dataObjectDto, corpId);
                 if (WeExceptionTip.WE_EXCEPTION_TIP_41063.getCode().equals(queryCustomerMessageStatusResultDTO.getErrcode())) {

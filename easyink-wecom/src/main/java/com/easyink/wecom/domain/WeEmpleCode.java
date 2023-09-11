@@ -68,6 +68,15 @@ public class WeEmpleCode extends BaseEntity {
     @NotBlank(message = "scenario不能为空")
     private String scenario;
 
+    @ApiModelProperty(value = "场景描述")
+    @TableField("description")
+    @Size(max = 64, message = "场景描述已超出限制")
+    private String description;
+
+    @ApiModelProperty(value = "获客链接id")
+    @TableField("link_id")
+    private String linkId;
+
     @ApiModelProperty(value = "欢迎语")
     @TableField("welcome_msg")
     @Size(max = 2000, message = "欢迎语长度已超出限制")

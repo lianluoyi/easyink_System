@@ -384,6 +384,20 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
     }
 
     /**
+     * 查询导出的列表
+     *
+     * @param weCustomer 客户条件
+     * @return 需要导出的客户
+     */
+    public List<WeCustomerVO> selectExportCustomer(WeCustomer weCustomer) {
+        if (StringUtils.isBlank(weCustomer.getCorpId())) {
+            throw new CustomException(ResultTip.TIP_GENERAL_PARAM_ERROR);
+        }
+        List<WeCustomerVO> list =  weCustomerMapper.selectExportCustomer(weCustomer);
+        return  list ;
+    }
+
+    /**
      * 判断是否有过滤条件的客户
      *
      * @param weCustomer 客户实体
@@ -1228,21 +1242,50 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
             log.error("获取客户列表失败，corpId不能为空");
             throw new CustomException("获取客户列表失败");
         }
-        WeCustomerPushMessageDTO buildWeCustomer = weCustomer;
-        //查找部门下员工
-        if (StringUtils.isNotEmpty(weCustomer.getDepartmentIds())) {
-            List<String> userIdsByDepartment = weUserService.listOfUserId(weCustomer.getCorpId(), weCustomer.getDepartmentIds().split(StrUtil.COMMA));
-            String userIdsFromDepartment = CollectionUtils.isNotEmpty(userIdsByDepartment) ? StringUtils.join(userIdsByDepartment, WeConstans.COMMA) : StringUtils.EMPTY;
-            if (StringUtils.isNotEmpty(buildWeCustomer.getUserIds())) {
-                buildWeCustomer.setUserIds(buildWeCustomer.getUserIds() + StrUtil.COMMA + userIdsFromDepartment);
-            } else {
-                buildWeCustomer.setUserIds(userIdsFromDepartment);
-            }
+        // 获取过滤员工/部门下的员工id列表
+        List<String> filterUserIdList = getUserIdList(weCustomer.getFilterUsers(), weCustomer.getFilterDepartments(), weCustomer.getCorpId());
+        // 不为空，从所属员工/部门下的员工id列表中移除需要过滤的员工
+        if (CollectionUtils.isNotEmpty(filterUserIdList)) {
+            // 获取过滤的员工下，所有添加的客户id
+            List<WeFlowerCustomerRel> externalList = weFlowerCustomerRelService.list(new LambdaQueryWrapper<WeFlowerCustomerRel>().select(WeFlowerCustomerRel::getExternalUserid)
+                    .eq(WeFlowerCustomerRel::getStatus, Constants.NORMAL_CODE)
+                    .eq(WeFlowerCustomerRel::getCorpId, weCustomer.getCorpId())
+                    .in(WeFlowerCustomerRel::getUserId, filterUserIdList)
+                    .groupBy(WeFlowerCustomerRel::getExternalUserid));
+            List<String> externalIdList = externalList.stream().map(WeFlowerCustomerRel::getExternalUserid).collect(Collectors.toList());
+            weCustomer.setFilterExternalList(externalIdList);
         }
-        if (WeConstans.SEND_MESSAGE_CUSTOMER_PART.equals(weCustomer.getPushRange()) && StringUtils.isBlank(buildWeCustomer.getUserIds())) {
+        // 获取所属员工/部门下的员工id列表
+        List<String> userIdList = getUserIdList(weCustomer.getUserIds(), weCustomer.getDepartmentIds(), weCustomer.getCorpId());
+        // 不为空
+        if (CollectionUtils.isNotEmpty(userIdList)) {
+            // 设置所属员工id条件
+            weCustomer.setUserIds(StringUtils.join(userIdList, WeConstans.COMMA));
+        }
+        return weCustomerMapper.selectWeCustomerListNoRel(weCustomer);
+    }
+
+    /**
+     * 根据部门和员工获取员工id列表
+     *
+     * @param users 员工id，用逗号隔开
+     * @param departments 部门id，用逗号隔开
+     * @param corpId 企业ID
+     * @return 员工id列表
+     */
+    private List<String> getUserIdList(String users, String departments, String corpId) {
+        if ((StringUtils.isBlank(users) && StringUtils.isBlank(departments)) || StringUtils.isBlank(corpId)) {
             return Collections.emptyList();
         }
-        return weCustomerMapper.selectWeCustomerListNoRel(buildWeCustomer);
+        // 员工id列表
+        List<String> filterUserIdList = new ArrayList<>();
+        if (StringUtils.isNotBlank(users)) {
+            filterUserIdList = new ArrayList<>(Arrays.asList(users.split(WeConstans.COMMA)));
+        }
+        if (StringUtils.isNotBlank(departments)) {
+            filterUserIdList.addAll(weUserService.listOfUserId(corpId, departments.split(WeConstans.COMMA)));
+        }
+        return filterUserIdList;
     }
 
     @Override
