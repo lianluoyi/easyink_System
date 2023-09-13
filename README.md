@@ -63,7 +63,7 @@
 
 ## :book: 功能清单
 
-[![easyink](https://wecomsaas-1253559996.cos.ap-guangzhou.myqcloud.com/2022/08/22/功能清单.jpeg)]()
+[![easyink](https://free-1253559996.cos.ap-guangzhou.myqcloud.com/654960662ad53d9c9ce3033101fe8bb4.jpeg)]()
 
 ## :page_with_curl: 项目演示图
 
