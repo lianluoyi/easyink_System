@@ -13,14 +13,13 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.Resource;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 /**
  * 类名： 消息结果定时任务
@@ -34,10 +33,9 @@ public class MessageResultTask {
     private final WeCorpAccountService weCorpAccountService;
     private final WeCustomerMessageOriginalService weCustomerMessageOriginalService;
     private final WeCustomerMessgaeResultMapper weCustomerMessgaeResultMapper;
-
+    @Resource(name = "messageResultTaskExecutor")
+    private ThreadPoolTaskExecutor messageResultTaskExecutor;
     private static final int SUB_DAY = 30;
-    private static ScheduledExecutorService scheduledExecutorService = new ScheduledThreadPoolExecutor(10,
-            new BasicThreadFactory.Builder().namingPattern("MessageResultTaskSchedual-%d").daemon(true).build());
 
     @Autowired
     public MessageResultTask(WeCorpAccountService weCorpAccountService, WeCustomerMessageOriginalService weCustomerMessageOriginalService, WeCustomerMessgaeResultMapper weCustomerMessgaeResultMapper) {
@@ -65,14 +63,14 @@ public class MessageResultTask {
             List<AsyncResultDTO> resultDtoList = weCustomerMessgaeResultMapper.listOfNotSend(corpId, startTime, endTime);
             for (AsyncResultDTO asyncResultDTO : resultDtoList) {
                 String finalCorpId = corpId;
-                scheduledExecutorService.schedule(() -> {
+                messageResultTaskExecutor.execute(() -> {
                     try {
                         asyncResultDTO.setMsgids(Arrays.asList(asyncResultDTO.getMsgArray()));
                         weCustomerMessageOriginalService.asyncResult(asyncResultDTO, finalCorpId);
                     } catch (JsonProcessingException e) {
                         log.error("MessageResultTask定时任务异常 ex:{}，messageId:{}", ExceptionUtils.getStackTrace(e), asyncResultDTO.getMessageId());
                     }
-                }, 0, TimeUnit.SECONDS);
+                });
             }
         }
     }

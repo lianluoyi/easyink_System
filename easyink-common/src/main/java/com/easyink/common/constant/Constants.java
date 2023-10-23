@@ -279,6 +279,12 @@ public class Constants {
     protected static final String[] CSV_INJECT_CHAR_LIST = {"+", "-", "@", "="};
 
     /**
+     * 导出最大等待时间
+     */
+    public final static int EXPORT_MAX_WAIT_TIME = 3 ;
+
+
+    /**
      * 获得可能会引起CSV注入 的特殊字符序列
      * 
      * @return
@@ -295,4 +301,14 @@ public class Constants {
      * 默认的新客留存率值
      */
     public static final String EMPTY_RETAIN_RATE_VALUE = "-";
+
+    /**
+     * 数据统计-联系客户最大查询时间范围
+     */
+    public static final Integer STATISTIC_MAX_COUNT_DATES = 180;
+
+    /**
+     * 群发发送人/群名称的分隔符
+     */
+    public static final String CUSTOMER_PUSH_MESSAGE_SEPARATOR = "、";
 }

@@ -3,6 +3,19 @@
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.easyink.wecom.mapper.WeUserBehaviorDataMapper">
+    <!--批量更新客户总数值-->
+    <insert id="saveBatchUpdateOrInsert">
+        INSERT INTO we_user_behavior_data
+        (corp_id, user_id, stat_time, total_all_contact_cnt)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+             #{item.corpId}, #{item.userId}, #{item.statTime}, #{item.totalAllContactCnt}
+            )
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+        total_all_contact_cnt = VALUES(total_all_contact_cnt)
+    </insert>
     <!--  批量更新员工主动发起会话数接口  -->
     <update id="batchUpdate">
         INSERT INTO we_user_behavior_data
@@ -21,6 +34,13 @@
     <select id="getCustomerOverViewOfUser"
             resultType="com.easyink.wecom.domain.vo.statistics.CustomerOverviewVO">
         select
+        IFNULL( (SELECT
+        bd.total_all_contact_cnt
+        FROM we_user_behavior_data bd
+        WHERE bd.corp_id = #{corpId}
+        AND bd.stat_time = #{endDate}
+        AND bd.user_id  = ubd.user_id
+        ) ,0) as totalAllContactCnt,
         IFNULL( (SELECT
         bd.contact_total_cnt
                 FROM we_user_behavior_data bd
@@ -68,6 +88,9 @@
             </if>
         </where>
         GROUP BY ubd.user_id
+        <if test="totalAllContactCntSort != null and totalAllContactCntSort != ''">
+            ORDER BY totalAllContactCnt ${totalAllContactCntSort}
+        </if>
         <if test="totalContactCntSort != null and totalContactCntSort != ''">
             ORDER BY totalContactCnt ${totalContactCntSort}
         </if>
@@ -114,6 +137,21 @@
     <select id="getCustomerOverViewOfTotal"
             resultType="com.easyink.wecom.domain.vo.statistics.CustomerOverviewVO">
         select
+        IFNULL( (SELECT
+        SUM(bd.total_all_contact_cnt)
+        FROM we_user_behavior_data bd
+        LEFT JOIN we_user wu ON wu.corp_id = bd.corp_id AND wu.user_id = bd.user_id
+        WHERE bd.corp_id = #{corpId}
+        AND bd.stat_time = #{endDate}
+        <if test="userIds != null and userIds.size() > 0">
+            AND bd.user_id IN
+            <foreach collection="userIds" item="userId" open="(" separator="," close=")">
+                #{userId}
+            </foreach>
+        </if>
+        ${params.dataScope}
+        AND wu.is_activate = ${@com.easyink.common.constant.WeConstans@WE_USER_IS_ACTIVATE}
+        ) , 0) as totalAllContactCnt,
         IFNULL( (SELECT
         SUM(bd.contact_total_cnt)
         FROM we_user_behavior_data bd
@@ -276,6 +314,7 @@
         select
         ubd.user_id,
         ubd.stat_time as statTime,
+        IFNULL(ubd.total_all_contact_cnt,0) as totalAllContactCnt,
         IFNULL(ubd.contact_total_cnt,0) as contactTotalCnt,
         IFNULL(ubd.new_contact_cnt,0) as newContactCnt,
         IFNULL(ubd.negative_feedback_cnt,0) as negativeFeedbackCnt,

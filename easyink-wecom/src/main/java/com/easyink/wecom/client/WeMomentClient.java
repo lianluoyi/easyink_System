@@ -1,6 +1,8 @@
 package com.easyink.wecom.client;
 
 import com.dtflys.forest.annotation.*;
+import com.easyink.common.exception.RetryException;
+import com.easyink.wecom.client.retry.EnableRetry;
 import com.easyink.wecom.domain.dto.moment.*;
 import com.easyink.wecom.domain.vo.MomentStrategyGetVO;
 import com.easyink.wecom.domain.vo.moment.*;
@@ -14,6 +16,7 @@ import org.springframework.stereotype.Component;
  * @date 2022/1/6 14:10
  */
 @Component
+@EnableRetry(retryExceptionClass = RetryException.class)
 @BaseRequest(baseURL = "${weComServerUrl}${weComePrefix}", interceptor = WeAccessTokenInterceptor.class)
 public interface WeMomentClient {
 

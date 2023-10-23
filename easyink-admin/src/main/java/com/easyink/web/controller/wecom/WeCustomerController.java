@@ -1,5 +1,6 @@
 package com.easyink.web.controller.wecom;
 
+import com.easyink.common.annotation.DataScope;
 import com.easyink.common.annotation.Log;
 import com.easyink.common.constant.WeConstans;
 import com.easyink.common.core.controller.BaseController;
@@ -15,22 +16,31 @@ import com.easyink.wecom.domain.dto.customer.EditCustomerDTO;
 import com.easyink.wecom.domain.dto.tag.RemoveWeCustomerTagDTO;
 import com.easyink.wecom.domain.entity.WeCustomerExportDTO;
 import com.easyink.wecom.domain.vo.WeMakeCustomerTagVO;
-import com.easyink.wecom.domain.vo.customer.WeCustomerSumVO;
-import com.easyink.wecom.domain.vo.customer.WeCustomerUserListVO;
-import com.easyink.wecom.domain.vo.customer.WeCustomerVO;
+import com.easyink.wecom.domain.vo.customer.*;
 import com.easyink.wecom.login.util.LoginTokenService;
 import com.easyink.wecom.service.WeCustomerService;
+import com.easyink.wecom.utils.OprIdGenerator;
+import com.google.common.collect.Lists;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
+import static com.easyink.common.constant.Constants.EXPORT_MAX_WAIT_TIME;
 
 /**
  * 企业微信客户Controller
@@ -47,6 +57,9 @@ public class WeCustomerController extends BaseController {
     @Autowired
     @Lazy
     private WeCustomerService weCustomerService;
+
+    @Resource(name = "threadPoolTaskExecutor")
+    private ThreadPoolTaskExecutor threadPoolTaskExecutor;
 
     /**
      * 查询企业微信客户列表
@@ -70,6 +83,7 @@ public class WeCustomerController extends BaseController {
             //预设分页参数
             PageInfoUtil.setPage(pageNum, pageSize);
         }
+        weCustomerSearchDTO.setCorpId(LoginTokenService.getLoginUser().getCorpId());
         WeCustomer weCustomer=weCustomerService.changeWecustomer(weCustomerSearchDTO);
         List<WeCustomerVO> list = weCustomerService.selectWeCustomerListV3(weCustomer);
         return getDataTable(list);
@@ -93,6 +107,7 @@ public class WeCustomerController extends BaseController {
     @PostMapping("/sum")
     @ApiOperation("查询企业客户统计数据")
     public AjaxResult<WeCustomerSumVO> sum(@RequestBody WeCustomerSearchDTO weCustomerSearchDTO) {
+        weCustomerSearchDTO.setCorpId(LoginTokenService.getLoginUser().getCorpId());
         WeCustomer weCustomer=weCustomerService.changeWecustomer(weCustomerSearchDTO);
         weCustomer.setCorpId(LoginTokenService.getLoginUser().getCorpId());
         return AjaxResult.success(weCustomerService.weCustomerCount(weCustomer));
@@ -110,16 +125,63 @@ public class WeCustomerController extends BaseController {
      */
     @PreAuthorize("@ss.hasPermi('customerManage:customer:export') || @ss.hasPermi('customerManage:lossRemind:export')")
     @Log(title = "企业微信客户", businessType = BusinessType.EXPORT)
-    @PostMapping("/export")
+//    @PostMapping("/export")
     @ApiOperation("导出企业微信客户列表")
+    @Deprecated
     public <T> AjaxResult<T> export(@RequestBody WeCustomerExportDTO dto) {
         dto.setCorpId(LoginTokenService.getLoginUser().getCorpId());
         log.info("[导出客户]开始导出,corpId:{}", dto.getCorpId());
         long startTime = System.currentTimeMillis();
         AjaxResult<T> export = weCustomerService.export(dto);
         long endTime = System.currentTimeMillis();
-        log.info("[导出客户]导出完成,corpId:{} , time:{} ", dto.getCorpId(), ( endTime - startTime) /  1000.00D);
+        log.info("[导出客户]导出完成,corpId:{} , time:{} ", dto.getCorpId(), (endTime - startTime) / 1000.00D);
         return export;
+    }
+
+    /**
+     * 导出企业微信客户列表V2
+     */
+    @PreAuthorize("@ss.hasPermi('customerManage:customer:export') || @ss.hasPermi('customerManage:lossRemind:export')")
+    @Log(title = "企业微信客户", businessType = BusinessType.EXPORT)
+    @PostMapping("/export")
+    @ApiOperation("导出企业微信客户列表")
+    public AjaxResult<ExportOprVO> exportV2(@RequestBody WeCustomerExportDTO dto) {
+        LoginUser loginUser = LoginTokenService.getLoginUser();
+        dto.setCorpId(loginUser.getCorpId());
+        dto.setAdmin(loginUser.isSuperAdmin());
+        String oprId = OprIdGenerator.EXPORT.get();
+        String fileName = UUID.randomUUID() + "_" + "customer" + ".xlsx";
+        ExportOprVO result = ExportOprVO.builder().oprId(oprId).fileName(fileName).hasFinished(false).build();
+        if(dto.getSelectedProperties() == null || dto.getSelectedProperties().size() == 0) {
+            dto.setSelectedProperties(            Lists.newArrayList("客户","添加时间","所属员工","标签"));
+        }
+        WeCustomerExportDTO customer = weCustomerService.transferData(dto);
+        CompletableFuture future = CompletableFuture.runAsync(() -> {
+            // 执行异步处理任务
+            weCustomerService.genExportData(customer, oprId, fileName);
+        }, threadPoolTaskExecutor);
+        try {
+            // 在3秒内等待异步处理任务完成
+            future.get(EXPORT_MAX_WAIT_TIME, TimeUnit.SECONDS);
+            result.setHasFinished(true);
+            return AjaxResult.success(result);
+        } catch (TimeoutException e) {
+            // 处理未完成，只返回OprId
+            return AjaxResult.success(result);
+        } catch (InterruptedException | ExecutionException e) {
+            // 处理出现异常
+            return AjaxResult.error();
+        }
+    }
+
+
+    @GetMapping("/export/result")
+    @ApiOperation("获取导出客户的结果")
+    public AjaxResult getExportResult(String oprId) {
+        return AjaxResult.success(new CustomerExportResultVO(
+                weCustomerService.getExportResult(oprId)
+                )
+        );
     }
 
     /**

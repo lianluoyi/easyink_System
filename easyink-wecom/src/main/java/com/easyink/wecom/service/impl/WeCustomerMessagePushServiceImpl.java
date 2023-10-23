@@ -3,6 +3,7 @@ package com.easyink.wecom.service.impl;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.easyink.common.constant.Constants;
 import com.easyink.common.constant.GroupConstants;
 import com.easyink.common.constant.WeConstans;
 import com.easyink.common.core.domain.entity.WeCorpAccount;
@@ -448,7 +449,7 @@ public class WeCustomerMessagePushServiceImpl implements WeCustomerMessagePushSe
      */
     @Override
     public void sendToUser(WeCustomerMessageToUserDTO weCustomerMessageToUserDTO) {
-        String[] customers = weCustomerMessageToUserDTO.getCustomers().split("、");
+        String[] customers = weCustomerMessageToUserDTO.getCustomers().split(Constants.CUSTOMER_PUSH_MESSAGE_SEPARATOR);
         StringBuilder replaceMsg = new StringBuilder();
         if (ArrayUtils.isEmpty(customers)) {
             return;

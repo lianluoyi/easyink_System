@@ -12,7 +12,7 @@ import java.lang.annotation.Target;
  * @date : 2023/6/25 15:33
  **/
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.METHOD)
+@Target({ElementType.METHOD, ElementType.TYPE})
 public @interface EnableRetry {
     /**
      * 最大请求次数，默认为4次
@@ -27,5 +27,13 @@ public @interface EnableRetry {
      * @return
      */
     long retryInterval() default 1000L;
+
+    /**
+     * 重试自定义异常类
+     * 在注解上可指定自定义异常类属性，若实际方法抛出的异常是注解指定的异常类的同类或其子类，都会触发重试。
+     *
+     * @return
+     */
+    Class<? extends Throwable>[] retryExceptionClass() default {};
 
 }

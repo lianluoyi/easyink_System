@@ -128,6 +128,8 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
         }
         // 获取前一天的数据
         String yesterday = time;
+        String beginTime = DateUtils.parseBeginDay(yesterday);
+        String endTime = DateUtils.parseEndDay(yesterday);
         visibleUser.forEach(weUser -> {
             try {
                 //根据员工id在会话存档中获取全部对话
@@ -171,7 +173,11 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
                         }
                     }
                 }
-                WeUserBehaviorData totalContactAndLossCnt = weFlowerCustomerRelMapper.getTotalContactAndLossCnt(userBehaviorData.getUserId(), userBehaviorData.getCorpId(),DateUtils.parseBeginDay(yesterday), DateUtils.parseEndDay(yesterday));
+                WeUserBehaviorData totalContactAndLossCnt = weFlowerCustomerRelMapper.getTotalContactAndLossCnt(userBehaviorData.getUserId(), userBehaviorData.getCorpId(), beginTime, endTime);
+                List<String> userIdList = new ArrayList<>();
+                userIdList.add(weUser.getUserId());
+                Integer totalAllContactCnt = weFlowerCustomerRelMapper.getNormalTotalAllContactCnt(corpId, beginTime, endTime, userIdList);
+                userBehaviorData.setTotalAllContactCnt(totalAllContactCnt);
                 userBehaviorData.setContactTotalCnt(totalContactAndLossCnt.getContactTotalCnt());
                 userBehaviorData.setNewCustomerLossCnt(totalContactAndLossCnt.getNewCustomerLossCnt());
                 weUserBehaviorDataService.updateById(userBehaviorData);
@@ -465,7 +471,7 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
                 if (DateUtils.dateTime(weUserBehaviorData.getStatTime()).equals(DateUtils.dateTime(date))) {
                     for (UserServiceTimeDTO userServiceTimeDTO : userServiceTimeDTOList) {
                         // 判断是否有对话且时间相等, 且为员工主动发起的会话
-                        if (Objects.equals(userServiceTimeDTO.getUserId(), weUserBehaviorData.getUserId()) && Objects.equals(judgeTime, userServiceTimeDTO.getSendTime()) && userServiceTimeDTO.getUserActiveDialogue() == ContactSpeakEnum.USER.getCode()) {
+                        if (Objects.equals(userServiceTimeDTO.getUserId(), weUserBehaviorData.getUserId()) && Objects.equals(judgeTime, userServiceTimeDTO.getSendTime()) && ContactSpeakEnum.USER.getCode().equals(userServiceTimeDTO.getUserActiveDialogue())) {
                             chatCnt++;
                         }
                     }
@@ -477,7 +483,7 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
                             weUserBehaviorData.getNewContactCnt(),
                             weUserBehaviorData.getNewContactSpeakCnt(),
                             weUserBehaviorData.getRepliedWithinThirtyMinCustomerCnt()
-                            ,chatCnt);
+                            ,chatCnt, weUserBehaviorData.getTotalAllContactCnt());
                 }
             }
             for (CustomerOverviewVO customerOverviewVO : currNewCustomerCntByTime) {

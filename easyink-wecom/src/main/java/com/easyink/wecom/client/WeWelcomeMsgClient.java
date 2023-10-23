@@ -4,6 +4,8 @@ import com.dtflys.forest.annotation.BaseRequest;
 import com.dtflys.forest.annotation.Body;
 import com.dtflys.forest.annotation.Header;
 import com.dtflys.forest.annotation.Post;
+import com.easyink.common.exception.RetryException;
+import com.easyink.wecom.client.retry.EnableRetry;
 import com.easyink.wecom.domain.dto.welcomemsg.GroupWelcomeMsgAddDTO;
 import com.easyink.wecom.domain.dto.welcomemsg.GroupWelcomeMsgDeleteDTO;
 import com.easyink.wecom.domain.dto.welcomemsg.GroupWelcomeMsgResult;
@@ -18,6 +20,7 @@ import org.springframework.stereotype.Component;
  * @date: 2021-08-18 17:08
  */
 @Component
+@EnableRetry(retryExceptionClass = RetryException.class)
 @BaseRequest(baseURL = "${weComServerUrl}${weComePrefix}", interceptor = WeAccessTokenInterceptor.class)
 public interface WeWelcomeMsgClient {
 

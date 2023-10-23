@@ -4,8 +4,9 @@ import com.dtflys.forest.annotation.BaseRequest;
 import com.dtflys.forest.annotation.Get;
 import com.dtflys.forest.annotation.Header;
 import com.dtflys.forest.annotation.Query;
+import com.easyink.common.exception.RetryException;
+import com.easyink.wecom.client.retry.EnableRetry;
 import com.easyink.wecom.domain.dto.customer.ExternalUserDetail;
-import com.easyink.wecom.interceptor.WeAccessTokenInterceptor;
 import com.easyink.wecom.interceptor.WeUnionIdInterceptor;
 import org.springframework.stereotype.Component;
 
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Component;
  * @date : 2023/1/5 14:03
  **/
 @Component
+@EnableRetry(retryExceptionClass = RetryException.class)
 @BaseRequest(baseURL = "${weComServerUrl}${weComePrefix}", interceptor = WeUnionIdInterceptor.class)
 public interface WeUnionIdClient {
     /**

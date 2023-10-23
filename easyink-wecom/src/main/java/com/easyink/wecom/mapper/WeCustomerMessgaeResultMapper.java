@@ -44,6 +44,14 @@ public interface WeCustomerMessgaeResultMapper extends BaseMapper<WeCustomerMess
     List<WeCustomerMessageResultVO> customerMessagePushs(WeCustomerMessagePushResultDTO weCustomerMessagePushResultDTO);
 
     /**
+     * 查询微信消息发送的客户情况（未执行）
+     *
+     * @param weCustomerMessagePushResultDTO
+     * @return
+     */
+    List<WeCustomerMessageResultVO> messagePushsByCustomer(WeCustomerMessagePushResultDTO weCustomerMessagePushResultDTO);
+
+    /**
      * 查询微信消息发送情况(已执行)
      *
      * @param weCustomerMessagePushResultDTO 查询条件

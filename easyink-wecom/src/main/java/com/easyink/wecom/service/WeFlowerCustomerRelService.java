@@ -21,8 +21,20 @@ public interface WeFlowerCustomerRelService extends IService<WeFlowerCustomerRel
      * @param userId         企业成员id
      * @param externalUserid 用户id
      * @param type           删除类型
+     * @param corpId         企业ID
      */
     Boolean deleteFollowUser(String userId, String externalUserid, String type, String corpId);
+
+    /**
+     * 员工删除客户更新状态
+     *
+     * @param userId         员工id
+     * @param externalUserid 客户id
+     * @param type           删除类型
+     * @param corpId         企业id
+     * @return
+     */
+    Boolean deleteCustomer(String userId, String externalUserid, String type, String corpId);
 
     /**
      * 成员添加客户统计
@@ -61,11 +73,12 @@ public interface WeFlowerCustomerRelService extends IService<WeFlowerCustomerRel
     /**
      * 员工-客户关系：对齐与服务器数据，同步远端数据
      *
-     * @param resp   {@link GetByUserResp}
-     * @param userId 用户id
-     * @param corpId 企业id
+     * @param resp         {@link GetByUserResp}
+     * @param userId       用户id
+     * @param corpId       企业id
+     * @param localRelList  本地
      */
-    void alignData(GetByUserResp resp, String userId, String corpId);
+    void alignData(GetByUserResp resp, String userId, String corpId, List<WeFlowerCustomerRel> localRelList);
 
     /**
      * 分批批量插入
@@ -147,4 +160,20 @@ public interface WeFlowerCustomerRelService extends IService<WeFlowerCustomerRel
      * @return 有效客户数
      */
     Integer getCurrentNewCustomerCnt(String corpId, String beginTime, String endTime, List<String> userIds);
+
+    /**
+     * 根据开始和结束时间,获取首页-数据总览-客户总数
+     * <p>说明: 在使用EasyInk系统前,已离职的员工的客户数不会参与统计</p>
+     *
+     * @param corpId 企业ID
+     * @param beginTime 开始时间，格式为YYYY-MM-DD 00:00:00
+     * @param endTime 结束时间，格式为YYYY-MM-DD 23:59:59
+     * @return 首页-数据总览-客户总数
+     */
+    Integer getTotalAllContactCnt(String corpId, String beginTime, String endTime);
+
+    /**
+     * 数据统计-联系客户-客户总数-旧数据兼容
+     */
+    void updateTotalAllCustomerCnt();
 }

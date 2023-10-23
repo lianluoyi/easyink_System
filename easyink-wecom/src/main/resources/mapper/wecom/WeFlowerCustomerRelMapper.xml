@@ -362,7 +362,7 @@
                     WHERE
                         corp_id = #{corpId}
                         AND user_id = #{userId}
-                        AND status = '${@com.easyink.common.enums.CustomerStatusEnum@NORMAL.code}'
+                        AND status NOT IN ('${@com.easyink.common.enums.CustomerStatusEnum@DRAIN.code}', '${@com.easyink.common.enums.CustomerStatusEnum@DELETE.code}')
                         AND create_time &lt;= #{endTime}
                         ), 0) AS contactTotalCnt
     </select>
@@ -603,5 +603,52 @@
             AND create_time &lt;= #{endTime}
         </if>
         GROUP BY `date`
+    </select>
+    <!--根据结束时间和已激活(is_active = 1)员工ID列表, 获取首页-数据总览-客户总数-->
+    <select id="getNormalTotalAllContactCnt" resultType="java.lang.Integer">
+        SELECT COUNT(external_userid) FROM we_flower_customer_rel
+        WHERE corp_id = #{corpId}
+              AND status != '${@com.easyink.common.enums.CustomerStatusEnum@DELETE.code}'
+        <if test="endTime != null and endTime != ''">
+            AND create_time &lt;= #{endTime}
+        </if>
+        <if test="normalUserIdList != null and normalUserIdList.size() > 0">
+            AND user_id IN
+            <foreach collection="normalUserIdList" item="userId" open="(" separator="," close=")">
+                #{userId}
+            </foreach>
+        </if>
+    </select>
+    <!--根据结束时间和已离职员工(is_active = 6)ID列表, 获取首页-数据总览-客户总数-->
+    <select id="getDelTotalAllContactCnt" resultType="java.lang.Integer">
+        SELECT COUNT(external_userid) FROM we_flower_customer_rel
+        WHERE corp_id = #{corpId}
+        AND status = '${@com.easyink.common.enums.CustomerStatusEnum@TO_BE_TRANSFERRED.code}'
+        <if test="endTime != null and endTime != ''">
+            AND create_time &lt;= #{endTime}
+        </if>
+        <if test="delUserIdList != null and delUserIdList.size() > 0">
+            AND user_id IN
+            <foreach collection="delUserIdList" item="userId" open="(" separator="," close=")">
+                #{userId}
+            </foreach>
+        </if>
+    </select>
+    <!--根据员工id获取数据统计-客户联系-客户总数-->
+    <select id="getTotalAllContactCntByUserId" resultType="com.easyink.wecom.domain.WeUserBehaviorData">
+        SELECT user_id, corp_id, COUNT(external_userid) AS totalAllContactCnt
+        FROM we_flower_customer_rel
+        WHERE corp_id = #{corpId}
+        AND status != '${@com.easyink.common.enums.CustomerStatusEnum@DELETE.code}'
+        <if test="endTime != null and endTime != ''">
+            AND create_time &lt;= #{endTime}
+        </if>
+        <if test="userIdList != null and userIdList.size() > 0">
+            AND user_id IN
+            <foreach collection="userIdList" item="userId" open="(" separator="," close=")">
+                #{userId}
+            </foreach>
+        </if>
+        GROUP BY user_id
     </select>
 </mapper>

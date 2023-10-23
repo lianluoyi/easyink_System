@@ -219,6 +219,7 @@ public enum ResultTip {
     TIP_FAIL_TO_GET_CUSTOMER_INFO(4026,"无法获取客户详情"),
     TIP_FAIL_ADD_LOSS_TAG(4027, "数据不存在，客户打标签失败"),
     TIP_FAIL_INSERT_LOSS_TAG(4028, "请设置流失标签"),
+    TIP_OPTION_REPEAT(4029, "选项值不能重复"),
 
     // 动态表单 5000开始
     TIP_GROUP_FORM_SOURCE_TYPE_ERROR(50001,"表单分组类别错误"),

@@ -3,6 +3,8 @@ package com.easyink.web.controller.wecom;
 import com.easyink.common.core.controller.BaseController;
 import com.easyink.common.core.domain.AjaxResult;
 import com.easyink.common.core.domain.ConversationArchiveQuery;
+import com.easyink.common.core.domain.ConversationArchiveViewContextDTO;
+import com.easyink.common.core.page.TableDataInfo;
 import com.easyink.common.token.TokenService;
 import com.easyink.common.utils.ServletUtils;
 import com.easyink.common.utils.StringUtils;
@@ -86,4 +88,10 @@ public class WeConversationArchiveController extends BaseController {
         return AjaxResult.success(weConversationArchiveService.getChatAllList(query, tokenService.getLoginUser(ServletUtils.getRequest())));
     }
 
+    @ApiOperation(value = "查看消息上下文接口", httpMethod = "GET")
+    @GetMapping("/view/context")
+    public TableDataInfo<ConversationArchiveVO> viewContext(ConversationArchiveViewContextDTO dto) {
+        dto.setCorpId(LoginTokenService.getLoginUser().getCorpId());
+        return weConversationArchiveService.viewContext(dto);
+    }
 }

@@ -20,6 +20,7 @@ import com.easyink.wecom.domain.entity.customer.WeCustomerExtendProperty;
 import com.easyink.wecom.domain.entity.customer.WeCustomerExtendPropertyRel;
 import com.easyink.wecom.domain.vo.WeCustomerExportVO;
 import com.easyink.wecom.domain.vo.customer.WeCustomerVO;
+import com.easyink.wecom.handler.ExtendPropHolder;
 import com.easyink.wecom.mapper.WeCustomerExtendPropertyMapper;
 import com.easyink.wecom.service.ExtendPropertyMultipleOptionService;
 import com.easyink.wecom.service.WeCustomerExtendPropertyRelService;
@@ -115,6 +116,29 @@ public class WeCustomerExtendPropertyServiceImpl extends ServiceImpl<WeCustomerE
         if (!isUnique(property)) {
             throw new CustomException(ResultTip.TIP_EXTEND_PROP_NAME_EXISTED);
         }
+        // 自定义选项属性值是否重复
+        if (isOptionRepeat(property.getOptionList())) {
+            throw new CustomException(ResultTip.TIP_OPTION_REPEAT);
+        }
+    }
+
+    /**
+     * 自定义选项属性值是否重复
+     *
+     * @param optionList {@link ExtendPropertyMultipleOption}
+     * @return 重复 true; 不重复 false
+     */
+    private Boolean isOptionRepeat(List<ExtendPropertyMultipleOption> optionList) {
+        if (CollectionUtils.isEmpty(optionList)) {
+            return false;
+        }
+        Set<String> names = new HashSet<>();
+        for (ExtendPropertyMultipleOption extendPropertyMultipleOption : optionList) {
+            if (!names.add(extendPropertyMultipleOption.getMultipleValue())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
@@ -226,6 +250,12 @@ public class WeCustomerExtendPropertyServiceImpl extends ServiceImpl<WeCustomerE
             throw new CustomException(ResultTip.TIP_GENERAL_PARAM_ERROR);
         }
         List<WeCustomerExtendProperty> list = new ArrayList<>();
+        for (SaveCustomerExtendPropertyDTO property : dto.getProperties()) {
+            // 自定义选项属性值是否重复
+            if (isOptionRepeat(property.getOptionList())) {
+                throw new CustomException(ResultTip.TIP_OPTION_REPEAT);
+            }
+        }
         // 转换成 WeCustomerExtendProperty 集合
         for (SaveCustomerExtendPropertyDTO source : editList) {
             WeCustomerExtendProperty property = new WeCustomerExtendProperty();
@@ -261,31 +291,23 @@ public class WeCustomerExtendPropertyServiceImpl extends ServiceImpl<WeCustomerE
     }
 
     @Override
-    public void setKeyValueMapper(String corpId, List<WeCustomerExportVO> customerList, List<String> selectedProperties) {
+    public void setKeyValueMapper(String corpId, List<WeCustomerExportVO> customerList, List<String> selectedProperties, ExtendPropHolder extendPropHolder) {
         if (CollectionUtils.isEmpty(customerList) || CollectionUtils.isEmpty(selectedProperties)) {
             return;
         }
-        // 过滤系统默认字段
-        selectedProperties = selectedProperties.stream().filter(a -> !ListUtil.toList(UserConstants.getSysDefaultProperties()).contains(a)).collect(Collectors.toList());
-        // 查询该企业所有的扩展属性详情
-        List<WeCustomerExtendProperty> extendPropList = this.getList(
-                WeCustomerExtendProperty.builder()
-                        .corpId(corpId)
-                        .build()
-        );
-        if (CollectionUtils.isEmpty(extendPropList)) {
+        if(extendPropHolder==null || !extendPropHolder.isHasExtendProp()) {
             return;
         }
-        // 扩展属性ID->详情的映射
-        Map<Long, WeCustomerExtendProperty> extendPropMap = extendPropList.stream().collect(Collectors.toMap(WeCustomerExtendProperty::getId, prop -> prop));
-        // 多选值ID-> 多选值的映射
-        Map<Long, ExtendPropertyMultipleOption> optionMap = extendPropertyMultipleOptionService.getMapByProp(extendPropList);
+        List<String> propList = selectedProperties.stream().filter(a -> !ListUtil.toList(UserConstants.getSysDefaultProperties()).contains(a)).collect(Collectors.toList());
+        if(CollectionUtils.isEmpty(propList)) {
+            return;
+        }
         for (WeCustomerExportVO vo : customerList) {
             List<BaseExtendPropertyRel> extendProperties = vo.getExtendProperties();
-            Map<String, String> customerMap = this.mapPropertyName2Value(extendProperties, extendPropMap, optionMap);
+            Map<String, String> customerMap = this.mapPropertyName2Value(extendProperties, extendPropHolder.getExtendPropMap(), extendPropHolder.getOptionMap());
             LinkedHashMap<String, String> resultMap = new LinkedHashMap<String, String>();
             // 按选中的字段顺序设置值,如果没有则设为空字符串
-            for (String selectedProp : selectedProperties) {
+            for (String selectedProp : propList) {
                 resultMap.put(selectedProp, customerMap.getOrDefault(selectedProp, StringUtils.EMPTY));
             }
             // 为导出客户实体设置 k:导出字段名 v:导出字段值 的映射

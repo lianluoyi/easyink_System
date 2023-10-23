@@ -10,6 +10,7 @@ import com.dtflys.forest.interceptor.Interceptor;
 import com.dtflys.forest.utils.ForestDataType;
 import com.easyink.common.config.WeComeConfig;
 import com.easyink.common.constant.WeConstans;
+import com.easyink.common.exception.RetryException;
 import com.easyink.common.utils.StringUtils;
 import com.easyink.common.utils.spring.SpringUtils;
 import com.easyink.wecom.domain.dto.WeResultDTO;
@@ -122,17 +123,40 @@ public class WeAccessTokenInterceptor implements Interceptor<Object> {
      */
     @Override
     public void onSuccess(Object o, ForestRequest forestRequest, ForestResponse forestResponse) {
-        log.info("url:【{}】,result:【{}】", forestRequest.getUrl(), forestResponse.getContent());
+        log.info("url:【{}】,result:【{}】", forestRequest.getUrl(), forestResponse.getContent());  
         WeResultDTO weResultDto = JSONUtil.toBean(forestResponse.getContent(), WeResultDTO.class);
+        // 匹配需要判断的code，抛出指定异常
+        if (needRetry(weResultDto.getErrcode())) {
+            throw new RetryException(forestResponse.getContent());
+        }
         // 部分uri 错误码需要单独业务处理不抛出异常
         String uri = forestRequest.getUrl().replace(urlPrefix, "");
         if (PatternMatchUtils.simpleMatch(weComeConfig.getNeedErrcodeUrl(), uri)) {
             return;
         }
+        // 其他情况抛出异常
         if (null != weResultDto.getErrcode() && !WeConstans.WE_SUCCESS_CODE.equals(weResultDto.getErrcode()) && !WeConstans.NOT_EXIST_CONTACT.equals(weResultDto.getErrcode())) {
             throw new ForestRuntimeException(forestResponse.getContent());
         }
+    }
 
+    /**
+     * 是否需要抛出特定异常重试
+     *
+     * @param code 响应的code
+     * @return true 是，false 否
+     */
+    private boolean needRetry(Integer code) {
+        if (code == null) {
+            return false;
+        }
+        Integer[] codes = weComeConfig.getNeedRetryCode();
+        for (Integer integer : codes) {
+            if (integer.equals(code)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

@@ -89,15 +89,21 @@ public class ExcelUtil<T> {
     /**
      * 是否是自定义选择导出字段
      */
-    private Boolean isCustom;
+    public Boolean isCustom;
     /**
      * 自定义选中导出的字段名集合
      */
-    private List<String> selectedProperties = new ArrayList<>();
+    public List<String> selectedProperties = new ArrayList<>();
 
 
     public ExcelUtil(Class<T> clazz) {
         this.clazz = clazz;
+    }
+
+    public ExcelUtil(Class<T> clazz, List<String> selectProperties ) {
+        this.clazz = clazz;
+        this.isCustom = CollectionUtils.isNotEmpty(selectProperties);
+        this.selectedProperties = selectProperties;
     }
 
     public void init(List<T> list, String sheetName, Type type) {
@@ -142,6 +148,7 @@ public class ExcelUtil<T> {
     public List<T> importExcel(InputStream is) throws Exception {
         return importExcel(StringUtils.EMPTY, is);
     }
+
 
     /**
      * 对excel表单指定表格索引名转换成list
@@ -411,12 +418,69 @@ public class ExcelUtil<T> {
         }
     }
 
+
+    /**
+     * 对list数据源将其里面的数据导入到excel
+     *
+     * @return 结果
+     */
+    public AjaxResult exportExcelByPage() {
+        OutputStream out = null;
+        try {
+            // 取出一共有多少个sheet.
+            double sheetNo = Math.ceil((double) list.size() / SHEET_SIZE);
+            for (int index = 0; index < sheetNo; index++) {
+                createSheet(sheetNo, index);
+
+                // 产生一行
+                Row row = sheet.createRow(0);
+                int column = 0;
+                // 写入各个字段的列头名称
+                if (isCustom) {
+                    for (String colName : selectedProperties) {
+                        this.createCell(colName, row, column++);
+                    }
+                } else {
+                    for (Object[] os : fields) {
+                        Excel excel = (Excel) os[1];
+                        this.createCell(excel, row, column++);
+                    }
+                }
+                if (Type.EXPORT.equals(type)) {
+                    fillExcelDataV2(index);
+                }
+            }
+            String filename = encodingFilename(sheetName);
+            out = new FileOutputStream(getAbsoluteFile(filename));
+            wb.write(out);
+            return AjaxResult.success(filename);
+        } catch (Exception e) {
+            log.error("导出Excel异常{}", ExceptionUtils.getStackTrace(e));
+            throw new CustomException("导出Excel失败，请联系网站管理员！");
+        } finally {
+            if (wb != null) {
+                try {
+                    wb.close();
+                } catch (IOException e1) {
+                    log.error("异常信息:{}", e1.getMessage());
+                }
+            }
+            if (out != null) {
+                try {
+                    out.close();
+                } catch (IOException e1) {
+                    log.error("异常信息:{}", e1.getMessage());
+                }
+            }
+        }
+    }
+
     /**
      * 写入各个字段的列头名称（包括引入注解的属性和扩展属性）
      *
      * @return
      */
-    public AjaxResult exportExcelDefinedAndExtProp(){
+    public AjaxResult exportExcelDefinedAndExtProp() {
         OutputStream out = null;
         try {
             // 取出一共有多少个sheet.
@@ -1000,7 +1064,7 @@ public class ExcelUtil<T> {
     /**
      * 得到所有定义字段
      */
-    private void createExcelField() {
+    public void createExcelField() {
         this.fields = new ArrayList<>();
         List<Field> tempFields = new ArrayList<>();
         tempFields.addAll(Arrays.asList(clazz.getSuperclass().getDeclaredFields()));
@@ -1034,6 +1098,8 @@ public class ExcelUtil<T> {
         for (Field field : tempFields) {
             // 单注解
             if (field.isAnnotationPresent(Excel.class)) {
+                field.getAnnotation(Excel.class);
+                //  非自定义导出 或者 包含导出字段时才填充相应的表头
                 putToField(field, field.getAnnotation(Excel.class));
             }
             // 多注解
@@ -1048,7 +1114,33 @@ public class ExcelUtil<T> {
                 }
             }
         }
-        this.fields = this.fields.stream().sorted(Comparator.comparing(objects -> ((Excel) objects[1]).sort())).collect(Collectors.toList());
+        this.fields = this.fields.stream()
+                                 .sorted(Comparator.comparing(objects -> ((Excel) objects[1]).sort()))
+                                 .collect(Collectors.toList());
+    }
+
+    /***
+     * 获取表头
+     * @return 表头列表
+     */
+
+    public List<List<String>> getFields() {
+        createExcelFieldV2();
+        List<List<String>> finalHeads = new ArrayList<>();
+        if(isCustom) {
+            for(String colName: selectedProperties) {
+                List<String> head = new ArrayList<>();
+                head.add(colName);
+                finalHeads.add(head);
+            }
+        }else {
+            for(Object[] os : fields) {
+                List<String> head = new ArrayList<>();
+                head.add(((Excel)os[1]).name());
+                finalHeads.add(head);
+            }
+        }
+        return finalHeads;
     }
 
 

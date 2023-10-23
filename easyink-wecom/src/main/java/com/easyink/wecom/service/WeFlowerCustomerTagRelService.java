@@ -124,8 +124,17 @@ public interface WeFlowerCustomerTagRelService extends IService<WeFlowerCustomer
 
     /**
      * 从远端同步标签
-     * @param localRel 本地的客户关系
+     *
+     * @param localRel   本地的客户关系
      * @param tagRelList 同步到的客户-标签关系
      */
     void syncTagFromRemote(WeFlowerCustomerRel localRel, List<WeFlowerCustomerTagRel> tagRelList);
+
+    /**
+     * 同步远端的标签信息到本地
+     *
+     * @param tagRelList 标签关系列表
+     * @param relIds     本地客户-员工关系列表
+     */
+    void syncLocalTagFromRemote(List<WeFlowerCustomerTagRel> tagRelList, List<Long> relIds);
 }

@@ -1,6 +1,8 @@
 package com.easyink.wecom.client;
 
 import com.dtflys.forest.annotation.*;
+import com.easyink.common.exception.RetryException;
+import com.easyink.wecom.client.retry.EnableRetry;
 import com.easyink.wecom.domain.dto.WeAccessTokenDTO;
 import com.easyink.wecom.domain.dto.WeAccessUserInfo3rdDTO;
 import com.easyink.wecom.domain.dto.WeLoginUserInfoDTO;
@@ -18,6 +20,7 @@ import org.springframework.stereotype.Component;
  * @date: 2021-08-18 17:01
  */
 @Component
+@EnableRetry(retryExceptionClass = RetryException.class)
 @BaseRequest(baseURL = "${weComServerUrl}${weComePrefix}")
 public interface WeAccessTokenClient {
     /**

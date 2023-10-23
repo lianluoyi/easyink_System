@@ -1,7 +1,9 @@
 package com.easyink.wecom.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.easyink.common.constant.Constants;
 import com.easyink.common.constant.WeConstans;
+import com.easyink.common.utils.DictUtils;
 import com.easyink.common.utils.SnowFlakeUtil;
 import com.easyink.common.utils.StringUtils;
 import com.easyink.wecom.domain.WeCustomer;
@@ -19,7 +21,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 群发消息  微信消息发送结果表 we_customer_messgaeResult
@@ -33,13 +37,36 @@ public class WeCustomerMessgaeResultServiceImpl extends ServiceImpl<WeCustomerMe
     @Autowired
     private WeCustomerMessgaeResultMapper customerMessgaeResultMapper;
 
+    /**
+     * 查询微信消息发送情况
+     *
+     * @param weCustomerMessagePushResultDTO 查询条件
+     * @return {@link WeCustomerMessageResultVO}s
+     */
     @Override
     public List<WeCustomerMessageResultVO> customerMessagePushs(WeCustomerMessagePushResultDTO weCustomerMessagePushResultDTO) {
         if (StringUtils.isEmpty(weCustomerMessagePushResultDTO.getCorpId())) {
             return new ArrayList<>();
         }
         if (WeConstans.NOT_SEND.equals(weCustomerMessagePushResultDTO.getSendStatus())) {
-            return customerMessgaeResultMapper.customerMessagePushs(weCustomerMessagePushResultDTO);
+            List<WeCustomerMessageResultVO> resultList = customerMessgaeResultMapper.customerMessagePushs(weCustomerMessagePushResultDTO);
+            if (CollectionUtils.isEmpty(resultList)) {
+                return Collections.emptyList();
+            }
+            List<WeCustomerMessageResultVO> customerList = customerMessgaeResultMapper.messagePushsByCustomer(weCustomerMessagePushResultDTO);
+            if (CollectionUtils.isEmpty(customerList)) {
+                return Collections.emptyList();
+            }
+            resultList.forEach(item -> {
+                // 筛选出员工名称相同的信息
+                List<String> sendCustomerNameList = customerList.stream().filter(i -> i.getUserName().equals(item.getUserName()))
+                                                                         .map(WeCustomerMessageResultVO::getCustomers)
+                                                                         .collect(Collectors.toList());
+                // 将发送的客户/客户群名称转换成以逗号分隔的字符串
+                String customers = String.join(Constants.CUSTOMER_PUSH_MESSAGE_SEPARATOR, sendCustomerNameList);
+                item.setCustomers(customers);
+            });
+            return resultList;
         } else {
             return customerMessgaeResultMapper.listOfMessageResult(weCustomerMessagePushResultDTO);
         }

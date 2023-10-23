@@ -8,6 +8,7 @@ import com.easyink.wecom.domain.entity.customer.ExtendPropertyMultipleOption;
 import com.easyink.wecom.domain.entity.customer.WeCustomerExtendProperty;
 import com.easyink.wecom.domain.vo.WeCustomerExportVO;
 import com.easyink.wecom.domain.vo.customer.WeCustomerVO;
+import com.easyink.wecom.handler.ExtendPropHolder;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -124,8 +125,9 @@ public interface WeCustomerExtendPropertyService extends IService<WeCustomerExte
      * @param corpId             企业ID
      * @param exportCustomerList {@link List<WeCustomerExportVO>} 需要导出的客户集合
      * @param selectedProperties 选择的（需要导出）字段名
+     * @param extendPropHolder
      */
-    void setKeyValueMapper(String corpId, List<WeCustomerExportVO> exportCustomerList, List<String> selectedProperties);
+    void setKeyValueMapper(String corpId, List<WeCustomerExportVO> exportCustomerList, List<String> selectedProperties, ExtendPropHolder extendPropHolder);
 
     /**
      * 根据extendProperties 和 已有的自定义属性和多选值映射,获取客户的 自定义字段名称->所有值用,隔开 的映射

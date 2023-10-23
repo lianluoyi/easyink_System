@@ -1,6 +1,7 @@
 package com.easyink.web.controller.wecom.transfer;
 
 import com.easyink.common.core.domain.AjaxResult;
+import com.easyink.wecom.service.WeFlowerCustomerRelService;
 import com.easyink.wecom.service.WeSensitiveActHitService;
 import com.easyink.wecom.service.WeUserCustomerMessageStatisticsService;
 import io.swagger.annotations.Api;
@@ -24,6 +25,7 @@ public class WeComTransferController {
 
     private final WeUserCustomerMessageStatisticsService weUserCustomerMessageStatisticsService;
     private final WeSensitiveActHitService weSensitiveActHitService;
+    private final WeFlowerCustomerRelService weFlowerCustomerRelService;
 
     @PostMapping("/updateUserActiveChatCnt")
     @ApiOperation("更新历史数据中员工主动发起的会话数")
@@ -36,6 +38,13 @@ public class WeComTransferController {
     @ApiOperation("更新历史敏感行为操作人和操作对象信息")
     public AjaxResult updateSensitive() {
         weSensitiveActHitService.updateHistorySensitive();
+        return AjaxResult.success();
+    }
+
+    @PostMapping("/update/totalAllCustomerCnt")
+    @ApiOperation("数据统计-联系客户-客户总数，旧数据统计")
+    public AjaxResult updateTotalAllCustomerCnt() {
+        weFlowerCustomerRelService.updateTotalAllCustomerCnt();
         return AjaxResult.success();
     }
 }

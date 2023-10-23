@@ -40,7 +40,7 @@ public abstract class AbstractQuartzJob implements Job {
                doExecute(context, sysJob);
                after(context, sysJob, null);
            } catch (Exception e) {
-               log.error("任务执行异常  - ：", ExceptionUtils.getStackTrace(e));
+               log.error("任务执行异常  - ：{}", ExceptionUtils.getStackTrace(e));
                after(context, sysJob, e);
            }
        }

@@ -6,6 +6,9 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.extension.toolkit.SqlHelper;
 import com.easyink.common.constant.Constants;
 import com.easyink.common.constant.GenConstants;
+import com.easyink.common.constant.WeConstans;
+import com.easyink.common.core.domain.entity.WeCorpAccount;
+import com.easyink.common.core.domain.wecom.WeUser;
 import com.easyink.common.enums.AddWayEnum;
 import com.easyink.common.enums.CustomerStatusEnum;
 import com.easyink.common.enums.ResultTip;
@@ -13,20 +16,23 @@ import com.easyink.common.exception.BaseException;
 import com.easyink.common.exception.CustomException;
 import com.easyink.common.utils.DateUtils;
 import com.easyink.common.utils.SnowFlakeUtil;
+import com.easyink.common.utils.sql.BatchInsertUtil;
 import com.easyink.wecom.domain.WeCustomer;
 import com.easyink.wecom.domain.WeFlowerCustomerRel;
+import com.easyink.wecom.domain.WeUserBehaviorData;
 import com.easyink.wecom.domain.dto.customer.resp.GetByUserResp;
 import com.easyink.wecom.domain.entity.customer.WeCustomerExtendPropertyRel;
 import com.easyink.wecom.domain.entity.transfer.WeCustomerTransferConfig;
 import com.easyink.wecom.mapper.WeCustomerExtendPropertyRelMapper;
 import com.easyink.wecom.mapper.WeFlowerCustomerRelMapper;
-import com.easyink.wecom.service.WeCustomerTransferConfigService;
-import com.easyink.wecom.service.WeFlowerCustomerRelService;
-import com.easyink.wecom.service.WeFlowerCustomerTagRelService;
+import com.easyink.wecom.mapper.WeUserBehaviorDataMapper;
+import com.easyink.wecom.service.*;
 import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -34,6 +40,7 @@ import org.springframework.util.CollectionUtils;
 import javax.validation.constraints.NotNull;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -50,13 +57,19 @@ public class WeFlowerCustomerRelServiceImpl extends ServiceImpl<WeFlowerCustomer
     private final WeFlowerCustomerTagRelService weFlowerCustomerTagRelService;
     private final WeCustomerTransferConfigService weCustomerTransferConfigService;
     private final WeCustomerExtendPropertyRelMapper weCustomerExtendPropertyRelMapper;
+    private final WeUserService weUserService;
+    private final WeCorpAccountService weCorpAccountService;
+    private final WeUserBehaviorDataMapper weUserBehaviorDataMapper;
 
     @Lazy
-    public WeFlowerCustomerRelServiceImpl(@NotNull WeFlowerCustomerRelMapper weFlowerCustomerRelMapper, WeFlowerCustomerTagRelService weFlowerCustomerTagRelService, WeCustomerTransferConfigService weCustomerTransferConfigService, WeCustomerExtendPropertyRelMapper weCustomerExtendPropertyRelMapper) {
+    public WeFlowerCustomerRelServiceImpl(@NotNull WeFlowerCustomerRelMapper weFlowerCustomerRelMapper, WeFlowerCustomerTagRelService weFlowerCustomerTagRelService, WeCustomerTransferConfigService weCustomerTransferConfigService, WeCustomerExtendPropertyRelMapper weCustomerExtendPropertyRelMapper, WeUserService weUserService, WeCorpAccountService weCorpAccountService, WeUserBehaviorDataMapper weUserBehaviorDataMapper) {
         this.weFlowerCustomerRelMapper = weFlowerCustomerRelMapper;
         this.weFlowerCustomerTagRelService = weFlowerCustomerTagRelService;
         this.weCustomerTransferConfigService = weCustomerTransferConfigService;
         this.weCustomerExtendPropertyRelMapper = weCustomerExtendPropertyRelMapper;
+        this.weUserService = weUserService;
+        this.weCorpAccountService = weCorpAccountService;
+        this.weUserBehaviorDataMapper = weUserBehaviorDataMapper;
     }
 
     @Override
@@ -75,6 +88,24 @@ public class WeFlowerCustomerRelServiceImpl extends ServiceImpl<WeFlowerCustomer
                         .eq(WeFlowerCustomerRel::getExternalUserid, externalUserid)
                         .eq(WeFlowerCustomerRel::getCorpId, corpId)
                         .eq(WeFlowerCustomerRel::getStatus, Constants.NORMAL_CODE));
+    }
+
+    @Override
+    public Boolean deleteCustomer(String userId, String externalUserid, String type, String corpId) {
+        if (StringUtils.isAnyBlank(userId, externalUserid, type, corpId)) {
+            log.error("[更新员工删除客户状态] 参数异常缺失：userId:{},externalUserid:{},type:{},corpId:{}", userId, externalUserid, type, corpId);
+            throw new CustomException(ResultTip.TIP_PARAM_MISSING);
+        }
+        return this.update(WeFlowerCustomerRel.builder()
+                        .delByUserTime(DateUtils.getNowDate())
+                        .status(type)
+                        .build()
+                , new LambdaQueryWrapper<WeFlowerCustomerRel>()
+                        .eq(WeFlowerCustomerRel::getUserId, userId)
+                        .eq(WeFlowerCustomerRel::getExternalUserid, externalUserid)
+                        .eq(WeFlowerCustomerRel::getCorpId, corpId)
+                        // 员工删除客户,可能删除的是正常状态的客户(单删),也可能是客户已经将员工删除的客户(双删),二者都需要更新状态
+                        .in(WeFlowerCustomerRel::getStatus, CustomerStatusEnum.NORMAL.getCode(), CustomerStatusEnum.DRAIN.getCode()));
     }
 
     @Override
@@ -182,33 +213,81 @@ public class WeFlowerCustomerRelServiceImpl extends ServiceImpl<WeFlowerCustomer
     }
 
     @Override
-    public void alignData(GetByUserResp resp, String userId, String corpId) {
+    public void alignData(GetByUserResp resp, String userId, String corpId, List<WeFlowerCustomerRel> localRelList) {
+        // 删除远端不存在的本地客户
+        delNotExistCustomer(resp, userId, corpId,localRelList);
+        if (org.apache.commons.collections4.CollectionUtils.isNotEmpty(localRelList)) {
+            // 更新客户信息
+            updateCustomerRel(resp, localRelList, corpId);
+        }
+    }
+
+    /**
+     * 更新流失后添加的客户数据，客户-员工关系
+     *
+     * @param resp         企微响应
+     * @param localRelList 本地数据
+     */
+    public void updateCustomerRel(GetByUserResp resp, List<WeFlowerCustomerRel> localRelList, String corpId) {
+        List<WeFlowerCustomerRel> updateRelList = new ArrayList<>();
+        Map<String, WeFlowerCustomerRel> localMap = localRelList.stream()
+                                                                .collect(Collectors.toMap(WeFlowerCustomerRel::getExternalUserid, Function.identity()));
+        // 本地数据与远端数据对比
+        for (WeFlowerCustomerRel remoteFlowerCustomerRel : resp.getRelList()) {
+            WeFlowerCustomerRel localFlowerCustomerRel = localMap.get(remoteFlowerCustomerRel.getExternalUserid());
+            // 若该客户与本地记录的添加时间不一样，表示此客户是流失后重新添加员工的客户，将该客户存入列表等待更新状态
+            if (localFlowerCustomerRel != null) {
+                if (remoteFlowerCustomerRel.getCreateTime().compareTo(localFlowerCustomerRel.getCreateTime()) != 0) {
+                    remoteFlowerCustomerRel.setStatus(Constants.NORMAL_CODE);
+                    updateRelList.add(remoteFlowerCustomerRel);
+                }
+            }
+        }
+        // 存在创建时间不同的客户则更新客户状态
+        if (org.apache.commons.collections4.CollectionUtils.isNotEmpty(updateRelList)) {
+            LambdaUpdateWrapper<WeFlowerCustomerRel> updateRelWrapper = new LambdaUpdateWrapper<>();
+            updateRelWrapper.eq(WeFlowerCustomerRel::getCorpId, corpId);
+            BatchInsertUtil.doInsert(updateRelList, this::batchUpdateStatus);
+        }
+    }
+
+    /**
+     * 删除 不存在于远端的客户
+     *
+     * @param resp         获取客户响应
+     * @param userId       员工ID
+     * @param corpId       企业ID
+     * @param localRelList
+     */
+    public void delNotExistCustomer(GetByUserResp resp, String userId, String corpId, List<WeFlowerCustomerRel> localRelList) {
         List<WeCustomer> customerList = resp.getCustomerList();
-        List<String> externalUserIdList = resp.getCustomerList().stream().map(WeCustomer::getExternalUserid).collect(Collectors.toList());
+        List<String> externalUserIdList = resp.getCustomerList()
+                                              .stream()
+                                              .map(WeCustomer::getExternalUserid)
+                                              .collect(Collectors.toList());
         // 1. 把不存在的客户至为删除状态
         if (CollectionUtils.isEmpty(customerList)) {
             //员工不存在客户，修改员工的正常状态为员工删除客户状态
             this.update(WeFlowerCustomerRel.builder()
-                            .userId(userId)
-                            .deleteTime(DateUtils.getNowDate())
-                            .status(Constants.DELETE_CODE)
-                            .build()
+                                           .userId(userId)
+                                           .deleteTime(DateUtils.getNowDate())
+                                           .status(Constants.DELETE_CODE)
+                                           .build()
                     , new LambdaQueryWrapper<WeFlowerCustomerRel>()
                             .eq(WeFlowerCustomerRel::getUserId, userId)
                             .eq(WeFlowerCustomerRel::getCorpId, corpId));
         } else {
-            //存在客户，删除本地数据库里所有不存在的客户————————————————问题同上
+            //存在客户，删除本地数据库里所有不存在的客户
             this.update(WeFlowerCustomerRel.builder()
-                            .userId(userId)
-                            .deleteTime(DateUtils.getNowDate())
-                            .status(Constants.DELETE_CODE)
-                            .build()
+                                           .userId(userId)
+                                           .deleteTime(DateUtils.getNowDate())
+                                           .status(Constants.DELETE_CODE)
+                                           .build()
                     , new LambdaQueryWrapper<WeFlowerCustomerRel>()
                             .eq(WeFlowerCustomerRel::getUserId, userId)
                             .notIn(WeFlowerCustomerRel::getExternalUserid, externalUserIdList)
                             .eq(WeFlowerCustomerRel::getCorpId, corpId));
         }
-
     }
 
     @Override
@@ -346,6 +425,81 @@ public class WeFlowerCustomerRelServiceImpl extends ServiceImpl<WeFlowerCustomer
             queryWrapper.in(WeFlowerCustomerRel::getUserId, userIds);
         }
         return this.count(queryWrapper);
+    }
+
+    /**
+     * 根据开始和结束时间,获取首页-数据总览-客户总数
+     *
+     * @param corpId 企业ID
+     * @param beginTime 开始时间，格式为YYYY-MM-DD 00:00:00
+     * @param endTime 结束时间，格式为YYYY-MM-DD 23:59:59
+     * @return 首页-数据总览-客户总数
+     */
+    @Override
+    public Integer getTotalAllContactCnt(String corpId, String beginTime, String endTime) {
+        if(StringUtils.isAnyBlank(corpId, beginTime, endTime)) {
+            throw new CustomException(ResultTip.TIP_PARAM_MISSING);
+        }
+        int totalExternalCnt = 0;
+        // 获取企业下所有的员工
+        List<WeUser> userList = weUserService.list(new LambdaQueryWrapper<WeUser>().eq(WeUser::getCorpId, corpId));
+        // 获取状态为已激活的员工
+        List<String> nomalUserIdList = userList.stream().filter(item -> WeConstans.WE_USER_IS_ACTIVATE.equals(item.getIsActivate())).map(WeUser::getUserId).collect(Collectors.toList());
+        if (org.apache.commons.collections.CollectionUtils.isNotEmpty(nomalUserIdList)) {
+            // 获取已激活的员工下的客户总数
+            totalExternalCnt += weFlowerCustomerRelMapper.getNormalTotalAllContactCnt(corpId, beginTime, endTime, nomalUserIdList);
+        }
+        // 获取状态为已删除的员工
+        List<String> delUserIdList = userList.stream().filter(item -> WeConstans.WE_USER_IS_LEAVE.equals(item.getIsActivate())).map(WeUser::getUserId).collect(Collectors.toList());
+        if (org.apache.commons.collections.CollectionUtils.isNotEmpty(delUserIdList)) {
+            // 获取已删除的员工下的客户总数
+            totalExternalCnt += weFlowerCustomerRelMapper.getDelTotalAllContactCnt(corpId, beginTime, endTime, delUserIdList);
+        }
+        return totalExternalCnt;
+    }
+
+    /**
+     * 数据统计-联系客户-客户总数-旧数据兼容
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    @Async
+    public void updateTotalAllCustomerCnt() {
+        List<WeCorpAccount> weCorpAccountList = weCorpAccountService.listOfAuthCorpInternalWeCorpAccount();
+        if (com.baomidou.mybatisplus.core.toolkit.CollectionUtils.isEmpty(weCorpAccountList)) {
+            log.info("[数据统计-联系客户-客户总数-旧数据兼容] 当前无可更新信息的企业，请检查配置或联系管理员");
+            return;
+        }
+        // 获取当前日期的前180天日期范围列表
+        List<String> dateAgoList = DateUtils.get180DateAgoList();
+        weCorpAccountList.forEach(corpAccount -> {
+            String corpId = corpAccount.getCorpId();
+            log.info("[数据统计-联系客户-客户总数-旧数据兼容] 开始旧数据兼容，当前企业corpId:{}", corpId);
+            try {
+                // 获取企业下所有在职员工
+                List<WeUser> userList = weUserService.list(new LambdaQueryWrapper<WeUser>().eq(WeUser::getIsActivate, WeConstans.WE_USER_IS_ACTIVATE).eq(WeUser::getCorpId, corpId));
+                // 获取员工id列表
+                List<String> userIdList = userList.stream().map(WeUser::getUserId).collect(Collectors.toList());
+                // 最后需要更新的信息列表
+                List<WeUserBehaviorData> updateList = new ArrayList<>();
+                for (String date : dateAgoList) {
+                    // 转换当前时间
+                    Date statTime = DateUtils.dateTime(DateUtils.YYYY_MM_DD, date);
+                    // 获取每个员工对应日期下的客户总数
+                    List<WeUserBehaviorData> countList = weFlowerCustomerRelMapper.getTotalAllContactCntByUserId(corpId, DateUtils.parseEndDay(date), userIdList);
+                    // 设置日期时间
+                    countList.forEach(item -> {
+                        item.setStatTime(statTime);
+                    });
+                    updateList.addAll(countList);
+                }
+                // 批量更新
+                BatchInsertUtil.doInsert(updateList, weUserBehaviorDataMapper::saveBatchUpdateOrInsert);
+                log.info("[数据统计-联系客户-客户总数-旧数据兼容] 旧数据统计结束，本次更新数据条数：{}", updateList.size());
+            } catch (Exception e) {
+                log.info("[数据统计-联系客户-客户总数-旧数据兼容] 出现异常，当前企业corpId:{}，异常原因:{}", corpId, ExceptionUtils.getStackTrace(e));
+            }
+        });
     }
 
     /**

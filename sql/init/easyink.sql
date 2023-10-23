@@ -1669,8 +1669,9 @@ CREATE TABLE `we_flower_customer_rel`
     `email`            varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '邮件',
     `add_way`          varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '该成员添加此客户的来源，',
     `state`            varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '企业自定义的state参数，用于区分客户具体是通过哪个「联系我」添加，由企业通过创建「联系我」方式指定',
-    `status`           char(2) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci      NOT NULL DEFAULT '0' COMMENT '状态（0正常 1删除流失 2员工删除用户）',
-    `delete_time`      datetime                                                      NOT NULL DEFAULT '0000-00-00 00:00:00' COMMENT '删除时间',
+    `status`           char(2) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci      NOT NULL DEFAULT '0' COMMENT '状态（0正常 1删除流失 2员工删除用户 3待继承 4转接中）',
+    `delete_time`      datetime                                                      NOT NULL DEFAULT '0000-00-00 00:00:00' COMMENT '客户删除员工时间',
+    `del_by_user_time` datetime                                                      NOT NULL DEFAULT '0000-00-00 00:00:00' COMMENT '员工删除客户时间（如果没有收到删除回调，通过手动同步客户得出的主动删除客户，该字段为默认值）',
     `wechat_channel`   varchar(64)                                                   NOT NULL DEFAULT '' COMMENT '该成员添加此客户的来源add_way为10时，对应的视频号信息',
     PRIMARY KEY (`id`) USING BTREE,
     UNIQUE INDEX `un_user_external_userid_corpid` (`external_userid`, `user_id`, `corp_id`) USING BTREE,
@@ -2166,7 +2167,8 @@ CREATE TABLE `we_user_behavior_data` (
                                          `reply_percentage` double NOT NULL DEFAULT '0' COMMENT '已回复聊天占比，浮点型，客户主动发起聊天后，成员在一个自然日内有回复过消息的聊天数/客户主动发起的聊天数比例，不包括群聊，仅在确有聊天时返回',
                                          `avg_reply_time` int(10) NOT NULL DEFAULT '0' COMMENT '平均首次回复时长',
                                          `negative_feedback_cnt` int(11) NOT NULL DEFAULT '0' COMMENT '删除/拉黑成员的客户数，即将成员删除或加入黑名单的客户数',
-                                         `total_contact_cnt` int(11) NOT NULL DEFAULT '0' COMMENT '总客户数(此总数由于官方统计接口不统计,所以每日定时任务进行统计)',
+                                         `total_all_contact_cnt` int(11) NOT NULL DEFAULT '0' COMMENT '客户总数(由每日定时任务统计，不去重，首页和数据统计共用)，【首页】：在职员工在we_flower_customer_rel表中，客户关系status != 2的客户数量 + 系统上记录的已离职的员工在we_flower_customer_rel表中，客户关系status = 3的客户数量。【数据统计】：在职员工在we_flower_customer_rel表中，客户关系status != 2的客户数量。',
+                                         `total_contact_cnt`    int(11) NOT NULL DEFAULT '0' COMMENT '留存客户总数(由每日定时任务统计，去重)',
                                          `new_contact_loss_cnt` int(11) NOT NULL DEFAULT '0' COMMENT '当天加入的新客流失数(与negative_feedback_cnt不同，这是只统计当天加的流失的客户,由于当天新增客户的流失数官方统计没有提供，此数据也是由系统自行定时任务计算保存)',
                                          `new_contact_speak_cnt` int(11) NOT NULL DEFAULT '0' COMMENT '当天新增客户中与员工对话过的人数(此数据为每日定时任务统计 会话存档ES中查找)',
                                          `replied_within_thirty_min_customer_cnt` int(11) NOT NULL DEFAULT '0' COMMENT '当天员工首次给客户发消息，客户在30分钟内回复的客户数(此数据为每日定时任务统计 会话存档ES中查找)',
@@ -2175,6 +2177,7 @@ CREATE TABLE `we_user_behavior_data` (
                                          `contact_total_cnt` int(11) NOT NULL DEFAULT '0' COMMENT '当天员工客户总数（we_flower表中查找 每日定时任务获取',
                                          `user_active_chat_cnt` int(11) NOT NULL DEFAULT '0' COMMENT '当天员工主动发起的会话数量（DataStatisticsTask定时任务统计）',
                                          PRIMARY KEY (`id`) USING BTREE,
+                                         UNIQUE KEY `uni_corp_user_id_stat_time_idx` (`corp_id`,`user_id`,`stat_time`) USING BTREE COMMENT '企业ID-员工ID-时间唯一索引',
                                          KEY `stat_time_index` (`stat_time`,`user_id`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='联系客户统计数据 ';
 

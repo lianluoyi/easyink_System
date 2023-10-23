@@ -4,6 +4,8 @@ import com.dtflys.forest.annotation.BaseRequest;
 import com.dtflys.forest.annotation.Body;
 import com.dtflys.forest.annotation.Header;
 import com.dtflys.forest.annotation.Post;
+import com.easyink.common.exception.RetryException;
+import com.easyink.wecom.client.retry.EnableRetry;
 import com.easyink.wecom.domain.dto.message.QueryCustomerMessageStatusResultDTO;
 import com.easyink.wecom.domain.dto.message.QueryCustomerMessageStatusResultDataObjectDTO;
 import com.easyink.wecom.domain.dto.message.SendMessageResultDTO;
@@ -18,6 +20,7 @@ import org.springframework.stereotype.Component;
  * @date: 2021-08-18 17:05
  */
 @Component
+@EnableRetry(retryExceptionClass = RetryException.class)
 @BaseRequest(baseURL = "${weComServerUrl}${weComePrefix}", interceptor = WeAccessTokenInterceptor.class)
 public interface WeCustomerMessagePushClient {
 
@@ -35,6 +38,7 @@ public interface WeCustomerMessagePushClient {
      *
      * @param queryCustomerMessageStatusResultDataObjectDTO{msgid} <a href="https://work.weixin.qq.com/api/doc/90000/90135/92135">添加企业群发消息任务返回的msgid</a>
      */
+    @EnableRetry(maxAttempts = 1)
     @Post(url = "/externalcontact/get_group_msg_result")
     QueryCustomerMessageStatusResultDTO queryCustomerMessageStatus(@Body QueryCustomerMessageStatusResultDataObjectDTO queryCustomerMessageStatusResultDataObjectDTO, @Header("corpid") String corpId);
 

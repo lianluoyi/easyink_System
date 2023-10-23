@@ -162,11 +162,19 @@ public class WeFlowerCustomerTagRelServiceImpl extends ServiceImpl<WeFlowerCusto
         if(localRel == null || CollectionUtils.isEmpty(tagRelList)) {
             return;
         }
-        remove(new LambdaQueryWrapper<WeFlowerCustomerTagRel>()
+        weFlowerCustomerTagRelMapper.delete(new LambdaQueryWrapper<WeFlowerCustomerTagRel>()
                 .eq(WeFlowerCustomerTagRel::getFlowerCustomerRelId, localRel.getId())
         );
         if (CollectionUtils.isNotEmpty(tagRelList)) {
-            BatchInsertUtil.doInsert(tagRelList, this::batchInsert);
+            BatchInsertUtil.doInsert(tagRelList, weFlowerCustomerTagRelMapper::batchInsert);
         }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void syncLocalTagFromRemote(List<WeFlowerCustomerTagRel> tagRelList, List<Long> relIds) {
+        BatchInsertUtil.doInsert(relIds, list -> weFlowerCustomerTagRelMapper.delete(new LambdaQueryWrapper<WeFlowerCustomerTagRel>()
+                .in(WeFlowerCustomerTagRel::getFlowerCustomerRelId,list)));
+        BatchInsertUtil.doInsert(tagRelList, weFlowerCustomerTagRelMapper::batchInsert);
     }
 }
