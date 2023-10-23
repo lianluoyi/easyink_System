@@ -1,14 +1,23 @@
 package com.easyink.wecom.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.ArrayUtil;
-import cn.hutool.core.util.StrUtil;
+import com.alibaba.excel.EasyExcel;
+import com.alibaba.excel.ExcelWriter;
+import com.alibaba.excel.write.metadata.WriteSheet;
+import com.alibaba.excel.write.metadata.style.WriteCellStyle;
+import com.alibaba.excel.write.metadata.style.WriteFont;
+import com.alibaba.excel.write.style.HorizontalCellStyleStrategy;
+import com.alibaba.excel.write.style.column.SimpleColumnWidthStyleStrategy;
 import com.alibaba.fastjson.JSONArray;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.dtflys.forest.exceptions.ForestRuntimeException;
 import com.easyink.common.annotation.DataScope;
+import com.easyink.common.annotation.Excel;
+import com.easyink.common.config.RuoYiConfig;
 import com.easyink.common.constant.Constants;
 import com.easyink.common.constant.GenConstants;
 import com.easyink.common.constant.WeConstans;
@@ -16,7 +25,7 @@ import com.easyink.common.constant.sop.CustomerSopConstants;
 import com.easyink.common.core.domain.AjaxResult;
 import com.easyink.common.core.domain.sop.CustomerSopPropertyRel;
 import com.easyink.common.core.domain.wecom.BaseExtendPropertyRel;
-import com.easyink.common.core.domain.wecom.WeUser;
+import com.easyink.common.core.text.Convert;
 import com.easyink.common.enums.CustomerExtendPropertyEnum;
 import com.easyink.common.enums.CustomerTrajectoryEnums;
 import com.easyink.common.enums.MethodParamType;
@@ -60,26 +69,41 @@ import com.easyink.wecom.domain.vo.customer.WeCustomerUserListVO;
 import com.easyink.wecom.domain.vo.customer.WeCustomerVO;
 import com.easyink.wecom.domain.vo.sop.CustomerSopVO;
 import com.easyink.wecom.domain.vo.unionid.GetUnionIdVO;
+import com.easyink.wecom.handler.ExtendPropHolder;
 import com.easyink.wecom.login.util.LoginTokenService;
 import com.easyink.wecom.mapper.WeCustomerMapper;
 import com.easyink.wecom.mapper.WeExternalUseridMappingMapper;
 import com.easyink.wecom.service.*;
 import com.easyink.wecom.service.wechatopen.WechatOpenService;
+import com.easyink.wecom.utils.redis.CustomerRedisCache;
+import com.github.pagehelper.PageHelper;
+import com.google.common.base.Stopwatch;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.poi.ss.usermodel.*;
 import org.springframework.aop.framework.AopContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.annotation.Resource;
 import javax.validation.constraints.NotBlank;
+import java.io.File;
+import java.io.OutputStream;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
-import java.util.function.Function;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -138,6 +162,17 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
     private WeUpdateIDClient convertIDClient;
     @Autowired
     private WeTagService weTagService;
+
+    /**
+     * 导出时查询数据库最大批量数
+     */
+    private static final int EXPORT_QUERY_BATCH_SIZE = 5000;
+    /**
+     * 导出一个sheet的最大行数
+     */
+    private static final int EXPORT_SHEET_ROWS = 1000000;
+    @Resource(name = "customerRedisCache")
+    private CustomerRedisCache customerRedisCache;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -363,39 +398,6 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
         return weCustomerMapper.selectWeCustomerListV2(weCustomer);
     }
 
-    @DataScope
-    @Override
-    public List<WeCustomerVO> selectWeCustomerListV3(WeCustomer weCustomer) {
-        if (StringUtils.isBlank(weCustomer.getCorpId())) {
-            throw new CustomException(ResultTip.TIP_GENERAL_PARAM_ERROR);
-        }
-        String corpId = weCustomer.getCorpId();
-        if (!hasFilterCustomer(weCustomer, corpId))  {
-            return Collections.emptyList();
-        }
-        // 查询客户
-        PageInfoUtil.startPage();
-        List<WeCustomerVO> list = weCustomerMapper.selectWeCustomerV3(weCustomer);
-        // 根据返回的结果获取需要的标签详情
-        weFlowerCustomerTagRelService.setTagForCustomers(corpId, list);
-        // 根据返回的结果获取需要的扩展字段
-        weCustomerExtendPropertyService.setExtendPropertyForCustomers(corpId, list);
-        return list;
-    }
-
-    /**
-     * 查询导出的列表
-     *
-     * @param weCustomer 客户条件
-     * @return 需要导出的客户
-     */
-    public List<WeCustomerVO> selectExportCustomer(WeCustomer weCustomer) {
-        if (StringUtils.isBlank(weCustomer.getCorpId())) {
-            throw new CustomException(ResultTip.TIP_GENERAL_PARAM_ERROR);
-        }
-        List<WeCustomerVO> list =  weCustomerMapper.selectExportCustomer(weCustomer);
-        return  list ;
-    }
 
     /**
      * 判断是否有过滤条件的客户
@@ -490,7 +492,8 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
         }
         return extendList;
     }
-
+    @Resource(name = "threadPoolTaskExecutor")
+    private ThreadPoolTaskExecutor threadPoolTaskExecutor;
 
     /**
      * 获取查询所需集合。如果其中一个为空，返回另一个
@@ -499,91 +502,14 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
      * @param list2 集合2
      * @return 查询所需的集合
      */
-    public static List<BaseExtendPropertyRel> getIntersectionTypeNotFind(List<BaseExtendPropertyRel> list1,List<BaseExtendPropertyRel> list2) {
-        if (list1.size()>0){
-            if (list2.size()>0){
+    public static List<BaseExtendPropertyRel> getIntersectionTypeNotFind(List<BaseExtendPropertyRel> list1, List<BaseExtendPropertyRel> list2) {
+        if (list1.size() > 0) {
+            if (list2.size() > 0) {
                 list1.retainAll(list2);
                 return list1;
-            }else return list1;
+            } else return list1;
         }
         return list2;
-    }
-
-    /**
-     * 将DTO类转换为实体类
-     *
-     * @param weCustomerSearchDTO
-     * @return
-     */
-    @Override
-    public WeCustomer changeWecustomer(WeCustomerSearchDTO weCustomerSearchDTO){
-        //初始化添加列表
-        WeFlowerCustomerRel weFlowerCustomerRel =new WeFlowerCustomerRel();
-        if (weCustomerSearchDTO.getBeginTime()!=null){
-            weFlowerCustomerRel.setBeginTime(weCustomerSearchDTO.getBeginTime().toString());
-        }
-        if (weCustomerSearchDTO.getEndTime()!=null){
-            weFlowerCustomerRel.setEndTime(weCustomerSearchDTO.getEndTime().toString());
-        }
-        if (!StringUtils.isBlank(weCustomerSearchDTO.getAddWay())){
-            weFlowerCustomerRel.setAddWay(weCustomerSearchDTO.getAddWay());
-        }
-        if (!StringUtils.isBlank(weCustomerSearchDTO.getEmail())){
-            weFlowerCustomerRel.setEmail(weCustomerSearchDTO.getEmail());
-        }
-        if (!StringUtils.isBlank(weCustomerSearchDTO.getAddress())){
-            weFlowerCustomerRel.setAddress(weCustomerSearchDTO.getAddress());
-        }
-        List<WeFlowerCustomerRel> weFlowerCustomerRels = new ArrayList<>() ;
-        weFlowerCustomerRels.add(weFlowerCustomerRel);
-        // 转化实体类
-        WeCustomer weCustomer =new WeCustomer();
-        weCustomer.setCorpId(LoginTokenService.getLoginUser().getCorpId());
-        weCustomer.setExternalUserid(weCustomerSearchDTO.getExternalUserid());
-        weCustomer.setStatus(weCustomerSearchDTO.getStatus());
-        weCustomer.setWeFlowerCustomerRels(weFlowerCustomerRels);
-
-        if (MapUtils.isNotEmpty(weCustomerSearchDTO.getParams())){
-            weCustomer.setParams(weCustomerSearchDTO.getParams());
-        }
-        if (!StringUtils.isBlank(weCustomerSearchDTO.getName())){
-            weCustomer.setName(weCustomerSearchDTO.getName());
-            weCustomer.setRemark(weCustomerSearchDTO.getName());
-        }
-        if (!StringUtils.isBlank(weCustomerSearchDTO.getDesc())){
-            weCustomer.setDesc(weCustomerSearchDTO.getDesc());
-        }
-        if (!StringUtils.isBlank(weCustomerSearchDTO.getUserId())){
-            weCustomer.setUserId(weCustomerSearchDTO.getUserId());
-        }
-        if (!StringUtils.isBlank(weCustomerSearchDTO.getUserIds())){
-            weCustomer.setUserIds(weCustomerSearchDTO.getUserIds());
-        }
-        if (!StringUtils.isBlank(weCustomerSearchDTO.getTagIds())){
-            weCustomer.setTagIds(weCustomerSearchDTO.getTagIds());
-        }
-        if (!StringUtils.isBlank(weCustomerSearchDTO.getGender())){
-            weCustomer.setGender(weCustomerSearchDTO.getGender());
-        }
-        if (!StringUtils.isBlank(weCustomerSearchDTO.getCorpFullName())){
-            weCustomer.setCorpFullName(weCustomerSearchDTO.getCorpFullName());
-        }
-        if (!StringUtils.isBlank(weCustomerSearchDTO.getBirthday())){
-            weCustomer.setBirthdayStr(weCustomerSearchDTO.getBirthday());
-        }
-        if (!StringUtils.isBlank(weCustomerSearchDTO.getPhone())){
-            weCustomer.setPhone(weCustomerSearchDTO.getPhone());
-        }
-        if (!StringUtils.isBlank(weCustomerSearchDTO.getBeginTime())){
-            weCustomer.setBeginTime(weCustomerSearchDTO.getBeginTime());
-        }
-        if (!StringUtils.isBlank(weCustomerSearchDTO.getEndTime())){
-            weCustomer.setEndTime(weCustomerSearchDTO.getEndTime());
-        }
-        if (weCustomerSearchDTO.getExtendProperties().size()>0){
-            weCustomer.setExtendProperties(weCustomerSearchDTO.getExtendProperties());
-        }
-        return weCustomer;
     }
 
     /**
@@ -834,7 +760,6 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     @Async
     public void syncWeCustomerV2(String corpId) {
         if (StringUtils.isBlank(corpId)) {
@@ -848,7 +773,11 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
 
         // 2.每个员工依次调用[批量获取客户详情] 企微API, 同步其客户详情
         for (String userId : userIdList) {
-            batchGetCustomerDetailAndSyncLocal(corpId, userId);
+            try {
+                batchGetCustomerDetailAndSyncLocal(corpId, userId);
+            }catch (Exception e) {
+                log.error("同步处理单个员工的客户异常,corpId:{}, userId:{}, e:{}", corpId, userId, ExceptionUtils.getStackTrace(e));
+            }
         }
         long endTime = System.currentTimeMillis();
         log.info("同步客户结束[新]:corpId:{}耗时：{}", corpId, Double.valueOf((endTime - startTime) / 1000.00D));
@@ -880,16 +809,13 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
             log.info("[批量获取客户详情] 该员工没有添加客户, corpId:{}, userId:{}", corpId, userId);
             return;
         }
-        Map<String, String> userIdInDbMap = weUserService.list(new LambdaQueryWrapper<WeUser>().select(WeUser::getUserId).eq(WeUser::getCorpId, corpId))
-                .stream().collect(Collectors.toMap(WeUser::getUserId, WeUser::getUserId));
         // 2. 数据处理:对返回的数据进行处理
-        resp.handleData(corpId, userIdInDbMap);
+        resp.handleData(corpId, null);
         if (resp.isEmptyResult()) {
             log.info("[批量获取客户详情] 该员工没有添加客户, corpId:{}, userId:{}", corpId, userId);
             return;
         }
         // 3. 数据对齐:本地成员-客户关系数据与服务端对齐,同步远端修改的数据
-        weFlowerCustomerRelService.alignData(resp, userId, corpId);
         List<String> externalUserIdList = resp.getCustomerList().stream().map(WeCustomer::getExternalUserid).collect(Collectors.toList());
         List<WeFlowerCustomerRel> localRelList = weFlowerCustomerRelService.list(
                 new LambdaQueryWrapper<WeFlowerCustomerRel>()
@@ -897,51 +823,17 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
                         .eq(WeFlowerCustomerRel::getUserId, userId)
                         .in(WeFlowerCustomerRel::getExternalUserid, externalUserIdList)
         );
-        if (CollectionUtils.isNotEmpty(localRelList)) {
-            updateCustomerRel(resp, localRelList, corpId);
-        }
-        // 对以前删除但是重新加回的客户重新把状态设置为正常
-        resp.activateDelCustomer(localRelList);
+        weFlowerCustomerRelService.alignData(resp, userId, corpId , localRelList);
         //**** 客户信息更新、插入 , 客户-成员关系更新 , 客户-标签关系更新
         // 4. 数据同步:插入、更新 客户数据,员工-客户关系
         BatchInsertUtil.doInsert(resp.getCustomerList(), this::batchInsert);
         BatchInsertUtil.doInsert(resp.getRelList(), list -> weFlowerCustomerRelService.batchInsert(list));
-
         // 5. 数据同步: 客户-标签关系 ,获取每个客户关系对应的标签,并同步更新数据库
         List<WeFlowerCustomerTagRel> tagRelList = resp.getCustomerTagRelList(localRelList);
         List<Long> relIds = localRelList.stream().map(WeFlowerCustomerRel::getId).collect(Collectors.toList());
-        BatchInsertUtil.doInsert(relIds, list -> weFlowerCustomerTagRelService.remove(new LambdaQueryWrapper<WeFlowerCustomerTagRel>()
-                .in(WeFlowerCustomerTagRel::getFlowerCustomerRelId,list)));
-        BatchInsertUtil.doInsert(tagRelList, list -> weFlowerCustomerTagRelService.batchInsert(list));
+        weFlowerCustomerTagRelService.syncLocalTagFromRemote(tagRelList, relIds);
     }
 
-    /**
-     * 更新流失后添加的客户数据，客户-员工关系
-     *
-     * @param resp 企微响应
-     * @param localRelList  本地数据
-     */
-    public void updateCustomerRel(GetByUserResp resp, List<WeFlowerCustomerRel> localRelList, String corpId){
-        List<WeFlowerCustomerRel> updateRelList = new ArrayList<>();
-        Map<String, WeFlowerCustomerRel> localMap = localRelList.stream().collect(Collectors.toMap(WeFlowerCustomerRel::getExternalUserid, Function.identity()));
-        // 本地数据与远端数据对比
-        for (WeFlowerCustomerRel remoteFlowerCustomerRel : resp.getRelList()) {
-            WeFlowerCustomerRel localFlowerCustomerRel = localMap.get(remoteFlowerCustomerRel.getExternalUserid());
-            // 若该客户与本地记录的添加时间不一样，表示此客户是流失后重新添加员工的客户，将该客户存入列表等待更新状态
-            if(localFlowerCustomerRel != null){
-                if (remoteFlowerCustomerRel.getCreateTime().compareTo(localFlowerCustomerRel.getCreateTime()) != 0) {
-                    remoteFlowerCustomerRel.setStatus(Constants.NORMAL_CODE);
-                    updateRelList.add(remoteFlowerCustomerRel);
-                }
-            }
-        }
-        // 存在创建时间不同的客户则更新客户状态
-        if (CollectionUtils.isNotEmpty(updateRelList)) {
-            LambdaUpdateWrapper<WeFlowerCustomerRel> updateRelWrapper = new LambdaUpdateWrapper<>();
-            updateRelWrapper.eq(WeFlowerCustomerRel::getCorpId, corpId);
-            weFlowerCustomerRelService.batchUpdateStatus(updateRelList);
-        }
-    }
 
     /**
      * 调用企微根据corpId获取离职员工列表
@@ -1370,22 +1262,396 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
         this.batchInsert(list);
     }
 
+    /**
+     * 根据传入的字段获取对应的get方法，如name,对应的getName方法
+     *
+     * @param fieldName 字段名
+     * @param person    对象
+     * @return
+     */
+    private static Object getFieldValue(String fieldName, Object person) {
+        try {
+            String firstLetter = fieldName.substring(0, 1).toUpperCase();
+            String getter = "get" + firstLetter + fieldName.substring(1);
+            Method method = person.getClass().getMethod(getter);
+            return method.invoke(person);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * 将DTO类转换为实体类
+     *
+     * @param weCustomerSearchDTO
+     * @return
+     */
+    @Override
+    public WeCustomer changeWecustomer(WeCustomerSearchDTO weCustomerSearchDTO) {
+        //初始化添加列表
+        WeFlowerCustomerRel weFlowerCustomerRel = new WeFlowerCustomerRel();
+        if (weCustomerSearchDTO.getBeginTime() != null) {
+            weFlowerCustomerRel.setBeginTime(weCustomerSearchDTO.getBeginTime().toString());
+        }
+        if (weCustomerSearchDTO.getEndTime() != null) {
+            weFlowerCustomerRel.setEndTime(weCustomerSearchDTO.getEndTime().toString());
+        }
+        if (!StringUtils.isBlank(weCustomerSearchDTO.getAddWay())) {
+            weFlowerCustomerRel.setAddWay(weCustomerSearchDTO.getAddWay());
+        }
+        if (!StringUtils.isBlank(weCustomerSearchDTO.getEmail())) {
+            weFlowerCustomerRel.setEmail(weCustomerSearchDTO.getEmail());
+        }
+        if (!StringUtils.isBlank(weCustomerSearchDTO.getAddress())) {
+            weFlowerCustomerRel.setAddress(weCustomerSearchDTO.getAddress());
+        }
+        List<WeFlowerCustomerRel> weFlowerCustomerRels = new ArrayList<>();
+        weFlowerCustomerRels.add(weFlowerCustomerRel);
+        // 转化实体类
+        WeCustomer weCustomer = new WeCustomer();
+        weCustomer.setCorpId(weCustomerSearchDTO.getCorpId());
+        weCustomer.setExternalUserid(weCustomerSearchDTO.getExternalUserid());
+        weCustomer.setStatus(weCustomerSearchDTO.getStatus());
+        weCustomer.setWeFlowerCustomerRels(weFlowerCustomerRels);
+
+        if (MapUtils.isNotEmpty(weCustomerSearchDTO.getParams())) {
+            weCustomer.setParams(weCustomerSearchDTO.getParams());
+        }
+        if (!StringUtils.isBlank(weCustomerSearchDTO.getName())) {
+            weCustomer.setName(weCustomerSearchDTO.getName());
+            weCustomer.setRemark(weCustomerSearchDTO.getName());
+        }
+        if (!StringUtils.isBlank(weCustomerSearchDTO.getDesc())) {
+            weCustomer.setDesc(weCustomerSearchDTO.getDesc());
+        }
+        if (!StringUtils.isBlank(weCustomerSearchDTO.getUserId())) {
+            weCustomer.setUserId(weCustomerSearchDTO.getUserId());
+        }
+        if (!StringUtils.isBlank(weCustomerSearchDTO.getUserIds())) {
+            weCustomer.setUserIds(weCustomerSearchDTO.getUserIds());
+        }
+        if (!StringUtils.isBlank(weCustomerSearchDTO.getTagIds())) {
+            weCustomer.setTagIds(weCustomerSearchDTO.getTagIds());
+        }
+        if (!StringUtils.isBlank(weCustomerSearchDTO.getGender())) {
+            weCustomer.setGender(weCustomerSearchDTO.getGender());
+        }
+        if (!StringUtils.isBlank(weCustomerSearchDTO.getCorpFullName())) {
+            weCustomer.setCorpFullName(weCustomerSearchDTO.getCorpFullName());
+        }
+        if (!StringUtils.isBlank(weCustomerSearchDTO.getBirthday())) {
+            weCustomer.setBirthdayStr(weCustomerSearchDTO.getBirthday());
+        }
+        if (!StringUtils.isBlank(weCustomerSearchDTO.getPhone())) {
+            weCustomer.setPhone(weCustomerSearchDTO.getPhone());
+        }
+        if (!StringUtils.isBlank(weCustomerSearchDTO.getBeginTime())) {
+            weCustomer.setBeginTime(weCustomerSearchDTO.getBeginTime());
+        }
+        if (!StringUtils.isBlank(weCustomerSearchDTO.getEndTime())) {
+            weCustomer.setEndTime(weCustomerSearchDTO.getEndTime());
+        }
+        if (weCustomerSearchDTO.getExtendProperties().size() > 0) {
+            weCustomer.setExtendProperties(weCustomerSearchDTO.getExtendProperties());
+        }
+        return weCustomer;
+    }
+
+    /**
+     * 查询导出的列表
+     *
+     * @param weCustomer       客户条件
+     * @param selectProperties 需要导出的扩展属性
+     * @param extendPropHolder 扩展字段属性容器 {@link ExtendPropHolder}
+     * @return 需要导出的客户
+     */
+    public List<WeCustomerExportVO> selectExportCustomer(WeCustomer weCustomer, List<String> selectProperties, ExtendPropHolder extendPropHolder) {
+        if (StringUtils.isBlank(weCustomer.getCorpId())) {
+            throw new CustomException(ResultTip.TIP_GENERAL_PARAM_ERROR);
+        }
+        List<WeCustomerVO> list = weCustomerMapper.selectWeCustomerV3(weCustomer);
+        // 根据返回的结果获取需要的标签详情
+        CompletableFuture<Void> tagFuture = CompletableFuture.runAsync(
+                () -> weFlowerCustomerTagRelService.setTagForCustomers(weCustomer.getCorpId(), list), threadPoolTaskExecutor
+        );
+        // 根据返回的结果获取需要的扩展字段
+        CompletableFuture<Void> extendPropFuture = CompletableFuture.runAsync(
+                () -> weCustomerExtendPropertyService.setExtendPropertyForCustomers(weCustomer.getCorpId(), list), threadPoolTaskExecutor
+        );
+        CompletableFuture.allOf(tagFuture, extendPropFuture).join();
+
+//        List<WeCustomerVO> list = weCustomerMapper.selectExportCustomer(weCustomer);
+//        List<WeCustomerVO> list  = weCustomerMapper.selectWeCustomerListV2(weCustomer) ;
+        List<WeCustomerExportVO> exportList = list.stream().map(WeCustomerExportVO::new).collect(Collectors.toList());
+        weCustomerExtendPropertyService.setKeyValueMapper(weCustomer.getCorpId(), exportList, selectProperties, extendPropHolder);
+        return exportList;
+    }
+
+    @DataScope
+    @Override
+    public List<WeCustomerVO> selectWeCustomerListV3(WeCustomer weCustomer) {
+        if (StringUtils.isBlank(weCustomer.getCorpId())) {
+            throw new CustomException(ResultTip.TIP_GENERAL_PARAM_ERROR);
+        }
+        String corpId = weCustomer.getCorpId();
+        if (!hasFilterCustomer(weCustomer, corpId)) {
+            return Collections.emptyList();
+        }
+        // 查询客户
+        PageInfoUtil.startPage();
+        List<WeCustomerVO> list = weCustomerMapper.selectWeCustomerV3(weCustomer);
+        // 根据返回的结果获取需要的标签详情
+        CompletableFuture<Void> tagFuture = CompletableFuture.runAsync(
+                () -> weFlowerCustomerTagRelService.setTagForCustomers(corpId, list), threadPoolTaskExecutor
+        );
+        // 根据返回的结果获取需要的扩展字段
+        CompletableFuture<Void> extendPropFuture = CompletableFuture.runAsync(
+                () -> weCustomerExtendPropertyService.setExtendPropertyForCustomers(corpId, list), threadPoolTaskExecutor
+        );
+        CompletableFuture.allOf(tagFuture, extendPropFuture).join();
+        return list;
+    }
+
     @Override
     @DataScope
+    @Deprecated
     public <T> AjaxResult<T> export(WeCustomerExportDTO dto) {
-        List<String> selectProperties=dto.getSelectedProperties();
-        WeCustomerSearchDTO weCustomerSearchDTO=new WeCustomerSearchDTO();
+        List<String> selectProperties = dto.getSelectedProperties();
+        WeCustomerSearchDTO weCustomerSearchDTO = new WeCustomerSearchDTO();
         BeanUtils.copyProperties(dto, weCustomerSearchDTO);
-        WeCustomer weCustomer=changeWecustomer(weCustomerSearchDTO);
+        WeCustomer weCustomer = changeWecustomer(weCustomerSearchDTO);
         List<WeCustomerVO> list = this.selectWeCustomerListV3(weCustomer);
         if (CollectionUtils.isEmpty(list)) {
             throw new CustomException(ResultTip.TIP_NO_DATA_TO_EXPORT);
         }
         List<WeCustomerExportVO> exportList = list.stream().map(WeCustomerExportVO::new).collect(Collectors.toList());
-        weCustomerExtendPropertyService.setKeyValueMapper(weCustomer.getCorpId(), exportList, selectProperties);
+        ExtendPropHolder extendPropHolder = new ExtendPropHolder(dto.getCorpId(), dto.getSelectedProperties());
+        weCustomerExtendPropertyService.setKeyValueMapper(weCustomer.getCorpId(), exportList, selectProperties, extendPropHolder);
         ExcelUtil<WeCustomerExportVO> util = new ExcelUtil<>(WeCustomerExportVO.class);
         return util.exportExcelV2(exportList, "customer", selectProperties);
     }
+
+    @Override
+    @DataScope
+    public void genExportData(WeCustomerExportDTO dto, String oprId, String fileName) {
+        WeCustomerSearchDTO weCustomerSearchDTO = new WeCustomerSearchDTO();
+        List<String> selectProperties = dto.getSelectedProperties();
+        BeanUtils.copyProperties(dto, weCustomerSearchDTO);
+        // 获取导出客户的条件
+        WeCustomer weCustomer = changeWecustomer(weCustomerSearchDTO);
+        // 分批导出客户
+        OutputStream outputStream = null;
+        try {
+            outputStream = Files.newOutputStream(Paths.get(getAbsoluteFile(fileName)));
+            Stopwatch stopwatch = Stopwatch.createStarted();
+            ExcelUtil<WeCustomerExportVO> util = new ExcelUtil<>(WeCustomerExportVO.class, selectProperties);
+            List<List<String>> fields = util.getFields();
+            Integer totalCount = weCustomerMapper.selectWeCustomerCount(weCustomer);
+            //每一个Sheet存放数据
+            Integer sheetDataRows = EXPORT_SHEET_ROWS;
+            //每次写入的数据量
+            int writeDataRows = EXPORT_QUERY_BATCH_SIZE;
+            //计算需要的Sheet数量
+            int sheetNum = totalCount % sheetDataRows == 0 ? (totalCount / sheetDataRows) : (totalCount / sheetDataRows + 1);
+            //计算一般情况下每一个Sheet需要写入的次数(一般情况不包含后一个sheet,因为后一个sheet不确定会写入多少条数据)
+            int oneSheetWriteCount = sheetDataRows / writeDataRows;
+            //计算后一个sheet需要写入的次数
+            int lastSheetWriteCount = totalCount % sheetDataRows == 0
+                    ? oneSheetWriteCount
+                    : ((totalCount - (totalCount / sheetDataRows) * sheetDataRows) % writeDataRows == 0 ? (totalCount - (totalCount / sheetDataRows) * sheetDataRows) / writeDataRows : ((totalCount - (totalCount / sheetDataRows) * sheetDataRows) / writeDataRows + 1));            //开始分批查询分次写入
+            //注意这次的循环就需要进行嵌套循环了,外层循环是Sheet数目,内层循环是写入次数
+            List<List<String>> dataList = new ArrayList<>();
+            //todo 待封装 样式
+            HorizontalCellStyleStrategy horizontalCellStyleStrategy = getHorizontalCellStyleStrategy();
+            ExcelWriter excelWriter = EasyExcel.write(outputStream)
+                                               .excludeColumnFiledNames(Arrays.asList("extendPropMapper", "extendProperties", "weFlowerCustomerRels", "extendList", "relIds", "params"))
+                                               .registerWriteHandler(horizontalCellStyleStrategy)
+                                               .registerWriteHandler(new SimpleColumnWidthStyleStrategy(25))
+                                               .build();
+            ExtendPropHolder extendPropHolder = new ExtendPropHolder(dto.getCorpId(), selectProperties);
+            for (int i = 0; i < sheetNum; i++) {
+                //创建Sheet
+                //循环写入次数: j的自增条件是当不是后一个Sheet的时候写入次数为正常的每个Sheet写入的次数,如果是后一个就需要使用计算的次数lastSheetWriteCount
+                for (int j = 0; j < (i != sheetNum - 1 ? oneSheetWriteCount : lastSheetWriteCount); j++) {
+                    dataList.clear();
+                    //分页查询
+                    PageHelper.startPage(j + 1 + oneSheetWriteCount * i, writeDataRows, false);
+                    List<WeCustomerExportVO> resultList = selectExportCustomer(weCustomer, selectProperties, extendPropHolder);
+                    WriteSheet writeSheet = EasyExcel.writerSheet(i, "客户" + (i + 1)).head(fields).build();
+                    excelWriter.write(getExportDataBySelectedProp(resultList, selectProperties, extendPropHolder), writeSheet);
+                }
+            }
+            // 下载EXCEL
+            excelWriter.finish();
+            outputStream.flush();
+            //导出时间结束
+            stopwatch.stop();
+            // 获取经过的时间并以毫秒为单位打印出来
+            long elapsedTimeMillis = stopwatch.elapsed(TimeUnit.SECONDS);
+            log.info("[导出客户] 耗时：{} 秒 ,总量:{} , oprId:{} ", elapsedTimeMillis,totalCount,oprId);
+            // 设置导出完成
+            customerRedisCache.setExportFinished(oprId);
+        } catch (Exception e) {
+            log.error("导出客户异常.e:{}", ExceptionUtils.getStackTrace(e));
+        } finally {
+            if (outputStream != null) {
+                try {
+                    outputStream.close();
+                } catch (Exception e) {
+                    log.error("[导出客户]关闭流异常,orpId:{}", oprId);
+                }
+            }
+        }
+    }
+
+    /**
+     * 获取样式
+     * @return
+     */
+    private HorizontalCellStyleStrategy getHorizontalCellStyleStrategy() {
+        // 头的策略
+        WriteCellStyle headWriteCellStyle = new WriteCellStyle();
+        // 背景设置
+        headWriteCellStyle.setFillForegroundColor(IndexedColors.GREY_50_PERCENT.getIndex());
+        headWriteCellStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+        headWriteCellStyle.setHorizontalAlignment(HorizontalAlignment.CENTER);
+        headWriteCellStyle.setFillPatternType(FillPatternType.SOLID_FOREGROUND);
+        WriteFont headWriteFont = new WriteFont();
+        headWriteFont.setFontHeightInPoints((short) 10);
+        headWriteFont.setBold(true);
+        headWriteFont.setColor(IndexedColors.WHITE.getIndex());
+        headWriteFont.setFontName("Arial");
+        headWriteCellStyle.setWriteFont(headWriteFont);
+        // 内容的策略
+        WriteCellStyle contentWriteCellStyle = new WriteCellStyle();
+        // 这里需要指定 FillPatternType 为FillPatternType.SOLID_FOREGROUND 不然无法显示背景颜色.头默认了 FillPatternType所以可以不指定
+//            contentWriteCellStyle.setFillPatternType(FillPatternType.SOLID_FOREGROUND);
+        contentWriteCellStyle.setHorizontalAlignment(HorizontalAlignment.CENTER);
+        contentWriteCellStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+        contentWriteCellStyle.setBorderRight(BorderStyle.THIN);
+        contentWriteCellStyle.setRightBorderColor(IndexedColors.GREY_50_PERCENT.getIndex());
+        contentWriteCellStyle.setBorderLeft(BorderStyle.THIN);
+        contentWriteCellStyle.setLeftBorderColor(IndexedColors.GREY_50_PERCENT.getIndex());
+        contentWriteCellStyle.setBorderTop(BorderStyle.THIN);
+        contentWriteCellStyle.setTopBorderColor(IndexedColors.GREY_50_PERCENT.getIndex());
+        contentWriteCellStyle.setBorderBottom(BorderStyle.THIN);
+        contentWriteCellStyle.setBottomBorderColor(IndexedColors.GREY_50_PERCENT.getIndex());
+
+        // 背景绿色
+//            contentWriteCellStyle.setFillForegroundColor(IndexedColors.GREEN.getIndex());
+        WriteFont contentWriteFont = new WriteFont();
+        contentWriteFont.setFontName("Arial");
+        // 字体大小
+        contentWriteFont.setFontHeightInPoints((short) 10);
+        contentWriteCellStyle.setWriteFont(contentWriteFont);
+        // 这个策略是 头是头的样式 内容是内容的样式 其他的策略可以自己实现
+        HorizontalCellStyleStrategy horizontalCellStyleStrategy =
+                new HorizontalCellStyleStrategy(headWriteCellStyle, contentWriteCellStyle);
+        return horizontalCellStyleStrategy;
+    }
+
+
+    /**
+     * 根据自定义字段和数据获取需要导出的最终数据
+     *
+     * @param resultList       结果数据
+     * @param selectProperties 需要导出的表头
+     * @param extendPropHolder
+     * @return
+     */
+    private List getExportDataBySelectedProp(List<WeCustomerExportVO> resultList, List<String> selectProperties, ExtendPropHolder extendPropHolder) {
+        List list = new ArrayList();
+        for (WeCustomerExportVO element : resultList) {
+            List<Object> rowData = new ArrayList<>();
+            for (String propName : selectProperties) {
+                Class<?> currClazz = element.getClass();
+                List<Field> fields = new ArrayList<>();
+                while (currClazz != null) {
+                    Field[] declaredFields = currClazz.getDeclaredFields();
+                    fields.addAll(Arrays.asList(declaredFields));
+                    currClazz = currClazz.getSuperclass();
+                }
+                for (Field field : fields) {
+                    Excel excel = field.getDeclaredAnnotation(Excel.class);
+                    if (excel != null) {
+                        // 判断基础字段
+                        if (propName.equals(excel.name())) {
+                            // 在这里，你可以获取字段的值并将其添加到 rowData 中
+                            try {
+                                if (!field.isAccessible()) {
+                                    field.setAccessible(true);
+                                }
+                                Object fieldValue = formatValue(element, field, excel);
+                                rowData.add(fieldValue);
+                                continue;
+                            } catch (Exception e) {
+                                log.error("设置字段值异常 e;{}", ExceptionUtils.getStackTrace(e));
+                            }
+                        }
+                    }
+                }
+                if (extendPropHolder.isHasExtendProp()) {
+                    for (Map.Entry<String, String> entry : element.getExtendPropMapper().entrySet()) {
+                        String key = entry.getKey();
+                        String value = entry.getValue();
+                        if (key.equals(propName)) {
+                            rowData.add(value);
+                        }
+                    }
+                }
+            }
+            list.add(rowData);
+        }
+        return list;
+    }
+
+    /**
+     * 根据注解格式化设置字段的值
+     *
+     * @param element
+     * @param field
+     * @param excel
+     * @return
+     * @throws IllegalAccessException
+     */
+    private Object formatValue(WeCustomerExportVO element, Field field, Excel excel) throws IllegalAccessException {
+        Object fieldValue = field.get(element);
+        String dateFormat = excel.dateFormat();
+        String readConverterExp = excel.readConverterExp();
+        String separator = excel.separator();
+        String dictType = excel.dictType();
+        if (com.easyink.common.utils.StringUtils.isNotEmpty(dateFormat) && com.easyink.common.utils.StringUtils.isNotNull(fieldValue)) {
+            fieldValue = DateUtils.parseDateToStr(dateFormat, (Date) fieldValue);
+        } else if (com.easyink.common.utils.StringUtils.isNotEmpty(readConverterExp) && com.easyink.common.utils.StringUtils.isNotNull(fieldValue)) {
+            fieldValue = ExcelUtil.convertByExp(Convert.toStr(fieldValue), readConverterExp, separator);
+        } else if (com.easyink.common.utils.StringUtils.isNotEmpty(dictType) && com.easyink.common.utils.StringUtils.isNotNull(fieldValue)) {
+            fieldValue = ExcelUtil.convertDictByExp(Convert.toStr(fieldValue), dictType, separator);
+        } else if (fieldValue instanceof BigDecimal && -1 != excel.scale()) {
+            fieldValue = (((BigDecimal) fieldValue).setScale(excel.scale(), excel.roundingMode())).toString();
+        }
+        return fieldValue;
+    }
+
+    @Override
+    public Boolean getExportResult(String oprId) {
+        return customerRedisCache.hasExportFinished(oprId);
+    }
+
+    @Override
+    @DataScope
+    public  WeCustomerExportDTO transferData(WeCustomerExportDTO dto) {
+        return dto;
+    }
+
+    public String getAbsoluteFile(String filename) {
+        String downloadPath = RuoYiConfig.getDownloadPath() + filename;
+        File desc = new File(downloadPath);
+        if (!desc.getParentFile().exists()) {
+            desc.getParentFile().mkdirs();
+        }
+        return downloadPath;
+    }
+
 
     /**
      * 模糊查询客户 (无需登录可用)
@@ -1487,6 +1753,7 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
         }
         return weExternalUseridMapping.getOpenExternalUserid();
     }
+
 
     /**
      * 通过接口将外部联系人exUserId转化为密文

@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 类名: 客户redis工具类
@@ -27,12 +28,54 @@ public class CustomerRedisCache extends RedisCache {
      * 编辑客户回调处理redis key
      */
     private static final String CALL_BACK_EDIT_CUSTOMER_KEY = "callbackEditCustomer:";
+
+    private static final String EXPORT_CUSTOMER_RESULT = "exportCustomerResult:";
     /**
      * 存入redis的userid和externnaluserid之间的间隔
      */
     private static final String VALUE_SEPARATOR = ":";
     private static final int USER_ID_INDEX = 0;
     private static final int EXTERNAL_USER_ID = 1;
+
+    /**
+     * 获取导出客户结果的Key
+     *
+     * @param oprId 操作id
+     * @return key
+     */
+    private String getExportCustomerResultKey(String oprId) {
+        return EXPORT_CUSTOMER_RESULT + oprId;
+    }
+
+    /**
+     * 设置导出已完成
+     *
+     * @param oprId 操作id
+     */
+    public void setExportFinished(String oprId) {
+        if (StringUtils.isBlank(oprId)) {
+            return;
+        }
+        setCacheObject(getExportCustomerResultKey(oprId), true,24, TimeUnit.HOURS);
+    }
+
+    /**
+     * 判断是导出是否完成
+     *
+     * @param oprId 操作ID
+     * @return true or false
+     */
+    public Boolean hasExportFinished(String oprId) {
+        if (StringUtils.isBlank(oprId)) {
+            return false;
+        }
+        Boolean flag = getCacheObject(getExportCustomerResultKey(oprId));
+        if (flag == null) {
+            return false;
+        }
+        return flag;
+    }
+
 
     /**
      * 获取 编辑客户回调处理redis key

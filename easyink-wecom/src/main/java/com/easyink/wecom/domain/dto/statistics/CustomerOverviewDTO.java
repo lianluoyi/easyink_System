@@ -1,5 +1,7 @@
 package com.easyink.wecom.domain.dto.statistics;
 
+import com.easyink.common.constant.GenConstants;
+import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
 /**
@@ -10,6 +12,22 @@ import lombok.Data;
  **/
 @Data
 public class CustomerOverviewDTO extends StatisticsDTO{
+
+    /**
+     * 获取客户总数排序方式
+     *
+     * @return
+     */
+    public String getTotalAllContactCntSort() {
+        if(totalAllContactCntSort == null) {
+            return null;
+        }
+        if (GenConstants.ASC.equalsIgnoreCase(totalAllContactCntSort)) {
+            return GenConstants.ASC;
+        }else {
+            return GenConstants.DESC;
+        }
+    }
 
     public String getTotalContactCntSort() {
         if(totalContactCntSort == null) {
@@ -77,9 +95,10 @@ public class CustomerOverviewDTO extends StatisticsDTO{
         }
     }
 
-    /**
-     * 客户总数排序 正序asc 倒叙desc
-     */
+    @ApiModelProperty("客户总数排序标识符，根据total_all_contact_cnt字段排序，正序asc，倒序desc")
+    private String totalAllContactCntSort;
+
+    @ApiModelProperty("留存客户总数排序标识符，根据total_contact_cnt字段排序，正序asc，倒序desc")
     private String totalContactCntSort;
 
     /**

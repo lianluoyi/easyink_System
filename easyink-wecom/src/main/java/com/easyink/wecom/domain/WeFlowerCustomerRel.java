@@ -79,10 +79,15 @@ public class WeFlowerCustomerRel {
     @Excel(name = "添加时间",sort = 7)
     private Date createTime;
 
-    @ApiModelProperty(value = "该成员添加此外部联系人的时间")
+    @ApiModelProperty(value = "此外部联系人删除成员的时间(流失时间)")
     @TableField("delete_time")
     @JsonFormat(pattern = "yyyy-MM-dd")
     private Date deleteTime;
+
+    @ApiModelProperty(value = "此外部联系人被成员删除的时间")
+    @TableField("del_by_user_time")
+    @JsonFormat(pattern = "yyyy-mm-dd")
+    private Date delByUserTime;
 
     @ApiModelProperty(value = "该成员对此客户备注的企业名称 ")
     @TableField("remark_corp_name")

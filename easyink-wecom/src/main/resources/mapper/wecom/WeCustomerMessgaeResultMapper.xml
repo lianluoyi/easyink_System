@@ -297,4 +297,25 @@
             message_id =#{messageId} AND `status`!='0'
         </where>
     </select>
+    <!--查询微信消息发送的客户情况（未执行）-->
+    <select id="messagePushsByCustomer" resultType="com.easyink.wecom.domain.vo.WeCustomerMessageResultVO">
+        SELECT
+        wcm.user_name,
+        IF(wcm.external_name = '', wg.group_name, wcm.external_name) customers
+        FROM
+        we_customer_messgaeResult wcm
+        LEFT JOIN we_group wg ON wg.chat_id = wcm.chat_id
+        LEFT JOIN we_customer_message m ON m.message_id = wcm.message_id
+        LEFT JOIN we_customer_messageoriginal wcmo ON wcmo.message_original_Id = m.original_id
+        LEFT JOIN we_user wu on (wcm.userid = wu.user_id or wg.owner = wu.user_id) AND wu.corp_id = wcmo.corp_id
+        <where>
+            wcm.message_id=#{messageId}
+            AND wcmo.corp_id = #{corpId}
+            AND wcm.`status`= '${@com.easyink.common.constant.WeConstans$sendMessageStatusEnum@NOT_SEND.status}'
+            <if test="userName !=null and userName !=''">
+                AND wcm.user_name LIKE concat('%', #{userName}, '%')
+            </if>
+        </where>
+    </select>
+
 </mapper>

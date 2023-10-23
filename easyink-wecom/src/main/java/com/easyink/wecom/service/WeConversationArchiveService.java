@@ -2,11 +2,12 @@ package com.easyink.wecom.service;
 
 import com.alibaba.fastjson.JSONObject;
 import com.easyink.common.core.domain.ConversationArchiveQuery;
+import com.easyink.common.core.domain.ConversationArchiveViewContextDTO;
 import com.easyink.common.core.domain.model.LoginUser;
+import com.easyink.common.core.page.TableDataInfo;
 import com.easyink.wecom.domain.vo.ConversationArchiveVO;
 import com.github.pagehelper.PageInfo;
 
-import java.util.List;
 
 /**
  * @author admin
@@ -62,5 +63,13 @@ public interface WeConversationArchiveService {
      * @return ConversationArchiveVO
      */
     PageInfo<ConversationArchiveVO> getChatList(ConversationArchiveQuery query, Integer pageNum, Integer pageSize);
+
+    /**
+     * 获取指定聊天内容的上下文信息
+     *
+     * @param dto {@link ConversationArchiveViewContextDTO}
+     * @return {@link PageInfo<ConversationArchiveVO>}
+     */
+    TableDataInfo<ConversationArchiveVO> viewContext(ConversationArchiveViewContextDTO dto);
 }
 

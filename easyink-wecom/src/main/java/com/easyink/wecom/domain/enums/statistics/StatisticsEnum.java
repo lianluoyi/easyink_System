@@ -31,8 +31,13 @@ public class StatisticsEnum {
      * @date 2023/4/20 18:31
      */
     public enum CustomerOverviewSortTypeEnum {
+
         /**
          * 客户总数排序
+         */
+        TOTAL_ALL_CONTACT_CNT_SORT("totalAllContactCntSort", Comparator.comparing(CustomerOverviewDateVO::getTotalAllContactCnt)),
+        /**
+         * 留存客户总数排序
          */
         TOTAL_CONTACT_CNT_SORT("totalContactCntSort", Comparator.comparing(CustomerOverviewDateVO::getTotalContactCnt)),
         /**

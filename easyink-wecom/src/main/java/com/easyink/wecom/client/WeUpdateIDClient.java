@@ -1,6 +1,8 @@
 package com.easyink.wecom.client;
 
 import com.dtflys.forest.annotation.*;
+import com.easyink.common.exception.RetryException;
+import com.easyink.wecom.client.retry.EnableRetry;
 import com.easyink.wecom.domain.dto.CorpIdToOpenCorpIdResp;
 import com.easyink.wecom.domain.dto.WeResultDTO;
 import com.easyink.wecom.interceptor.WeAccessTokenInterceptor;
@@ -18,6 +20,7 @@ import java.util.List;
  * @date 2022/8/22 17:56
  */
 @Component
+@EnableRetry(retryExceptionClass = RetryException.class)
 @BaseRequest(baseURL = "${weComServerUrl}${weComePrefix}")
 public interface WeUpdateIDClient {
 

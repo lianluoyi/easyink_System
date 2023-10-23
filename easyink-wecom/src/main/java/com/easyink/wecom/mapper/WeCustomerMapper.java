@@ -6,6 +6,7 @@ import com.easyink.wecom.domain.WeCustomer;
 import com.easyink.wecom.domain.WeCustomerPortrait;
 import com.easyink.wecom.domain.WeCustomerSocialConn;
 import com.easyink.wecom.domain.dto.WeCustomerPushMessageDTO;
+import com.easyink.wecom.domain.entity.WeCustomerExportDTO;
 import com.easyink.wecom.domain.vo.WeCustomerNameAndUserIdVO;
 import com.easyink.wecom.domain.vo.customer.WeCustomerUserListVO;
 import com.easyink.wecom.domain.vo.customer.WeCustomerVO;
@@ -228,8 +229,17 @@ public interface WeCustomerMapper extends BaseMapper<WeCustomer> {
 
     /**
      * 查询导出的客户
+     *
      * @param weCustomer 查询条件
      * @return 客户
      */
     List<WeCustomerVO> selectExportCustomer(WeCustomer weCustomer);
+
+    /**
+     * 查询客户总数
+     *
+     * @param dto {@link WeCustomerExportDTO}
+     * @return 客户总数
+     */
+    Integer selectWeCustomerCount(WeCustomer dto);
 }

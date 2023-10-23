@@ -93,14 +93,17 @@ public class PageHomeServiceImpl implements PageHomeService {
         int userCount = weUserService.count(new LambdaQueryWrapper<WeUser>()
                 .eq(WeUser::getCorpId, corpId)
                 .eq(WeUser::getIsActivate, WeConstans.WE_USER_IS_ACTIVATE));
-        //客户总人数
+        // 留存客户总人数
         int customerCount = weCustomerService.customerCount(corpId);
+        // 统计客户总数
+        Integer totalAllContactCnt = weFlowerCustomerRelService.getTotalAllContactCnt(corpId, DateUtils.parseBeginDay(DateUtils.dateTime(new Date())), DateUtils.parseEndDay(DateUtils.dateTime(new Date())));
         //客户群总数( 1.21.0 改成读取官方统计接口里的数据 ，)
         int groupCount = weGroupService.count(new LambdaQueryWrapper<WeGroup>().eq(WeGroup::getCorpId, corpId)
                 .in(WeGroup :: getStatus , Lists.newArrayList(GroupConstants.NARMAL,GroupConstants.OWNER_LEAVE_EXTEND_SUCCESS)));
         //群成员总数
         int groupMemberCount = weGroupStatisticService.getGroupMemberCnt(corpId, DateUtil.yesterday());
         totalMap.put("userCount", userCount);
+        totalMap.put("totalAllContactCnt", totalAllContactCnt == 0 ? Constants.EMPTY_RETAIN_RATE_VALUE : totalAllContactCnt);
         totalMap.put("customerCount", customerCount);
         totalMap.put("groupCount", groupCount);
         totalMap.put("groupMemberCount", groupMemberCount);
@@ -484,8 +487,10 @@ public class PageHomeServiceImpl implements PageHomeService {
         // 转换为YY:MM:DD HH:MM:SS格式
         Date beginTime = DateUtils.dateTime(DateUtils.YYYY_MM_DD_HH_MM_SS, time + DateUtils.BEGIN_TIME_SUFFIX);
         Date endTime = DateUtils.dateTime(DateUtils.YYYY_MM_DD_HH_MM_SS, time + DateUtils.END_TIME_SUFFIX);
-        //  统计客户总数
+        //  统计留存客户总数 Tower 任务: 增加客户总数统计数 ( https://tower.im/teams/636204/todos/72041 )
         Integer totalContactCnt = weCustomerMapper.countCustomerNumByTime(corpId, DateUtils.parseEndDay(time));
+        // 统计客户总数
+        Integer totalAllContactCnt = weFlowerCustomerRelService.getTotalAllContactCnt(corpId, DateUtils.getDateTime(beginTime), DateUtils.getDateTime(endTime));
         // 今日流失数
         Integer todayLossCnt = weFlowerCustomerRelService.count(new LambdaQueryWrapper<WeFlowerCustomerRel>()
                 .eq(WeFlowerCustomerRel::getCorpId, corpId)
@@ -494,6 +499,7 @@ public class PageHomeServiceImpl implements PageHomeService {
                 .eq(WeFlowerCustomerRel::getStatus, CustomerStatusEnum.DRAIN.getCode()
                                                                             .toString()));
         WeUserBehaviorData userBehaviorData = new WeUserBehaviorData();
+        userBehaviorData.setTotalAllContactCnt(totalAllContactCnt);
         userBehaviorData.setTotalContactCnt(totalContactCnt);
         userBehaviorData.setNewContactLossCnt(todayLossCnt);
         userBehaviorData.setCorpId(corpId);

@@ -58,4 +58,9 @@ public class WeComeConfig {
      */
     private String[] needErrcodeUrl;
 
+    /**
+     * 需要重试判断的Code
+     */
+    private Integer[] needRetryCode;
+
 }

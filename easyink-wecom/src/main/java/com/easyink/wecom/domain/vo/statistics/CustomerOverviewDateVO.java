@@ -3,6 +3,7 @@ package com.easyink.wecom.domain.vo.statistics;
 import com.easyink.common.annotation.Excel;
 import com.easyink.common.constant.Constants;
 import com.easyink.common.constant.GenConstants;
+import com.easyink.common.constant.WeConstans;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -26,22 +27,24 @@ public class CustomerOverviewDateVO {
     @Excel(name = "日期", sort = 1)
     private String xTime;
 
-    /**
-     * 客户总数
-     */
+    @ApiModelProperty("客户总数(由每日定时任务统计，不去重，首页和数据统计共用)，因不存在值时要显示'-'，故使用String类型，用于前端展示，【首页】：在职员工在we_flower_customer_rel表中，客户关系status != 2的客户数量 + 系统上记录的已离职的员工在we_flower_customer_rel表中，客户关系status = 3的客户数量。【数据统计】：在职员工在we_flower_customer_rel表中，客户关系status != 2的客户数量。")
     @Excel(name = "客户总数", sort = 2)
+    private Integer totalAllContactCnt;
+
+    @ApiModelProperty("留存客户总数")
+    @Excel(name = "留存客户总数", sort = 3)
     private Integer totalContactCnt;
 
     /**
      * 新增客户数，成员新添加的客户数量
      */
-    @Excel(name = "新增客户数", sort = 4)
+    @Excel(name = "新增客户数", sort = 5)
     private Integer newContactCnt;
 
     /**
      * 当天加入的新客流失数量 , 因为官方没有返回由系统自行统计
      */
-    @Excel(name = "流失客户数", sort = 3)
+    @Excel(name = "流失客户数", sort = 4)
     private Integer contactLossCnt;
 
     /**
@@ -52,7 +55,7 @@ public class CustomerOverviewDateVO {
     /**
      * 新客留存率
      */
-    @Excel(name = "新客留存率", sort = 5)
+    @Excel(name = "新客留存率", sort = 6)
     private String newContactRetentionRate;
 
     /**
@@ -63,7 +66,7 @@ public class CustomerOverviewDateVO {
     /**
      * 新客开口率
      */
-    @Excel(name = "新客开口率", sort = 6)
+    @Excel(name = "新客开口率", sort = 7)
     private String newContactStartTalkRate;
 
     /**
@@ -74,7 +77,7 @@ public class CustomerOverviewDateVO {
     /**
      * 服务响应率
      */
-    @Excel(name = "服务响应率", sort = 7)
+    @Excel(name = "服务响应率", sort = 8)
     private String serviceResponseRate;
 
     /**
@@ -201,7 +204,8 @@ public class CustomerOverviewDateVO {
         this.newContactRetentionRateBySort = BigDecimal.valueOf(0);
         this.newContactStartTalkRateBySort = BigDecimal.valueOf(0);
         this.serviceResponseRateBySort = BigDecimal.valueOf(0);
-        this.userActiveChatCnt=0;
+        this.userActiveChatCnt = 0;
+        this.totalAllContactCnt = 0;
     }
 
     /**
@@ -216,7 +220,7 @@ public class CustomerOverviewDateVO {
      * @param repliedWithinThirtyMinCustomerCnt 当天员工首次给客户发消息，客户在30分钟内回复的客户数
      * @param userActiveChatCnt 员工主动发起会话数
      */
-    public void handleAddData(Integer allChatCnt, Integer contactTotalCnt, Integer negativeFeedbackCnt, Integer newCustomerLossCnt, Integer newContactCnt, Integer newContactSpeakCnt, Integer repliedWithinThirtyMinCustomerCnt,Integer userActiveChatCnt){
+    public void handleAddData(Integer allChatCnt, Integer contactTotalCnt, Integer negativeFeedbackCnt, Integer newCustomerLossCnt, Integer newContactCnt, Integer newContactSpeakCnt, Integer repliedWithinThirtyMinCustomerCnt, Integer userActiveChatCnt, Integer totalAllContactCnt) {
         this.allChatCnt += allChatCnt;
         this.totalContactCnt += contactTotalCnt;
         this.contactLossCnt += negativeFeedbackCnt;
@@ -228,5 +232,6 @@ public class CustomerOverviewDateVO {
         this.newContactRetentionRate = getNewContactRetentionRate();
         this.newContactStartTalkRate = getNewContactStartTalkRate();
         this.serviceResponseRate = getServiceResponseRate();
+        this.totalAllContactCnt += totalAllContactCnt;
     }
 }

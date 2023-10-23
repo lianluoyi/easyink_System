@@ -58,7 +58,7 @@ public class WeCallBackDelExternalContactImpl extends WeEventStrategy {
             weCustomerTransferRecordService.handleTransferSuccess(message.getToUserName(), message.getUserId(), message.getExternalUserId());
         }
         if (message.getExternalUserId() != null && message.getUserId() != null) {
-            weFlowerCustomerRelService.deleteFollowUser(message.getUserId(), message.getExternalUserId(), Constants.DELETE_CODE, message.getToUserName());
+            weFlowerCustomerRelService.deleteCustomer(message.getUserId(), message.getExternalUserId(), Constants.DELETE_CODE, message.getToUserName());
             // 如果是在职继承的回调，不记录敏感记录，只更新客户状态
             if (DELETE_BY_TRANSFER.equals(message.getSource())) {
                 return;

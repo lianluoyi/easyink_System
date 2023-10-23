@@ -1,5 +1,6 @@
 package com.easyink.framework.web.exception;
 
+import cn.hutool.http.HttpResponse;
 import cn.hutool.json.JSONUtil;
 import com.dtflys.forest.exceptions.ForestRuntimeException;
 import com.easyink.common.constant.WeConstans;
@@ -8,6 +9,7 @@ import com.easyink.common.enums.ResultTip;
 import com.easyink.common.enums.WeExceptionTip;
 import com.easyink.common.exception.BaseException;
 import com.easyink.common.exception.CustomException;
+import com.easyink.common.exception.file.NoFileException;
 import com.easyink.common.utils.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.poi.ss.formula.functions.T;
@@ -22,6 +24,9 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.NoHandlerFoundException;
+
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 
 /**
  * 全局异常处理器
@@ -136,6 +141,15 @@ public class GlobalExceptionHandler {
 
 
         return AjaxResult.error("企业微信端未知异常,请联系管理员");
+    }
+    @ExceptionHandler(NoFileException.class)
+    public void noFile (NoFileException e , HttpServletResponse response) {
+        try {
+            response.sendError(500);
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
+        }
+//        return AjaxResult.error("未获取到文件资源，请重新导出");
     }
 
 

@@ -121,27 +121,7 @@ public class GetByUserResp extends WePageBaseResp<GetByUserResp.ExternalContactD
 
     }
 
-    /**
-     * 重新激活原来被删除或者流失的客户
-     *
-     * @param localRelList {@link List<WeFlowerCustomerRel>  }
-     */
-    public void activateDelCustomer(List<WeFlowerCustomerRel> localRelList) {
-        if (CollectionUtils.isEmpty(localRelList) || CollectionUtils.isEmpty(relList)) {
-            return;
-        }
-        Map<WeFlowerCustomerRel, String> statusMap = localRelList.stream().collect(Collectors.toMap(rel -> rel, WeFlowerCustomerRel::getStatus));
-        for (WeFlowerCustomerRel rel : relList) {
-            if (statusMap.containsKey(rel)) {
-                String status = statusMap.get(rel);
-                if (status == null) {
-                    continue;
-                }
-                // 如果之前就存在该客户关系 ,则把流失/删除状态重置为正常
-//                rel.setStatus(CustomerStatusEnum.isDel(Integer.valueOf(status)) ? CustomerStatusEnum.NORMAL.getCode().toString() : status);
-            }
-        }
-    }
+
 
 
 }

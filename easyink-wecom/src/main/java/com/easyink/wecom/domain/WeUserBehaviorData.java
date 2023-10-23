@@ -87,9 +87,14 @@ public class WeUserBehaviorData implements Serializable {
     @Excel(name = "删除/拉黑成员的客户数，即将成员删除或加入黑名单的客户数")
     private Integer negativeFeedbackCnt;
 
-    @ApiModelProperty(value = "总客户数 ")
+    @ApiModelProperty(value = "客户总数(由每日定时任务统计，不去重，首页和数据统计共用)，【首页】：在职员工在we_flower_customer_rel表中，客户关系status != 2的客户数量 + 系统上记录的已离职的员工在we_flower_customer_rel表中，客户关系status = 3的客户数量。【数据统计】：在职员工在we_flower_customer_rel表中，客户关系status != 2的客户数量。")
+    @TableField(value = "total_all_contact_cnt")
+    @Excel(name = "客户总数")
+    private Integer totalAllContactCnt;
+
+    @ApiModelProperty(value = "留存客户总数,每日定时任务统计,去重")
     @TableField(value = "total_contact_cnt")
-    @Excel(name = "总客户数")
+    @Excel(name = "留存客户总数")
     private Integer totalContactCnt ;
 
     @ApiModelProperty(value = "今日新客流失数")

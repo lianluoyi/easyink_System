@@ -5,6 +5,10 @@ import com.easyink.common.config.ServerConfig;
 import com.easyink.common.constant.Constants;
 import com.easyink.common.core.domain.AjaxResult;
 import com.easyink.common.core.domain.FileVo;
+import com.easyink.common.enums.ResultTip;
+import com.easyink.common.exception.CustomException;
+import com.easyink.common.exception.file.FileException;
+import com.easyink.common.exception.file.NoFileException;
 import com.easyink.common.utils.StringUtils;
 import com.easyink.common.utils.file.FileUploadUtils;
 import com.easyink.common.utils.file.FileUtils;
@@ -24,6 +28,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 
 /**
@@ -77,13 +83,21 @@ public class CommonController {
             response.setContentType("multipart/form-data");
             response.setHeader("Content-Disposition",
                     "attachment;fileName=" + FileUtils.setFileDownloadHeader(request, realFileName));
+            // 检查文件是否存在
+            File file = new File(filePath);
+            if (!file.exists()) {
+                log.error("要下载的文件不存在: {}", filePath);
+                throw new  NoFileException("no file");
+            }
             FileUtils.writeBytes(filePath, response.getOutputStream());
             if (Boolean.TRUE.equals(delete)) {
                 FileUtils.deleteFile(filePath);
             }
-        } catch (Exception e) {
-           log.error("下载文件失败 e:{}", ExceptionUtils.getStackTrace(e));
+        } catch (IOException e) {
+            log.error("下载文件失败, e:{}", ExceptionUtils.getStackTrace(e));
+            throw new NoFileException("error");
         }
+
     }
 
     /**

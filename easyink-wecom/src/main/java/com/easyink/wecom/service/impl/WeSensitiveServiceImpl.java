@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.easyink.common.constant.GroupConstants;
 import com.easyink.common.constant.WeConstans;
+import com.easyink.common.constant.conversation.ConversationArchiveConstants;
 import com.easyink.common.core.domain.conversation.ChatInfoVO;
 import com.easyink.common.core.domain.elastic.ElasticSearchEntity;
 import com.easyink.common.core.domain.entity.WeCorpAccount;
@@ -328,6 +329,7 @@ public class WeSensitiveServiceImpl implements WeSensitiveService {
                 JSONObject json = new JSONObject();
                 String userId = j.getString(WeConstans.FROM);
                 WeUserVO userVO = weUserService.getUser(corpId, userId);
+                json.put(ConversationArchiveConstants.MSG_ID, j.get(WeConstans.MSG_ID));
                 json.put(WeConstans.FROM, userVO.getUserName());
                 json.put(WeConstans.CONTENT, j.getJSONObject(WeConstans.TEXT).getString(WeConstans.CONTENT));
                 json.put(WeConstans.MSG_TIME, j.getString(WeConstans.MSG_TIME));

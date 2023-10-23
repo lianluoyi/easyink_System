@@ -1,5 +1,7 @@
 package com.easyink.wecom.domain;
 
+import com.alibaba.excel.annotation.ExcelProperty;
+import com.alibaba.excel.annotation.format.DateTimeFormat;
 import com.alibaba.fastjson.annotation.JSONField;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -47,6 +49,7 @@ public class WeCustomer extends BaseEntity {
     @ApiModelProperty(value = "外部联系人名称")
     @TableField("name")
     @Excel(name = "客户",sort = 1)
+    @ExcelProperty(value = "客户",index = 1)
     private String name;
 
     /**
@@ -75,6 +78,8 @@ public class WeCustomer extends BaseEntity {
     @TableField("birthday")
     @JsonFormat(pattern = "yyyy-MM-dd")
     @Excel(name = "出生日期", dateFormat = "yyyy-MM-dd" ,sort = 9)
+    @ExcelProperty(value = "出生日期",index = 9)
+    @DateTimeFormat("yyyy-MM-dd")
     private Date birthday;
 
     /**
@@ -87,6 +92,7 @@ public class WeCustomer extends BaseEntity {
     @ApiModelProperty(value = "客户企业简称")
     @TableField("corp_name")
     @Excel(name = "公司",sort = 3)
+    @ExcelProperty(value = "公司",index = 3)
     private String corpName;
 
     @ApiModelProperty(value = "客户企业全称")
@@ -134,6 +140,7 @@ public class WeCustomer extends BaseEntity {
      */
     @TableField(exist = false)
     @Excel(name = "所属员工",sort = 5)
+    @ExcelProperty(value = "所属员工",index = 5)
     private String userName;
 
     /**
@@ -162,12 +169,14 @@ public class WeCustomer extends BaseEntity {
      */
     @TableField(exist = false)
     @Excel(name = "备注",sort = 2)
+    @ExcelProperty(value = "备注",index = 2)
     private String remark;
     /**
      * 手机号
      */
     @TableField(exist = false)
     @Excel(name = "电话",sort = 10)
+    @ExcelProperty(value = "电话",index = 10)
     private String phone;
     /**
      * 描述
@@ -183,6 +192,7 @@ public class WeCustomer extends BaseEntity {
     @ApiModelProperty(value = "部门")
     @Excel(name = "所属部门", sort = 6)
     @TableField(exist = false)
+    @ExcelProperty(value = "所属部门",index = 6)
     private String departmentName;
 
     @ApiModelProperty(value = "跟进人离职时间")

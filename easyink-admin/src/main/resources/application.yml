@@ -491,6 +491,9 @@ wecome:
   needErrcodeUrl: # 如果有错误码需要单独业务处理,不抛出异常的接口
     - /externalcontact/get_group_msg_result
     - /externalcontact/del_corp_tag
+  # 需要重试判断的code
+  needRetryCode:
+    - 45033
 
   # JS SDK 身份校验url
   authorizeUrl: ${WE_COM_AUTHORIZE_URL:https://open.weixin.qq.com/connect/oauth2/authorize}
@@ -558,4 +561,8 @@ thread-pool-prop:
     corePoolSize: ${THREAD_POOL_SEND_CALLBACK_CORE_SIZE:50}
     maxPoolSize: ${THREAD_POOL_SEND_CALLBACK_MAX_SIZE:200}
     queueCapacity: ${THREAD_POOL_SEND_CALLBACK_QUEUE_SIZE:100}
+#  获取员工执行群发结果线程池参数(因为企微官方接口频率限制，所以这个线程池的最大线程数限制为5）
+  messageResultTask:
+    corePoolSize: ${THREAD_POOL_SEND_CALLBACK_CORE_SIZE:5}
+    maxPoolSize: ${THREAD_POOL_SEND_CALLBACK_MAX_SIZE:5}
 

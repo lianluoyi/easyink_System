@@ -4,6 +4,8 @@ import com.dtflys.forest.annotation.BaseRequest;
 import com.dtflys.forest.annotation.Body;
 import com.dtflys.forest.annotation.Header;
 import com.dtflys.forest.annotation.Post;
+import com.easyink.common.exception.RetryException;
+import com.easyink.wecom.client.retry.EnableRetry;
 import com.easyink.wecom.domain.dto.msgaudit.WeMsgAuditDTO;
 import com.easyink.wecom.domain.vo.WeMsgAuditVO;
 import com.easyink.wecom.interceptor.WeAccessTokenInterceptor;
@@ -16,6 +18,7 @@ import org.springframework.stereotype.Component;
  * @date: 2021-08-18 17:10
  */
 @Component
+@EnableRetry(retryExceptionClass = RetryException.class)
 @BaseRequest(baseURL = "${weComServerUrl}${weComePrefix}", interceptor = WeAccessTokenInterceptor.class)
 public interface WeMsgAuditClient {
 

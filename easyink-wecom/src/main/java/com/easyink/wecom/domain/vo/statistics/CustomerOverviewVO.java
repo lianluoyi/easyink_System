@@ -3,6 +3,7 @@ package com.easyink.wecom.domain.vo.statistics;
 import com.easyink.common.annotation.Excel;
 import com.easyink.common.constant.Constants;
 import com.easyink.common.constant.GenConstants;
+import com.easyink.common.constant.WeConstans;
 import com.easyink.wecom.domain.vo.UserBaseVO;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
@@ -25,22 +26,26 @@ public class CustomerOverviewVO extends UserBaseVO {
      */
     private String xTime;
 
+    @ApiModelProperty("客户总数(由每日定时任务统计，不去重，首页和数据统计共用)，【首页】：在职员工在we_flower_customer_rel表中，客户关系status != 2的客户数量 + 系统上记录的已离职的员工在we_flower_customer_rel表中，客户关系status = 3的客户数量。【数据统计】：在职员工在we_flower_customer_rel表中，客户关系status != 2的客户数量。")
+    @Excel(name = "客户总数", sort = 3)
+    private Integer totalAllContactCnt;
+
     /**
      * 客户总数
      */
-    @Excel(name = "客户总数", sort = 3)
+    @Excel(name = "留存客户总数", sort = 4)
     private Integer totalContactCnt;
 
     /**
      * 新增客户数，成员新添加的客户数量
      */
-    @Excel(name = "新增客户数", sort = 4)
+    @Excel(name = "新增客户数", sort = 5)
     private Integer newContactCnt;
 
     /**
      * 当天加入的新客流失数量 , 因为官方没有返回由系统自行统计
      */
-    @Excel(name = "流失客户数", sort = 5)
+    @Excel(name = "流失客户数", sort = 6)
     private Integer contactLossCnt;
 
     /**
@@ -51,19 +56,19 @@ public class CustomerOverviewVO extends UserBaseVO {
     /**
      * 新客留存率
      */
-    @Excel(name = "新客留存率", sort = 6)
+    @Excel(name = "新客留存率", sort = 7)
     private String newContactRetentionRate;
 
     /**
      * 新客开口率
      */
-    @Excel(name = "新客开口率", sort = 7)
+    @Excel(name = "新客开口率", sort = 8)
     private String newContactStartTalkRate;
 
     /**
      * 服务响应率
      */
-    @Excel(name = "服务响应率", sort = 8)
+    @Excel(name = "服务响应率", sort = 9)
     private String serviceResponseRate;
 
     /**

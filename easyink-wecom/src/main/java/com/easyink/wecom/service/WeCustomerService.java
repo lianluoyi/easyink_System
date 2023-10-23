@@ -233,6 +233,7 @@ public interface WeCustomerService extends IService<WeCustomer> {
      * @param <T> 导出类型
      * @return
      */
+    @Deprecated
     <T> AjaxResult<T> export(WeCustomerExportDTO dto);
 
     /**
@@ -351,9 +352,29 @@ public interface WeCustomerService extends IService<WeCustomer> {
     /**
      * 通过明文获取密文外部联系人exUserId
      *
-     * @param corpId            企业id
-     * @param externalUserId    外部联系人exUserId
+     * @param corpId         企业id
+     * @param externalUserId 外部联系人exUserId
      * @return
      */
     String getOpenExUserId(String corpId, String externalUserId);
+
+    /**
+     * 生活需要导出的客户信息
+     *
+     * @param dto      导出客户请求
+     * @param oprId    操作id
+     * @param fileName 导出的文件名
+     * @return fileName 导出的文件名
+     */
+    void genExportData(WeCustomerExportDTO dto, String oprId, String fileName);
+
+    /**
+     *   获取导出客户的结果
+     *
+     * @param oprId 操作id
+     * @return  true or false
+     */
+    Boolean getExportResult(String oprId);
+
+    WeCustomerExportDTO transferData(WeCustomerExportDTO dto);
 }

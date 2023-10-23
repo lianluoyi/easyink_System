@@ -1,6 +1,7 @@
 package com.easyink.wecom.client;
 
 import com.dtflys.forest.annotation.*;
+import com.easyink.common.exception.RetryException;
 import com.easyink.wecom.client.retry.EnableRetry;
 import com.easyink.wecom.domain.dto.*;
 import com.easyink.wecom.domain.dto.customer.*;
@@ -30,6 +31,7 @@ public interface WeCustomerClient {
      * @return
      */
     @Get(url = "/externalcontact/get_follow_user_list", interceptor = WeAccessTokenInterceptor.class)
+    @EnableRetry(retryExceptionClass = RetryException.class)
     FollowUserList getFollowUserList(@Header("corpid") String corpId);
 
 
@@ -49,6 +51,7 @@ public interface WeCustomerClient {
      * @param corpId         企业ID
      * @return
      */
+    @EnableRetry(maxAttempts = 1)
     @Get(url = "/externalcontact/get", interceptor = WeAccessTokenInterceptor.class)
     GetExternalDetailResp getV2(@Query("external_userid") String externalUserid, @Header("corpid") String corpId);
 
@@ -60,6 +63,7 @@ public interface WeCustomerClient {
      * @return {@link GetByUserResp}
      */
     @Post(url = "/externalcontact/batch/get_by_user", interceptor = WeAccessTokenInterceptor.class)
+    @EnableRetry(retryExceptionClass = RetryException.class)
     GetByUserResp getByUser(@Body GetByUserReq req, @Header("corpId") String corpId);
 
 
@@ -70,6 +74,7 @@ public interface WeCustomerClient {
      * @return
      */
     @Post(url = "/externalcontact/remark", interceptor = WeAccessTokenInterceptor.class)
+    @EnableRetry(retryExceptionClass = RetryException.class)
     WeResultDTO remark(@Body WeCustomerDTO.WeCustomerRemark weCustomerRemark, @Header("corpid") String corpId);
 
 
@@ -87,6 +92,7 @@ public interface WeCustomerClient {
      * 客户发送欢迎语
      */
     @Post(url = "/externalcontact/send_welcome_msg", interceptor = WeAccessTokenInterceptor.class)
+    @EnableRetry(retryExceptionClass = RetryException.class)
     WeResultDTO sendWelcomeMsg(@Body WeWelcomeMsg wxCpWelcomeMsg, @Header("corpid") String corpId);
 
 
@@ -96,6 +102,7 @@ public interface WeCustomerClient {
      * @return
      */
     @Post(url = "/externalcontact/unionid_to_external_userid", interceptor = WeAccessTokenInterceptor.class)
+    @EnableRetry(retryExceptionClass = RetryException.class)
     ExternalUserDetail unionidToExternalUserid(@Body ExternalContact unionid, @Header("corpid") String corpId);
 
 
@@ -105,6 +112,7 @@ public interface WeCustomerClient {
      * @return
      */
     @Post(url = "/externalcontact/get_user_behavior_data", interceptor = WeAccessTokenInterceptor.class)
+    @EnableRetry(retryExceptionClass = RetryException.class)
     UserBehaviorDataDTO getUserBehaviorData(@JSONBody UserBehaviorDataQuery query, @Header("corpid") String corpId);
 
     /**
@@ -113,6 +121,7 @@ public interface WeCustomerClient {
      * @return
      */
     @Post(url = "/externalcontact/groupchat/statistic", interceptor = WeAccessTokenInterceptor.class)
+    @EnableRetry(retryExceptionClass = RetryException.class)
     GroupChatStatisticDTO getGroupChatStatistic(@JSONBody GroupChatStatisticQuery query, @Header("corpid") String corpId);
 
     /**
@@ -121,10 +130,12 @@ public interface WeCustomerClient {
      * @return
      */
     @Post(url = "/externalcontact/groupchat/statistic_group_by_day", interceptor = WeAccessTokenInterceptor.class)
+    @EnableRetry(retryExceptionClass = RetryException.class)
     GroupChatStatisticDTO getGroupChatStatisticGroupByDay(@JSONBody GroupChatStatisticQuery query, @Header("corpid") String corpId);
 
 
     @Post(url = "/externalcontact/unionid_to_external_userid" , interceptor = WeAccessTokenInterceptor.class)
+    @EnableRetry(retryExceptionClass = RetryException.class)
     UnionId2ExternalUserIdResp unionId2ExternalUserId (@Body("unionid")String unionid ,@Body("openid")String openid) ;
 
 
@@ -142,6 +153,7 @@ public interface WeCustomerClient {
      * @return ExternalUserDetail#external_userid
      */
     @Post(url = "/idconvert/unionid_to_external_userid", interceptor = WeAccessTokenInterceptor.class)
+    @EnableRetry(retryExceptionClass = RetryException.class)
     ExternalUserDetail getExternalUserIdByUnionIdAndOpenId(@Body("unionid") String unionId,
                                                            @Body("openid") String openId,
                                                            @Body("subject_type") Integer subjectType,

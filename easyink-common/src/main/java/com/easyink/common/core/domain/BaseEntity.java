@@ -88,6 +88,14 @@ public class BaseEntity extends RootEntity implements Serializable {
     @ApiModelProperty(value = "做游标分页时使用,查找userId > lastId的数据")
     private String lastId;
 
+    /**
+     * 是否是管理员 ,如果是管理员则部分查询可以简化
+     */
+    @JsonIgnore
+    @TableField(exist = false)
+    private Boolean isAdmin;
+
+
     public String getLastId() {
         return lastId;
     }
@@ -205,5 +213,11 @@ public class BaseEntity extends RootEntity implements Serializable {
         this.endTime = DateUtils.parseEndDay(endTime);
     }
 
+    public Boolean getAdmin() {
+        return isAdmin;
+    }
 
+    public void setAdmin(Boolean admin) {
+        isAdmin = admin;
+    }
 }

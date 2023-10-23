@@ -95,4 +95,12 @@ public interface WeUserBehaviorDataMapper extends BaseMapper<WeUserBehaviorData>
      * @return 原始数据列表
      */
     List<WeUserBehaviorData> getCustomerOverViewOfDate(CustomerOverviewDTO dto);
+
+    /**
+     * 批量更新客户总数值
+     *
+     * @param weUserBehaviorDataList {@link WeUserBehaviorData}
+     * @return 结果
+     */
+    Integer saveBatchUpdateOrInsert(@Param("list") List<WeUserBehaviorData> weUserBehaviorDataList);
 }

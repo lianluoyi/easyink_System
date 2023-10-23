@@ -1,5 +1,6 @@
 package com.easyink.common.utils;
 
+import com.easyink.common.constant.Constants;
 import com.easyink.common.enums.ResultTip;
 import com.easyink.common.enums.WeOperationsCenterSop;
 import com.easyink.common.exception.CustomException;
@@ -768,4 +769,22 @@ public class DateUtils extends org.apache.commons.lang3.time.DateUtils {
         return false;
     }
 
+    /**
+     * 获取当前日期前一天日期的前180天日期范围列表
+     *
+     * @return 日期范围列表，格式为YYYY-MM-DD
+     */
+    public static List<String> get180DateAgoList() {
+        // 获取当前日期
+        LocalDate today = LocalDate.now();
+        // 获取前一天日期
+        LocalDate yesterday = today.minusDays(1);
+        // 计算前180天的日期范围
+        List<String> dateRange = new ArrayList<>();
+        for (int i = 0; i < Constants.STATISTIC_MAX_COUNT_DATES; i++) {
+            LocalDate date = yesterday.minusDays(i);
+            dateRange.add(date.format(DateTimeFormatter.ofPattern(YYYY_MM_DD)));
+        }
+        return dateRange;
+    }
 }

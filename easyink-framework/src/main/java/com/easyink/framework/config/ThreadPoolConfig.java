@@ -12,10 +12,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.*;
 
 /**
  * 线程池配置
@@ -117,13 +114,24 @@ public class ThreadPoolConfig {
     }
 
     /**
+     * 获取员工执行群发结果线程池(因为企微官方接口频率限制，所以这个线程池的最大线程数限制为5）
+     *
+     * @return
+     */
+    @Bean("messageResultTaskExecutor")
+    public ThreadPoolTaskExecutor messageResultTaskExecutor() {
+        ThreadPoolProperties.BaseThreadProperty prop = threadPoolProperties.getMessageResultTask();
+        return init(prop.getCorePoolSize(), prop.getMaxPoolSize(), null, prop.getKeepAliveSeconds(), "messageResultTask");
+    }
+
+    /**
      * 构建线程池
      *
-     * @param corePoolSize     核心线程数
-     * @param maxPoolSize      最大线程数
-     * @param keepAliveSeconds 活跃时间
-     * @param queueCapacity    队列容量
-     * @param poolNamePrefix   线程池名前缀
+     * @param corePoolSize             核心线程数
+     * @param maxPoolSize              最大线程数
+     * @param keepAliveSeconds         活跃时间
+     * @param queueCapacity            队列容量
+     * @param poolNamePrefix           线程池名前缀
      * @return {@link ThreadPoolTaskExecutor}
      */
     public ThreadPoolTaskExecutor init(Integer corePoolSize, Integer maxPoolSize, Integer queueCapacity, Integer keepAliveSeconds, String poolNamePrefix) {
@@ -136,8 +144,10 @@ public class ThreadPoolConfig {
         executor.setCorePoolSize(corePoolSize);
         //最大线程数
         executor.setMaxPoolSize(maxPoolSize);
-        //队列容量
-        executor.setQueueCapacity(queueCapacity);
+        if (queueCapacity != null) {
+            //队列容量
+            executor.setQueueCapacity(queueCapacity);
+        }
         //活跃时间
         executor.setKeepAliveSeconds(keepAliveSeconds);
         construct(executor, poolNamePrefix);

@@ -199,4 +199,37 @@ public interface WeFlowerCustomerRelMapper extends BaseMapper<WeFlowerCustomerRe
      * @return 各个渠道对应的未流失的客户数（有效客户数）
      */
     List<WeEmpleCodeChannelRelVO> getChannelDateRelEffectCnt(@Param("stateList") List<String> stateList, @Param("userIds") String userIds, @Param("corpId") String corpId, @Param("beginTime") String beginTime, @Param("endTime") String endTime);
+
+
+    /**
+     * 根据结束时间和已激活(is_active = 1)员工ID列表, 获取首页-数据总览-客户总数
+     *
+     * @param corpId           企业ID
+     * @param beginTime        开始时间，格式为YYYY-MM-DD 00:00:00
+     * @param endTime          结束时间，格式为YYYY-MM-DD 23:59:59
+     * @param normalUserIdList 过滤员工id列表
+     * @return 已激活员工对应的首页-数据总览-客户总数(待继承客户数)
+     */
+    Integer getNormalTotalAllContactCnt(@Param("corpId") String corpId, @Param("beginTime") String beginTime, @Param("endTime") String endTime, @Param("normalUserIdList") List<String> normalUserIdList);
+
+    /**
+     * 根据结束时间和已离职员工(is_active = 6)ID列表, 获取首页-数据总览-客户总数
+     *
+     * @param corpId        企业ID
+     * @param beginTime     开始时间，格式为YYYY-MM-DD 00:00:00
+     * @param endTime       结束时间，格式为YYYY-MM-DD 23:59:59
+     * @param delUserIdList 过滤员工id列表
+     * @return 已离职员工对应的首页-数据总览-客户总数(待继承客户数)
+     */
+    Integer getDelTotalAllContactCnt(@Param("corpId") String corpId, @Param("beginTime") String beginTime, @Param("endTime") String endTime, @Param("delUserIdList") List<String> delUserIdList);
+
+    /**
+     * 根据员工id获取数据统计-客户联系-客户总数
+     *
+     * @param corpId  企业ID
+     * @param endTime 结束时间，格式为YYYY-MM-DD 23:59:59
+     * @param userId  员工ID
+     * @return 员工对应的客户总数
+     */
+    List<WeUserBehaviorData> getTotalAllContactCntByUserId(@Param("corpId") String corpId, @Param("endTime") String endTime, @Param("userIdList") List<String> userId);
 }
