@@ -4,7 +4,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/edition-V1.27.0-brightgreen" />
   <img src="https://img.shields.io/badge/license-GPL%203.0-yellow" />
-  <img src="https://img.shields.io/badge/mysql-5.7%2B-orange" />
+  <img src="https://img.shields.io/badge/mysql-5.7.41-orange" />
   <img src="https://img.shields.io/badge/jdk-1.8.301(64bit)%2B-red" />
 </p>
 <h4 align="center">
@@ -117,7 +117,7 @@ com.easyink
 | 环境依赖            | 版本            |
 | ------------------- | --------------- |
 | JDK                 | `1.8.301(64bit)+` |
-| Mysql               | `5.7+`             |
+| Mysql               | `5.7.41`             |
 | Redis               | `4.0.6+`          |
 | Maven               | `3.5.2+`          |
 | ElasticSearch(可选) |   `7.10.1+`       |
