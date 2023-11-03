@@ -1,5 +1,6 @@
 package com.easyink.wecom.domain.dto.welcomemsg;
 
+import com.easyink.wecom.domain.WeMsgTlpFilterRule;
 import com.easyink.wecom.domain.WeMsgTlpSpecialRule;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
@@ -24,8 +25,10 @@ public class WelComeMsgUpdateEmployDTO extends WelComeMsgUpdateDTO{
     @ApiModelProperty("需要删除的特殊时段欢迎语ids")
     private List<Long> removeSpecialRuleIds;
 
-
-
+    @ApiModelProperty(value = "多个筛选条件间的关联，0：或；1：且（仅存在过滤条件有效）")
+    private Integer multiFilterAssociation;
+    @ApiModelProperty("欢迎语筛选条件列表")
+    private List<WeMsgTlpFilterRule> weMsgTlpFilterRules;
 
     @ApiModelProperty("欢迎语使用人ids")
     @NotEmpty(message = "请选择至少一个使用人员")

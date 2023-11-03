@@ -37,6 +37,17 @@
             #{item}
         </foreach>
     </select>
+    <!--根据客户关系id列表获取标签id列表-->
+    <select id="selectTagIdListByRelIds" resultType="java.lang.String">
+        SELECT tag_id
+        FROM we_flower_customer_tag_rel
+        WHERE flower_customer_rel_id IN
+        <if test="list != null and list.size() > 0">
+            <foreach collection="list" item="flowerCustomerRelId" open="(" separator="," close=")">
+                #{flowerCustomerRelId}
+            </foreach>
+        </if>
+    </select>
 
     <insert id="insertWeFlowerCustomerTagRel" parameterType="WeFlowerCustomerTagRel">
         insert into we_flower_customer_tag_rel

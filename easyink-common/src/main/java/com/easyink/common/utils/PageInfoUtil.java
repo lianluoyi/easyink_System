@@ -4,7 +4,7 @@ import com.easyink.common.core.page.PageDomain;
 import com.easyink.common.core.page.TableDataInfo;
 import com.easyink.common.core.page.TableSupport;
 import com.easyink.common.enums.ResultTip;
-import com.easyink.common.utils.sql.SqlUtil;
+import com.easyink.common.exception.CustomException;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 
@@ -174,6 +174,52 @@ public class PageInfoUtil {
     }
 
     /**
+     * 获取分页起始位置
+     *
+     * @return 分页起始位置
+     */
+    public static Integer getStartIndex() {
+        Integer pageSize = getPageSize();
+        Integer pageNum = getPageNum();
+        if (pageNum == null || pageSize == null) {
+            throw new CustomException(ResultTip.TIP_PARAM_MISSING);
+        }
+        return (pageNum - 1) * pageSize;
+    }
+
+    /**
+     * 获取分页起始位置
+     *
+     * @return 分页起始位置
+     */
+    public static Integer getStartIndex(Integer pageNum, Integer pageSize) {
+        if (pageNum == null || pageSize == null) {
+            throw new CustomException(ResultTip.TIP_PARAM_MISSING);
+        }
+        return (pageNum - 1) * pageSize;
+    }
+
+    /**
+     * 获取分页页数
+     *
+     * @return 分页页数
+     */
+    public static Integer getPageNum() {
+        PageDomain pageDomain = TableSupport.buildPageRequest();
+        return pageDomain.getPageNum();
+    }
+
+    /**
+     * 获取分页大小
+     *
+     * @return 分页大小
+     */
+    public static Integer getPageSize() {
+        PageDomain pageDomain = TableSupport.buildPageRequest();
+        return pageDomain.getPageSize();
+    }
+
+    /**
      * 预设置分页参数
      */
     public static void setPage() {
@@ -192,6 +238,18 @@ public class PageInfoUtil {
            return;
        }
         PageHelper.startPage((Integer)pageNum, (Integer)pageSize);
+    }
+
+    /**
+     * 开始分页，但不使用count查询，从session获取分页参数
+     */
+    public static void startPageNoCount() {
+        Object pageNum =  ServletUtils.getRequest().getAttribute(PAGE_NUM);
+        Object pageSize = ServletUtils.getRequest().getAttribute(PAGE_SIZE);
+        if(pageNum == null ||  pageSize == null) {
+            return;
+        }
+        PageHelper.startPage((Integer)pageNum, (Integer)pageSize, false);
     }
 
     /**

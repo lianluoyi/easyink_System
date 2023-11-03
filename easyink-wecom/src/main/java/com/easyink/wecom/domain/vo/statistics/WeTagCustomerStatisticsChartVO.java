@@ -38,7 +38,7 @@ public class WeTagCustomerStatisticsChartVO extends WeTagStatisticsChartBaseVO {
         super.setTagGroupId(weTagGroup.getGroupId());
         super.setGroupTagName(weTagGroup.getGroupName());
         super.setGroupTagCreateTime(DateUtils.getDateTime(weTagGroup.getCreateTime()));
-        super.setTotalCustomerCnt(singleGroupTagList.stream().mapToInt(item -> item.getCustomerCnt()).sum());
+        super.setTotalCustomerCnt(singleGroupTagList.stream().mapToInt(WeTagCustomerStatisticsVO::getCustomerCnt).sum());
         handleTagGroupCustomerCnt(singleGroupTagList, weTagList);
     }
 

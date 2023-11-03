@@ -98,13 +98,13 @@ public class RadarConstants {
         public static String getRecordText(String customerName, String userName, String detail, int type, String channelName) {
             String msg = "客户“" + customerName + "”" + "点击了员工“" + userName + "”" + "在【" + RadarChannelEnum.getChannelByType(type) + REPlACE_WORD + "】发出的雷达链接";
             if (RadarChannelEnum.CUSTOMIZE.getTYPE().equals(type)) {
-                return msg.replace(REPlACE_WORD, "-{" + channelName + "}");
+                return msg.replace(REPlACE_WORD, "-" + channelName);
             }
             if (StringUtils.isNotBlank(detail)
                     && !RadarChannelEnum.MOMENT.getTYPE().equals(type)
                     && !RadarChannelEnum.SIDE_BAR.getTYPE().equals(type)
                     && !RadarChannelEnum.WELCOME_MSG.getTYPE().equals(type)) {
-                return msg.replace(REPlACE_WORD, "-{" + detail + "}");
+                return msg.replace(REPlACE_WORD, "-" + detail);
             } else {
                 return msg.replace(REPlACE_WORD, StringUtils.EMPTY);
             }

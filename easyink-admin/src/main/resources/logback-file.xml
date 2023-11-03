@@ -20,7 +20,7 @@
             </providers>
         </encoder>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>${LOG_PATH:-/log}${LOG_NAME:-/wecom.log}.%d{yyyy-MM-dd}(%i)%d{HH.mm.ss}.gz</fileNamePattern>
+            <fileNamePattern>${LOG_PATH:-/log}${LOG_NAME:-/wecom.log}.%d{yyyy-MM-dd}.%i.%d{HH.mm.ss}.gz</fileNamePattern>
             <maxHistory>${LOG_MAX_HISTORY:-15}</maxHistory> <!-- 保留15天 -->
             <maxFileSize>${LOG_MAX_SIZE:-100MB}</maxFileSize>
         </rollingPolicy>

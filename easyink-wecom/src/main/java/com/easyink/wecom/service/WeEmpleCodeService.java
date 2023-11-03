@@ -37,6 +37,14 @@ public interface WeEmpleCodeService extends IService<WeEmpleCode> {
      */
     List<WeEmpleCodeVO> selectWeEmpleCodeList(FindWeEmpleCodeDTO weEmpleCode);
 
+    /**
+     * 查询新客进群列表
+     *
+     * @param weEmployCode {@link FindWeEmpleCodeDTO}
+     * @return {@link List<WeEmpleCodeVO>}
+     */
+    List<WeEmpleCodeVO> selectGroupWeEmpleCodeList(FindWeEmpleCodeDTO weEmployCode);
+
 
     /**
      * 查询获客链接列表

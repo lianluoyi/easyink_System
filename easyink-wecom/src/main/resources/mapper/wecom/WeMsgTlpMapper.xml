@@ -45,6 +45,15 @@
             <result property="weekendBeginTime" column="weekend_begin_time"/>
             <result property="weekendEndTime" column="weekend_end_time"/>
         </collection>
+        <collection property="weMsgTlpFilterRules" ofType="com.easyink.wecom.domain.WeMsgTlpFilterRule"
+                    column="msgTlpId=id"
+                    select="com.easyink.wecom.mapper.WeMsgTlpFilterRuleMapper.getListByTlpId">
+            <id property="id" column="id"/>
+            <result property="msgTlpId" column="msg_tlp_id"/>
+            <result property="filterType" column="filter_type"/>
+            <result property="filterCondition" column="filter_condition"/>
+            <result property="filterValue" column="filter_value"/>
+        </collection>
     </resultMap>
 
     <sql id="selectWeMsgTlpVo">
@@ -68,6 +77,8 @@
         wmt.default_welcome_msg,
         wmt.welcome_msg_tpl_type,
         wmt.exist_special_flag,
+        wmt.exist_filter_flag,
+        wmt.multi_filter_association,
         wmt.template_id,
         wmt.notice_flag,
         wmt.create_by,
@@ -91,7 +102,9 @@
                wmt.corp_id,
                wmt.default_welcome_msg,
                wmt.welcome_msg_tpl_type,
-               wmt.exist_special_flag
+               wmt.exist_special_flag,
+               wmt.exist_filter_flag,
+               wmt.multi_filter_association
         FROM we_msg_tlp wmt
                  LEFT JOIN we_msg_tlp_scope wmts ON wmts.msg_tlp_id = wmt.id
         WHERE wmt.corp_id = #{corpId}

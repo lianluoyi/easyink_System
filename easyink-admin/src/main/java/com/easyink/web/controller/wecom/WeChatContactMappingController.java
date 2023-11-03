@@ -5,12 +5,12 @@ import com.easyink.common.core.controller.BaseController;
 import com.easyink.common.core.domain.AjaxResult;
 import com.easyink.common.core.page.TableDataInfo;
 import com.easyink.common.enums.BusinessType;
+import com.easyink.common.utils.PageInfoUtil;
 import com.easyink.common.utils.poi.ExcelUtil;
 import com.easyink.wecom.domain.WeChatContactMapping;
-import com.easyink.wecom.domain.WeCustomer;
+import com.easyink.wecom.domain.dto.WeChatMappingDTO;
 import com.easyink.wecom.login.util.LoginTokenService;
 import com.easyink.wecom.service.WeChatContactMappingService;
-import com.github.pagehelper.PageInfo;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.apache.commons.lang3.StringUtils;
@@ -39,14 +39,14 @@ public class WeChatContactMappingController extends BaseController {
 //    @PreAuthorize("@ss.hasPermi('chat:mapping:list')")
     @ApiOperation(value = "查询聊天关系映射列表", httpMethod = "GET")
     @GetMapping("/list")
-    public TableDataInfo<WeChatContactMapping> list(WeChatContactMapping weChatContactMapping) {
-        startPage();
+    public TableDataInfo<WeChatContactMapping> list(WeChatMappingDTO weChatMappingDTO) {
         String corpId = LoginTokenService.getLoginUser().getCorpId();
         if (StringUtils.isBlank(corpId)) {
             return getDataTable(new ArrayList<>());
         }
-        weChatContactMapping.setCorpId(corpId);
-        List<WeChatContactMapping> list = weChatContactMappingService.selectWeChatContactMappingList(weChatContactMapping);
+        PageInfoUtil.setPage();
+        weChatMappingDTO.setCorpId(corpId);
+        List<WeChatContactMapping> list = weChatContactMappingService.selectWeChatContactMappingListV2(weChatMappingDTO);
         return getDataTable(list);
     }
 

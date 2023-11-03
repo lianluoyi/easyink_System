@@ -320,6 +320,50 @@ public class WeDepartmentServiceImpl extends ServiceImpl<WeDepartmentMapper, WeD
     }
 
     /**
+     * 获取数据权限下的员工id列表，若是包含根部们，则返回空列表
+     *
+     * @param departmentIds 部门id列表
+     * @param userIds       员工id列表
+     * @param corpId        企业id
+     * @return 数据权限下的员工id列表
+     */
+    @Override
+    public List<String> getDataScopeUserIdList(List<String> departmentIds, List<String> userIds, String corpId) {
+        if (CollectionUtils.isEmpty(departmentIds) || CollectionUtils.isEmpty(userIds) || StringUtils.isBlank(corpId)) {
+            return Collections.emptyList();
+        }
+        // 如果存在根部们，则表示全部的员工id查询，返回空列表
+        if (isHaveRootDepartment(departmentIds)) {
+            return Collections.emptyList();
+        }
+        // 部门下的员工id列表
+        List<String> userIdsByDepartment = weUserService.listOfUserId(corpId, departmentIds.toArray(new String[0]));
+        // 使用hashSet去重
+        HashSet<String> userIdList = new HashSet<>();
+        userIdList.addAll(userIdsByDepartment);
+        userIdList.addAll(userIds);
+        return new ArrayList<>(userIdList);
+    }
+
+    /**
+     * 判断是否存在根部们
+     *
+     * @param departmentIds 部门id列表
+     * @return true 存在，false 不存在
+     */
+    private boolean isHaveRootDepartment(List<String> departmentIds) {
+        if (CollectionUtils.isEmpty(departmentIds)) {
+            return false;
+        }
+        for (String departmentId : departmentIds) {
+            if (WeConstans.ROOT_DEPARTMENT.equals(departmentId)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * 当前登录员工是部门不在可见范围的员工
      *
      * @param loginUser {@link LoginUser} 当前登录员工

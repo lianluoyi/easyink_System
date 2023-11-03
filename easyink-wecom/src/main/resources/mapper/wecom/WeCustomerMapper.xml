@@ -1191,6 +1191,16 @@
             LEFT JOIN we_department wd ON wc.corp_id = wd.corp_id AND wu.main_department = wd.id
         <include refid="customerCondition"/>
     </select>
-
+    <!--查询客户信息列表第二版（根据客户ID查询）-->
+    <select id="selectWeCustomerListDistinctV2"
+            resultType="com.easyink.wecom.domain.vo.customer.SessionArchiveCustomerVO">
+        SELECT `avatar`, `name`, `external_userid` FROM we_customer WHERE corp_id = #{corpId}
+        AND external_userid IN
+        <if test="list != null and list.size()>0">
+            <foreach collection="list" item="externalUserid" separator="," open="(" close=")">
+                #{externalUserid}
+            </foreach>
+        </if>
+    </select>
 
 </mapper>

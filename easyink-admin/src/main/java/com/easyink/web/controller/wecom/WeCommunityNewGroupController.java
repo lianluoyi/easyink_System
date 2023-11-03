@@ -152,7 +152,7 @@ public class WeCommunityNewGroupController extends BaseController {
         startPage();
         weEmpleCode.setCorpId(LoginTokenService.getLoginUser().getCorpId());
         weEmpleCode.setSource(EmployCodeSourceEnum.NEW_GROUP.getSource());
-        List<WeEmpleCodeVO> list = weEmpleCodeService.selectWeEmpleCodeList(weEmpleCode);
+        List<WeEmpleCodeVO> list = weEmpleCodeService.selectGroupWeEmpleCodeList(weEmpleCode);
         return getDataTable(list);
     }
 

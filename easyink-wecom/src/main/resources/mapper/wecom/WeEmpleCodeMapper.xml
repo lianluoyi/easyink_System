@@ -177,40 +177,35 @@
         where corp_id = #{corpId}
           and id = #{id}
     </delete>
-
+    <!--查询员工活码列表-->
     <select id="selectWeEmpleCodeList" parameterType="com.easyink.wecom.domain.dto.emplecode.FindWeEmpleCodeDTO"
             resultMap="WeEmpleCodeResult">
-        select a.*,IFNULL(wd.name,'') mainDepartmentName
-        from (
-        <include refid="selectWeEmpleCodeLsit"/>
-        and wecode.code_type != ${@com.easyink.common.constant.WeConstans@BATCH_SINGLE_EMPLE_CODE_TYPE}
-        and wecode.corp_id = #{corpId}
+        SELECT wec.id, wec.scenario, wec.qr_code, wec.app_link, wec.create_by, wec.create_time, wec.source, wec.state
+        FROM we_emple_code wec
+        INNER JOIN (SELECT wecus.emple_code_id, wecus.business_id, wecus.business_id_type, wecus.business_name, wu.mobile
+        FROM we_emple_code_use_scop wecus LEFT JOIN we_user wu ON wu.user_id = wecus.business_id AND wu.corp_id = #{corpId}
+        WHERE wecus.del_flag = ${@com.easyink.common.constant.Constants@NORMAL_CODE}) as wecusn on wec.id = wecusn.emple_code_id
+        WHERE wec.corp_id = #{corpId} AND wec.del_flag = ${@com.easyink.common.constant.Constants@NORMAL_CODE}
+        <if test="source != null">
+            AND wec.source = #{source}
+        </if>
         <if test="scenario != null  and scenario != ''">
-            and wecode.scenario like concat('%', #{scenario}, '%')
+            and wec.scenario like concat('%', #{scenario}, '%')
         </if>
         <if test="createBy != null and createBy !=''">
-            AND wecode.create_by like concat('%', #{createBy}, '%')
+            AND wec.create_by like concat('%', #{createBy}, '%')
         </if>
         <if test="beginTime != null and beginTime != ''">
-            AND wecode.create_time &gt;= #{beginTime}
+            AND wec.create_time &gt;= #{beginTime}
         </if>
         <if test="endTime != null and endTime != ''">
-            AND wecode.create_time &lt;= #{endTime}
+            AND wec.create_time &lt;= #{endTime}
         </if>
         <if test="useUserName != null and useUserName !=''">
             AND wecusn.business_name like concat('%', #{useUserName}, '%')
         </if>
-        <if test="source != null">
-            AND wecode.source = #{source}
-        </if>
-        <if test="qrCode !=null">
-            AND wecode.qr_code like concat('%', #{qrCode}, '%')
-        </if>
-        group by wecode.id
-        order by wecode.create_time DESC
-        ) a
-        LEFT JOIN we_user wu ON a.create_by = wu.user_name AND wu.corp_id = #{corpId}
-        LEFT JOIN we_department wd ON wd.id = wu.main_department AND wd.corp_id = #{corpId}
+        GROUP BY wec.id
+        order by wec.create_time DESC
     </select>
 
     <select id="selectWeEmpleCodeById" resultMap="WeEmpleCodeResult">

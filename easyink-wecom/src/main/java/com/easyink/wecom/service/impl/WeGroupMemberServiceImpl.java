@@ -22,6 +22,7 @@ import com.easyink.wecom.domain.vo.FindWeGroupMemberCountVO;
 import com.easyink.wecom.mapper.WeGroupMemberMapper;
 import com.easyink.wecom.service.WeGroupMemberService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -84,6 +85,14 @@ public class WeGroupMemberServiceImpl extends ServiceImpl<WeGroupMemberMapper, W
             countVO = new FindWeGroupMemberCountVO();
         }
         return countVO;
+    }
+
+    @Override
+    public List<WeGroupMemberDTO> selectWeGroupMemberListByChatIdList(List<String> chatIdList) {
+        if (CollectionUtils.isEmpty(chatIdList)){
+            throw new CustomException(ResultTip.TIP_PARAM_MISSING);
+        }
+        return this.baseMapper.selectWeGroupMemberListByChatIdList(chatIdList);
     }
 
     @Override

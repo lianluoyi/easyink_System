@@ -401,6 +401,12 @@ public class WeRedeemCodeServiceImpl extends ServiceImpl<WeRedeemCodeMapper, WeR
             weRedeemCodeDTO.setExternalUserIdList(externalUsers);
         }
         startPage();
+        if (StringUtils.isNotBlank(weRedeemCodeDTO.getReceiveStartTime())) {
+            weRedeemCodeDTO.setReceiveStartTime(DateUtils.parseBeginDay(weRedeemCodeDTO.getReceiveStartTime()));
+        }
+        if (StringUtils.isNotBlank(weRedeemCodeDTO.getReceiveEndTime())) {
+            weRedeemCodeDTO.setReceiveEndTime(DateUtils.parseEndDay(weRedeemCodeDTO.getReceiveEndTime()));
+        }
         List<WeRedeemCodeVO> weRedeemCodeList = this.baseMapper.selectWeRedeemCodeList(weRedeemCodeDTO);
         weRedeemCodeList.forEach(item -> {
             if (item.getRedeemTime().contains(RedeemCodeConstants.REDEEM_CODE_EMPTY_TIME)) {

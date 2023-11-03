@@ -8,6 +8,7 @@ import com.easyink.wecom.domain.WeCustomerSocialConn;
 import com.easyink.wecom.domain.dto.WeCustomerPushMessageDTO;
 import com.easyink.wecom.domain.entity.WeCustomerExportDTO;
 import com.easyink.wecom.domain.vo.WeCustomerNameAndUserIdVO;
+import com.easyink.wecom.domain.vo.customer.SessionArchiveCustomerVO;
 import com.easyink.wecom.domain.vo.customer.WeCustomerUserListVO;
 import com.easyink.wecom.domain.vo.customer.WeCustomerVO;
 import com.easyink.wecom.domain.vo.sop.CustomerSopVO;
@@ -185,11 +186,22 @@ public interface WeCustomerMapper extends BaseMapper<WeCustomer> {
 
     /**
      * 查询去重客户去重后企业微信客户列表
+     * @update V1.34.0版本之后弃用，该SQL会导致慢查询响应超时，请使用com.easyink.wecom.mapper.WeCustomerMapper.selectWeCustomerListDistinctV2()
      *
      * @param weCustomer
      * @return
      */
+    @Deprecated
     List<WeCustomerVO> selectWeCustomerListDistinct(WeCustomer weCustomer);
+
+    /**
+     * 查询客户列表第二版（根据客户ID查询）
+     *
+     * @param corpId             企业ID
+     * @param externalUseridList 客户ID列表
+     * @return {@link List<SessionArchiveCustomerVO>}
+     */
+    List<SessionArchiveCustomerVO> selectWeCustomerListDistinctV2(@Param("corpId") String corpId, @Param("list") List<String> externalUseridList);
 
     /**
      * 根据客户id查询所属的员工列表

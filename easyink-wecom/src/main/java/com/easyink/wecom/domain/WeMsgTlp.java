@@ -52,6 +52,14 @@ public class WeMsgTlp {
     @TableField("exist_special_flag")
     private Boolean existSpecialFlag;
 
+    @ApiModelProperty(value = "是否存在有过滤条件（存在则关联we_msg_tlp_filter表）0：不存在，1：存在")
+    @TableField("exist_filter_flag")
+    private Boolean existFilterFlag;
+
+    @ApiModelProperty(value = "多个筛选条件间的关联，0：或；1：且（仅存在过滤条件有效）")
+    @TableField("multi_filter_association")
+    private Integer multiFilterAssociation;
+
     @ApiModelProperty(value = "入群欢迎语返回的模板id", hidden = true)
     @TableField("template_id")
     private String templateId;

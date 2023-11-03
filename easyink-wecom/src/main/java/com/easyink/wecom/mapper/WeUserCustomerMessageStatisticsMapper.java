@@ -90,10 +90,15 @@ public interface WeUserCustomerMessageStatisticsMapper extends BaseMapper<WeUser
     List<CustomerActivityOfCustomerVO> getCustomerActivityOfUserDetail(CustomerActivityUserDetailDTO dto);
 
     /**
-     *  获取有进行对话的员工
-     * @param dto {@link UserServiceDTO}
+     * 获取单个员工有对话的数据
+     *
+     * @param corpId     企业id
+     * @param userIdList 员工id列表
+     * @param beginTime  开始时间，格式YYYY-MM-DD
+     * @param endTime    结束时间，格式YYYY-MM-DD
      * @return {@link UserServiceTimeDTO}
      */
-    List<UserServiceTimeDTO> getFilterOfUser(UserServiceDTO dto);
+    List<UserServiceTimeDTO> getFilterOfUser(@Param("corpId") String corpId, @Param("list") List<String> userIdList, @Param("beginTime") String beginTime, @Param("endTime") String endTime);
+
 }
 

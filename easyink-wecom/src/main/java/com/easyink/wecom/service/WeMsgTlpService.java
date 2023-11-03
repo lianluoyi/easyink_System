@@ -69,9 +69,11 @@ public interface WeMsgTlpService extends IService<WeMsgTlp> {
      *
      * @param userId 员工id
      * @param corpId 企业id
+     * @param addWay 客户来源
+     * @param gender 客户性别
      * @return
      */
-    WeEmployMaterialVO selectMaterialByUserId(String userId, String corpId);
+    WeEmployMaterialVO selectMaterialByUserId(String userId, String corpId, String addWay, Integer gender);
 
     /**
      * 群欢迎语素材统计

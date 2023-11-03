@@ -112,6 +112,31 @@
             AND wgm.`join_scene` = #{joinScene}
         </if>
     </select>
+    <!--根据群聊id列表查询群成员信息-->
+    <select id="selectWeGroupMemberListByChatIdList"
+            resultType="com.easyink.wecom.domain.dto.WeGroupMemberDTO">
+        SELECT
+        wgm.chat_id,
+        wgm.join_time,
+        wgm.type,
+        wgm.join_scene,
+        IFNULL(wu.head_image_url,wc.avatar) as member_avatar,
+        IFNULL(wu.user_name,wc.name) as member_name
+        FROM
+        we_group_member wgm
+        left join we_user wu on wu.user_id = wgm.user_id and wgm.type =
+        ${@com.easyink.common.constant.GroupConstants@ID_TYPE_USER} and wu.corp_id = wgm.corp_id
+        left join we_customer wc on wc.external_userid = wgm.user_id and wgm.type =
+        ${@com.easyink.common.constant.GroupConstants@ID_TYPE_CUSTOMER} and wc.corp_id = wgm.corp_id
+        <where>
+            and wgm.chat_id IN
+            <if test="chatIdList != null and chatIdList.size() > 0">
+                <foreach collection="chatIdList" open="(" close=")" separator="," item="chatId">
+                    #{chatId}
+                </foreach>
+            </if>
+        </where>
+    </select>
 
 </mapper>
 

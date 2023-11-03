@@ -3,9 +3,11 @@ package com.easyink.wecom.mapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.easyink.common.core.domain.wecom.WeUser;
 import com.easyink.wecom.domain.WeCustomerAddUser;
+import com.easyink.wecom.domain.WeTag;
 import com.easyink.wecom.domain.dto.QueryUserDTO;
 import com.easyink.wecom.domain.dto.statistics.WeTagStatisticsDTO;
 import com.easyink.wecom.domain.dto.transfer.TransferResignedUserListDTO;
+import com.easyink.wecom.domain.vo.WeEmpleCodeVO;
 import com.easyink.wecom.domain.vo.WeUserVO;
 import com.easyink.wecom.domain.vo.transfer.TransferResignedUserVO;
 import org.apache.ibatis.annotations.Param;
@@ -175,10 +177,11 @@ public interface WeUserMapper extends BaseMapper<WeUser> {
     Integer batchUpdateUserPrivacy(@Param("list") List<WeUser> list);
 
     /**
-     * 查询员工所属客户关系id，包括流失的客户
+     * 根据创建人名称列表和企业ID获取创建人对应的主部门名称
      *
-     * @param dto {@link WeTagStatisticsDTO}
-     * @return 客户关系ID列表
+     * @param userNameList 创建人名称列表
+     * @param corpId       企业ID
+     * @return 主部门名称信息列表
      */
-    List<String> selectFlowerCustomerRelIdList(WeTagStatisticsDTO dto);
+    List<WeEmpleCodeVO> selectUserMainDepartmentByUsername(@Param("userNameList") List<String> userNameList, @Param("corpId") String corpId);
 }

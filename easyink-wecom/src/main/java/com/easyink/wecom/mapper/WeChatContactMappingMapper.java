@@ -3,6 +3,8 @@ package com.easyink.wecom.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.easyink.wecom.domain.WeChatContactMapping;
+import com.easyink.wecom.domain.dto.WeChatMappingDTO;
+import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -30,6 +32,14 @@ public interface WeChatContactMappingMapper extends BaseMapper<WeChatContactMapp
      * @return 聊天关系映射集合
      */
     List<WeChatContactMapping> selectWeChatContactMappingList(WeChatContactMapping weChatContactMapping);
+
+    /**
+     * 查询聊天关系映射列表V2(普通分页)
+     *
+     * @param weChatMappingDTO {@link WeChatMappingDTO}
+     * @return 聊天关系映射集合
+     */
+    List<WeChatContactMapping> selectWeChatContactMappingListV2(@Param("mapping") WeChatMappingDTO weChatMappingDTO);
 
     /**
      * 新增聊天关系映射

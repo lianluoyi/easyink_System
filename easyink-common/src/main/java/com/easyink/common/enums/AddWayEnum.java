@@ -24,6 +24,7 @@ public enum AddWayEnum {
     EMAIL(9, "搜索邮箱"),
     VIDEO_OFFICIAL(10, "视频号主页添加"),
     CUSTOMER_ACQUISITION(16, "通过获客链接添加"),
+    ALL_ADD_WAY(17, "所有来源"),
     INNER_USER_SHARE(201, "内部成员共享"),
     TRANSFER(202, "管理员/负责人分配");
     /**

@@ -59,6 +59,50 @@
         <include refid="selectWeChatContactMappingVo"/>
         where id = #{id}
     </select>
+    <!--查询聊天关系映射列表V2(普通分页)-->
+    <select id="selectWeChatContactMappingListV2" resultType="com.easyink.wecom.domain.WeChatContactMapping">
+        select wccm.id, wccm.from_id, wccm.receive_id, wccm.room_id, wccm.is_custom,wccm.corp_id from we_chat_contact_mapping wccm
+        left join we_user wu on wu.user_id = wccm.receive_id
+        <if test="mapping.isRoom != null and mapping.isRoom == 1">
+            left join we_group wg on wccm.room_id = wg.chat_id
+            left join we_group_member wgm on wg.chat_id = wgm.chat_id
+        </if>
+        <if test="mapping.searchType !=null and mapping.searchType == 1">
+            inner join we_customer wc on wc.external_userid = wccm.receive_id
+        </if>
+        <where>
+            wccm.corp_id = #{mapping.corpId}
+            <if test="mapping.isRoom != null and mapping.isRoom == 1">and wgm.user_id = #{mapping.fromId}</if>
+            <if test="mapping.fromId != null and mapping.fromId != ''and ((mapping.isRoom != null and mapping.isRoom == 0) or mapping.isRoom == null)">and wccm.from_id = #{mapping.fromId}
+            </if>
+            <if test="mapping.receiveId != null  and mapping.receiveId != ''">and wccm.receive_id = #{mapping.receiveId}</if>
+            <if test="mapping.roomId != null  and mapping.roomId != ''">and wccm.room_id = #{mapping.roomId}</if>
+            <choose>
+                <when test="mapping.searchType != null and mapping.searchType == 0">
+                    and wccm.is_custom = '${@com.easyink.common.constant.WeConstans@ID_TYPE_USER}' and wccm.receive_id != ''
+                    <if test="mapping.chatName != null and mapping.chatName != ''">
+                        and wu.`user_name` LIKE CONCAT("%", #{mapping.chatName} ,"%")
+                    </if>
+                    ${mapping.params.dataScope}
+                </when>
+                <when test="mapping.searchType != null and mapping.searchType == 1">
+                    and wccm.is_custom in ('${@com.easyink.common.constant.WeConstans@ID_TYPE_EX}')
+                    <if test="mapping.chatName != null and mapping.chatName != ''">
+                        and wc.`name` LIKE CONCAT("%", #{mapping.chatName} ,"%")
+                    </if>
+                </when>
+                <when test="mapping.searchType != null and mapping.searchType == 2">
+                    and wccm.room_id != ''
+                </when>
+            </choose>
+        </where>
+        <if test="mapping.isRoom != null and mapping.isRoom == 1">
+            group by wccm.room_id
+        </if>
+        <if test="(mapping.isRoom != null and mapping.isRoom == 0) or mapping.isRoom == null">
+            group by wccm.from_id,wccm.receive_id,wccm.room_id
+        </if>
+    </select>
 
     <insert id="insertWeChatContactMapping" parameterType="WeChatContactMapping" useGeneratedKeys="true"
             keyProperty="id">

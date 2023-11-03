@@ -18,6 +18,7 @@ import com.easyink.wecom.domain.dto.unionid.GetUnionIdDTO;
 import com.easyink.wecom.domain.entity.WeCustomerExportDTO;
 import com.easyink.wecom.domain.vo.QueryCustomerFromPlusVO;
 import com.easyink.wecom.domain.vo.WeMakeCustomerTagVO;
+import com.easyink.wecom.domain.vo.customer.SessionArchiveCustomerVO;
 import com.easyink.wecom.domain.vo.customer.WeCustomerSumVO;
 import com.easyink.wecom.domain.vo.customer.WeCustomerUserListVO;
 import com.easyink.wecom.domain.vo.customer.WeCustomerVO;
@@ -300,8 +301,26 @@ public interface WeCustomerService extends IService<WeCustomer> {
      *
      * @param weCustomer {@link WeCustomer}
      * @return 客户列表
+     * @update V1.34.0 由于慢查询废弃,使用V2接口
      */
+    @Deprecated
     List<WeCustomerVO> selectWeCustomerListDistinct(WeCustomer weCustomer);
+
+    /**
+     * 查询去重客户去重后企业微信客户列表
+     *
+     * @param weCustomer {@link WeCustomer}
+     * @return 客户信息列表
+     */
+    List<SessionArchiveCustomerVO> selectWeCustomerListDistinctV2(WeCustomer weCustomer);
+
+    /**
+     * 获取会话存档-客户检索-客户列表-去重后的客户数
+     *
+     * @param weCustomer {@link WeCustomer}
+     * @return 客户总数
+     */
+    WeCustomerSumVO customerCount(WeCustomer weCustomer);
 
     /**
      * 根据客户id查询所属的员工列表

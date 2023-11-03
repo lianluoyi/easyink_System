@@ -30,12 +30,12 @@ public class WeTagStatisticsDTO extends StatisticsDTO{
     private String sortType;
 
     /**
-     * 客户关系ID列表
-     */
-    private List<String> flowerCustomerRelIdList;
-
-    /**
      * 标签ID列表
      */
     private List<String> tagIdList = new ArrayList<>();
+
+    /**
+     * 查询的数据量总数
+     */
+    private Long total;
 }

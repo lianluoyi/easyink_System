@@ -54,39 +54,79 @@
             </foreach>
         </if>
     </select>
-
+    <!--查询员工数据权限下对应的标签关系信息-->
+    <select id="selectTagInfoByDataScope" resultType="com.easyink.wecom.domain.WeTag">
+        SELECT DISTINCT wt.tag_id, wt.create_time, wt.`name`, wt.group_id
+        FROM we_tag wt
+        INNER JOIN we_flower_customer_tag_rel wfctr ON wt.tag_id
+        = wfctr.tag_id
+        INNER JOIN we_flower_customer_rel wfcr ON wfctr.flower_customer_rel_id = wfcr.id
+        LEFT JOIN we_user wu ON wu.user_id = wfcr.user_id
+        INNER JOIN we_department wd ON wu.main_department = wd.id
+        WHERE
+        wfcr.corp_id = #{corpId}
+        AND wu.is_activate = ${@com.easyink.common.constant.WeConstans@WE_USER_IS_ACTIVATE}
+        <if test="userIds != null and userIds.size() > 0">
+            AND wu.user_id IN
+            <foreach collection="userIds" item="userId" open="(" separator="," close=")">
+                #{userId}
+            </foreach>
+        </if>
+        ${params.dataScope}
+        <if test="tagGroupIds != null and tagGroupIds.size > 0">
+            AND wt.group_id IN
+            <foreach collection="tagGroupIds" item="tagGroupId" open="(" separator="," close=")">
+                #{tagGroupId}
+            </foreach>
+        </if>
+        AND wt.status = ${@com.easyink.common.constant.Constants@NORMAL_CODE}
+        AND wfcr.status IN ('${@com.easyink.common.enums.CustomerStatusEnum@NORMAL.code}',
+        '${@com.easyink.common.enums.CustomerStatusEnum@DRAIN.code}',
+        '${@com.easyink.common.enums.CustomerStatusEnum@TO_BE_TRANSFERRED.code}',
+        '${@com.easyink.common.enums.CustomerStatusEnum@TRANSFERRING.code}')
+        <if test="beginTime !=null">
+            AND wfcr.create_time &gt;= #{beginTime}
+        </if>
+        <if test="endTime !=null">
+            AND wfcr.create_time &lt;= #{endTime}
+        </if>
+            ORDER BY wt.create_time DESC
+    </select>
     <!-- 获取所有标签和客户信息 -->
     <select id="getWeTagList" resultType="com.easyink.wecom.domain.WeTagStatistic">
         SELECT
         wfctr.`tag_id`,
-        wt.`name`,
-        wt.create_time,
         wfctr.external_userid AS externalUserid
         FROM
-        we_tag wt
-        INNER JOIN we_flower_customer_tag_rel wfctr ON wfctr.tag_id = wt.tag_id
-        INNER JOIN we_tag_group wtg ON wt.group_id = wtg.group_id
-        AND wt.`status` = wtg.`status`
+        we_flower_customer_tag_rel wfctr
+        INNER JOIN we_flower_customer_rel wfcr ON wfctr.flower_customer_rel_id = wfcr.id
+        LEFT JOIN we_user wu ON wu.user_id = wfcr.user_id
+        INNER JOIN we_department wd ON wu.main_department = wd.id
         WHERE
-        wtg.corp_id = #{dto.corpId}
-        AND wtg.`status` = ${@com.easyink.common.constant.Constants@NORMAL_CODE}
-        <if test="dto.flowerCustomerRelIdList != null and dto.flowerCustomerRelIdList.size() > 0">
-            AND wfctr.flower_customer_rel_id IN
-            <foreach collection="dto.flowerCustomerRelIdList" item="flowerCustomerRelId" open="(" separator="," close=")">
-                #{flowerCustomerRelId}
-            </foreach>
-        </if>
+        wfcr.corp_id = #{dto.corpId}
+        AND wfctr.tag_id IN
         <if test="tagIds != null and tagIds.size > 0">
-            AND wt.tag_id IN
             <foreach collection="tagIds" item="weTag" open="(" separator="," close=")">
                 #{weTag.tagId}
             </foreach>
         </if>
-        <if test="dto.tagGroupIds != null and dto.tagGroupIds.size > 0">
-            AND wtg.group_id IN
-            <foreach collection="dto.tagGroupIds" item="tagGroupId" open="(" separator="," close=")">
-                #{tagGroupId}
+        AND wu.is_activate = ${@com.easyink.common.constant.WeConstans@WE_USER_IS_ACTIVATE}
+        <if test="dto.userIds != null and dto.userIds.size() > 0">
+            AND wu.user_id IN
+            <foreach collection="dto.userIds" item="userId" open="(" separator="," close=")">
+                #{userId}
             </foreach>
+        </if>
+        ${dto.params.dataScope}
+        AND wfcr.status IN ('${@com.easyink.common.enums.CustomerStatusEnum@NORMAL.code}',
+        '${@com.easyink.common.enums.CustomerStatusEnum@DRAIN.code}',
+        '${@com.easyink.common.enums.CustomerStatusEnum@TO_BE_TRANSFERRED.code}',
+        '${@com.easyink.common.enums.CustomerStatusEnum@TRANSFERRING.code}')
+        <if test="dto.beginTime !=null">
+            AND wfcr.create_time &gt;= #{dto.beginTime}
+        </if>
+        <if test="dto.endTime !=null">
+            AND wfcr.create_time &lt;= #{dto.endTime}
         </if>
     </select>
 
@@ -126,27 +166,29 @@
     </select>
     <!--  获取企业下有打的标签（去重）  -->
     <select id="selectTagIds" resultType="com.easyink.wecom.domain.WeTag">
-        SELECT DISTINCT wt.tag_id, wt.`name`, wt.create_time, wt.group_id
-        FROM we_tag wt
-        INNER JOIN we_flower_customer_tag_rel wfctr ON wt.tag_id = wfctr.tag_id
-        INNER JOIN we_tag_group wtg ON wt.group_id = wtg.group_id
-        AND wt.`status` = wtg.`status`
-        WHERE wt.`status` = ${@com.easyink.common.constant.Constants@NORMAL_CODE}
-        AND wtg.corp_id = #{corpId}
-        <if test="flowerCustomerRelIdList != null and flowerCustomerRelIdList.size() > 0">
-            AND wfctr.flower_customer_rel_id IN
-            <foreach collection="flowerCustomerRelIdList" item="flowerCustomerRelId" open="(" separator="," close=")">
-                #{flowerCustomerRelId}
+        SELECT
+        tag_id,
+        `name`,
+        create_time,
+        group_id
+        FROM
+        we_tag
+        WHERE
+        tag_id IN
+        <if test="tagIdList != null and tagIdList.size() > 0">
+            <foreach collection="tagIdList" item="tagId" open="(" separator="," close=")">
+                #{tagId}
             </foreach>
         </if>
-        <if test="tagGroupIds != null and tagGroupIds.size > 0">
-            AND wtg.group_id IN
-            <foreach collection="tagGroupIds" item="tagGroupId" open="(" separator="," close=")">
+        <if test="dto.tagGroupIds != null and dto.tagGroupIds.size > 0">
+            AND group_id IN
+            <foreach collection="dto.tagGroupIds" item="tagGroupId" open="(" separator="," close=")">
                 #{tagGroupId}
             </foreach>
         </if>
-        <if test="sortType != null and sortType != ''">
-            ORDER BY wt.create_time ${sortType}
+        AND status = ${@com.easyink.common.constant.Constants@NORMAL_CODE} AND corp_id = #{dto.corpId}
+        <if test="dto.sortType != null and dto.sortType != ''">
+            ORDER BY create_time ${dto.sortType}
         </if>
     </select>
     <!--查询企业下有效的标签总数（去重）-->
@@ -196,6 +238,38 @@
         FROM we_tag
         WHERE `status` = ${@com.easyink.common.constant.Constants@NORMAL_CODE}
         AND corp_id = #{corpId}
+    </select>
+    <!--根据数据权限，获取所有标签和客户信息-->
+    <select id="getWeTagListByTagId" resultType="com.easyink.wecom.domain.WeTagStatistic">
+        SELECT
+        wfctr.`tag_id`,
+        wfctr.external_userid AS externalUserid
+        FROM
+        we_flower_customer_tag_rel wfctr
+        INNER JOIN we_flower_customer_rel wfcr ON wfctr.flower_customer_rel_id = wfcr.id
+        LEFT JOIN we_user wu ON wu.user_id = wfcr.user_id
+        INNER JOIN we_department wd ON wu.main_department = wd.id
+        WHERE
+        wfcr.corp_id = #{dto.corpId}
+        AND wfctr.tag_id = #{tagId}
+        AND wu.is_activate = ${@com.easyink.common.constant.WeConstans@WE_USER_IS_ACTIVATE}
+        <if test="dto.userIds != null and dto.userIds.size() > 0">
+            AND wu.user_id IN
+            <foreach collection="dto.userIds" item="userId" open="(" separator="," close=")">
+                #{userId}
+            </foreach>
+        </if>
+        ${dto.params.dataScope}
+        AND wfcr.status IN ('${@com.easyink.common.enums.CustomerStatusEnum@NORMAL.code}',
+        '${@com.easyink.common.enums.CustomerStatusEnum@DRAIN.code}',
+        '${@com.easyink.common.enums.CustomerStatusEnum@TO_BE_TRANSFERRED.code}',
+        '${@com.easyink.common.enums.CustomerStatusEnum@TRANSFERRING.code}')
+        <if test="dto.beginTime !=null">
+            AND wfcr.create_time &gt;= #{dto.beginTime}
+        </if>
+        <if test="dto.endTime !=null">
+            AND wfcr.create_time &lt;= #{dto.endTime}
+        </if>
     </select>
 
     <update id="updateWeTag" parameterType="WeTag">

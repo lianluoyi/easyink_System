@@ -112,4 +112,13 @@ public interface WeFlowerCustomerTagRelMapper extends BaseMapper<WeFlowerCustome
      * @return {@link WeFlowerCustomerTagRel}
      */
     List<WeFlowerCustomerTagRel> getTagRelByRelIds(@Param("list") List<Long> relList);
+
+    /**
+     * 根据客户关系id列表获取标签id列表
+     *
+     * @param flowerCustomerRelIdList 客户关系id列表
+     * @return 标签id列表
+     */
+    List<String> selectTagIdListByRelIds(@Param("list") List<String> flowerCustomerRelIdList);
+
 }
