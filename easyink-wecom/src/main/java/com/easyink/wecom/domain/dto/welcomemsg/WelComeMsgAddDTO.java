@@ -1,6 +1,7 @@
 package com.easyink.wecom.domain.dto.welcomemsg;
 
 import com.easyink.wecom.domain.WeMsgTlp;
+import com.easyink.wecom.domain.WeMsgTlpFilterRule;
 import com.easyink.wecom.domain.WeMsgTlpSpecialRule;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
@@ -25,4 +26,6 @@ public class WelComeMsgAddDTO {
     @ApiModelProperty("欢迎语使用人ids")
     private List<String> useUserIds;
 
+    @ApiModelProperty("欢迎语筛选条件列表")
+    private List<WeMsgTlpFilterRule> weMsgTlpFilterRules;
 }

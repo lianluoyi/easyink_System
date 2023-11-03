@@ -10,11 +10,7 @@ import com.easyink.common.exception.CustomException;
 import com.easyink.common.utils.DateUtils;
 import com.easyink.common.utils.StringUtils;
 import com.easyink.common.utils.spring.SpringUtils;
-import com.easyink.wecom.client.WeWelcomeMsgClient;
-import com.easyink.wecom.domain.WeMsgTlp;
-import com.easyink.wecom.domain.WeMsgTlpMaterial;
-import com.easyink.wecom.domain.WeMsgTlpScope;
-import com.easyink.wecom.domain.WeMsgTlpSpecialRule;
+import com.easyink.wecom.domain.*;
 import com.easyink.wecom.domain.dto.welcomemsg.*;
 import com.easyink.wecom.domain.vo.welcomemsg.WeEmployMaterialVO;
 import com.easyink.wecom.domain.vo.welcomemsg.WeMsgTlpListVO;
@@ -48,19 +44,19 @@ import java.util.List;
 public class WeMsgTlpServiceImpl extends ServiceImpl<WeMsgTlpMapper, WeMsgTlp> implements WeMsgTlpService {
 
     private WeMsgTlpMapper weMsgTlpMapper;
-    private WeWelcomeMsgClient weWelcomeMsgClient;
     private WeMsgTlpMaterialService weMsgTlpMaterialService;
     private WeMsgTlpScopeService weMsgTlpScopeService;
     private WeMsgTlpSpecialRuleService weMsgTlpSpecialRuleService;
+    private final WeMsgTlpFilterRuleService weMsgTlpFilterRuleService;
 
     @Lazy
     @Autowired
-    public WeMsgTlpServiceImpl(WeMsgTlpMapper weMsgTlpMapper, WeWelcomeMsgClient weWelcomeMsgClient, WeMsgTlpMaterialService weMsgTlpMaterialService, WeMsgTlpScopeService weMsgTlpScopeService, WeMsgTlpSpecialRuleService weMsgTlpSpecialRuleService) {
+    public WeMsgTlpServiceImpl(WeMsgTlpMapper weMsgTlpMapper, WeMsgTlpMaterialService weMsgTlpMaterialService, WeMsgTlpScopeService weMsgTlpScopeService, WeMsgTlpSpecialRuleService weMsgTlpSpecialRuleService, WeMsgTlpFilterRuleService weMsgTlpFilterRuleService) {
         this.weMsgTlpMapper = weMsgTlpMapper;
-        this.weWelcomeMsgClient = weWelcomeMsgClient;
         this.weMsgTlpMaterialService = weMsgTlpMaterialService;
         this.weMsgTlpScopeService = weMsgTlpScopeService;
         this.weMsgTlpSpecialRuleService = weMsgTlpSpecialRuleService;
+        this.weMsgTlpFilterRuleService = weMsgTlpFilterRuleService;
     }
 
     /**
@@ -101,6 +97,10 @@ public class WeMsgTlpServiceImpl extends ServiceImpl<WeMsgTlpMapper, WeMsgTlp> i
         if (CollectionUtils.isNotEmpty(welComeMsgAddDTO.getWeMsgTlpSpecialRules())) {
             welComeMsgAddDTO.getWeMsgTlp().setExistSpecialFlag(Boolean.TRUE);
         }
+        // 如果是存在客户范围筛选条件，则设置存在筛选条件标识
+        if (CollectionUtils.isNotEmpty(welComeMsgAddDTO.getWeMsgTlpFilterRules())) {
+            welComeMsgAddDTO.getWeMsgTlp().setExistFilterFlag(Boolean.TRUE);
+        }
         weMsgTlpMapper.insert(welComeMsgAddDTO.getWeMsgTlp());
         long defaultMsgId = welComeMsgAddDTO.getWeMsgTlp().getId();
 
@@ -113,6 +113,10 @@ public class WeMsgTlpServiceImpl extends ServiceImpl<WeMsgTlpMapper, WeMsgTlp> i
             weMsgTlpSpecialRuleService.saveSpecialMsgBatch(defaultMsgId, welComeMsgAddDTO.getWeMsgTlpSpecialRules());
             // 3.2插入特殊欢迎语模板素材
             weMsgTlpMaterialService.saveSpecialMaterial(defaultMsgId, welComeMsgAddDTO.getWeMsgTlpSpecialRules());
+        }
+        // 如果有客户范围筛选条件则插入
+        if (CollectionUtils.isNotEmpty(welComeMsgAddDTO.getWeMsgTlpFilterRules())) {
+            weMsgTlpFilterRuleService.saveBatchFilterRules(defaultMsgId, welComeMsgAddDTO.getWeMsgTlpFilterRules());
         }
 
         // 5.插入员工使用范围
@@ -272,16 +276,26 @@ public class WeMsgTlpServiceImpl extends ServiceImpl<WeMsgTlpMapper, WeMsgTlp> i
      *
      * @param userId 员工id
      * @param corpId 企业id
+     * @param addWay 客户添加来源
+     * @param gender 客户性别
      * @return 不存在返回null
      */
     @Override
-    public WeEmployMaterialVO selectMaterialByUserId(String userId, String corpId) {
+    public WeEmployMaterialVO selectMaterialByUserId(String userId, String corpId, String addWay, Integer gender) {
         WeEmployMaterialVO.WeEmployMaterialVOBuilder builder = WeEmployMaterialVO.builder();
         List<WeMsgTlpMaterial> materialList;
         // 1.查询员工使用范围的最新添加的欢迎语
         WeMsgTlp weMsgTlp = weMsgTlpMapper.selectLatestByUserId(userId, corpId);
         if (weMsgTlp == null) {
             return null;
+        }
+        // 判断是否存在客户筛选条件，若存在，则进一步判断，若不存在，则表示不需要筛选
+        if (weMsgTlp.getExistFilterFlag()) {
+            boolean sendMsgTlp = weMsgTlpFilterRuleService.isSendMsgTlp(weMsgTlp, addWay, gender);
+            // 不满足筛选条件，不发送欢迎语
+            if (!sendMsgTlp) {
+                return null;
+            }
         }
         // 2.判断是否存在特殊欢迎语，存在则判断特殊欢迎语是否处于可用范围内
         if (Boolean.TRUE.equals(weMsgTlp.getExistSpecialFlag())) {
@@ -340,6 +354,9 @@ public class WeMsgTlpServiceImpl extends ServiceImpl<WeMsgTlpMapper, WeMsgTlp> i
         // 4.删除所有素材
         weMsgTlpMaterialService.remove(new LambdaQueryWrapper<WeMsgTlpMaterial>()
                 .in(WeMsgTlpMaterial::getDefaultMsgId, ids));
+        // 5.删除所有客户筛选条件
+        weMsgTlpFilterRuleService.remove(new LambdaQueryWrapper<WeMsgTlpFilterRule>()
+                .in(WeMsgTlpFilterRule::getMsgTlpId, ids));
     }
 
     /**
@@ -483,6 +500,10 @@ public class WeMsgTlpServiceImpl extends ServiceImpl<WeMsgTlpMapper, WeMsgTlp> i
         weMsgTlp.setDefaultWelcomeMsg(welComeMsgUpdateDTO.getDefaultWelcomeMsg());
         boolean notEmptyFlag = CollectionUtils.isNotEmpty(welComeMsgUpdateDTO.getWeMsgTlpSpecialRules());
         weMsgTlp.setExistSpecialFlag(notEmptyFlag);
+        // 设置多个筛选条件间的关联
+        weMsgTlp.setMultiFilterAssociation(welComeMsgUpdateDTO.getMultiFilterAssociation());
+        // 处理欢迎语筛选条件
+        handleTlpFilterRules(weMsgTlp, welComeMsgUpdateDTO.getWeMsgTlpFilterRules());
         weMsgTlpMapper.updateById(weMsgTlp);
         // 2.1修改默认欢迎语附件
         weMsgTlpMaterialService.updateDefaultEmployMaterial(welComeMsgUpdateDTO.getRemoveMaterialIds(), welComeMsgUpdateDTO.getDefaultMaterialList(), weMsgTlp.getId(), welComeMsgUpdateDTO.getCorpId());
@@ -509,6 +530,28 @@ public class WeMsgTlpServiceImpl extends ServiceImpl<WeMsgTlpMapper, WeMsgTlp> i
             weMsgTlpMaterialService.remove(new LambdaQueryWrapper<WeMsgTlpMaterial>()
                     .eq(WeMsgTlpMaterial::getDefaultMsgId, weMsgTlp.getId())
                     .notIn(WeMsgTlpMaterial::getSpecialMsgId, 0));
+        }
+    }
+
+    /**
+     * 处理欢迎语筛选条件
+     *
+     * @param weMsgTlp            {@link WeMsgTlp}
+     * @param weMsgTlpFilterRules {@link List<WeMsgTlpFilterRule>}
+     */
+    private void handleTlpFilterRules(WeMsgTlp weMsgTlp, List<WeMsgTlpFilterRule> weMsgTlpFilterRules) {
+        if (weMsgTlp == null || weMsgTlp.getId() == null) {
+            return;
+        }
+        // 判断欢迎语是否有客户筛选条件
+        boolean existFilterFlag = CollectionUtils.isNotEmpty(weMsgTlpFilterRules);
+        // 设置存在筛选条件标识
+        weMsgTlp.setExistFilterFlag(existFilterFlag);
+        // 不论是否存在客户筛选条件，都先根据msgTlpId删除原有的规则记录
+        weMsgTlpFilterRuleService.remove(new LambdaQueryWrapper<WeMsgTlpFilterRule>().eq(WeMsgTlpFilterRule::getMsgTlpId, weMsgTlp.getId()));
+        if (existFilterFlag) {
+            // 保存新的规则记录
+            weMsgTlpFilterRuleService.saveBatchFilterRules(weMsgTlp.getId(), weMsgTlpFilterRules);
         }
     }
 

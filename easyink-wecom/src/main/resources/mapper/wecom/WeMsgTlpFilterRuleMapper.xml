@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.easyink.wecom.mapper.WeMsgTlpFilterRuleMapper">
+
+    <!--默认的查询字段-->
+    <sql id="defaultColumn">
+        id, msg_tlp_id, filter_type, filter_condition, filter_value
+    </sql>
+    <!--根据关联的欢迎语模板id获取筛选条件列表-->
+    <select id="getListByTlpId" resultType="com.easyink.wecom.domain.WeMsgTlpFilterRule">
+        SELECT
+        <include refid="defaultColumn"></include>
+        FROM we_msg_tlp_filter_rule
+        WHERE msg_tlp_id = #{msgTlpId}
+    </select>
+</mapper>

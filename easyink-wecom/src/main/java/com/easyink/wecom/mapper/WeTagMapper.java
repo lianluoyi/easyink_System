@@ -8,6 +8,7 @@ import com.easyink.wecom.domain.vo.statistics.WeTagCustomerStatisticsVO;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.HashSet;
 import java.util.List;
 
 /**
@@ -59,6 +60,14 @@ public interface WeTagMapper extends BaseMapper<WeTag> {
 
 
     /**
+     * 查询员工数据权限下对应的标签关系信息
+     *
+     * @param dto {@link WeTagStatisticsDTO}
+     * @return 客户关系ID列表
+     */
+    List<WeTag> selectTagInfoByDataScope(WeTagStatisticsDTO dto);
+
+    /**
      * 获取所有的标签组和标签组下的标签信息
      *
      * @param dto {@link WeTagStatisticsDTO}
@@ -67,21 +76,31 @@ public interface WeTagMapper extends BaseMapper<WeTag> {
     List<WeTagCustomerStatisticsVO> selectTagStatistics(@Param("dto") WeTagStatisticsDTO dto, @Param("tagIdList") List<String> tagIdList);
 
     /**
-     * 获取企业下有打的标签（去重）
+     * 获取企业下有使用到的标签信息
      *
-     * @param dto {@link WeTagStatisticsDTO}
+     * @param dto       {@link WeTagStatisticsDTO}
+     * @param tagIdList 标签ID列表
      * @return 标签信息
      */
-    List<WeTag> selectTagIds(WeTagStatisticsDTO dto);
+    List<WeTag> selectTagIds(@Param("dto") WeTagStatisticsDTO dto, @Param("tagIdList") List<String> tagIdList);
 
     /**
      * 获取所有标签和客户信息
      *
-     * @param dto    {@link WeTagStatisticsDTO}
      * @param tagIds 标签ID列表
+     * @param dto    {@link WeTagStatisticsDTO}
      * @return 标签和客户ID
      */
-    List<WeTagStatistic> getWeTagList(@Param("dto") WeTagStatisticsDTO dto, @Param("tagIds") List<WeTag> tagIds);
+    HashSet<WeTagStatistic> getWeTagList(@Param("tagIds") List<WeTag> tagIds, @Param("dto") WeTagStatisticsDTO dto);
+
+    /**
+     * 根据数据权限，获取所有标签和客户信息
+     *
+     * @param tagId 标签ID
+     * @param dto    {@link WeTagStatisticsDTO}
+     * @return 标签和客户ID
+     */
+    HashSet<WeTagStatistic> getWeTagListByTagId(@Param("tagId") String tagId, @Param("dto") WeTagStatisticsDTO dto);
 
     /**
      * 查询企业下有效的标签总数（去重）

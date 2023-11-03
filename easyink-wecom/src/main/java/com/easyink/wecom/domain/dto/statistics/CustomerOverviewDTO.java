@@ -135,4 +135,10 @@ public class CustomerOverviewDTO extends StatisticsDTO{
      * 排序方式 正序ASC 倒叙DESC
      */
     private String sortType;
+
+    /**
+     * 数据总数，日期维度使用
+     *
+     */
+    private Long total;
 }

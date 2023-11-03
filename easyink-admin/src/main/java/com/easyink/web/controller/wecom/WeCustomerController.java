@@ -97,11 +97,17 @@ public class WeCustomerController extends BaseController {
      */
     @GetMapping("/listDistinct")
     @ApiOperation("会话存档客户检索客户列表")
-    public TableDataInfo<WeCustomerVO> listDistinct(WeCustomer weCustomer) {
-        startPage();
+    public TableDataInfo<SessionArchiveCustomerVO> listDistinct(WeCustomer weCustomer) {
         weCustomer.setCorpId(LoginTokenService.getLoginUser().getCorpId());
-        List<WeCustomerVO> list = weCustomerService.selectWeCustomerListDistinct(weCustomer);
+        List<SessionArchiveCustomerVO> list = weCustomerService.selectWeCustomerListDistinctV2(weCustomer);
         return getDataTable(list);
+    }
+
+    @GetMapping("/listDistinct/count")
+    @ApiOperation("会话存档客户检索客户列表-去重后的客户总数")
+    public AjaxResult<WeCustomerSumVO> listDistinctCount(WeCustomer weCustomer) {
+        weCustomer.setCorpId(LoginTokenService.getLoginUser().getCorpId());
+        return AjaxResult.success(weCustomerService.customerCount(weCustomer));
     }
 
     @PostMapping("/sum")

@@ -28,7 +28,9 @@ import com.easyink.wecom.domain.vo.redeemcode.WeRedeemCodeActivityVO;
 import com.easyink.wecom.domain.vo.statistics.emplecode.EmpleCodeByNameVO;
 import com.easyink.wecom.handler.shorturl.EmpleCodeShortUrlHandler;
 import com.easyink.wecom.login.util.LoginTokenService;
+import com.easyink.wecom.mapper.WeEmpleCodeAnalyseMapper;
 import com.easyink.wecom.mapper.WeEmpleCodeMapper;
+import com.easyink.wecom.mapper.WeUserMapper;
 import com.easyink.wecom.mapper.redeemcode.WeRedeemCodeMapper;
 import com.easyink.wecom.mapper.statistic.WeEmpleCodeStatisticMapper;
 import com.easyink.wecom.service.*;
@@ -45,6 +47,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ObjectUtils;
+import org.springframework.util.StopWatch;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -75,9 +78,10 @@ public class WeEmpleCodeServiceImpl extends ServiceImpl<WeEmpleCodeMapper, WeEmp
     private final EmpleCodeShortUrlHandler empleCodeShortUrlHandler;
     private final RuoYiConfig ruoYiConfig;
     private final WeEmpleCodeStatisticMapper weEmpleCodeStatisticMapper;
+    private final WeUserMapper weUserMapper;
 
     @Autowired
-    public WeEmpleCodeServiceImpl(WeEmpleCodeTagService weEmpleCodeTagService, WeEmpleCodeUseScopService weEmpleCodeUseScopService, WeExternalContactClient weExternalContactClient, RedisCache redisCache, WeEmpleCodeMaterialService weEmpleCodeMaterialService, WeMaterialService weMaterialService, WeGroupCodeService weGroupCodeService, WeEmpleCodeAnalyseService weEmpleCodeAnalyseService, WeGroupCodeActualService weGroupCodeActualService, WeRedeemCodeMapper weRedeemCodeMapper, WeRedeemCodeActivityService weRedeemCodeActivityService, WeUserService weUserService, EmpleCodeShortUrlHandler empleCodeShortUrlHandler, RuoYiConfig ruoYiConfig, WeEmpleCodeStatisticMapper weEmpleCodeStatisticMapper) {
+    public WeEmpleCodeServiceImpl(WeEmpleCodeTagService weEmpleCodeTagService, WeEmpleCodeUseScopService weEmpleCodeUseScopService, WeExternalContactClient weExternalContactClient, RedisCache redisCache, WeEmpleCodeMaterialService weEmpleCodeMaterialService, WeMaterialService weMaterialService, WeGroupCodeService weGroupCodeService, WeEmpleCodeAnalyseService weEmpleCodeAnalyseService, WeGroupCodeActualService weGroupCodeActualService, WeRedeemCodeMapper weRedeemCodeMapper, WeRedeemCodeActivityService weRedeemCodeActivityService, WeUserService weUserService, EmpleCodeShortUrlHandler empleCodeShortUrlHandler, RuoYiConfig ruoYiConfig, WeEmpleCodeStatisticMapper weEmpleCodeStatisticMapper, WeUserMapper weUserMapper) {
         this.weEmpleCodeTagService = weEmpleCodeTagService;
         this.weEmpleCodeUseScopService = weEmpleCodeUseScopService;
         this.weExternalContactClient = weExternalContactClient;
@@ -93,6 +97,7 @@ public class WeEmpleCodeServiceImpl extends ServiceImpl<WeEmpleCodeMapper, WeEmp
         this.empleCodeShortUrlHandler = empleCodeShortUrlHandler;
         this.ruoYiConfig = ruoYiConfig;
         this.weEmpleCodeStatisticMapper = weEmpleCodeStatisticMapper;
+        this.weUserMapper = weUserMapper;
     }
 
     @Override
@@ -122,24 +127,77 @@ public class WeEmpleCodeServiceImpl extends ServiceImpl<WeEmpleCodeMapper, WeEmp
         if (CollectionUtils.isEmpty(weEmployCodeList)) {
             return weEmployCodeList;
         }
-
         List<Long> employCodeIdList = weEmployCodeList.stream().map(WeEmpleCode::getId).collect(Collectors.toList());
-        //查询已打标签
-        List<WeEmpleCodeTag> tagList = weEmpleCodeTagService.selectWeEmpleCodeTagListByIds(employCodeIdList);
-        //查询使用人
+        // 获取创建人姓名列表
+        List<String> createByList = weEmployCodeList.stream().map(WeEmpleCode::getCreateBy).distinct().collect(Collectors.toList());
+        // 为创建人设置主部门名称
+        setCreateByMainDepartMent(createByList, weEmployCode.getCorpId(), weEmployCodeList);
+        // 查询使用人
         List<WeEmpleCodeUseScop> useScopeList = weEmpleCodeUseScopService.selectWeEmpleCodeUseScopListByIds(employCodeIdList, weEmployCode.getCorpId());
-        //查询使用部门(查询使用人时需要用businessId关联we_user表，活码使用部门时不传入businessId)
+        // 查询使用部门(查询使用人时需要用businessId关联we_user表，活码使用部门时不传入businessId)
         List<WeEmpleCodeUseScop> departmentScopeList = weEmpleCodeUseScopService.selectDepartmentWeEmpleCodeUseScopListByIds(employCodeIdList);
 
         weEmployCodeList.forEach(employCode -> {
-            //设置活码使用人/部门对象
+            // 设置活码使用人/部门对象
             setUserData(employCode, useScopeList, departmentScopeList);
-            //员工活码标签对象
-            employCode.setWeEmpleCodeTags(tagList.stream().filter(tag -> tag.getEmpleCodeId().equals(employCode.getId())).collect(Collectors.toList()));
-            //组装数据（员工活码=>素材数据，新客建群=>添加人数、群活码数据、群实际数据）
-            bulidWeEmpleCodeVOData(employCode);
         });
         return weEmployCodeList;
+    }
+
+    @Override
+    public List<WeEmpleCodeVO> selectGroupWeEmpleCodeList(FindWeEmpleCodeDTO weEmployCode) {
+        if (StringUtils.isBlank(weEmployCode.getCorpId())) {
+            throw new CustomException(ResultTip.TIP_MISS_CORP_ID);
+        }
+        // 获取群活码基础信息
+        List<WeEmpleCodeVO> weEmployCodeList = this.selectWeEmpleCodeList(weEmployCode);
+        // 转换群活码id列表
+        List<Long> employCodeIdList = weEmployCodeList.stream().map(WeEmpleCode::getId).collect(Collectors.toList());
+        // 查询已打标签
+        List<WeEmpleCodeTag> tagList = weEmpleCodeTagService.selectWeEmpleCodeTagListByIds(employCodeIdList);
+        // 设置群活码标签和群活码添加人数
+        weEmployCodeList.forEach(employCode -> {
+            employCode.setWeEmpleCodeTags(tagList.stream().filter(tag -> tag.getEmpleCodeId().equals(employCode.getId())).collect(Collectors.toList()));
+            buildGroupCodeAddCnt(employCode);
+        });
+        return weEmployCodeList;
+    }
+
+    /**
+     * 设置群活码进群人数
+     *
+     * @param employCode {@link WeEmpleCodeVO}
+     */
+    private void buildGroupCodeAddCnt(WeEmpleCodeVO employCode) {
+        if (employCode == null) {
+            return;
+        }
+        //查询群活码
+        int count = weEmpleCodeAnalyseService.getAddCountByState(employCode.getState());
+        employCode.setCusNumber(count);
+    }
+
+    /**
+     * 为创建人设置主部门名称
+     *
+     * @param createByList     创建人名称列表
+     * @param corpId           企业ID
+     * @param weEmployCodeList 活码列表信息
+     */
+    private void setCreateByMainDepartMent(List<String> createByList, String corpId, List<WeEmpleCodeVO> weEmployCodeList) {
+        if (CollectionUtils.isEmpty(createByList) || CollectionUtils.isEmpty(weEmployCodeList) || StringUtils.isBlank(corpId)) {
+            return;
+        }
+        // 根据创建人姓名列表，获取对应的主部门名称
+        List<WeEmpleCodeVO> createByUserDepartment = weUserMapper.selectUserMainDepartmentByUsername(createByList, corpId);
+        // 设置部门名称
+        weEmployCodeList.forEach(item -> {
+            for (WeEmpleCodeVO weEmpleCodeVO : createByUserDepartment) {
+                if (item.getCreateBy().equals(weEmpleCodeVO.getUseUserName())) {
+                    item.setMainDepartmentName(weEmpleCodeVO.getMainDepartmentName());
+                }
+            }
+        });
     }
 
     @DataScope

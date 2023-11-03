@@ -1,7 +1,6 @@
 package com.easyink.wecom.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.ArrayUtil;
 import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.ExcelWriter;
@@ -64,6 +63,7 @@ import com.easyink.wecom.domain.entity.WeExternalUseridMapping;
 import com.easyink.wecom.domain.vo.QueryCustomerFromPlusVO;
 import com.easyink.wecom.domain.vo.WeCustomerExportVO;
 import com.easyink.wecom.domain.vo.WeMakeCustomerTagVO;
+import com.easyink.wecom.domain.vo.customer.SessionArchiveCustomerVO;
 import com.easyink.wecom.domain.vo.customer.WeCustomerSumVO;
 import com.easyink.wecom.domain.vo.customer.WeCustomerUserListVO;
 import com.easyink.wecom.domain.vo.customer.WeCustomerVO;
@@ -73,6 +73,7 @@ import com.easyink.wecom.handler.ExtendPropHolder;
 import com.easyink.wecom.login.util.LoginTokenService;
 import com.easyink.wecom.mapper.WeCustomerMapper;
 import com.easyink.wecom.mapper.WeExternalUseridMappingMapper;
+import com.easyink.wecom.mapper.WeFlowerCustomerRelMapper;
 import com.easyink.wecom.service.*;
 import com.easyink.wecom.service.wechatopen.WechatOpenService;
 import com.easyink.wecom.utils.redis.CustomerRedisCache;
@@ -162,6 +163,7 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
     private WeUpdateIDClient convertIDClient;
     @Autowired
     private WeTagService weTagService;
+    private final WeFlowerCustomerRelMapper weFlowerCustomerRelMapper;
 
     /**
      * 导出时查询数据库最大批量数
@@ -173,6 +175,10 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
     private static final int EXPORT_SHEET_ROWS = 1000000;
     @Resource(name = "customerRedisCache")
     private CustomerRedisCache customerRedisCache;
+
+    public WeCustomerServiceImpl(WeFlowerCustomerRelMapper weFlowerCustomerRelMapper) {
+        this.weFlowerCustomerRelMapper = weFlowerCustomerRelMapper;
+    }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -719,6 +725,139 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
         return new ArrayList<>();
     }
 
+    /**
+     * 查询去重客户去重后企业微信客户列表
+     *
+     * @param weCustomer {@link WeCustomer}
+     * @return 客户信息列表
+     */
+    @DataScope
+    @Override
+    public List<SessionArchiveCustomerVO> selectWeCustomerListDistinctV2(WeCustomer weCustomer) {
+        if (StringUtils.isBlank(weCustomer.getCorpId()) || PageInfoUtil.getPageSize() == null || PageInfoUtil.getPageNum() == null) {
+            throw new CustomException(ResultTip.TIP_PARAM_MISSING);
+        }
+        // 分页大小
+        int pageSize = PageInfoUtil.getPageSize();
+        // 分页页数
+        int startIndex = PageInfoUtil.getStartIndex();
+        List<String> filterNameExternalUserIdList = new ArrayList<>();
+        // 客户姓名查询条件不为空，根据姓名查询匹配的客户id列表
+        if (StringUtils.isNotBlank(weCustomer.getName())) {
+            // 获取根据姓名查询出的客户id列表
+            filterNameExternalUserIdList = getFilterNameExternalUserId(weCustomer.getName(), weCustomer.getCorpId());
+            if (CollectionUtils.isEmpty(filterNameExternalUserIdList)) {
+                return Collections.emptyList();
+            }
+        }
+        // 获取数据权限下的客户id列表
+        List<SessionArchiveCustomerVO> customerList = weFlowerCustomerRelMapper.selectExternalUseridByDataScope(weCustomer.getCorpId(), weCustomer, filterNameExternalUserIdList, startIndex, pageSize);
+        if (CollectionUtils.isEmpty(customerList)) {
+            return Collections.emptyList();
+        }
+        // 根据客户id去重
+        List<SessionArchiveCustomerVO> resultList = new ArrayList<>(new HashSet<>(customerList));
+        // 补充缺少的数据
+        resultList = suppleData(resultList, startIndex, pageSize, weCustomer, filterNameExternalUserIdList);
+        // 获取external_userid列表
+        List<String> externalUserIdList = resultList.stream().map(SessionArchiveCustomerVO::getExternalUserid).collect(Collectors.toList());
+        // 获取客户信息数据列表
+        List<SessionArchiveCustomerVO> customerInfoList = weCustomerMapper.selectWeCustomerListDistinctV2(weCustomer.getCorpId(), externalUserIdList);
+        if (CollectionUtils.isEmpty(customerInfoList)) {
+            return resultList;
+        }
+        // 补充客户信息数据到结果列表
+        for (SessionArchiveCustomerVO resultVO : resultList) {
+            for (SessionArchiveCustomerVO customerInfo : customerInfoList) {
+                if (resultVO.getExternalUserid().equals(customerInfo.getExternalUserid())) {
+                    resultVO.setCustomerInfo(customerInfo.getAvatar(), customerInfo.getName());
+                }
+            }
+        }
+        // 按照添加时间倒序排序
+        resultList.sort(Comparator.comparing(SessionArchiveCustomerVO::getCreateTime).reversed());
+        return resultList;
+    }
+
+    /**
+     * 获取会话存档-客户检索-客户列表-去重后的客户数
+     *
+     * @param weCustomer {@link WeCustomer}
+     * @return 客户总数
+     */
+    @Override
+    public WeCustomerSumVO customerCount(WeCustomer weCustomer) {
+        if (StringUtils.isBlank(weCustomer.getCorpId())) {
+            throw new CustomException(ResultTip.TIP_GENERAL_PARAM_ERROR);
+        }
+        List<String> filterNameExternalUserIdList = new ArrayList<>();
+        // 客户姓名查询条件不为空，根据姓名查询匹配的客户id列表
+        if (StringUtils.isNotBlank(weCustomer.getName())) {
+            // 获取根据姓名查询出的客户id列表
+            filterNameExternalUserIdList = getFilterNameExternalUserId(weCustomer.getName(), weCustomer.getCorpId());
+            if (CollectionUtils.isEmpty(filterNameExternalUserIdList)) {
+                return WeCustomerSumVO.builder()
+                        .ignoreDuplicateCount(filterNameExternalUserIdList.size())
+                        .build();
+            }
+        }
+        Integer count = weFlowerCustomerRelMapper.selectExternalUseridByDataScopeCount(weCustomer.getCorpId(), weCustomer, filterNameExternalUserIdList);
+        return WeCustomerSumVO.builder()
+                .ignoreDuplicateCount(count)
+                .build();
+    }
+
+    /**
+     * 补充缺少的数据
+     *
+     * @param dataList                     结果列表
+     * @param startIndex                   分页起始位置
+     * @param pageSize                     分页大小
+     * @param weCustomer                   {@link WeCustomer}
+     * @param filterNameExternalUserIdList 要过滤的客户id列表
+     */
+    private List<SessionArchiveCustomerVO> suppleData(List<SessionArchiveCustomerVO> dataList, Integer startIndex, Integer pageSize, WeCustomer weCustomer, List<String> filterNameExternalUserIdList) {
+        if (CollectionUtils.isEmpty(dataList) || startIndex == null || pageSize == null || weCustomer == null) {
+            return dataList;
+        }
+        // 判断查询的结果是否满足分页大小
+        while (dataList.size() < pageSize) {
+            startIndex += pageSize;
+            // 缺少多少条，就往后再次查几条。缺少的条数 = 分页大小 - 列表长度
+            int endIndex = pageSize - dataList.size();
+            // 不满足，继续查询，将新的查询结果添加到列表
+            List<SessionArchiveCustomerVO> nextList = weFlowerCustomerRelMapper.selectExternalUseridByDataScope(weCustomer.getCorpId(), weCustomer, filterNameExternalUserIdList, startIndex, endIndex);
+            // 没有数据则跳出循环
+            if (CollectionUtils.isEmpty(nextList)) {
+                break;
+            }
+            dataList.addAll(nextList);
+            // 再次去重
+            dataList = new ArrayList<>(new HashSet<>(dataList));
+        }
+        return dataList;
+    }
+
+    /**
+     * 获取根据姓名查询出的客户id列表
+     *
+     * @param name   客户姓名
+     * @param corpId 企业ID
+     * @return 客户id列表
+     */
+    private List<String> getFilterNameExternalUserId(String name, String corpId) {
+        if (StringUtils.isAnyBlank(name, corpId)) {
+            return Collections.emptyList();
+        }
+        List<WeCustomer> weCustomers = weCustomerMapper.selectList(new LambdaQueryWrapper<WeCustomer>()
+                .select(WeCustomer::getExternalUserid)
+                .like(WeCustomer::getName, name)
+                .eq(WeCustomer::getCorpId, corpId));
+        if (CollectionUtils.isEmpty(weCustomers)) {
+            return Collections.emptyList();
+        }
+        return weCustomers.stream().map(WeCustomer::getExternalUserid).collect(Collectors.toList());
+    }
 
     /**
      * 查询去重客户去重后企业微信客户列表

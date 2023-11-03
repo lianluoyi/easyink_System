@@ -15,6 +15,7 @@ import com.easyink.common.core.domain.wecom.WeUser;
 import com.easyink.common.enums.ContactSpeakEnum;
 import com.easyink.common.enums.StaffActivateEnum;
 import com.easyink.common.utils.DateUtils;
+import com.easyink.common.utils.PageInfoUtil;
 import com.easyink.common.utils.bean.BeanUtils;
 import com.easyink.common.utils.poi.ExcelUtil;
 import com.easyink.wecom.domain.WeUserBehaviorData;
@@ -33,9 +34,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.Resource;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
 /**
@@ -59,6 +64,9 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
     private final WeFlowerCustomerRelMapper weFlowerCustomerRelMapper;
     private final WeFlowerCustomerRelService weFlowerCustomerRelService;
     private final WeCorpAccountMapper weCorpAccountMapper;
+    private final WeDepartmentService weDepartmentService;
+    @Resource(name = "threadPoolTaskExecutor")
+    private ThreadPoolTaskExecutor threadPoolTaskExecutor;
 
     /**
      * 导出员工服务报表命名
@@ -450,50 +458,28 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
         BeanUtils.copyProperties(dto,userServiceDTO);
         // 查询时间段内的所有数据
         List<WeUserBehaviorData> weUserBehaviorDataList = weUserBehaviorDataMapper.getCustomerOverViewOfDate(dto);
-        List<UserServiceTimeDTO> userServiceTimeDTOList=weUserCustomerMessageStatisticsMapper.getFilterOfUser(userServiceDTO);
-        if (weUserBehaviorDataList == null) {
-            return new ArrayList<>();
-        }
-        // 获取时间范围内的所有日期
-        Date beginTime = DateUtils.dateTime(DateUtils.YYYY_MM_DD, dto.getBeginTime());
-        Date endTime = DateUtils.dateTime(DateUtils.YYYY_MM_DD, dto.getEndTime());
-        List<Date> dates = DateUtils.findDates(beginTime, endTime);
-        // 获取日期维度下，截止当前时间的有效客户数
-        List<CustomerOverviewVO> currNewCustomerCntByTime = weFlowerCustomerRelMapper.getCurrNewCustomerCntByTime(dto);
+        // 获取数据权限下的员工id列表
+        List<String> userIdList = weDepartmentService.getDataScopeUserIdList(dto.getDepartmentIds(), dto.getUserIds(), dto.getCorpId());
+        // 根据分页参数和时间范围，获取日期时间
+        List<Date> dates = getDatesByPage(dto);
         // 最终需要返回的数据VO列表
-        List<CustomerOverviewDateVO> resultList = new ArrayList<>();
+        CopyOnWriteArrayList<CustomerOverviewDateVO> resultList = new CopyOnWriteArrayList<>();
+        // 执行任务列表
+        List<CompletableFuture<Void>> completableFutures = new ArrayList<>();
         for (Date date : dates) {
-            CustomerOverviewDateVO customerOverviewDateVO = new CustomerOverviewDateVO(DateUtils.dateTime(date));
-            for (WeUserBehaviorData weUserBehaviorData : weUserBehaviorDataList) {
-                int chatCnt=0;
-                String judgeTime=DateUtils.parseDateToStr(DateUtils.YYYY_MM_DD, weUserBehaviorData.getStatTime());
-                // 判断是否有对话
-                if (DateUtils.dateTime(weUserBehaviorData.getStatTime()).equals(DateUtils.dateTime(date))) {
-                    for (UserServiceTimeDTO userServiceTimeDTO : userServiceTimeDTOList) {
-                        // 判断是否有对话且时间相等, 且为员工主动发起的会话
-                        if (Objects.equals(userServiceTimeDTO.getUserId(), weUserBehaviorData.getUserId()) && Objects.equals(judgeTime, userServiceTimeDTO.getSendTime()) && ContactSpeakEnum.USER.getCode().equals(userServiceTimeDTO.getUserActiveDialogue())) {
-                            chatCnt++;
-                        }
-                    }
-                    // 原始数据处理
-                    customerOverviewDateVO.handleAddData(weUserBehaviorData.getAllChatCnt(),
-                            weUserBehaviorData.getContactTotalCnt(),
-                            weUserBehaviorData.getNegativeFeedbackCnt(),
-                            weUserBehaviorData.getNewCustomerLossCnt(),
-                            weUserBehaviorData.getNewContactCnt(),
-                            weUserBehaviorData.getNewContactSpeakCnt(),
-                            weUserBehaviorData.getRepliedWithinThirtyMinCustomerCnt()
-                            ,chatCnt, weUserBehaviorData.getTotalAllContactCnt());
+            CompletableFuture<Void> voidCompletableFuture = CompletableFuture.runAsync(() -> {
+                try {
+                    // 组装返回数据
+                    CustomerOverviewDateVO customerOverviewDateVO = this.buildVOData(weUserBehaviorDataList, date, dto.getCorpId(), userIdList);
+                    resultList.add(customerOverviewDateVO);
+                } catch (Exception e) {
+                    log.error("[获取客户概况-日期维度] 出现异常，corpId:{}，异常原因ex:{}", dto.getCorpId(), ExceptionUtils.getStackTrace(e));
                 }
-            }
-            for (CustomerOverviewVO customerOverviewVO : currNewCustomerCntByTime) {
-                if (customerOverviewDateVO.getXTime().equals(customerOverviewVO.getXTime())) {
-                    // 为对应日期设置截止日期下的有效客户数
-                    customerOverviewDateVO.setCurrentNewCustomerCnt(customerOverviewVO.getCurrentNewCustomerCnt());
-                }
-            }
-            resultList.add(customerOverviewDateVO);
+            }, threadPoolTaskExecutor);
+            completableFutures.add(voidCompletableFuture);
         }
+        // 等待所有的CompletableFuture执行完成
+        CompletableFuture.allOf(completableFutures.toArray(new CompletableFuture[0])).join();
         if (StatisticsEnum.CustomerOverviewSortTypeEnum.NEW_CONTACT_RETENTION_RATE_SORT.getSortName().equals(dto.getSortName())) {
             // 新客留存率单独排序
             sortDateNewContactRetainRate(resultList, dto.getSortType());
@@ -502,6 +488,91 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
             StatisticsEnum.CustomerOverviewSortTypeEnum.sort(dto, resultList);
         }
         return resultList;
+    }
+
+    /**
+     * 组装数据
+     *
+     * @param weUserBehaviorDataList {@link List<WeUserBehaviorData>}
+     * @param date                   日期，格式{@link Date}
+     * @param corpId                 企业id
+     * @param userIdList             员工id列表
+     * @return {@link CustomerOverviewDateVO}
+     */
+    private CustomerOverviewDateVO buildVOData(List<WeUserBehaviorData> weUserBehaviorDataList, Date date, String corpId, List<String> userIdList) {
+        CustomerOverviewDateVO customerOverviewDateVO = new CustomerOverviewDateVO(DateUtils.dateTime(date));
+        if (CollectionUtils.isEmpty(weUserBehaviorDataList) || date == null || StringUtils.isBlank(corpId)) {
+            return customerOverviewDateVO;
+        }
+        String beginTime = DateUtils.parseBeginDay(DateUtils.dateTime(date));
+        String endTime = DateUtils.parseEndDay(DateUtils.dateTime(date));
+        // 获取有进行对话的员工
+        List<UserServiceTimeDTO> userServiceTimeDTOList = weUserCustomerMessageStatisticsMapper.getFilterOfUser(corpId, userIdList, beginTime, endTime);
+        for (WeUserBehaviorData weUserBehaviorData : weUserBehaviorDataList) {
+            String judgeTime=DateUtils.parseDateToStr(DateUtils.YYYY_MM_DD, weUserBehaviorData.getStatTime());
+            // 判断是否有对话
+            if (DateUtils.dateTime(weUserBehaviorData.getStatTime()).equals(DateUtils.dateTime(date))) {
+                int chatCnt = 0;
+                if (CollectionUtils.isNotEmpty(userServiceTimeDTOList)) {
+                    // 统计出员工在对应日期下主动发起会话的数量
+                    long count = userServiceTimeDTOList.stream()
+                            .filter(userServiceTimeDTO -> Objects.equals(userServiceTimeDTO.getUserId(), weUserBehaviorData.getUserId())
+                                    && Objects.equals(judgeTime, userServiceTimeDTO.getSendTime())
+                                    && ContactSpeakEnum.USER.getCode().equals(userServiceTimeDTO.getUserActiveDialogue()))
+                            .count();
+                    chatCnt = (int) count;
+                }
+                // 原始数据处理
+                customerOverviewDateVO.handleAddData(weUserBehaviorData.getAllChatCnt(),
+                        weUserBehaviorData.getContactTotalCnt(),
+                        weUserBehaviorData.getNegativeFeedbackCnt(),
+                        weUserBehaviorData.getNewCustomerLossCnt(),
+                        weUserBehaviorData.getNewContactCnt(),
+                        weUserBehaviorData.getNewContactSpeakCnt(),
+                        weUserBehaviorData.getRepliedWithinThirtyMinCustomerCnt()
+                        , chatCnt, weUserBehaviorData.getTotalAllContactCnt());
+            }
+        }
+        // 获取日期维度下，截止当前时间的有效客户数
+        CustomerOverviewVO customerCnt = weFlowerCustomerRelMapper.getCurrNewCustomerCnt(corpId, userIdList, beginTime, endTime);
+        if (customerCnt == null) {
+            return customerOverviewDateVO;
+        }
+        if (customerOverviewDateVO.getXTime().equals(customerCnt.getXTime())) {
+                // 为对应日期设置截止日期下的有效客户数
+                customerOverviewDateVO.setCurrentNewCustomerCnt(customerCnt.getCurrentNewCustomerCnt());
+            }
+        return customerOverviewDateVO;
+    }
+
+    /**
+     * 根据分页参数和时间范围，获取日期时间
+     *
+     * @param dto {@link CustomerOverviewDTO}
+     * @return 日期范围
+     */
+    private List<Date> getDatesByPage(CustomerOverviewDTO dto) {
+        if (dto == null || StringUtils.isAnyBlank(dto.getBeginTime(), dto.getEndTime()) || dto.getPageNum() == null || dto.getPageSize() == null) {
+            return Collections.emptyList();
+        }
+        // 获取时间范围内的所有日期
+        Date beginDate = DateUtils.dateTime(DateUtils.YYYY_MM_DD, dto.getBeginTime());
+        Date endDate = DateUtils.dateTime(DateUtils.YYYY_MM_DD, dto.getEndTime());
+        List<Date> dates = DateUtils.findDates(beginDate, endDate);
+        // 排序条件为空，表示使用默认排序，按照时间倒序截取分页
+        if (dto.getSortType() == null) {
+        // 设置日期范围下的数据总数
+        dto.setTotal((long) dates.size());
+        // 获取截取起始位置
+        int startIndex = PageInfoUtil.getStartIndex(dto.getPageNum(), dto.getPageSize());
+        // 获取截取结束位置
+        int endIndex = Math.min(startIndex + dto.getPageSize(), dates.size());
+            // 默认按照时间倒序查询
+            dates.sort(Comparator.comparing(Date::getTime).reversed());
+            return dates.subList(startIndex, endIndex);
+        }
+        // 排序条件不为空，统计所有日期范围的数据，再进行排序返回
+        return dates;
     }
 
     /**

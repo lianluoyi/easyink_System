@@ -146,9 +146,9 @@
         WHERE
         corp_id = #{corpId} AND
         status=${@com.easyink.common.constant.Constants@NORMAL_CODE}
-        <if test="tagGroupIds != null and tagGroupIds.size() > 0">
+        <if test="list != null and list.size() > 0">
             AND group_id IN
-            <foreach collection="tagGroupIds" item="groupId" open="(" separator="," close=")">
+            <foreach collection="list" item="groupId" open="(" separator="," close=")">
                 #{groupId}
             </foreach>
         </if>

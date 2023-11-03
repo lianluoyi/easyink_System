@@ -343,7 +343,7 @@
                 </foreach>
             </if>
         </where>
-        GROUP BY ubd.user_id, stat_time ORDER BY stat_time
+        GROUP BY ubd.user_id, stat_time
     </select>
 
 </mapper>

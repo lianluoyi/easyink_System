@@ -419,8 +419,10 @@ public class WeConstans {
     //表示所在部门是否为上级，0-否，1-是，顺序与Department字段的部门逐一对应
     //激活状态：1=已激活 2=已禁用 4=未激活 已激活代表已激活企业微信或已关注微工作台（原企业号） 5=成员退出
     public enum corpUserEnum {
+        USER_SEX_TYPE_UNKNOWN(0,"未知性别"),
         USER_SEX_TYPE_MAN(1, "男性"),
         USER_SEX_TYPE_WEMAN(2, "女性"),
+        USER_SEX_TYPE_ALL(3, "所有性别"),
 
         IS_DEPARTMENT_SUPERIOR_YES(1, "是"),
         IS_DEPARTMENT_SUPERIOR_NO(0, "否"),

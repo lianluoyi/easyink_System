@@ -293,11 +293,11 @@
         VALUES
         <foreach collection="list" item="item" separator=",">
             (
-            #{item.id},#{item.userId}, #{item.externalUserid}, #{item.corpId},#{item.status},#{item.createTime}
+            #{item.id},#{item.userId}, #{item.externalUserid}, #{item.corpId},#{item.status},IFNULL(#{item.createTime}, `create_time`)
             )
         </foreach>
         ON DUPLICATE KEY UPDATE
-        `status`=VALUES(`status`),`create_time` = VALUES(`create_time`)
+        `status`=VALUES(`status`),`create_time` = IFNULL(VALUES(`create_time`), `create_time`)
     </insert>
 
     <!--    转接员工客户关系-->
@@ -650,5 +650,87 @@
             </foreach>
         </if>
         GROUP BY user_id
+    </select>
+    <!--获取数据权限下的externalUserid列表-->
+    <select id="selectExternalUseridByDataScope" resultType="com.easyink.wecom.domain.vo.customer.SessionArchiveCustomerVO">
+        SELECT
+        external_userid, create_time
+        FROM
+        we_flower_customer_rel
+        WHERE
+        user_id IN (
+        SELECT
+        user_id
+        FROM
+        we_user wu
+        INNER JOIN we_department wd ON wu.corp_id = wd.corp_id
+        AND wd.id = wu.main_department
+        AND wu.is_activate = ${@com.easyink.common.constant.WeConstans@WE_USER_IS_ACTIVATE}
+        ${rootEntity.params.dataScope})
+        <if test="externalUseridList != null and externalUseridList.size() > 0">
+            AND external_userid IN
+            <foreach collection="externalUseridList" item="externalUserid" open="(" separator="," close=")">
+                #{externalUserid}
+            </foreach>
+        </if>
+        AND corp_id = #{corpId}
+        AND status IN ('${@com.easyink.common.enums.CustomerStatusEnum@NORMAL.code}',
+        '${@com.easyink.common.enums.CustomerStatusEnum@DRAIN.code}',
+        '${@com.easyink.common.enums.CustomerStatusEnum@TO_BE_TRANSFERRED.code}',
+        '${@com.easyink.common.enums.CustomerStatusEnum@TRANSFERRING.code}')
+        ORDER BY `create_time` DESC LIMIT #{pageNum}, #{pageSize}
+    </select>
+    <!--获取数据权限下的externalUserid去重后的客户数量-->
+    <select id="selectExternalUseridByDataScopeCount" resultType="java.lang.Integer">
+        SELECT
+        COUNT( DISTINCT external_userid)
+        FROM
+        we_flower_customer_rel
+        WHERE
+        user_id IN (
+        SELECT
+        user_id
+        FROM
+        we_user wu
+        INNER JOIN we_department wd ON wu.corp_id = wd.corp_id
+        AND wd.id = wu.main_department
+        AND wu.is_activate = ${@com.easyink.common.constant.WeConstans@WE_USER_IS_ACTIVATE}
+        ${rootEntity.params.dataScope})
+        <if test="externalUseridList != null and externalUseridList.size() > 0">
+            AND external_userid IN
+            <foreach collection="externalUseridList" item="externalUserid" open="(" separator="," close=")">
+                #{externalUserid}
+            </foreach>
+        </if>
+        AND corp_id = #{corpId}
+        AND status IN ('${@com.easyink.common.enums.CustomerStatusEnum@NORMAL.code}',
+        '${@com.easyink.common.enums.CustomerStatusEnum@DRAIN.code}',
+        '${@com.easyink.common.enums.CustomerStatusEnum@TO_BE_TRANSFERRED.code}',
+        '${@com.easyink.common.enums.CustomerStatusEnum@TRANSFERRING.code}')
+    </select>
+    <!--根据(数据权限），开始，结束时间和员工ID，获取单个日期维度-截止时间下的有效客户数-->
+    <select id="getCurrNewCustomerCnt" resultType="com.easyink.wecom.domain.vo.statistics.CustomerOverviewVO">
+        SELECT DATE_FORMAT(wfcr.create_time, '%Y-%m-%d') AS xTime, COUNT(wfcr.external_userid) AS currentNewCustomerCnt
+        FROM we_flower_customer_rel wfcr
+        LEFT JOIN we_user wu ON wu.user_id = wfcr.user_id AND wu.corp_id = wfcr.corp_id
+        LEFT JOIN we_department wd ON wd.id = wu.main_department AND wd.corp_id = wu.corp_id
+        WHERE wfcr.corp_id = #{corpId}
+        AND wu.is_activate = ${@com.easyink.common.constant.WeConstans@WE_USER_IS_ACTIVATE}
+        AND wfcr.`status` IN ('${@com.easyink.common.enums.CustomerStatusEnum@NORMAL.code}',
+        '${@com.easyink.common.enums.CustomerStatusEnum@TO_BE_TRANSFERRED.code}',
+        '${@com.easyink.common.enums.CustomerStatusEnum@TRANSFERRING.code}')
+        <if test="beginTime != null and beginTime != ''">
+            AND wfcr.`create_time` &gt;= #{beginTime}
+        </if>
+        <if test="endTime != null and endTime != ''">
+            AND wfcr.`create_time` &lt;= #{endTime}
+        </if>
+        <if test="userIds != null and userIds.size() > 0">
+            AND wfcr.user_id IN
+            <foreach collection="userIds" item="userId" open="(" separator="," close=")">
+                #{userId}
+            </foreach>
+        </if>
+        GROUP BY xTime
     </select>
 </mapper>

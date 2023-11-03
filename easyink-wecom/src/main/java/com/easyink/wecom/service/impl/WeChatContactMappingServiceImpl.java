@@ -13,12 +13,15 @@ import com.easyink.common.constant.WeConstans;
 import com.easyink.common.core.domain.conversation.ChatInfoVO;
 import com.easyink.common.core.domain.wecom.WeUser;
 import com.easyink.common.enums.ResultTip;
+import com.easyink.common.enums.chat.ChatTypeEnum;
 import com.easyink.common.exception.CustomException;
+import com.easyink.common.utils.PageInfoUtil;
 import com.easyink.common.utils.StringUtils;
 import com.easyink.wecom.domain.WeChatContactMapping;
 import com.easyink.wecom.domain.WeCustomer;
 import com.easyink.wecom.domain.WeFlowerCustomerRel;
 import com.easyink.wecom.domain.WeGroup;
+import com.easyink.wecom.domain.dto.WeChatMappingDTO;
 import com.easyink.wecom.domain.dto.WeGroupMemberDTO;
 import com.easyink.wecom.mapper.WeChatContactMappingMapper;
 import com.easyink.wecom.mapper.WeCustomerMapper;
@@ -30,17 +33,13 @@ import com.easyink.wecom.service.WeGroupMemberService;
 import com.easyink.wecom.service.WeGroupService;
 import com.easyink.wecom.service.idmapping.WeExternalUserIdMappingService;
 import com.easyink.wecom.service.idmapping.WeUserIdMappingService;
-import io.reactivex.rxjava3.internal.schedulers.NewThreadWorker;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -157,6 +156,160 @@ public class WeChatContactMappingServiceImpl extends ServiceImpl<WeChatContactMa
         Collections.sort(weChatMappingList);
         return weChatMappingList;
     }
+
+    /**
+     * 查询聊天关系映射列表
+     *
+     * @param weChatMappingDTO {@link WeChatMappingDTO}
+     * @return 聊天关系映射
+     */
+    @DataScope
+    @Override
+    public List<WeChatContactMapping> selectWeChatContactMappingListV2(WeChatMappingDTO weChatMappingDTO) {
+        if (ObjectUtils.isEmpty(weChatMappingDTO) || StringUtils.isEmpty(weChatMappingDTO.getCorpId()) || PageInfoUtil.getPageNum() == null || PageInfoUtil.getPageSize() == null) {
+            return new ArrayList<>();
+        }
+        // 不查询总数分页
+        PageInfoUtil.startPageNoCount();
+        // 查询关系映射
+        List<WeChatContactMapping> weChatMappingList = weChatContactMappingMapper.selectWeChatContactMappingListV2(weChatMappingDTO);
+        if (CollectionUtils.isEmpty(weChatMappingList)) {
+            return weChatMappingList;
+        }
+        // 内部联系人查询
+        if (ChatTypeEnum.INSIDE_CHAT.getType().equals(weChatMappingDTO.getSearchType())) {
+            // 需要查询信息的员工id列表
+            List<String> userIdList = weChatMappingList.stream().filter(item -> WeConstans.ID_TYPE_USER.equals(item.getIsCustom())).map(WeChatContactMapping::getReceiveId).collect(Collectors.toList());
+            // 根据id列表查询并设置员工信息
+            searchAndSetUserInfo(weChatMappingDTO.getCorpId(), userIdList, weChatMappingList);
+        } else if (ChatTypeEnum.OUTSIDE_CHAT.getType().equals(weChatMappingDTO.getSearchType())) {
+            // 外部联系人查询
+            // 需要查询信息的客户id列表
+            List<String> externalUseridList = weChatMappingList.stream().filter(item -> WeConstans.ID_TYPE_EX.equals(item.getIsCustom())).map(WeChatContactMapping::getReceiveId).collect(Collectors.toList());
+            // 根据id列表查询并设置客户信息
+            searchAndSetCustomerInfo(weChatMappingDTO.getCorpId(), externalUseridList, weChatMappingList);
+        } else {
+            // 群聊查询
+            // 需要查询信息的群id列表
+            List<String> roomIdList = weChatMappingList.stream().map(WeChatContactMapping::getRoomId).collect(Collectors.toList());
+            // 根据id列表查询并设置群信息
+            searchAndSetGroupInfo(weChatMappingDTO.getCorpId(), roomIdList, weChatMappingList );
+        }
+        Collections.sort(weChatMappingList);
+        return weChatMappingList;
+    }
+
+    /**
+     * 根据id列表设置群和群成员信息
+     *
+     * @param corpId            企业ID
+     * @param roomIdList        群id列表
+     * @param weChatMappingList {@link List<WeChatContactMapping>}
+     */
+    private void searchAndSetGroupInfo(String corpId, List<String> roomIdList, List<WeChatContactMapping> weChatMappingList) {
+        // 群信息列表
+        List<WeGroup> groupList = weGroupService.list(new LambdaQueryWrapper<WeGroup>().eq(WeGroup::getCorpId, corpId).in(WeGroup::getChatId, roomIdList));
+        if (CollectionUtils.isEmpty(groupList)) {
+            return;
+        }
+        // 查询群成员头像信息
+        List<WeGroupMemberDTO> weGroupMemberDtoList = weGroupMemberService.selectWeGroupMemberListByChatIdList(roomIdList);
+        // 不为空，设置群聊下的群成员信息
+        if (CollectionUtils.isNotEmpty(weGroupMemberDtoList)) {
+            Map<String, List<WeGroupMemberDTO>> chatMemberMap = weGroupMemberDtoList.stream().collect(Collectors.groupingBy(WeGroupMemberDTO::getChatId));
+            // 为每个群聊设置群成员信息
+            for (WeGroup weGroup : groupList) {
+                if (chatMemberMap.get(weGroup.getChatId()) == null) {
+                    continue;
+                }
+                // 最多九个，用,隔开
+                String roomAvatar = chatMemberMap.get(weGroup.getChatId()).stream()
+                        .map(WeGroupMemberDTO::getMemberAvatar)
+                        .filter(StringUtils::isNotEmpty)
+                        .limit(9)
+                        .collect(Collectors.joining(","));
+                weGroup.setAvatar(roomAvatar);
+            }
+            // 设置群聊信息
+            for (WeChatContactMapping weChatContactMapping : weChatMappingList) {
+                for (WeGroup weGroup : groupList) {
+                    if (weChatContactMapping.getRoomId().equals(weGroup.getChatId())) {
+                        weChatContactMapping.setRoomInfo(weGroup);
+                    }
+                }
+                if (org.apache.commons.lang3.StringUtils.isNoneBlank(weChatContactMapping.getFromId(), weChatContactMapping.getRoomId())) {
+                    weChatContactMapping.setFinalChatContext(weConversationArchiveService.getFinalChatRoomContactInfo(weChatContactMapping.getFromId(), weChatContactMapping.getRoomId(), weChatContactMapping.getCorpId()));
+                }
+            }
+        }
+    }
+
+    /**
+     * 根据id列表查询并设置客户信息
+     *
+     * @param corpId             企业ID
+     * @param externalUseridList 客户ID列表
+     * @param weChatMappingList  {@link List<WeChatContactMapping>}
+     */
+    private void searchAndSetCustomerInfo(String corpId, List<String> externalUseridList, List<WeChatContactMapping> weChatMappingList) {
+        if (StringUtils.isBlank(corpId) || CollectionUtils.isEmpty(externalUseridList) || CollectionUtils.isEmpty(weChatMappingList)) {
+            return;
+        }
+        // 客户信息列表
+        List<WeCustomer> weCustomerList = weCustomerMapper.selectList(new LambdaQueryWrapper<WeCustomer>()
+                .eq(WeCustomer::getCorpId, corpId)
+                .in(WeCustomer::getExternalUserid, externalUseridList));
+        // 不为空，就补充客户信息
+        if (CollectionUtils.isNotEmpty(weCustomerList)) {
+            // 赋值客户信息
+            for (WeChatContactMapping chatContactMapping : weChatMappingList) {
+                // 为对应客户设置信息
+                for (WeCustomer weCustomer : weCustomerList) {
+                    if (chatContactMapping.getReceiveId().equals(weCustomer.getExternalUserid())) {
+                        chatContactMapping.setReceiveWeCustomer(weCustomer);
+                    }
+                }
+                // 为聊天查询最近一条消息记录
+                if (StringUtils.isNotBlank(chatContactMapping.getFromId()) && StringUtils.isNotBlank(chatContactMapping.getReceiveId())) {
+                    chatContactMapping.setFinalChatContext(weConversationArchiveService.getFinalChatContactInfo(chatContactMapping.getFromId(), chatContactMapping.getReceiveId(), chatContactMapping.getCorpId()));
+                }
+            }
+        }
+    }
+
+    /**
+     * 根据id列表查询并设置员工信息
+     *
+     * @param corpId            企业ID
+     * @param userIdList        员工ID列表
+     * @param weChatMappingList {@link List<WeChatContactMapping>}
+     */
+    private void searchAndSetUserInfo(String corpId, List<String> userIdList, List<WeChatContactMapping> weChatMappingList) {
+        if (StringUtils.isBlank(corpId) || CollectionUtils.isEmpty(userIdList) || CollectionUtils.isEmpty(weChatMappingList)) {
+            return;
+        }
+        // 员工信息列表
+        List<WeUser> weUserList = weUserMapper.selectList(new LambdaQueryWrapper<WeUser>()
+                .eq(WeUser::getCorpId, corpId)
+                .in(WeUser::getUserId, userIdList));
+        // 不为空，就补充员工信息
+        if (CollectionUtils.isNotEmpty(weUserList)) {
+            // 赋值员工信息
+            for (WeChatContactMapping chatContactMapping : weChatMappingList) {
+                // 为员工设置信息
+                for (WeUser weUser : weUserList) {
+                    if (chatContactMapping.getReceiveId().equals(weUser.getUserId())) {
+                        chatContactMapping.setReceiveWeUser(weUser);
+                    }
+                }
+                // 为聊天查询最近一条消息记录
+                if (StringUtils.isNotBlank(chatContactMapping.getFromId()) && StringUtils.isNotBlank(chatContactMapping.getReceiveId())) {
+                    chatContactMapping.setFinalChatContext(weConversationArchiveService.getFinalChatContactInfo(chatContactMapping.getFromId(), chatContactMapping.getReceiveId(), chatContactMapping.getCorpId()));
+                }
+            }
+        }
+    }
+
 
     /**
      * 新增聊天关系映射

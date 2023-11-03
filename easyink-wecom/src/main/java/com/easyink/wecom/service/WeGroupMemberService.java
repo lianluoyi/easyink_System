@@ -33,10 +33,18 @@ public interface WeGroupMemberService extends IService<WeGroupMember> {
 
     /**
      * 根据群聊id获取群成员列表
-     * @param chatId 群id
+     * @param chatId 群id 列表
      * @return 群成员列表
      */
     List<WeGroupMemberDTO> selectWeGroupMemberListByChatId(String chatId);
+
+
+    /**
+     * 根据群聊id获取群成员列表
+     * @param chatIdList 群id
+     * @return 群成员列表
+     */
+    List<WeGroupMemberDTO> selectWeGroupMemberListByChatIdList(List<String> chatIdList);
 
 
     /**

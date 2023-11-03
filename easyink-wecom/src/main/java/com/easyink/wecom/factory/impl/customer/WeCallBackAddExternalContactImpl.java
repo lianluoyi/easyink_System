@@ -261,11 +261,24 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
         log.info("执行发送非活码欢迎语欢迎语otherHandle>>>>>>>>>>>>>>>");
         log.info("[非活码欢迎语] welcomeCode:{}, userId:{}, externalUserId:{}, corpId:{}", welcomeCode, userId, externalUserId, corpId);
         WeWelcomeMsg.WeWelcomeMsgBuilder weWelcomeMsgBuilder = WeWelcomeMsg.builder().welcome_code(welcomeCode);
-        //查询外部联系人与通讯录关系数据
-        String customerName = getCustomerName(corpId,externalUserId);
+        // 查询外部联系人与通讯录关系数据
+        GetExternalDetailResp customerInfo = getCustomerInfo(corpId, externalUserId);
+        if (customerInfo == null || customerInfo.getExternalContact().getName() == null || customerInfo.getExternalContact().getGender() == null || CollectionUtils.isEmpty(customerInfo.getFollow_user())) {
+            log.info("[非活码欢迎语] 缺少客户信息，不发送。customerInfo:{}", customerInfo);
+            return;
+        }
+        // 客户名称
+        String customerName = customerInfo.getExternalContact().getName();
+        // 客户性别
+        Integer gender = customerInfo.getExternalContact().getGender();
+        // 客户来源，寻找客户详情信息中与添加员工对应的关系信息，员工-客户关系是唯一的，所以直接取列表第一个
+        String addWay = customerInfo.getFollow_user().stream()
+                                                     .filter(item -> item.getUserId().equals(userId))
+                                                     .collect(Collectors.toList())
+                                                     .get(0).getAdd_way();
         CompletableFuture.runAsync(() -> {
             try {
-                WeEmployMaterialVO weEmployMaterialVO = weMsgTlpService.selectMaterialByUserId(userId, corpId);
+                WeEmployMaterialVO weEmployMaterialVO = weMsgTlpService.selectMaterialByUserId(userId, corpId, addWay, gender);
                 // 当前员工存在命中的附件
                 if (weEmployMaterialVO != null
                         && (CollectionUtils.isNotEmpty(weEmployMaterialVO.getWeMsgTlpMaterialList()) || StringUtils.isNotEmpty(weEmployMaterialVO.getDefaultMsg()))) {
@@ -330,6 +343,20 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
             return StringUtils.EMPTY;
         }
         return resp.getExternalContact().getName();
+    }
+
+    /**
+     * 获取客户名称
+     *
+     * @param corpId         企业Id
+     * @param externalUserid 客户id
+     * @return 客户名称
+     */
+    public GetExternalDetailResp getCustomerInfo(String corpId, String externalUserid) {
+        if (StringUtils.isAnyBlank(corpId, externalUserid)) {
+            return null;
+        }
+        return weCustomerClient.getV2(externalUserid, corpId);
     }
 
 

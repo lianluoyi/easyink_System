@@ -311,4 +311,12 @@ public class Constants {
      * 群发发送人/群名称的分隔符
      */
     public static final String CUSTOMER_PUSH_MESSAGE_SEPARATOR = "、";
+
+    /**
+     * 创建群发任务，企微返回的errmsg中，不存在的员工id的标识
+     * 示例： result:{"errcode":60111,"errmsg":"invalid string value `XXXXXX`. userid not found, hint: [XXXXXXXXXXXX],
+     * from ip: XXX.XXX.XXX.XXX, more info at https://open.work.weixin.qq.com/devtool/query?e=60111","fail_list":[]}
+     * 如示例所示，员工id被``包围，通过``来定位员工id
+     */
+    public static final String CUSTOMER_PUSH_MESSAGE_NOT_EXIST_USER_MARK = "`";
 }

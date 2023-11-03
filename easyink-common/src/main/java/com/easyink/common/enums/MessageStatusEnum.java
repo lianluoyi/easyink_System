@@ -42,7 +42,8 @@ public enum MessageStatusEnum {
      * （当员工对群群发时只选择了部分群，剩余群未发送）
      */
     NOT_SEND_GROUP("7", "未发送"),
-    PARAM_ERROR("8", "创建失败，群发内容异常");
+    PARAM_ERROR("8", "创建失败，群发内容异常"),
+    NOT_EXIST_USER("9", "创建失败，员工不存在");
 
 
     private final String name;

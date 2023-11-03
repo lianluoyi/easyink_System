@@ -5,13 +5,13 @@ import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.easyink.common.constant.Constants;
 import com.easyink.common.constant.WeConstans;
 import com.easyink.common.core.domain.model.LoginUser;
 import com.easyink.common.core.redis.RedisCache;
 import com.easyink.common.enums.*;
 import com.easyink.common.exception.CustomException;
 import com.easyink.common.utils.StringUtils;
-import com.easyink.common.utils.spring.SpringUtils;
 import com.easyink.wecom.client.WeCustomerMessagePushClient;
 import com.easyink.wecom.domain.WeCustomer;
 import com.easyink.wecom.domain.WeCustomerMessage;
@@ -197,6 +197,7 @@ public class WeCustomerMessageServiceImpl extends ServiceImpl<WeCustomerMessageM
         } catch (Exception e) {
             log.error("群发异常 messageId:{}, ex:{}", messageId, ExceptionUtils.getStackTrace(e));
             Integer errcode = JSONObject.parseObject(e.getMessage()).getInteger("errcode");
+            String errMsg = JSONObject.parseObject(e.getMessage()).getString("errmsg");
             LambdaUpdateWrapper<WeCustomerMessgaeResult> updateWrapper = new LambdaUpdateWrapper<WeCustomerMessgaeResult>()
                     .eq(WeCustomerMessgaeResult::getMessageId, messageId);
             if (WeExceptionTip.WE_EXCEPTION_TIP_41048.getCode().equals(errcode)) {
@@ -209,6 +210,16 @@ public class WeCustomerMessageServiceImpl extends ServiceImpl<WeCustomerMessageM
                 log.info("[企业群发消息] 传递的参数异常，messagePushDTO:{}, corpId:{}", messagePushDto, corpId);
                 weCustomerMessgaeResultService.update(updateWrapper.set(WeCustomerMessgaeResult::getStatus, MessageStatusEnum.PARAM_ERROR.getType())
                         .set(WeCustomerMessgaeResult::getRemark, MessageStatusEnum.PARAM_ERROR.getName()));
+            } else if (WeExceptionTip.WE_EXCEPTION_TIP_60111.getCode().equals(errcode)) {
+                // 根据返回的员工id标识截取员工id
+                int startIndex = errMsg.indexOf(Constants.CUSTOMER_PUSH_MESSAGE_NOT_EXIST_USER_MARK);
+                int endIndex = errMsg.lastIndexOf(Constants.CUSTOMER_PUSH_MESSAGE_NOT_EXIST_USER_MARK);
+                // startIndex + 1是因为String字符位置从0开始计算，所以实际截取的userId位置应该+1
+                String userId = errMsg.substring(startIndex + 1, endIndex);
+                // 根据UserId更新群发发送状态
+                weCustomerMessgaeResultService.update(updateWrapper.set(WeCustomerMessgaeResult::getStatus, MessageStatusEnum.NOT_EXIST_USER.getType())
+                        .set(WeCustomerMessgaeResult::getRemark, MessageStatusEnum.NOT_EXIST_USER.getName())
+                        .eq(WeCustomerMessgaeResult::getUserid, userId));
             }
         } finally {
             //尝试发送过则标记为已发送

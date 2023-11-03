@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.easyink.wecom.domain.WeChatContactMapping;
 import com.easyink.common.core.domain.conversation.ChatInfoVO;
+import com.easyink.wecom.domain.dto.WeChatMappingDTO;
 
 import java.util.List;
 
@@ -27,8 +28,18 @@ public interface WeChatContactMappingService extends IService<WeChatContactMappi
      *
      * @param weChatContactMapping 聊天关系映射
      * @return 聊天关系映射集合
+     * @update 因慢查询，v1.34.0废弃，请使用selectWeChatContactMappingListV2接口
      */
+    @Deprecated
     List<WeChatContactMapping> selectWeChatContactMappingList(WeChatContactMapping weChatContactMapping);
+
+    /**
+     * 查询聊天关系映射列表
+     *
+     * @param weChatMappingDTO  {@link WeChatMappingDTO}
+     * @return 聊天关系映射集合
+     */
+    List<WeChatContactMapping> selectWeChatContactMappingListV2(WeChatMappingDTO weChatMappingDTO);
 
     /**
      * 新增聊天关系映射

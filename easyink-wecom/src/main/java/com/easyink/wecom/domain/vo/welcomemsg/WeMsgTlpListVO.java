@@ -1,6 +1,7 @@
 package com.easyink.wecom.domain.vo.welcomemsg;
 
 import com.easyink.wecom.domain.WeMsgTlp;
+import com.easyink.wecom.domain.WeMsgTlpFilterRule;
 import com.easyink.wecom.domain.WeMsgTlpSpecialRule;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -34,5 +35,7 @@ public class WeMsgTlpListVO extends WeMsgTlp {
     private List<WeUserUseScopeVO> useUsers;
     @ApiModelProperty("特殊时段list")
     private List<WeMsgTlpSpecialRule> weMsgTlpSpecialRules;
+    @ApiModelProperty("欢迎语筛选条件列表")
+    private List<WeMsgTlpFilterRule> weMsgTlpFilterRules;
 
 }

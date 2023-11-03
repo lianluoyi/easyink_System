@@ -19,6 +19,14 @@ import java.util.List;
 public interface WeGroupMemberMapper extends BaseMapper<WeGroupMember> {
     List<WeGroupMemberDTO> selectWeGroupMemberListByChatId(String chatId);
 
+    /**
+     * 根据群聊id列表查询群成员信息
+     *
+     * @param chatIdList 群聊ID列表
+     * @return 群聊和群聊的成员信息列表
+     */
+    List<WeGroupMemberDTO> selectWeGroupMemberListByChatIdList(@Param("chatIdList") List<String> chatIdList);
+
 
     /**
      * 根据chat_id、join_scene、type查询群成员数量

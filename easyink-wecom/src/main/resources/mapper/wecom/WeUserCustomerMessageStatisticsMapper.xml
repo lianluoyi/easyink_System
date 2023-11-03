@@ -427,12 +427,17 @@
     </select>
     <!--获取有对话的人的数据进行筛选-->
     <select id="getFilterOfUser" resultType="com.easyink.wecom.domain.dto.statistics.UserServiceTimeDTO">
-        SELECT ucms.user_id, ucms.send_time, ucms.user_active_dialogue
-        FROM  we_user_customer_message_statistics ucms
-                  LEFT JOIN we_user wu ON wu.corp_id = ucms.corp_id AND wu.user_id = ucms.user_id
-        WHERE ucms.corp_id = #{corpId}
+        SELECT user_id, send_time, user_active_dialogue
+        FROM we_user_customer_message_statistics
+        WHERE corp_id = #{corpId}
           AND external_userid != '-1'
-        AND send_time &gt;= #{beginTime}
+          <if test="list != null and list.size() > 0">
+              AND user_id IN
+              <foreach collection="list" item="userId" open="(" separator="," close=")">
+                  #{userId}
+              </foreach>
+          </if>
+          AND send_time &gt;= #{beginTime}
           AND send_time &lt;= #{endTime}
     </select>
     <!--  查询历史日期范围下员工主动发起会话数  -->

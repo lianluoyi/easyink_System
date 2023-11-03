@@ -1,10 +1,12 @@
 package com.easyink.wecom.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.easyink.common.core.domain.RootEntity;
 import com.easyink.wecom.domain.WeFlowerCustomerRel;
 import com.easyink.wecom.domain.WeUserBehaviorData;
 import com.easyink.wecom.domain.dto.statistics.CustomerOverviewDTO;
 import com.easyink.wecom.domain.dto.statistics.StatisticsDTO;
+import com.easyink.wecom.domain.vo.customer.SessionArchiveCustomerVO;
 import com.easyink.wecom.domain.vo.emple.WeEmpleCodeChannelRelVO;
 import com.easyink.wecom.domain.vo.statistics.CustomerOverviewVO;
 import org.apache.ibatis.annotations.Param;
@@ -146,6 +148,17 @@ public interface WeFlowerCustomerRelMapper extends BaseMapper<WeFlowerCustomerRe
     List<CustomerOverviewVO> getCurrNewCustomerCntByTime(CustomerOverviewDTO dto);
 
     /**
+     * 根据(数据权限），开始，结束时间和员工ID，获取单个日期维度-截止时间下的有效客户数
+     *
+     * @param corpId     企业ID
+     * @param userIdList 数据权限下的userid列表
+     * @param beginTime  开始时间 格式 YYYY-MM-DD HH:MM:SS
+     * @param endTime    结束时间 格式 YYYY-MM-DD HH:MM:SS
+     * @return {@link CustomerOverviewVO}
+     */
+    CustomerOverviewVO getCurrNewCustomerCnt(@Param("corpId") String corpId, @Param("userIds") List<String> userIdList, @Param("beginTime") String beginTime, @Param("endTime") String endTime);
+
+    /**
      * 根据（数据权限），开始，结束时间，获取数据总览-截止时间下的有效客户数
      *
      * @param dto {@link StatisticsDTO}
@@ -232,4 +245,26 @@ public interface WeFlowerCustomerRelMapper extends BaseMapper<WeFlowerCustomerRe
      * @return 员工对应的客户总数
      */
     List<WeUserBehaviorData> getTotalAllContactCntByUserId(@Param("corpId") String corpId, @Param("endTime") String endTime, @Param("userIdList") List<String> userId);
+
+    /**
+     * 获取数据权限下的externalUserid列表
+     *
+     * @param corpId             企业ID
+     * @param rootEntity         {@link RootEntity}
+     * @param externalUseridList 客户ID列表
+     * @param pageNum            分页页数
+     * @param pageSize           分页大小
+     * @return externalUserid列表
+     */
+    List<SessionArchiveCustomerVO> selectExternalUseridByDataScope(@Param("corpId") String corpId, @Param("rootEntity") RootEntity rootEntity, @Param("externalUseridList") List<String> externalUseridList, @Param("pageNum") int pageNum, @Param("pageSize") int pageSize);
+
+    /**
+     * 获取数据权限下的externalUserid去重后的客户数量
+     *
+     * @param corpId             企业ID
+     * @param rootEntity         {@link RootEntity}
+     * @param externalUseridList 客户ID列表
+     * @return 去重后的客户总数
+     */
+    Integer selectExternalUseridByDataScopeCount(@Param("corpId") String corpId, @Param("rootEntity") RootEntity rootEntity, @Param("externalUseridList") List<String> externalUseridList);
 }
