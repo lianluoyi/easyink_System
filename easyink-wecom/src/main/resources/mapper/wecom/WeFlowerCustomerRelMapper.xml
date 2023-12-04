@@ -733,4 +733,35 @@
         </if>
         GROUP BY xTime
     </select>
+    <!--获取数据权限下的externalUserid列表(去重）-->
+    <select id="selectExternalUseridByDataScopeV2"
+            resultType="com.easyink.wecom.domain.vo.customer.SessionArchiveCustomerVO">
+        SELECT
+        external_userid, create_time
+        FROM
+        we_flower_customer_rel
+        WHERE
+        user_id IN (
+        SELECT
+        user_id
+        FROM
+        we_user wu
+        INNER JOIN we_department wd ON wu.corp_id = wd.corp_id
+        AND wd.id = wu.main_department
+        AND wu.is_activate = ${@com.easyink.common.constant.WeConstans@WE_USER_IS_ACTIVATE}
+        ${rootEntity.params.dataScope})
+        <if test="externalUseridList != null and externalUseridList.size() > 0">
+            AND external_userid IN
+            <foreach collection="externalUseridList" item="externalUserid" open="(" separator="," close=")">
+                #{externalUserid}
+            </foreach>
+        </if>
+        AND corp_id = #{corpId}
+        AND status IN ('${@com.easyink.common.enums.CustomerStatusEnum@NORMAL.code}',
+        '${@com.easyink.common.enums.CustomerStatusEnum@DRAIN.code}',
+        '${@com.easyink.common.enums.CustomerStatusEnum@TO_BE_TRANSFERRED.code}',
+        '${@com.easyink.common.enums.CustomerStatusEnum@TRANSFERRING.code}')
+        GROUP BY external_userid
+        ORDER BY create_time DESC
+    </select>
 </mapper>

@@ -16,6 +16,7 @@ import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 import java.util.List;
 
 /**
@@ -232,6 +233,16 @@ public interface WeCustomerMapper extends BaseMapper<WeCustomer> {
     List<WeCustomerVO> selectWeCustomerV3(WeCustomer weCustomer);
 
     /**
+     * 客户列表查询V4
+     * 修复了 v3 版本慢查询的问题
+     *
+     * @param weCustomer 查询客户条件
+     * @param userIdList 员工id列表
+     * @return {@link WeCustomerVO }
+     */
+    List<WeCustomerVO> selectWeCustomerV4(@Param("weCustomer") WeCustomer weCustomer, @Param("userIdList") List<String> userIdList);
+
+    /**
      * 查看客户去重后的总数
      *
      * @param weCustomer 查询客户条件
@@ -254,4 +265,23 @@ public interface WeCustomerMapper extends BaseMapper<WeCustomer> {
      * @return 客户总数
      */
     Integer selectWeCustomerCount(WeCustomer dto);
+
+    /**
+     * 查询客户总数第二版
+     *
+     * @param weCustomer {@link WeCustomer}
+     * @param userIdList 员工id列表
+     * @return 客户总数
+     */
+    Integer selectWeCustomerCountV2(@Param("weCustomer") WeCustomer weCustomer, @Param("userIdList") List<String> userIdList);
+
+    /**
+     * 根据客户id列表获取客户信息
+     * 注意：客户id列表不能为空
+     *
+     * @param externalUserIdList 客户id列表
+     * @param corpId             企业id
+     * @return {@link List<WeCustomer>}
+     */
+    List<WeCustomer> selectCustomerInfoByExternalIdList(@NotNull @Param("externalUserIdList") List<String> externalUserIdList, @Param("corpId") String corpId);
 }

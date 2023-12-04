@@ -15,6 +15,7 @@ import com.easyink.common.core.domain.wecom.WeUser;
 import com.easyink.common.enums.ResultTip;
 import com.easyink.common.enums.chat.ChatTypeEnum;
 import com.easyink.common.exception.CustomException;
+import com.easyink.common.utils.DateUtils;
 import com.easyink.common.utils.PageInfoUtil;
 import com.easyink.common.utils.StringUtils;
 import com.easyink.wecom.domain.WeChatContactMapping;
@@ -195,7 +196,6 @@ public class WeChatContactMappingServiceImpl extends ServiceImpl<WeChatContactMa
             // 根据id列表查询并设置群信息
             searchAndSetGroupInfo(weChatMappingDTO.getCorpId(), roomIdList, weChatMappingList );
         }
-        Collections.sort(weChatMappingList);
         return weChatMappingList;
     }
 
@@ -323,7 +323,13 @@ public class WeChatContactMappingServiceImpl extends ServiceImpl<WeChatContactMa
         if (CollUtil.isEmpty(list)) {
             return weChatContactMappingMapper.insertWeChatContactMapping(weChatContactMapping);
         }
-        return 0;
+        // 如果是群聊消息，则更新群聊内所有成员的聊天时间
+        if (StringUtils.isNotBlank(weChatContactMapping.getRoomId())) {
+            return this.baseMapper.updateAllChatTimeByRoomId(weChatContactMapping.getRoomId(), weChatContactMapping.getChatTime());
+        }
+        // 设置要更新聊天时间的关系id
+        weChatContactMapping.setId(list.get(0).getId());
+        return updateWeChatContactMapping(weChatContactMapping);
     }
 
     /**
@@ -418,6 +424,8 @@ public class WeChatContactMappingServiceImpl extends ServiceImpl<WeChatContactMa
         query.stream().filter(chatData -> StringUtils.isNotEmpty(chatData.getFrom())).forEach(chatData -> {
             //发送人映射数据
             WeChatContactMapping contactMapping = new WeChatContactMapping();
+            // 设置聊天时间
+            contactMapping.setChatTime(DateUtils.getDateTime(new Date(chatData.getMsgtime())));
             contactMapping.setCorpId(corpId);
             String fromId = chatData.getFrom();
             String toId = String.valueOf(chatData.getTolist().get(0));
@@ -621,6 +629,7 @@ public class WeChatContactMappingServiceImpl extends ServiceImpl<WeChatContactMa
         reveiceWeChatContactMapping.setReceiveId(fromWeChatContactMapping.getFromId());
         reveiceWeChatContactMapping.setIsCustom(fromType);
         reveiceWeChatContactMapping.setCorpId(fromWeChatContactMapping.getCorpId());
+        reveiceWeChatContactMapping.setChatTime(fromWeChatContactMapping.getChatTime());
         return reveiceWeChatContactMapping;
     }
 }

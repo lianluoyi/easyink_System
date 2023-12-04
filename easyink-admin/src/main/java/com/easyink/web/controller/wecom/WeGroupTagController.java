@@ -54,8 +54,7 @@ public class WeGroupTagController extends BaseController {
     @ApiOperation("新增群标签组")
     public AjaxResult add(@Validated @RequestBody AddWeGroupTagCategoryDTO weGroupTagCategory) {
         weGroupTagCategory.setCorpId(LoginTokenService.getLoginUser().getCorpId());
-        weGroupTagCategoryService.add(weGroupTagCategory);
-        return AjaxResult.success();
+        return AjaxResult.success(weGroupTagCategoryService.add(weGroupTagCategory));
     }
 
     @Log(title = "编辑群标签组", businessType = BusinessType.UPDATE)
@@ -63,8 +62,7 @@ public class WeGroupTagController extends BaseController {
     @ApiOperation("编辑群标签组")
     public AjaxResult update(@Validated @RequestBody UpdateWeGroupTagCategoryDTO weGroupTagCategory) {
         weGroupTagCategory.setCorpId(LoginTokenService.getLoginUser().getCorpId());
-        weGroupTagCategoryService.update(weGroupTagCategory);
-        return AjaxResult.success();
+        return AjaxResult.success(weGroupTagCategoryService.update(weGroupTagCategory));
     }
 
     @Log(title = "删除群标签组", businessType = BusinessType.DELETE)

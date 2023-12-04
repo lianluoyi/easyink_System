@@ -1,6 +1,5 @@
 package com.easyink.web.controller.wecom;
 
-import com.easyink.common.annotation.DataScope;
 import com.easyink.common.annotation.Log;
 import com.easyink.common.constant.WeConstans;
 import com.easyink.common.core.controller.BaseController;
@@ -99,7 +98,8 @@ public class WeCustomerController extends BaseController {
     @ApiOperation("会话存档客户检索客户列表")
     public TableDataInfo<SessionArchiveCustomerVO> listDistinct(WeCustomer weCustomer) {
         weCustomer.setCorpId(LoginTokenService.getLoginUser().getCorpId());
-        List<SessionArchiveCustomerVO> list = weCustomerService.selectWeCustomerListDistinctV2(weCustomer);
+        PageInfoUtil.setPage();
+        List<SessionArchiveCustomerVO> list = weCustomerService.selectWeCustomerListDistinctV3(weCustomer);
         return getDataTable(list);
     }
 

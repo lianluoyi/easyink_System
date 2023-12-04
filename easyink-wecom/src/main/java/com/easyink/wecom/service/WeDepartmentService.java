@@ -129,7 +129,7 @@ public interface WeDepartmentService extends IService<WeDepartment> {
     OrganizationVO getOrganization(WeUser weUser);
 
     /**
-     * 获取数据权限下的员工id列表，若是包含根部们，则返回空列表
+     * 获取数据权限下的员工id列表或查询条件中选择的员工id范围列表，若是包含根部们，则返回空列表
      *
      * @param departmentIds 部门id列表
      * @param userIds       员工id列表

@@ -25,6 +25,14 @@ public interface WeTagGroupMapper extends BaseMapper<WeTagGroup> {
     List<WeTagGroup> selectWeTagGroupList(WeTagGroup weTagGroup);
 
     /**
+     * 查询单个标签组信息
+     *
+     * @param weTagGroup 标签组
+     * @return 标签组信息
+     */
+    WeTagGroup selectSingleWeTagGroup(WeTagGroup weTagGroup);
+
+    /**
      * 查询符合条件的标签组列表（数据统计）
      *
      * @param tagGroupIdList 标签组ID列表

@@ -57,12 +57,6 @@ public class WeAccessTokenInterceptor implements Interceptor<Object> {
     public boolean beforeExecute(ForestRequest request) {
         String uri = request.getUrl().replace(urlPrefix, "");
         StringBuilder body = encodeToStringBody(request, uri);
-        if (StringUtils.isBlank(body)) {
-            log.info(">>>>>>>>>>>>>>>>>>>>>>>>uri：{}, query: {}", uri, request.getQueryString());
-        } else {
-            log.info(">>>>>>>>>>>>>>>>>>>>>>>>uri：{}, query: {}, body: {}", uri, request.getQueryString(), body);
-        }
-
         if (!Arrays.asList(weComeConfig.getFileUplodUrl()).contains(uri)) {
             request.setDataType(ForestDataType.JSON);
             request.setContentType("application/json");
@@ -93,6 +87,11 @@ public class WeAccessTokenInterceptor implements Interceptor<Object> {
             token = weAccessTokenService.findCommonAccessToken(corpid);
         }
         request.addQuery(tokenKeyName, token);
+        if (StringUtils.isBlank(body)) {
+            log.info(">>>>>>>>>>>>>>>>>>>>>>>>uri：{}, query: {}", uri, request.getQueryString());
+        } else {
+            log.info(">>>>>>>>>>>>>>>>>>>>>>>>uri：{}, query: {}, body: {}", uri, request.getQueryString(), body);
+        }
         return true;
     }
 

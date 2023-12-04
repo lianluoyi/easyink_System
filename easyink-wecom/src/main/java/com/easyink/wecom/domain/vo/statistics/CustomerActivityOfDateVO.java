@@ -19,4 +19,15 @@ public class CustomerActivityOfDateVO extends ChatMessageCntVO {
     @ApiModelProperty("时间")
     private Date time;
 
+    /**
+     * 日期维度-根据日期初始化数据
+     *
+     * @param time 日期
+     */
+    public CustomerActivityOfDateVO(Date time) {
+        this.time = time;
+        super.setChatCustomerCnt(0);
+        super.setUserSendMessageCnt(0);
+        super.setCustomerSendMessageCnt(0);
+    }
 }

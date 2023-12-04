@@ -40,6 +40,7 @@ import com.easyink.wecom.domain.entity.WeUserIdMapping;
 import com.easyink.wecom.domain.query.UserBehaviorDataQuery;
 import com.easyink.wecom.domain.resp.GetAgentResp;
 import com.easyink.wecom.domain.vo.*;
+import com.easyink.wecom.domain.vo.customer.WeCustomerVO;
 import com.easyink.wecom.domain.vo.transfer.TransferResignedUserVO;
 import com.easyink.wecom.login.util.LoginTokenService;
 import com.easyink.wecom.mapper.WeUserIdMappingMapper;
@@ -1110,6 +1111,33 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
 
     }
 
+
+    /**
+     * 为客户设置员工和部门信息
+     *
+     * @param list   客户列表
+     * @param corpId 企业id
+     */
+    @Override
+    public void setUserInfoByList(List<WeCustomerVO> list, String corpId) {
+        if(StringUtils.isBlank(corpId) || CollectionUtils.isEmpty(list)) {
+            return;
+        }
+        // 获取员工id列表
+        List<String> userIdList = list.stream().map(WeCustomerVO::getUserId).collect(Collectors.toList());
+        // 获取员工信息列表
+        List<WeUserVO> weUserVOS = baseMapper.selectWeUserInfoByUserIdList(userIdList, corpId);
+        // 设置员工信息
+        for (WeCustomerVO weCustomerVO : list) {
+            for (WeUserVO weUserVO : weUserVOS) {
+                if (weCustomerVO.getUserId().equals(weUserVO.getUserId())) {
+                    weCustomerVO.setUserName(weUserVO.getUserName());
+                    weCustomerVO.setDepartment(weUserVO.getMainDepartmentName());
+                    weCustomerVO.setDepartmentName(weUserVO.getMainDepartmentName());
+                }
+            }
+        }
+    }
 
     /**
      * 获取用户信息

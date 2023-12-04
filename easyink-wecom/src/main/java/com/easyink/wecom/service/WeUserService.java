@@ -9,6 +9,7 @@ import com.easyink.wecom.domain.dto.BatchUpdateUserInfoDTO;
 import com.easyink.wecom.domain.dto.QueryUserDTO;
 import com.easyink.wecom.domain.dto.transfer.TransferResignedUserListDTO;
 import com.easyink.wecom.domain.vo.*;
+import com.easyink.wecom.domain.vo.customer.WeCustomerVO;
 import com.easyink.wecom.domain.vo.transfer.TransferResignedUserVO;
 
 import java.util.List;
@@ -327,4 +328,11 @@ public interface WeUserService extends IService<WeUser> {
      */
     List<UserVO> getUserInfo(String users, String corpId);
 
+    /**
+     * 为客户设置员工和部门信息
+     *
+     * @param list   客户列表
+     * @param corpId 企业id
+     */
+    void setUserInfoByList(List<WeCustomerVO> list, String corpId);
 }

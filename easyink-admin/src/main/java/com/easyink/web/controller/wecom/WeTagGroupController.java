@@ -123,9 +123,7 @@ public class WeTagGroupController extends BaseController {
             }
         }
         weTagGroup.setCorpId(LoginTokenService.getLoginUser().getCorpId());
-        weTagGroupService.insertWeTagGroup(weTagGroup);
-
-        return AjaxResult.success();
+        return AjaxResult.success(weTagGroupService.insertWeTagGroup(weTagGroup));
     }
 
     /**
@@ -137,8 +135,7 @@ public class WeTagGroupController extends BaseController {
     @PutMapping
     public AjaxResult edit(@Validated @RequestBody WeTagGroup weTagGroup) {
         weTagGroup.setCorpId(LoginTokenService.getLoginUser().getCorpId());
-        weTagGroupService.updateWeTagGroup(weTagGroup);
-        return AjaxResult.success();
+        return AjaxResult.success(weTagGroupService.updateWeTagGroup(weTagGroup));
     }
 
     /**

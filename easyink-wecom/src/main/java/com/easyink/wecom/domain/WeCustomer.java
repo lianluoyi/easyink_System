@@ -9,6 +9,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import com.easyink.common.annotation.Excel;
 import com.easyink.common.core.domain.BaseEntity;
 import com.easyink.common.core.domain.wecom.BaseExtendPropertyRel;
+import com.easyink.common.utils.DictUtils;
 import com.easyink.common.utils.StringUtils;
 import com.easyink.wecom.domain.dto.customer.ExternalContact;
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -16,12 +17,10 @@ import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 
 import javax.validation.constraints.NotBlank;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * 企业微信客户对象 we_customer
@@ -223,6 +222,10 @@ public class WeCustomer extends BaseEntity {
     @TableField(exist = false)
     private String markTagIds;
 
+    @ApiModelProperty(value = "过滤查询条件的客户id列表")
+    @TableField(exist = false)
+    private List<String> filterExternalUseridList;
+
 
     /**
      * 根据API返回的客户详情实体 构建数据交互的企微客户实体
@@ -264,4 +267,46 @@ public class WeCustomer extends BaseEntity {
     public int hashCode() {
         return Objects.hash(corpId, externalUserid);
     }
+
+    /**
+     * 将以","分隔的部门id字符串，转换为部门id列表
+     *
+     * @return 部门id列表
+     */
+    public List<String> convertDepartmentList() {
+        if (StringUtils.isBlank(this.getDepartmentIds())) {
+            return Collections.emptyList();
+        }
+        return Arrays.asList(this.departmentIds.split(DictUtils.SEPARATOR));
+    }
+
+    /**
+     * 将以","分隔的员工id字符串，转换为员工id列表
+     *
+     * @return 员工id列表
+     */
+    public List<String> convertUserIdList() {
+        if (StringUtils.isBlank(this.userIds)) {
+            return Collections.emptyList();
+        }
+        return Arrays.asList(this.userIds.split(DictUtils.SEPARATOR));
+    }
+
+    /**
+     * 添加过滤查询条件的客户id列表
+     *
+     * @param externalUseridList 客户id列表
+     */
+    public void addFilterExternalUserIdList(List<String> externalUseridList) {
+        // 不存在，就初始化
+        if (CollectionUtils.isEmpty(this.filterExternalUseridList)) {
+            this.filterExternalUseridList = new ArrayList<>();
+        }
+        this.filterExternalUseridList.addAll(externalUseridList);
+        // 过滤，去重
+        HashSet<String> hashSet = new HashSet<>(this.filterExternalUseridList);
+        List<String> distinctList = new ArrayList<>(hashSet);
+        this.setFilterExternalUseridList(distinctList);
+    }
+
 }

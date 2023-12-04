@@ -1162,6 +1162,95 @@
             </if>
         </where>
     </sql>
+    <!--查询客户列表条件第二版-->
+    <sql id="customerConditionV2">
+        <where>
+            corp_id = #{weCustomer.corpId}
+            <choose>
+                <when test="weCustomer.status != null">
+                    AND status = #{weCustomer.status}
+                </when>
+                <otherwise>
+                    AND status IN (
+                    '${@com.easyink.common.enums.CustomerStatusEnum@NORMAL.code}' ,
+                    '${@com.easyink.common.enums.CustomerStatusEnum@DRAIN.code}',
+                    '${@com.easyink.common.enums.CustomerStatusEnum@TO_BE_TRANSFERRED.code}',
+                    '${@com.easyink.common.enums.CustomerStatusEnum@TRANSFERRING.code}'
+                    )
+                </otherwise>
+            </choose>
+            <choose>
+                <when test="userIdList != null and userIdList.size > 0">
+                    AND user_id IN
+                    <foreach collection="userIdList" item="userId" open="(" separator="," close=")">
+                        #{userId}
+                    </foreach>
+                </when>
+                <otherwise>
+                    <if test="weCustomer.dataScopeUserIds != null and weCustomer.dataScopeUserIds.size() > 0">
+                        AND user_id IN
+                        <foreach collection="weCustomer.dataScopeUserIds" item="userId" open="(" separator="," close=")">
+                            #{userId}
+                        </foreach>
+                    </if>
+                </otherwise>
+            </choose>
+            <if test="weCustomer.filterExternalUseridList != null and weCustomer.filterExternalUseridList.size() > 0">
+                AND external_userid IN
+                <foreach collection="weCustomer.filterExternalUseridList" item="externalUserid" open="(" separator="," close=")">
+                    #{externalUserid}
+                </foreach>
+            </if>
+            <if test="weCustomer.extendList != null and weCustomer.extendList.size()>0" >
+                AND
+                <foreach collection="weCustomer.extendList" index="index" item="item" separator="OR" open="("  close=")">
+                    external_userid=#{item.externalUserid} AND user_id = #{item.userId}
+                </foreach>
+            </if>
+            <if test="weCustomer.relIds != null and weCustomer.relIds.size()>0">
+                AND id IN
+                <foreach collection="weCustomer.relIds" item="item" separator="," open="(" close=")">
+                    #{item}
+                </foreach>
+            </if>
+            <if test="weCustomer.remark != null and weCustomer.remark != ''">
+                AND remark like concat('%', #{weCustomer.remark}, '%')
+            </if>
+            <if test="weCustomer.beginTime != null and weCustomer.beginTime != ''"><!-- 开始时间检索 -->
+                AND create_time &gt;= #{weCustomer.beginTime}
+            </if>
+            <if test="weCustomer.endTime != null and weCustomer.endTime != ''"><!-- 结束时间检索 -->
+                AND create_time &lt;= #{weCustomer.endTime}
+            </if>
+            <if test="weCustomer.phone!= null and weCustomer.phone !=''">
+                AND remark_mobiles=#{weCustomer.phone}
+            </if>
+            <if test="weCustomer.desc!= null and weCustomer.desc !=''">
+                AND description like concat('%', #{weCustomer.desc}, '%')
+            </if>
+            <if test="weCustomer.weFlowerCustomerRels!= null and  weCustomer.weFlowerCustomerRels.size()>0">
+                <foreach item="item" index="index" collection="weCustomer.weFlowerCustomerRels"  separator="," >
+                    <if test="item.addWay != null and item.addWay !=''">
+                        <if test="item.addWay.indexOf(',') != -1">
+                            AND
+                            <foreach item="items" index="index" collection="item.addWay.split(',')" open="(" separator="OR" close=")">
+                                add_way= #{items}
+                            </foreach>
+                        </if>
+                        <if test="item.addWay.indexOf(',') == -1">
+                            AND add_way=#{item.addWay}
+                        </if>
+                    </if>
+                    <if test="item.email!= null and item.email !=''">
+                        AND email=#{item.email}
+                    </if>
+                    <if test="item.address!= null and item.address !=''">
+                        AND address like concat('%', #{item.address}, '%')
+                    </if>
+                </foreach>
+            </if>
+        </where>
+    </sql>
     <!--根据客户状态企业id和时间获取去重客户数量-->
     <select id="countCustomerNumByTime" resultType="java.lang.Integer">
         <include refid="countCustomer"/>
@@ -1201,6 +1290,53 @@
                 #{externalUserid}
             </foreach>
         </if>
+    </select>
+    <!--查询客户信息列表第四版-->
+    <select id="selectWeCustomerV4" resultType="com.easyink.wecom.domain.vo.customer.WeCustomerVO">
+        SELECT
+        id as relId,
+        user_id,
+        external_userid,
+        remark,
+        description,
+        remark_mobiles,
+        create_time,
+        add_way,
+        status,
+        address,
+        email
+        FROM
+        we_flower_customer_rel
+        <include refid="customerConditionV2"></include>
+        ORDER BY
+        create_time DESC
+    </select>
+    <!--根据客户id列表获取客户信息-->
+    <select id="selectCustomerInfoByExternalIdList" resultType="com.easyink.wecom.domain.WeCustomer">
+        SELECT
+            corp_id,
+            external_userid,
+            `name`,
+            avatar,
+            type,
+            gender,
+            birthday,
+            corp_name,
+            corp_full_name
+        FROM we_customer
+        WHERE corp_id = #{corpId}
+        AND external_userid IN
+        <foreach collection="externalUserIdList" item="externalUserid" open="(" separator="," close=")">
+            #{externalUserid}
+        </foreach>
+    </select>
+    <!--查询客户总数第二版-->
+    <select id="selectWeCustomerCountV2" resultType="java.lang.Integer">
+        SELECT
+            COUNT(*)
+        FROM
+            we_flower_customer_rel wfcr
+        <include refid="customerConditionV2"></include>
     </select>
 
 </mapper>

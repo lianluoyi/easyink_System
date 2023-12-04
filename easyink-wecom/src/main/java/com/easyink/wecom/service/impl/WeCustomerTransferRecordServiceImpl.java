@@ -12,6 +12,7 @@ import com.easyink.common.enums.CustomerTransferStatusEnum;
 import com.easyink.common.enums.ResultTip;
 import com.easyink.common.enums.StaffActivateEnum;
 import com.easyink.common.exception.CustomException;
+import com.easyink.common.utils.PageInfoUtil;
 import com.easyink.wecom.client.WeExternalContactClient;
 import com.easyink.wecom.domain.WeCustomer;
 import com.easyink.wecom.domain.WeFlowerCustomerRel;
@@ -24,18 +25,20 @@ import com.easyink.wecom.domain.vo.customer.WeCustomerVO;
 import com.easyink.wecom.domain.vo.transfer.WeCustomerTransferRecordVO;
 import com.easyink.wecom.mapper.WeCustomerMapper;
 import com.easyink.wecom.mapper.WeCustomerTransferRecordMapper;
-import com.easyink.wecom.service.WeCustomerTransferRecordService;
-import com.easyink.wecom.service.WeFlowerCustomerRelService;
-import com.easyink.wecom.service.WeUserService;
+import com.easyink.wecom.service.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.Resource;
 import javax.validation.constraints.NotNull;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 /**
@@ -53,16 +56,26 @@ public class WeCustomerTransferRecordServiceImpl extends ServiceImpl<WeCustomerT
     private final WeExternalContactClient externalContactClient;
     private final WeFlowerCustomerRelService weFlowerCustomerRelService;
     private final WeCustomerMapper weCustomerMapper;
+    private final WeDepartmentService weDepartmentService;
+    private final WeCustomerService weCustomerService;
+    private final WeTagService weTagService;
+    private final WeFlowerCustomerTagRelService weFlowerCustomerTagRelService;
+    @Resource(name = "threadPoolTaskExecutor")
+    private ThreadPoolTaskExecutor threadPoolTaskExecutor;
 
     @Autowired
     public WeCustomerTransferRecordServiceImpl(@NotNull WeCustomerTransferRecordMapper weCustomerTransferRecordMapper, @NotNull WeUserService weUserService,
                                                @NotNull WeExternalContactClient externalContactClient, @NotNull WeFlowerCustomerRelService weFlowerCustomerRelService,
-                                               @NotNull WeCustomerMapper weCustomerMapper) {
+                                               @NotNull WeCustomerMapper weCustomerMapper, WeDepartmentService weDepartmentService, WeCustomerService weCustomerService, WeTagService weTagService, WeFlowerCustomerTagRelService weFlowerCustomerTagRelService) {
         this.weCustomerTransferRecordMapper = weCustomerTransferRecordMapper;
         this.weUserService = weUserService;
         this.externalContactClient = externalContactClient;
         this.weFlowerCustomerRelService = weFlowerCustomerRelService;
         this.weCustomerMapper = weCustomerMapper;
+        this.weDepartmentService = weDepartmentService;
+        this.weCustomerService = weCustomerService;
+        this.weTagService = weTagService;
+        this.weFlowerCustomerTagRelService = weFlowerCustomerTagRelService;
     }
 
     @Override
@@ -149,24 +162,99 @@ public class WeCustomerTransferRecordServiceImpl extends ServiceImpl<WeCustomerT
         if (StringUtils.isBlank(weCustomer.getCorpId())) {
             throw new CustomException(ResultTip.TIP_GENERAL_PARAM_ERROR);
         }
+        String corpId = weCustomer.getCorpId();
+        //  标签筛选满足条件 external_userid和 user_id
+        if (!hasFilterCustomer(weCustomer)) {
+            return Collections.emptyList();
+        }
+        // 根据查询条件，构建过滤客户id列表
+        if (!weCustomerService.buildFilterExternalUseridList(corpId, weCustomer)) {
+            return Collections.emptyList();
+        }
+        // 获取查询条件下的userid列表
+        List<String> searchUserIdList = weDepartmentService.getDataScopeUserIdList(weCustomer.convertDepartmentList(), weCustomer.convertUserIdList(), weCustomer.getCorpId());
+        // 开启分页
+        PageInfoUtil.startPage();
         // 获取客户列表
-        List<WeCustomerVO> list = weCustomerMapper.selectWeCustomerListV2(weCustomer);
+        List<WeCustomerVO> list = weCustomerMapper.selectWeCustomerV4(weCustomer, searchUserIdList);
+        // 根据返回的结果获取需要的标签详情
+        CompletableFuture<Void> setTagRelFuture = CompletableFuture.runAsync(() -> {
+            try {
+                weFlowerCustomerTagRelService.setTagForCustomers(weCustomer.getCorpId(), list);
+            } catch (Exception e) {
+                log.info("[在职继承客户列表] 获取标签详情异步任务出现异常，异常原因：{}，corpId：{}", ExceptionUtils.getStackTrace(e), corpId);
+            }
+        }, threadPoolTaskExecutor);
+        // 设置客户分配记录状态
+        CompletableFuture<Void> setRecordFuture = CompletableFuture.runAsync(() -> {
+            try {
+                setTransferRecordStatus(weCustomer.getCorpId(), list);
+            } catch (Exception e) {
+                log.info("[在职继承客户列表] 设置客户分配记录异步任务出现异常，异常原因：{}，corpId：{}", ExceptionUtils.getStackTrace(e), corpId);
+            }
+        }, threadPoolTaskExecutor);
+        // 补充客户信息
+        CompletableFuture<Void> setCustomerInfoFuture = CompletableFuture.runAsync(() -> {
+            try {
+                weUserService.setUserInfoByList(list, corpId);
+            } catch (Exception e) {
+                log.info("[在职继承客户列表] 补充客户信息异步任务出现异常，异常原因：{}，corpId：{}", ExceptionUtils.getStackTrace(e), corpId);
+            }
+        }, threadPoolTaskExecutor);
+        // 补充员工信息
+        CompletableFuture<Void> setUserInfoFuture = CompletableFuture.runAsync(() -> {
+            try {
+                weCustomerService.setCustomerInfoByList(list, corpId);
+            } catch (Exception e) {
+                log.info("[在职继承客户列表] 补充员工信息异步任务出现异常，异常原因：{}，corpId：{}", ExceptionUtils.getStackTrace(e), corpId);
+            }
+        }, threadPoolTaskExecutor);
+        CompletableFuture.allOf(setTagRelFuture, setRecordFuture, setCustomerInfoFuture, setUserInfoFuture).join();
+        return list;
+    }
+
+    /**
+     * 设置客户分配记录状态
+     *
+     * @param corpId           企业ID
+     * @param weCustomerVOList 客户信息列表
+     */
+    private void setTransferRecordStatus(String corpId, List<WeCustomerVO> weCustomerVOList) {
+        if (StringUtils.isBlank(corpId) || CollectionUtils.isEmpty(weCustomerVOList)) {
+            return;
+        }
         // 获取分配记录
         List<WeCustomerTransferRecord> recordList = this.list(new LambdaQueryWrapper<WeCustomerTransferRecord>()
-                .eq(WeCustomerTransferRecord::getCorpId, weCustomer.getCorpId())
+                .eq(WeCustomerTransferRecord::getCorpId, corpId)
                 .in(WeCustomerTransferRecord::getStatus, CustomerTransferStatusEnum.getTransferAvailTypes())
         );
         // 根据分配记录,构建 员工客户-> 分配记录状态的映射
         Map<WeFlowerCustomerRel, Integer> map = recordList.stream()
                 .collect(Collectors.toMap(WeFlowerCustomerRel::new, WeCustomerTransferRecord::getStatus, (oldValue, newValue) -> newValue));
-        for (WeCustomerVO customer : list) {
+        for (WeCustomerVO customer : weCustomerVOList) {
             WeFlowerCustomerRel rel = new WeFlowerCustomerRel(customer);
             // 判断该客户是否有分配记录,如果有则设置状态
             if (map.containsKey(rel)) {
                 customer.setTransferStatus(map.get(rel));
             }
         }
-        return list;
+    }
+
+    /**
+     * 是否存在过滤客户条件
+     *
+     * @param weCustomer {@link WeCustomer}
+     * @return true 存在， false 不存在
+     */
+    private boolean hasFilterCustomer(WeCustomer weCustomer) {
+        if(StringUtils.isNotBlank(weCustomer.getTagIds())) {
+            List<Long> tagFilterCustomers = weTagService.getCustomerByTags(weCustomer.getCorpId(), weCustomer.getTagIds());
+            if(CollectionUtils.isEmpty(tagFilterCustomers)) {
+                return false;
+            }
+            weCustomer.setRelIds(tagFilterCustomers);
+        }
+        return true;
     }
 
     @Override

@@ -7,10 +7,13 @@ import com.easyink.common.core.domain.entity.SysRole;
 import com.easyink.common.core.domain.model.LoginUser;
 import com.easyink.common.core.domain.wecom.WeUser;
 import com.easyink.common.enums.DataScopeEnum;
+import com.easyink.common.enums.ResultTip;
 import com.easyink.common.exception.CustomException;
 import com.easyink.common.exception.user.NoLoginTokenException;
+import com.easyink.common.utils.DictUtils;
 import com.easyink.common.utils.StringUtils;
 import com.easyink.wecom.login.util.LoginTokenService;
+import com.easyink.wecom.service.WeDepartmentService;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.Signature;
 import org.aspectj.lang.annotation.Aspect;
@@ -20,6 +23,9 @@ import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.stereotype.Component;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * 数据过滤处理
@@ -33,6 +39,12 @@ public class DataScopeAspect {
      * 数据权限过滤关键字
      */
     public static final String DATA_SCOPE = "dataScope";
+
+    private final WeDepartmentService weDepartmentService;
+
+    public DataScopeAspect(WeDepartmentService weDepartmentService) {
+        this.weDepartmentService = weDepartmentService;
+    }
 
     @Pointcut("@annotation(com.easyink.common.annotation.DataScope)")
     public void dataScopePointCut() {
@@ -61,7 +73,50 @@ public class DataScopeAspect {
         // 如果是超级管理员 则不用过滤
         if (loginUser != null && !loginUser.isSuperAdmin()) {
             dataScopeFilter(joinPoint, loginUser, controllerDataScope.userAlias());
+            setDataScopeUserIds(joinPoint, loginUser);
         }
+    }
+
+    /**
+     * 设置数据权限下的userId列表
+     *
+     * @param joinPoint 切点
+     * @param loginUser 登录用户实体
+     */
+    public void setDataScopeUserIds(JoinPoint joinPoint, LoginUser loginUser) {
+        SysRole role = loginUser.getRole();
+        WeUser weUser = loginUser.getWeUser();
+        String corpId = loginUser.getCorpId();
+        if (ObjectUtil.isNull(role) || ObjectUtil.isNull(weUser)) {
+            throw new CustomException(ResultTip.TIP_DATA_SCOPE_ERROR);
+        }
+        // 当前登录员工的部门id列表
+        List<String> departmentScopeList = Arrays.asList(loginUser.getDepartmentDataScope().split(DictUtils.SEPARATOR));
+        // 当前登录员工的id
+        List<String> userIdList = new ArrayList<>();
+        userIdList.add(weUser.getUserId());
+        // 数据权限下的员工id列表
+        List<String> dataScopeUserIds = new ArrayList<>();
+        switch (DataScopeEnum.getDataScope(role.getDataScope())) {
+            case CUSTOM:
+                dataScopeUserIds = weDepartmentService.getDataScopeUserIdList(departmentScopeList, userIdList, corpId);
+                break;
+            case SELF_DEPT:
+                List<String> mainDepartMentList = new ArrayList<>();
+                mainDepartMentList.add(String.valueOf(weUser.getMainDepartment()));
+                dataScopeUserIds = weDepartmentService.getDataScopeUserIdList(mainDepartMentList, null, corpId);
+                break;
+            case DEPT_AND_CHILD:
+                dataScopeUserIds = weDepartmentService.getDataScopeUserIdList(departmentScopeList, null, corpId);
+                break;
+            case SELF:
+                dataScopeUserIds = weDepartmentService.getDataScopeUserIdList(null, userIdList, corpId);
+                break;
+            default:
+                break;
+        }
+        RootEntity rootEntity = (RootEntity) joinPoint.getArgs()[0];
+        rootEntity.setDataScopeUserIds(dataScopeUserIds);
     }
 
     /**

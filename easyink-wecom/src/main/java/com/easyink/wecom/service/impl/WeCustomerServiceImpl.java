@@ -63,10 +63,7 @@ import com.easyink.wecom.domain.entity.WeExternalUseridMapping;
 import com.easyink.wecom.domain.vo.QueryCustomerFromPlusVO;
 import com.easyink.wecom.domain.vo.WeCustomerExportVO;
 import com.easyink.wecom.domain.vo.WeMakeCustomerTagVO;
-import com.easyink.wecom.domain.vo.customer.SessionArchiveCustomerVO;
-import com.easyink.wecom.domain.vo.customer.WeCustomerSumVO;
-import com.easyink.wecom.domain.vo.customer.WeCustomerUserListVO;
-import com.easyink.wecom.domain.vo.customer.WeCustomerVO;
+import com.easyink.wecom.domain.vo.customer.*;
 import com.easyink.wecom.domain.vo.sop.CustomerSopVO;
 import com.easyink.wecom.domain.vo.unionid.GetUnionIdVO;
 import com.easyink.wecom.handler.ExtendPropHolder;
@@ -175,9 +172,11 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
     private static final int EXPORT_SHEET_ROWS = 1000000;
     @Resource(name = "customerRedisCache")
     private CustomerRedisCache customerRedisCache;
+    private final WeDepartmentService weDepartmentService;
 
-    public WeCustomerServiceImpl(WeFlowerCustomerRelMapper weFlowerCustomerRelMapper) {
+    public WeCustomerServiceImpl(WeFlowerCustomerRelMapper weFlowerCustomerRelMapper, WeDepartmentService weDepartmentService) {
         this.weFlowerCustomerRelMapper = weFlowerCustomerRelMapper;
+        this.weDepartmentService = weDepartmentService;
     }
 
     @Override
@@ -431,6 +430,139 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
             weCustomer.setRelIds(tagFilterCustomers);
         }
         return true;
+    }
+
+    /**
+     * 根据查询条件，构建过滤客户id列表
+     *
+     * @param corpId     企业id
+     * @param weCustomer {@link WeCustomer}
+     * @return true 有符合条件的客户id列表，false 无符合条件的客户id列表
+     */
+    @Override
+    public boolean buildFilterExternalUseridList(String corpId, WeCustomer weCustomer) {
+        if (StringUtils.isBlank(corpId) || weCustomer == null) {
+            return false;
+        }
+        // 客户名称筛选满足条件
+        if (StringUtils.isNotBlank(weCustomer.getName())) {
+            List<String> customerByName = this.getCustomerByName(corpId, weCustomer.getName());
+            if (CollectionUtils.isEmpty(customerByName)) {
+                return false;
+            }
+            weCustomer.addFilterExternalUserIdList(customerByName);
+        }
+        // 客户生日范围筛选满足条件
+        if (StringUtils.isNotBlank(weCustomer.getBirthdayStr())) {
+            List<String> customerByBirthday = this.getCustomerByBirthday(corpId, weCustomer.getBirthdayStr());
+            if (CollectionUtils.isEmpty(customerByBirthday)) {
+                return false;
+            }
+            weCustomer.addFilterExternalUserIdList(customerByBirthday);
+        }
+        // 客户企业全称筛选满足条件
+        if (StringUtils.isNotBlank(weCustomer.getCorpFullName())) {
+            List<String> customerByCorpFullName = this.getCustomerByCorpFullName(corpId, weCustomer.getCorpFullName());
+            if (CollectionUtils.isEmpty(customerByCorpFullName)) {
+                return false;
+            }
+            weCustomer.addFilterExternalUserIdList(customerByCorpFullName);
+        }
+        // 客户性别筛选满足条件
+        if (StringUtils.isNotBlank(weCustomer.getGender())) {
+            List<String> customerByGender = this.getCustomerByGender(corpId, weCustomer.getGender());
+            if (CollectionUtils.isEmpty(customerByGender)) {
+                return false;
+            }
+            weCustomer.addFilterExternalUserIdList(customerByGender);
+        }
+        return true;
+    }
+
+    /**
+     * 根据性别获取符合条件的客户id列表
+     *
+     * @param corpId 企业id
+     * @param gender 性别，多个用","隔开
+     * @return 客户id列表
+     */
+    private List<String> getCustomerByGender(String corpId, String gender) {
+        if (StringUtils.isAnyBlank(corpId, gender)) {
+            return Collections.emptyList();
+        }
+        List<String> genderList = Arrays.asList(gender.split(DictUtils.SEPARATOR));
+        List<WeCustomer> weCustomers = this.baseMapper.selectList(new LambdaQueryWrapper<WeCustomer>().select(WeCustomer::getExternalUserid)
+                .eq(WeCustomer::getCorpId, corpId)
+                .in(WeCustomer::getGender, genderList));
+        if (CollectionUtils.isEmpty(weCustomers)) {
+            return Collections.emptyList();
+        }
+        return weCustomers.stream().map(WeCustomer::getExternalUserid).collect(Collectors.toList());
+    }
+
+    /**
+     * 根据企业全称获取符合条件的客户id列表
+     *
+     * @param corpId       企业id
+     * @param corpFullName 企业全称查询条件
+     * @return 客户id列表
+     */
+    private List<String> getCustomerByCorpFullName(String corpId, String corpFullName) {
+        if (StringUtils.isAnyBlank(corpId, corpFullName)) {
+            return Collections.emptyList();
+        }
+        List<WeCustomer> weCustomers = this.baseMapper.selectList(new LambdaQueryWrapper<WeCustomer>().select(WeCustomer::getExternalUserid)
+                                                      .eq(WeCustomer::getCorpId, corpId)
+                                                      .like(WeCustomer::getCorpFullName, corpFullName));
+        if (CollectionUtils.isEmpty(weCustomers)) {
+            return Collections.emptyList();
+        }
+        return weCustomers.stream().map(WeCustomer::getExternalUserid).collect(Collectors.toList());
+    }
+
+    /**
+     * 根据出生日期范围获取符合条件的客户id列表
+     *
+     * @param corpId      企业id
+     * @param birthdayStr 查询时间条件，用",“隔开，前一个是开始时间，后一个是结束时间
+     * @return 客户id列表
+     */
+    private List<String> getCustomerByBirthday(String corpId, String birthdayStr) {
+        if (StringUtils.isAnyBlank(corpId, birthdayStr)) {
+            return Collections.emptyList();
+        }
+        String startTime = birthdayStr.split(DictUtils.SEPARATOR)[0];
+        String endTime = birthdayStr.split(DictUtils.SEPARATOR)[1];
+        List<WeCustomer> weCustomers = this.baseMapper.selectList(new LambdaQueryWrapper<WeCustomer>()
+                                                      .select(WeCustomer::getExternalUserid)
+                                                      .eq(WeCustomer::getCorpId, corpId)
+                                                      .gt(WeCustomer::getBirthday, startTime)
+                                                      .lt(WeCustomer::getBirthday, endTime));
+        if (CollectionUtils.isEmpty(weCustomers)) {
+            return Collections.emptyList();
+        }
+        return weCustomers.stream().map(WeCustomer::getExternalUserid).collect(Collectors.toList());
+    }
+
+    /**
+     * 根据客户名称获取符合条件的客户id列表
+     *
+     * @param corpId 企业ID
+     * @param name   客户名称
+     * @return 客户id列表
+     */
+    private List<String> getCustomerByName(String corpId, String name) {
+        if (StringUtils.isAnyBlank(corpId, name)) {
+            return Collections.emptyList();
+        }
+        List<WeCustomer> weCustomers = this.baseMapper.selectList(new LambdaQueryWrapper<WeCustomer>()
+                .select(WeCustomer::getExternalUserid)
+                .eq(WeCustomer::getCorpId, corpId)
+                .like(WeCustomer::getName, name));
+        if (CollectionUtils.isEmpty(weCustomers)) {
+            return Collections.emptyList();
+        }
+        return weCustomers.stream().map(WeCustomer::getExternalUserid).collect(Collectors.toList());
     }
 
     /**
@@ -726,6 +858,41 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
     }
 
     /**
+     * 查询去重客户去重后企业微信客户列表V3
+     *
+     * @param weCustomer {@link WeCustomer}
+     * @return 客户信息列表
+     */
+    @Override
+    public List<SessionArchiveCustomerVO> selectWeCustomerListDistinctV3(WeCustomer weCustomer) {
+        if (StringUtils.isBlank(weCustomer.getCorpId()) || PageInfoUtil.getPageSize() == null || PageInfoUtil.getPageNum() == null) {
+            throw new CustomException(ResultTip.TIP_PARAM_MISSING);
+        }
+        List<String> filterNameExternalUserIdList = new ArrayList<>();
+        // 客户姓名查询条件不为空，根据姓名查询匹配的客户id列表
+        if (StringUtils.isNotBlank(weCustomer.getName())) {
+            // 获取根据姓名查询出的客户id列表
+            filterNameExternalUserIdList = getFilterNameExternalUserId(weCustomer.getName(), weCustomer.getCorpId());
+            if (CollectionUtils.isEmpty(filterNameExternalUserIdList)) {
+                return Collections.emptyList();
+            }
+        }
+        PageInfoUtil.startPageNoCount();
+        // 获取数据权限下的客户id列表
+        List<SessionArchiveCustomerVO> resultList = weFlowerCustomerRelMapper.selectExternalUseridByDataScopeV2(weCustomer.getCorpId(), weCustomer, filterNameExternalUserIdList);
+        if (CollectionUtils.isEmpty(resultList)) {
+            return Collections.emptyList();
+        }
+        // 获取external_userid列表
+        List<String> externalUserIdList = resultList.stream().map(SessionArchiveCustomerVO::getExternalUserid).collect(Collectors.toList());
+        // 补充客户信息数据到结果列表
+        resultList = supplyCustomerInfo(weCustomer.getCorpId(), externalUserIdList, resultList);
+        // 按照添加时间倒序排序
+        resultList.sort(Comparator.comparing(SessionArchiveCustomerVO::getCreateTime).reversed());
+        return resultList;
+    }
+
+    /**
      * 查询去重客户去重后企业微信客户列表
      *
      * @param weCustomer {@link WeCustomer}
@@ -761,8 +928,27 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
         resultList = suppleData(resultList, startIndex, pageSize, weCustomer, filterNameExternalUserIdList);
         // 获取external_userid列表
         List<String> externalUserIdList = resultList.stream().map(SessionArchiveCustomerVO::getExternalUserid).collect(Collectors.toList());
+        // 补充客户信息数据到结果列表
+        resultList = supplyCustomerInfo(weCustomer.getCorpId(), externalUserIdList, resultList);
+        // 按照添加时间倒序排序
+        resultList.sort(Comparator.comparing(SessionArchiveCustomerVO::getCreateTime).reversed());
+        return resultList;
+    }
+
+    /**
+     * 补充客户信息数据
+     *
+     * @param corpId             企业ID
+     * @param externalUserIdList 客户ID列表
+     * @param resultList         {@link List<SessionArchiveCustomerVO>}
+     * @return 结果列表
+     */
+    private List<SessionArchiveCustomerVO> supplyCustomerInfo(String corpId, List<String> externalUserIdList, List<SessionArchiveCustomerVO> resultList) {
+        if (StringUtils.isBlank(corpId) || CollectionUtils.isEmpty(externalUserIdList) || CollectionUtils.isEmpty(resultList)) {
+            return resultList;
+        }
         // 获取客户信息数据列表
-        List<SessionArchiveCustomerVO> customerInfoList = weCustomerMapper.selectWeCustomerListDistinctV2(weCustomer.getCorpId(), externalUserIdList);
+        List<SessionArchiveCustomerVO> customerInfoList = weCustomerMapper.selectWeCustomerListDistinctV2(corpId, externalUserIdList);
         if (CollectionUtils.isEmpty(customerInfoList)) {
             return resultList;
         }
@@ -774,8 +960,6 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
                 }
             }
         }
-        // 按照添加时间倒序排序
-        resultList.sort(Comparator.comparing(SessionArchiveCustomerVO::getCreateTime).reversed());
         return resultList;
     }
 
@@ -820,13 +1004,14 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
         if (CollectionUtils.isEmpty(dataList) || startIndex == null || pageSize == null || weCustomer == null) {
             return dataList;
         }
+        startIndex = pageSize;
         // 判断查询的结果是否满足分页大小
         while (dataList.size() < pageSize) {
-            startIndex += pageSize;
             // 缺少多少条，就往后再次查几条。缺少的条数 = 分页大小 - 列表长度
             int endIndex = pageSize - dataList.size();
             // 不满足，继续查询，将新的查询结果添加到列表
             List<SessionArchiveCustomerVO> nextList = weFlowerCustomerRelMapper.selectExternalUseridByDataScope(weCustomer.getCorpId(), weCustomer, filterNameExternalUserIdList, startIndex, endIndex);
+            startIndex += endIndex;
             // 没有数据则跳出循环
             if (CollectionUtils.isEmpty(nextList)) {
                 break;
@@ -1493,6 +1678,9 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
         if (weCustomerSearchDTO.getExtendProperties().size() > 0) {
             weCustomer.setExtendProperties(weCustomerSearchDTO.getExtendProperties());
         }
+        if (CollectionUtils.isNotEmpty(weCustomerSearchDTO.getDataScopeUserIds()) && weCustomerSearchDTO.getDataScopeUserIds().size() > 0) {
+            weCustomer.setDataScopeUserIds(weCustomerSearchDTO.getDataScopeUserIds());
+        }
         return weCustomer;
     }
 
@@ -1502,25 +1690,16 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
      * @param weCustomer       客户条件
      * @param selectProperties 需要导出的扩展属性
      * @param extendPropHolder 扩展字段属性容器 {@link ExtendPropHolder}
+     * @param userIdList       员工id列表
      * @return 需要导出的客户
      */
-    public List<WeCustomerExportVO> selectExportCustomer(WeCustomer weCustomer, List<String> selectProperties, ExtendPropHolder extendPropHolder) {
+    public List<WeCustomerExportVO> selectExportCustomer(WeCustomer weCustomer, List<String> selectProperties, ExtendPropHolder extendPropHolder, List<String> userIdList) {
         if (StringUtils.isBlank(weCustomer.getCorpId())) {
             throw new CustomException(ResultTip.TIP_GENERAL_PARAM_ERROR);
         }
-        List<WeCustomerVO> list = weCustomerMapper.selectWeCustomerV3(weCustomer);
-        // 根据返回的结果获取需要的标签详情
-        CompletableFuture<Void> tagFuture = CompletableFuture.runAsync(
-                () -> weFlowerCustomerTagRelService.setTagForCustomers(weCustomer.getCorpId(), list), threadPoolTaskExecutor
-        );
-        // 根据返回的结果获取需要的扩展字段
-        CompletableFuture<Void> extendPropFuture = CompletableFuture.runAsync(
-                () -> weCustomerExtendPropertyService.setExtendPropertyForCustomers(weCustomer.getCorpId(), list), threadPoolTaskExecutor
-        );
-        CompletableFuture.allOf(tagFuture, extendPropFuture).join();
-
-//        List<WeCustomerVO> list = weCustomerMapper.selectExportCustomer(weCustomer);
-//        List<WeCustomerVO> list  = weCustomerMapper.selectWeCustomerListV2(weCustomer) ;
+        List<WeCustomerVO> list = weCustomerMapper.selectWeCustomerV4(weCustomer, userIdList);
+        // 异步执行补充数据任务
+        asyncSupplyData(list, weCustomer.getCorpId());
         List<WeCustomerExportVO> exportList = list.stream().map(WeCustomerExportVO::new).collect(Collectors.toList());
         weCustomerExtendPropertyService.setKeyValueMapper(weCustomer.getCorpId(), exportList, selectProperties, extendPropHolder);
         return exportList;
@@ -1536,19 +1715,96 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
         if (!hasFilterCustomer(weCustomer, corpId)) {
             return Collections.emptyList();
         }
+        // 根据查询条件，构建过滤客户id列表
+        if (!buildFilterExternalUseridList(corpId, weCustomer)) {
+            return Collections.emptyList();
+        }
+        // 查询条件中选择的员工id范围列表
+        List<String> chooseUserIdList = weDepartmentService.getDataScopeUserIdList(weCustomer.convertDepartmentList(), weCustomer.convertUserIdList(), weCustomer.getCorpId());
         // 查询客户
         PageInfoUtil.startPage();
-        List<WeCustomerVO> list = weCustomerMapper.selectWeCustomerV3(weCustomer);
-        // 根据返回的结果获取需要的标签详情
-        CompletableFuture<Void> tagFuture = CompletableFuture.runAsync(
-                () -> weFlowerCustomerTagRelService.setTagForCustomers(corpId, list), threadPoolTaskExecutor
-        );
-        // 根据返回的结果获取需要的扩展字段
-        CompletableFuture<Void> extendPropFuture = CompletableFuture.runAsync(
-                () -> weCustomerExtendPropertyService.setExtendPropertyForCustomers(corpId, list), threadPoolTaskExecutor
-        );
-        CompletableFuture.allOf(tagFuture, extendPropFuture).join();
+        List<WeCustomerVO> list = weCustomerMapper.selectWeCustomerV4(weCustomer, chooseUserIdList);
+        // 异步执行补充数据任务
+        asyncSupplyData(list, corpId);
         return list;
+    }
+
+    /**
+     * 异步执行补充数据任务
+     *
+     * @param list   客户列表 {@link List<WeCustomerVO>}
+     * @param corpId 企业id
+     */
+    private void asyncSupplyData(List<WeCustomerVO> list, String corpId) {
+        if (CollectionUtils.isEmpty(list) || StringUtils.isBlank(corpId)) {
+            return;
+        }
+        // 根据返回的结果获取需要的标签详情
+        CompletableFuture<Void> tagFuture = CompletableFuture.runAsync(() -> {
+            try {
+                weFlowerCustomerTagRelService.setTagForCustomers(corpId, list);
+            } catch (Exception e) {
+                log.info("[客户中心客户列表] 获取标签详情异步任务出现异常，异常原因：{}，corpId：{}", ExceptionUtils.getStackTrace(e), corpId);
+            }
+        }, threadPoolTaskExecutor);
+        // 根据返回的结果获取需要的扩展字段
+        CompletableFuture<Void> extendPropFuture = CompletableFuture.runAsync(() -> {
+            try {
+                weCustomerExtendPropertyService.setExtendPropertyForCustomers(corpId, list);
+            } catch (Exception e) {
+                log.info("[客户中心客户列表] 获取拓展字段异步任务出现异常，异常原因：{}，corpId：{}", ExceptionUtils.getStackTrace(e), corpId);
+            }
+        }, threadPoolTaskExecutor);
+        // 根据返回的结果获取需要的员工信息
+        CompletableFuture<Void> userInfoFuture = CompletableFuture.runAsync(() -> {
+            try {
+                weUserService.setUserInfoByList(list, corpId);
+            } catch (Exception e) {
+                log.info("[客户中心客户列表] 补充员工信息异步任务出现异常，异常原因：{}，corpId：{}", ExceptionUtils.getStackTrace(e), corpId);
+            }
+        }, threadPoolTaskExecutor);
+        // 根据返回结果获取需要的客户信息
+        CompletableFuture<Void> customerInfoFuture = CompletableFuture.runAsync(() -> {
+            try {
+                this.setCustomerInfoByList(list, corpId);
+            } catch (Exception e) {
+                log.info("[客户中心客户列表] 补充客户信息异步任务出现异常，异常原因：{}，corpId：{}", ExceptionUtils.getStackTrace(e), corpId);
+            }
+        }, threadPoolTaskExecutor);
+        // 等待所有任务完成
+        CompletableFuture.allOf(tagFuture, extendPropFuture, userInfoFuture, customerInfoFuture).join();
+    }
+
+    /**
+     * 为客户设置客户信息
+     *
+     * @param list   客户列表
+     * @param corpId 企业id
+     */
+    @Override
+    public void setCustomerInfoByList(List<WeCustomerVO> list, String corpId) {
+        if(StringUtils.isBlank(corpId) || CollectionUtils.isEmpty(list)) {
+            return;
+        }
+        // 获取客户id列表
+        List<String> externalUseridList = list.stream().map(WeCustomerVO::getExternalUserid).collect(Collectors.toList());
+        // 根据客户id列表，查询客户信息列表
+        List<WeCustomer> weCustomers = this.baseMapper.selectCustomerInfoByExternalIdList(externalUseridList, corpId);
+        // 设置客户信息
+        for (WeCustomerVO weCustomerVO : list) {
+            for (WeCustomer weCustomer : weCustomers) {
+                if (weCustomer.getExternalUserid().equals(weCustomerVO.getExternalUserid())) {
+                    weCustomerVO.setCorpId(weCustomer.getCorpId());
+                    weCustomerVO.setName(weCustomer.getName());
+                    weCustomerVO.setAvatar(weCustomer.getAvatar());
+                    weCustomerVO.setType(weCustomer.getType());
+                    weCustomerVO.setGender(Integer.valueOf(weCustomer.getGender()));
+                    weCustomerVO.setBirthday(weCustomer.getBirthday());
+                    weCustomerVO.setCorpName(weCustomer.getCorpName());
+                    weCustomerVO.setCorpFullName(weCustomer.getCorpFullName());
+                }
+            }
+        }
     }
 
     @Override
@@ -1576,6 +1832,7 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
         WeCustomerSearchDTO weCustomerSearchDTO = new WeCustomerSearchDTO();
         List<String> selectProperties = dto.getSelectedProperties();
         BeanUtils.copyProperties(dto, weCustomerSearchDTO);
+        String corpId = dto.getCorpId();
         // 获取导出客户的条件
         WeCustomer weCustomer = changeWecustomer(weCustomerSearchDTO);
         // 分批导出客户
@@ -1585,7 +1842,14 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
             Stopwatch stopwatch = Stopwatch.createStarted();
             ExcelUtil<WeCustomerExportVO> util = new ExcelUtil<>(WeCustomerExportVO.class, selectProperties);
             List<List<String>> fields = util.getFields();
-            Integer totalCount = weCustomerMapper.selectWeCustomerCount(weCustomer);
+            Integer totalCount;
+            // 根据查询条件，筛选客户id列表
+            hasFilterCustomer(weCustomer, corpId);
+            // 根据查询条件，构建过滤客户id列表
+            buildFilterExternalUseridList(corpId, weCustomer);
+            // 查询条件中选择的员工id范围列表
+            List<String> chooseUserIdList = weDepartmentService.getDataScopeUserIdList(weCustomer.convertDepartmentList(), weCustomer.convertUserIdList(), weCustomer.getCorpId());
+            totalCount = weCustomerMapper.selectWeCustomerCountV2(weCustomer, chooseUserIdList);
             //每一个Sheet存放数据
             Integer sheetDataRows = EXPORT_SHEET_ROWS;
             //每次写入的数据量
@@ -1615,7 +1879,7 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
                     dataList.clear();
                     //分页查询
                     PageHelper.startPage(j + 1 + oneSheetWriteCount * i, writeDataRows, false);
-                    List<WeCustomerExportVO> resultList = selectExportCustomer(weCustomer, selectProperties, extendPropHolder);
+                    List<WeCustomerExportVO> resultList = selectExportCustomer(weCustomer, selectProperties, extendPropHolder, chooseUserIdList);
                     WriteSheet writeSheet = EasyExcel.writerSheet(i, "客户" + (i + 1)).head(fields).build();
                     excelWriter.write(getExportDataBySelectedProp(resultList, selectProperties, extendPropHolder), writeSheet);
                 }

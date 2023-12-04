@@ -100,7 +100,7 @@ public class StatisticsController extends BaseController {
     @ApiOperation("获取客户概况-数据总览-日期维度")
     public TableDataInfo<CustomerOverviewDateVO> getCustomerOverViewOfDate(@RequestBody @Validated CustomerOverviewDTO dto) {
         dto.setCorpId(LoginTokenService.getLoginUser().getCorpId());
-        return getDataTable(weUserCustomerMessageStatisticsService.getCustomerOverViewOfDate(dto), dto.getTotal());
+        return getDataTable(weUserCustomerMessageStatisticsService.getCustomerOverViewOfDate(dto, true), dto.getTotal());
     }
 
     @PreAuthorize("@ss.hasPermi('statistic:customerContact:export')")
@@ -130,7 +130,7 @@ public class StatisticsController extends BaseController {
     @ApiOperation("获取客户活跃度-日期维度")
     public TableDataInfo<CustomerActivityOfDateVO> getCustomerActivityOfDate(@RequestBody @Validated CustomerActivityDTO dto) {
         dto.setCorpId(LoginTokenService.getLoginUser().getCorpId());
-        return getDataTable(weUserCustomerMessageStatisticsService.getCustomerActivityOfDate(dto, true));
+        return getDataTable(weUserCustomerMessageStatisticsService.getCustomerActivityOfDate(dto, true), dto.getTotal());
     }
 
     @PreAuthorize("@ss.hasPermi('statistic:customerContact:export')")

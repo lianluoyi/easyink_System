@@ -23,6 +23,8 @@ import com.easyink.wecom.domain.dto.statistics.*;
 import com.easyink.wecom.domain.entity.WeUserCustomerMessageStatistics;
 import com.easyink.wecom.domain.enums.statistics.StatisticsEnum;
 import com.easyink.wecom.domain.vo.ConversationArchiveVO;
+import com.easyink.wecom.domain.vo.WeUserVO;
+import com.easyink.wecom.domain.vo.customer.SessionArchiveCustomerVO;
 import com.easyink.wecom.domain.vo.statistics.*;
 import com.easyink.wecom.mapper.*;
 import com.easyink.wecom.mapper.form.WeFormCustomerFeedbackMapper;
@@ -65,6 +67,7 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
     private final WeFlowerCustomerRelService weFlowerCustomerRelService;
     private final WeCorpAccountMapper weCorpAccountMapper;
     private final WeDepartmentService weDepartmentService;
+    private final WeCustomerMapper weCustomerMapper;
     @Resource(name = "threadPoolTaskExecutor")
     private ThreadPoolTaskExecutor threadPoolTaskExecutor;
 
@@ -431,7 +434,7 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
     @Override
     @DataScope
     public AjaxResult exportCustomerOverViewOfDate(CustomerOverviewDTO dto) {
-        List<CustomerOverviewDateVO> list = getCustomerOverViewOfDate(dto);
+        List<CustomerOverviewDateVO> list = getCustomerOverViewOfDate(dto, false);
         // 导出
         list.forEach(CustomerOverviewDateVO::bindExportData);
         ExcelUtil<CustomerOverviewDateVO> util = new ExcelUtil<>(CustomerOverviewDateVO.class);
@@ -441,12 +444,13 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
     /**
      * 获取客户概况-日期维度
      *
-     * @param dto  {@link StatisticsDTO}
+     * @param dto      {@link StatisticsDTO}
+     * @param pageFlag 是否分页，true 是， false 否
      * @return {@link CustomerOverviewVO}
      */
     @Override
     @DataScope
-    public List<CustomerOverviewDateVO> getCustomerOverViewOfDate(CustomerOverviewDTO dto) {
+    public List<CustomerOverviewDateVO> getCustomerOverViewOfDate(CustomerOverviewDTO dto, Boolean pageFlag) {
         if (!isHaveDataScope(dto) || dto == null) {
             return new ArrayList<>();
         }
@@ -461,7 +465,7 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
         // 获取数据权限下的员工id列表
         List<String> userIdList = weDepartmentService.getDataScopeUserIdList(dto.getDepartmentIds(), dto.getUserIds(), dto.getCorpId());
         // 根据分页参数和时间范围，获取日期时间
-        List<Date> dates = getDatesByPage(dto);
+        List<Date> dates = getDatesByPage(dto, pageFlag);
         // 最终需要返回的数据VO列表
         CopyOnWriteArrayList<CustomerOverviewDateVO> resultList = new CopyOnWriteArrayList<>();
         // 执行任务列表
@@ -548,19 +552,20 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
     /**
      * 根据分页参数和时间范围，获取日期时间
      *
-     * @param dto {@link CustomerOverviewDTO}
+     * @param dto      {@link CustomerOverviewDTO}
+     * @param pageFlag 是否分页，true 是， false 否
      * @return 日期范围
      */
-    private List<Date> getDatesByPage(CustomerOverviewDTO dto) {
-        if (dto == null || StringUtils.isAnyBlank(dto.getBeginTime(), dto.getEndTime()) || dto.getPageNum() == null || dto.getPageSize() == null) {
+    private List<Date> getDatesByPage(CustomerOverviewDTO dto, Boolean pageFlag) {
+        if (dto == null || StringUtils.isAnyBlank(dto.getBeginTime(), dto.getEndTime()) || dto.getPageNum() == null || dto.getPageSize() == null || pageFlag == null) {
             return Collections.emptyList();
         }
         // 获取时间范围内的所有日期
         Date beginDate = DateUtils.dateTime(DateUtils.YYYY_MM_DD, dto.getBeginTime());
         Date endDate = DateUtils.dateTime(DateUtils.YYYY_MM_DD, dto.getEndTime());
         List<Date> dates = DateUtils.findDates(beginDate, endDate);
-        // 排序条件为空，表示使用默认排序，按照时间倒序截取分页
-        if (dto.getSortType() == null) {
+        // 排序条件为空，且需要分页，表示使用默认排序，按照时间倒序截取分页
+        if (dto.getSortType() == null && pageFlag) {
         // 设置日期范围下的数据总数
         dto.setTotal((long) dates.size());
         // 获取截取起始位置
@@ -622,7 +627,88 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
         if (Boolean.TRUE.equals(pageFlag)) {
             startPage(dto);
         }
-        return weUserCustomerMessageStatisticsMapper.getCustomerActivityOfDate(dto);
+        // 根据分页参数、是否分页，获取日期范围
+        List<Date> dates = getDatesByPage(dto, pageFlag);
+        if (CollectionUtils.isEmpty(dates)) {
+            return Collections.emptyList();
+        }
+        // 结果列表
+        List<CustomerActivityOfDateVO> resultVOList = new ArrayList<>();
+        // 初始化日期范围内的列表数据
+        for (Date date : dates) {
+            resultVOList.add(new CustomerActivityOfDateVO(date));
+        }
+        // 获取查询条件下的员工id列表
+        List<String> userIdList = weDepartmentService.getDataScopeUserIdList(dto.getDepartmentIds(), dto.getUserIds(), dto.getCorpId());
+        List<CompletableFuture<Void>> futureList = new ArrayList<>();
+        for (CustomerActivityOfDateVO customerActivityOfDateVO : resultVOList) {
+            CompletableFuture<Void> buildDataFuture = CompletableFuture.runAsync(() -> {
+                try {
+                    buildCustomerActivityOfDateVOData(dto, customerActivityOfDateVO, userIdList);
+                } catch (Exception e) {
+                    log.info("[客户活跃度-日期维度] 处理单个日期维度数据异常，异常原因ex：{}，日期：{}，corpId：{}", ExceptionUtils.getStackTrace(e), customerActivityOfDateVO.getTime(), dto.getCorpId());
+                }
+            }, threadPoolTaskExecutor);
+            futureList.add(buildDataFuture);
+        }
+        // 等待所有任务完成
+        CompletableFuture.allOf(futureList.toArray(new CompletableFuture[0])).join();
+        return resultVOList;
+    }
+
+    /**
+     * 构建客户活跃度-日期维度数据
+     *
+     * @param dto                      {@link CustomerActivityDTO}
+     * @param customerActivityOfDateVO {@link CustomerActivityOfDateVO}
+     * @param userIdList               员工id列表
+     */
+    private void buildCustomerActivityOfDateVOData(CustomerActivityDTO dto, CustomerActivityOfDateVO customerActivityOfDateVO, List<String> userIdList) {
+        if (dto == null || customerActivityOfDateVO == null || customerActivityOfDateVO.getTime() == null) {
+            return;
+        }
+        // 转换查询时间
+        String searchTime = DateUtils.dateTime(customerActivityOfDateVO.getTime());
+        // 设置查询时间
+        dto.setSendStartTime(searchTime);
+        dto.setSendEndTime(searchTime);
+        // 查询当前时间下列表数据
+        CustomerActivityOfDateVO dateData = weUserCustomerMessageStatisticsMapper.getCustomerActivityOfDate(dto, userIdList);
+        // 数据不为空，设置数据
+        if (dateData != null) {
+            customerActivityOfDateVO.setUserSendMessageCnt(dateData.getUserSendMessageCnt());
+            customerActivityOfDateVO.setCustomerSendMessageCnt(dateData.getCustomerSendMessageCnt());
+            customerActivityOfDateVO.setChatCustomerCnt(dateData.getChatCustomerCnt());
+        }
+    }
+
+    /**
+     * 根据分页参数和时间范围，获取日期时间
+     *
+     * @param dto {@link CustomerOverviewDTO}
+     * @param isPageFlag 是否需要分页，true 是, false 不是
+     * @return 日期范围
+     */
+    private List<Date> getDatesByPage(CustomerActivityDTO dto, Boolean isPageFlag) {
+        if (dto == null || StringUtils.isAnyBlank(dto.getSendStartTime(), dto.getSendEndTime()) || dto.getPageNum() == null || dto.getPageSize() == null || isPageFlag == null) {
+            return Collections.emptyList();
+        }
+        // 获取时间范围内的所有日期
+        Date beginDate = DateUtils.dateTime(DateUtils.YYYY_MM_DD, dto.getSendStartTime());
+        Date endDate = DateUtils.dateTime(DateUtils.YYYY_MM_DD, dto.getSendEndTime());
+        List<Date> dates = DateUtils.findDates(beginDate, endDate);
+        // 需要分页，根据分页参数截取
+        if (isPageFlag) {
+            // 获取截取起始位置
+            int startIndex = PageInfoUtil.getStartIndex(dto.getPageNum(), dto.getPageSize());
+            // 获取截取结束位置
+            int endIndex = Math.min(startIndex + dto.getPageSize(), dates.size());
+            // 设置日期范围下的数据总数
+            dto.setTotal((long) dates.size());
+            return dates.subList(startIndex, endIndex);
+        }
+        // 不需要分页，统计所有日期范围的数据返回
+        return dates;
     }
 
     @Override
@@ -643,7 +729,37 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
         if (Boolean.TRUE.equals(pageFlag)) {
             startPage(dto);
         }
-        return weUserCustomerMessageStatisticsMapper.getCustomerActivityOfUser(dto);
+        String corpId = dto.getCorpId();
+        // 获取查询条件下的userid列表
+        List<String> userIdList = weDepartmentService.getDataScopeUserIdList(dto.getDepartmentIds(), dto.getUserIds(), corpId);
+        // 获取员工维度列表
+        List<CustomerActivityOfUserVO> resultVOList = weUserCustomerMessageStatisticsMapper.getCustomerActivityOfUser(dto, userIdList);
+        // 补充客户活跃度-员工维度列表员工信息
+        supplyCustomerActivityOfUserVOInfo(corpId, resultVOList);
+        return resultVOList;
+    }
+
+    /**
+     * 补充客户活跃度-员工维度列表员工信息
+     *
+     * @param corpId 企业id
+     * @param list   客户活跃度-员工维度列表 {@link List<CustomerActivityOfUserVO>}
+     */
+    private void supplyCustomerActivityOfUserVOInfo(String corpId, List<CustomerActivityOfUserVO> list) {
+        if (StringUtils.isBlank(corpId) || CollectionUtils.isEmpty(list)) {
+            return;
+        }
+        List<String> userIdList = list.stream().map(CustomerActivityOfUserVO::getUserId).collect(Collectors.toList());
+        List<WeUserVO> weUserVOS = weUserMapper.selectWeUserInfoByUserIdList(userIdList, corpId);
+        for (CustomerActivityOfUserVO customerActivityOfUserVO : list) {
+            for (WeUserVO weUserVO : weUserVOS) {
+                if (customerActivityOfUserVO.getUserId().equals(weUserVO.getUserId())) {
+                    customerActivityOfUserVO.setUserName(weUserVO.getUserName());
+                    customerActivityOfUserVO.setDepartmentName(weUserVO.getMainDepartmentName());
+                    customerActivityOfUserVO.setUserHeadImage(weUserVO.getHeadImageUrl());
+                }
+            }
+        }
     }
 
     @Override
@@ -652,10 +768,83 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
         if (!isHaveDataScope(dto)) {
             return new ArrayList<>();
         }
+        String corpId = dto.getCorpId();
+        // 获取查询条件下的userid列表
+        List<String> userIdList = weDepartmentService.getDataScopeUserIdList(dto.getDepartmentIds(), dto.getUserIds(), corpId);
         if (Boolean.TRUE.equals(pageFlag)) {
             startPage(dto);
         }
-        return weUserCustomerMessageStatisticsMapper.getCustomerActivityOfCustomer(dto);
+        // 查询客户维度列表
+        List<CustomerActivityOfCustomerVO> resultVOList = weUserCustomerMessageStatisticsMapper.getCustomerActivityOfCustomer(dto, userIdList);
+        if (CollectionUtils.isEmpty(resultVOList)) {
+            return Collections.emptyList();
+        }
+        // 补充客户活跃度-客户维度列表客户信息
+        CompletableFuture<Void> customerInfoFuture = CompletableFuture.runAsync(() -> {
+            try {
+                supplyCustomerActivityOfCustomerInfo(corpId, resultVOList);
+            } catch (Exception e) {
+                log.info("[客户活跃度-客户维度] 补充客户信息异常ex：{}，corpId：{}", ExceptionUtils.getStackTrace(e), corpId);
+            }
+        }, threadPoolTaskExecutor);
+        // 补充客户活跃度-客户维度列表员工信息
+        CompletableFuture<Void> userInfoFuture = CompletableFuture.runAsync(() -> {
+            try {
+                supplyCustomerActivityOfCustomerVOUserInfo(corpId, resultVOList);
+            } catch (Exception e) {
+                log.info("[客户活跃度-客户维度] 补充员工信息异常ex：{}，corpId：{}", ExceptionUtils.getStackTrace(e), corpId);
+            }
+        }, threadPoolTaskExecutor);
+        // 等待所有任务完成
+        CompletableFuture.allOf(customerInfoFuture, userInfoFuture).join();
+        return resultVOList;
+    }
+
+    /**
+     * 补充客户活跃度-客户维度列表员工信息
+     *
+     * @param corpId 企业id
+     * @param list   客户活跃度-客户维度列表 {@link List<CustomerActivityOfCustomerVO>}
+     */
+    private void supplyCustomerActivityOfCustomerVOUserInfo(String corpId, List<CustomerActivityOfCustomerVO> list) {
+        if (StringUtils.isBlank(corpId) || CollectionUtils.isEmpty(list)) {
+            return;
+        }
+        List<String> userIdList = list.stream().map(CustomerActivityOfCustomerVO::getUserId).collect(Collectors.toList());
+        List<WeUserVO> weUserVOS = weUserMapper.selectWeUserInfoByUserIdList(userIdList, corpId);
+        for (CustomerActivityOfCustomerVO customerActivityOfCustomerVO : list) {
+            for (WeUserVO weUserVO : weUserVOS) {
+                if (customerActivityOfCustomerVO.getUserId().equals(weUserVO.getUserId())) {
+                    customerActivityOfCustomerVO.setUserName(weUserVO.getUserName());
+                    customerActivityOfCustomerVO.setDepartmentName(weUserVO.getMainDepartmentName());
+                }
+            }
+        }
+    }
+
+    /**
+     * 补充客户活跃度-客户维度列表客户信息
+     *
+     * @param corpId 企业id
+     * @param list   客户活跃度-客户维度列表 {@link List<CustomerActivityOfCustomerVO>}
+     */
+    private void supplyCustomerActivityOfCustomerInfo(String corpId, List<CustomerActivityOfCustomerVO> list) {
+        if (StringUtils.isBlank(corpId) || CollectionUtils.isEmpty(list)) {
+            return;
+        }
+        List<String> externalUseridList = list.stream().map(CustomerActivityOfCustomerVO::getExternalUserId).collect(Collectors.toList());
+        if (CollectionUtils.isEmpty(externalUseridList)) {
+            return;
+        }
+        List<SessionArchiveCustomerVO> customerInfoList = weCustomerMapper.selectWeCustomerListDistinctV2(corpId, externalUseridList);
+        for (CustomerActivityOfCustomerVO customerActivityOfCustomerVO : list) {
+            for (SessionArchiveCustomerVO sessionArchiveCustomerVO : customerInfoList) {
+                if (customerActivityOfCustomerVO.getExternalUserId().equals(sessionArchiveCustomerVO.getExternalUserid())) {
+                    customerActivityOfCustomerVO.setExternalUserName(sessionArchiveCustomerVO.getName());
+                    customerActivityOfCustomerVO.setExternalUserHeadImage(sessionArchiveCustomerVO.getAvatar());
+                }
+            }
+        }
     }
 
     @Override

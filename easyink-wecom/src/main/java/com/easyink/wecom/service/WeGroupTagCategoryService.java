@@ -18,15 +18,17 @@ public interface WeGroupTagCategoryService {
      * 新增群标签组
      *
      * @param weGroupTagCategoryDTO weGroupTagCategoryDTO
+     * @return 群标签组信息 {@link WeGroupTagCategoryVO}
      */
-    void add(AddWeGroupTagCategoryDTO weGroupTagCategoryDTO);
+    WeGroupTagCategoryVO add(AddWeGroupTagCategoryDTO weGroupTagCategoryDTO);
 
     /**
      * 编辑标签组
      *
      * @param weGroupTagCategoryDTO weGroupTagCategoryDTO
+     * @return 群标签组信息 {@link WeGroupTagCategoryVO}
      */
-    void update(UpdateWeGroupTagCategoryDTO weGroupTagCategoryDTO);
+    WeGroupTagCategoryVO update(UpdateWeGroupTagCategoryDTO weGroupTagCategoryDTO);
 
     /**
      * 删除标签组
