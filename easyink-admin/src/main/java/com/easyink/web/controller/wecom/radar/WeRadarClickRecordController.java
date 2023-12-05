@@ -56,8 +56,8 @@ public class WeRadarClickRecordController extends BaseController {
 
     @GetMapping("/getChannelSort")
     @ApiOperation("获得渠道排序")
-    public AjaxResult<RadarChannelSortVO> getChannelSort(@RequestParam("radarId") Long radarId) {
-        return AjaxResult.success(radarClickRecordService.getChannelSort(radarId));
+    public AjaxResult<RadarChannelSortVO> getChannelSort(@RequestParam("radarId") Long radarId, @RequestParam("beginTime") String beginTime, @RequestParam("endTime") String endTime) {
+        return AjaxResult.success(radarClickRecordService.getChannelSort(radarId, beginTime, endTime));
     }
 
 

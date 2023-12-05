@@ -53,4 +53,8 @@ public class WeEmpleCodeAnalyse {
     @ApiModelProperty(value = "1:新增，0:流失")
     @TableField("type")
     private Boolean type;
+
+    @ApiModelProperty(value = "添加时间（冗余字段），用于获客链接客户维度显示，格式YYYY-MM-DD HH:MM:SS")
+    @TableField("add_time")
+    private Date addTime;
 }

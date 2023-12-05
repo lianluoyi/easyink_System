@@ -102,6 +102,5 @@ public interface WeUserCustomerMessageStatisticsMapper extends BaseMapper<WeUser
      * @return {@link UserServiceTimeDTO}
      */
     List<UserServiceTimeDTO> getFilterOfUser(@Param("corpId") String corpId, @Param("list") List<String> userIdList, @Param("beginTime") String beginTime, @Param("endTime") String endTime);
-
 }
 

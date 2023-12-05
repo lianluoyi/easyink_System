@@ -144,6 +144,7 @@ ruoyi:
       - /getPublicKey
       - /url
       - /wecom/transferData/**
+      - /actuator/**
 
 
 # 开发环境配置
@@ -423,7 +424,33 @@ wecome:
           - /wecom/chat/collection/addCollection
           - /wecom/chat/collection/cancleCollection
           - /wecom/chat/collection/list
-  needCustomTokenUrl:
+  needContactTokenUrl:
+          - /user/create
+          - /user/update
+          - /user/delete
+          - /user/batchdelete
+          - /department/create
+          - /department/update
+          - /department/delete
+          - /corp/get_join_qrcode
+  fileUplodUrl:
+          - /media/upload
+          - /media/uploadimg
+          - /media/upload_attachment
+  needChatTokenUrl:
+          - /msgaudit/get_permit_user_list
+          - /msgaudit/check_single_agree
+          - /msgaudit/check_room_agree
+          - /msgaudit/groupchat/get
+  # V1.36.0版本后，企微官方限制，客户联系Token不再使用，调用API凭证转到自建/代开发应用Token
+  thirdAppUrl:
+          - /user/getuserinfo
+          - /get_jsapi_ticket
+          - /ticket/get
+          - /agent/list
+          - /message/send
+          - /agent/get
+          - /agent/set
           - /externalcontact/get_follow_user_list
           - /externalcontact/add_contact_way
           - /externalcontact/update_contact_way
@@ -462,32 +489,6 @@ wecome:
           - /externalcontact/groupchat/update_join_way
           - /externalcontact/groupchat/del_join_way
           - /externalcontact/unionid_to_external_userid
-  needContactTokenUrl:
-          - /user/create
-          - /user/update
-          - /user/delete
-          - /user/batchdelete
-          - /department/create
-          - /department/update
-          - /department/delete
-          - /corp/get_join_qrcode
-  fileUplodUrl:
-          - /media/upload
-          - /media/uploadimg
-          - /media/upload_attachment
-  needChatTokenUrl:
-          - /msgaudit/get_permit_user_list
-          - /msgaudit/check_single_agree
-          - /msgaudit/check_room_agree
-          - /msgaudit/groupchat/get
-  thirdAppUrl:
-          - /user/getuserinfo
-          - /get_jsapi_ticket
-          - /ticket/get
-          - /agent/list
-          - /message/send
-          - /agent/get
-          - /agent/set
   needErrcodeUrl: # 如果有错误码需要单独业务处理,不抛出异常的接口
     - /externalcontact/get_group_msg_result
     - /externalcontact/del_corp_tag
@@ -566,3 +567,19 @@ thread-pool-prop:
     corePoolSize: ${THREAD_POOL_SEND_CALLBACK_CORE_SIZE:5}
     maxPoolSize: ${THREAD_POOL_SEND_CALLBACK_MAX_SIZE:5}
 
+# prometheus配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    export:
+      prometheus:
+        pushgateway:
+          enabled: false
+          base-url: #[*]
+          push-rate: 15s
+          job: ${spring.application.name}

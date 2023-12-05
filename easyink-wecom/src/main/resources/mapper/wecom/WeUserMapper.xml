@@ -510,6 +510,9 @@
             <if test="endTime != null">
                 AND wu.dimission_time &lt;= #{endTime}
             </if>
+            <if test="limit != null and startNum != null">
+                limit #{startNum},#{limit}
+            </if>
         </where>
     </select>
     <!--根据创建人名称列表和企业ID获取创建人对应的主部门名称-->
@@ -532,7 +535,7 @@
             wu.user_name,
             wu.head_image_url AS headImageUrl,
             wd.name as mainDepartmentName
-        FROM we_user wu LEFT JOIN we_department wd ON wu.main_department = wd.id
+        FROM we_user wu LEFT JOIN we_department wd ON wu.main_department = wd.id AND wu.corp_id = wd.corp_id
         WHERE wu.corp_id = #{corpId}
         AND wu.user_id IN
         <foreach collection="userIdList" item="userId" separator="," open="(" close=")">

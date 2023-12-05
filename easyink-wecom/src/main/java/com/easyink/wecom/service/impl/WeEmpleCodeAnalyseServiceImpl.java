@@ -328,6 +328,7 @@ public class WeEmpleCodeAnalyseServiceImpl extends ServiceImpl<WeEmpleCodeAnalys
             weEmpleCodeAnalyse.setExternalUserId(externalUserId);
             weEmpleCodeAnalyse.setTime(new Date());
             weEmpleCodeAnalyse.setType(addFlag);
+            weEmpleCodeAnalyse.setAddTime(new Date());
             baseMapper.insert(weEmpleCodeAnalyse);
             return true;
         } catch (Exception e) {
@@ -354,6 +355,7 @@ public class WeEmpleCodeAnalyseServiceImpl extends ServiceImpl<WeEmpleCodeAnalys
             weEmpleCodeAnalyse.setExternalUserId(externalUserId);
             weEmpleCodeAnalyse.setTime(new Date());
             weEmpleCodeAnalyse.setType(addFlag);
+            weEmpleCodeAnalyse.setAddTime(new Date());
             baseMapper.insert(weEmpleCodeAnalyse);
             return true;
         } catch (Exception e) {

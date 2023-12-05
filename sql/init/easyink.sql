@@ -1346,7 +1346,6 @@ CREATE TABLE `we_corp_account`
     `customer_churn_notice_switch` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci      NOT NULL DEFAULT '0' COMMENT '客户流失通知开关 0:关闭 1:开启',
     `customer_loss_tag_switch`     char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci      NOT NULL DEFAULT '0' COMMENT '客户流失标签开关 0:关闭 1:开启',
     `corp_account`                 varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '企业管理员账号',
-    `custom_secret`                varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '',
     `encoding_aes_key`             varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '应用回调aesKey',
     `h5_do_main_name`              varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT 'H5域名链接',
     `token`                        varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '应用回调token',
@@ -2770,6 +2769,7 @@ CREATE TABLE `we_emple_code_analyse`
     `external_userid` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '客户ID',
     `time`            date        NOT NULL COMMENT 'type为1时是添加时间，type为0时是流失时间',
     `type`            tinyint(1) NOT NULL COMMENT '1:新增，0:流失',
+    `add_time`        datetime NOT NULL DEFAULT '0000-00-00 00:00:00' COMMENT '添加时间（冗余字段），用于获客链接客户维度显示，格式YYYY-MM-DD HH:MM:SS',
     PRIMARY KEY (`id`),
     UNIQUE KEY `uniq_corpid_codeid_channelid_userid_extid_type_time` (`corp_id`,`emple_code_id`,`channel_id`,`user_id`,`external_userid`,`type`,`time`) USING BTREE COMMENT '唯一索引'
 ) ENGINE=InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci;

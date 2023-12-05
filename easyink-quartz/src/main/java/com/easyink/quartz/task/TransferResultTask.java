@@ -89,7 +89,7 @@ public class TransferResultTask {
         }
         // 获取企业详情
         WeCorpAccount corpAccount = weCorpAccountService.findValidWeCorpAccount(corpId);
-        if (null == corpAccount || StringUtils.isAnyBlank(corpAccount.getAgentId(), corpAccount.getCustomSecret())) {
+        if (null == corpAccount || StringUtils.isAnyBlank(corpAccount.getAgentId())) {
             log.error("[TransferResultTask]查询客户接替状态异常:获取企业配置异常,corpId:{}", corpId);
             return;
         }

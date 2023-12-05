@@ -1,6 +1,9 @@
 package com.easyink.wecom.domain.vo.statistics;
 
+import cn.hutool.core.util.StrUtil;
 import com.easyink.common.annotation.Excel;
+import com.easyink.common.constant.WeConstans;
+import com.easyink.common.utils.StringUtils;
 import com.easyink.wecom.domain.vo.UserBaseVO;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.annotations.ApiModelProperty;
@@ -192,6 +195,18 @@ public class UserServiceVO extends UserBaseVO {
     }
 
     /**
+     * 获取平均首次回复时长
+     *
+     * @return 平均首次回复时长
+     */
+    public String getAverageFirstReplyDuration() {
+        if (averageFirstReplyDuration == null) {
+            return WeConstans.ZERO;
+        }
+        return averageFirstReplyDuration;
+    }
+
+    /**
      * 绑定导出数据
      * 导出框架不能直接使用get方法获取属性值
      */
@@ -200,7 +215,7 @@ public class UserServiceVO extends UserBaseVO {
         replyRate = getReplyRate() + "%";
         customerPositiveCommentsRate = getCustomerPositiveCommentsRate() + "%";
         averageChatTotal = getAverageChatTotal();
-        averageFirstReplyDuration += "分钟";
+        averageFirstReplyDuration = getAverageFirstReplyDuration() + "分钟";
     }
 
 }

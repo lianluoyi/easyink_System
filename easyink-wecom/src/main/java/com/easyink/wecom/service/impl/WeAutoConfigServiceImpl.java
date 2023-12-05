@@ -550,10 +550,6 @@ public class WeAutoConfigServiceImpl implements WeAutoConfigService {
             weAdminClient.create(initApplicationModel.getContactApp().getApp_id(), businessType, appType, qrCodeKey);
             ThreadUtil.sleep(300);
         }
-        if (initApplicationModel.getCustomApp() != null && StringUtils.isNotBlank(initApplicationModel.getCustomApp().getApp_id())) {
-            weAdminClient.create(initApplicationModel.getCustomApp().getApp_id(), businessType, appType, qrCodeKey);
-            ThreadUtil.sleep(300);
-        }
     }
 
     /**

@@ -147,7 +147,7 @@ public class WeResignedTransferRecordServiceImpl extends ServiceImpl<WeResignedT
                 .build();
         groupReq.setOwnerFilter(handoverUserId);
         GroupChatListResp groupResp = (GroupChatListResp) groupReq.executeTillNoNextPage(corpId);
-        if (CollectionUtils.isEmpty(groupResp.getTotalList())) {
+        if (groupResp == null || CollectionUtils.isEmpty(groupResp.getGroup_chat_list()) || CollectionUtils.isEmpty(groupResp.getTotalList())) {
             log.info("【离职继承】该成员没有群聊可以继承,corpId:{},handoverUserId:{},takeoverUserId:{}", corpId, handoverUserId, takeoverUserId);
             return;
         }

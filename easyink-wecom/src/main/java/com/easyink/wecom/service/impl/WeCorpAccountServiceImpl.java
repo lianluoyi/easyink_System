@@ -159,7 +159,6 @@ public class WeCorpAccountServiceImpl extends ServiceImpl<WeCorpAccountMapper, W
         weCorpAccount = redisCache.getCacheObject(WeConstans.WE_CORP_ACCOUNT);
         if (ObjectUtils.isNotEmpty(weCorpAccount)
                 && StringUtils.isNoneBlank(weCorpAccount.getCorpId(),
-                weCorpAccount.getCustomSecret(),
                 weCorpAccount.getContactSecret(),
                 weCorpAccount.getAgentSecret(),
                 weCorpAccount.getCorpSecret())) {
@@ -173,7 +172,6 @@ public class WeCorpAccountServiceImpl extends ServiceImpl<WeCorpAccountMapper, W
         //关键参数不为空才缓存
         if (ObjectUtils.isNotEmpty(weCorpAccount)
                 && StringUtils.isNoneBlank(weCorpAccount.getCorpId(),
-                weCorpAccount.getCustomSecret(),
                 weCorpAccount.getContactSecret(),
                 weCorpAccount.getAgentSecret(),
                 weCorpAccount.getCorpSecret())) {
@@ -422,6 +420,17 @@ public class WeCorpAccountServiceImpl extends ServiceImpl<WeCorpAccountMapper, W
         return StringUtils.EMPTY;
     }
 
+    @Override
+    public String getAgentId(String corpId) {
+        if (StringUtils.isBlank(corpId)) {
+            throw new CustomException(ResultTip.TIP_MISS_CORP_ID);
+        }
+        WeCorpAccount weCorpAccount = this.findValidWeCorpAccount(corpId);
+        if (weCorpAccount == null) {
+            throw new CustomException(ResultTip.TIP_MISS_CORP_ID);
+        }
+        return weCorpAccount.getAgentId();
+    }
 
     /**
      * 获取url路径
@@ -518,7 +527,6 @@ public class WeCorpAccountServiceImpl extends ServiceImpl<WeCorpAccountMapper, W
             WeAuthCorpInfo weAuthCorpInfo = weAuthCorpInfoService.getOne(corpId, ruoYiConfig.getProvider().getDkSuite().getDkId());
             if (weAuthCorpInfo != null) {
                 weCorpAccount.setAgentSecret(weAuthCorpInfo.getPermanentCode());
-                weCorpAccount.setCustomSecret(weAuthCorpInfo.getPermanentCode());
                 weCorpAccount.setContactSecret(weAuthCorpInfo.getPermanentCode());
                 weCorpAccount.setCorpSecret(weAuthCorpInfo.getPermanentCode());
             }
@@ -600,7 +608,6 @@ public class WeCorpAccountServiceImpl extends ServiceImpl<WeCorpAccountMapper, W
         if (null != weCorpAccount
                 && Constants.NORMAL_CODE.equals(weCorpAccount.getStatus())
                 && StringUtils.isNoneBlank(weCorpAccount.getCorpId(),
-                weCorpAccount.getCustomSecret(),
                 weCorpAccount.getContactSecret(),
                 weCorpAccount.getAgentSecret(),
                 weCorpAccount.getCorpSecret())) {

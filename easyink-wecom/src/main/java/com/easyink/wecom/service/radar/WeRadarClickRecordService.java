@@ -43,10 +43,12 @@ public interface WeRadarClickRecordService extends IService<WeRadarClickRecord> 
     /**
      * 查询渠道排序
      *
-     * @param radarId
-     * @return
+     * @param radarId   雷达ID
+     * @param beginTime 开始时间，格式为YYYY-MM-DD
+     * @param endTime   结束时间，格式为YYYY-MM-DD
+     * @return {@link RadarChannelSortVO}
      */
-    List<RadarChannelSortVO> getChannelSort(Long radarId);
+    List<RadarChannelSortVO> getChannelSort(Long radarId, String beginTime, String endTime);
 
     /**
      * 获取客户点击记录

@@ -38,10 +38,12 @@ public interface WeRadarClickRecordMapper extends BaseMapper<WeRadarClickRecord>
     /**
      * 查询雷达渠道点击数排序
      *
-     * @param radarId
-     * @return
+     * @param radarId   雷达ID
+     * @param beginTime 开始时间，格式为YYYY-MM-DD
+     * @param endTime   结束时间，格式为YYYY-MM-DD
+     * @return {@link RadarChannelSortVO}
      */
-    List<RadarChannelSortVO> selectChannelSort(@Param("radarId") Long radarId);
+    List<RadarChannelSortVO> selectChannelSort(@Param("radarId") Long radarId, @Param("beginTime") String beginTime, @Param("endTime") String endTime);
 
     /**
      * 获得客户点击记录

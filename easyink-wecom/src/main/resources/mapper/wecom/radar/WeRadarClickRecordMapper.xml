@@ -54,11 +54,18 @@
         </if>
         GROUP BY create_date
     </select>
+    <!--查询雷达渠道点击数排序-->
     <select id="selectChannelSort" resultType="com.easyink.wecom.domain.vo.radar.RadarChannelSortVO">
         SELECT COUNT(DISTINCT external_user_id) clickNum,
                `channel_name`                   channelName
         FROM we_radar_click_record
         WHERE radar_id = #{radarId}
+        <if test="beginTime != null and beginTime != ''">
+            AND create_date &gt;= #{beginTime}
+        </if>
+        <if test="endTime != null and endTime != ''">
+            AND create_date &lt;= #{endTime}
+        </if>
         group by channelName
         order by clickNum desc
     </select>
@@ -96,7 +103,7 @@
     <select id="getChannelClickRecord" resultType="com.easyink.wecom.domain.vo.radar.RadarChannelRecordVO">
         SELECT channel_name `channelName`,
         COUNT(id) clickNum,
-        COUNT(DISTINCT channel_name) clickPersonNum
+        COUNT(DISTINCT external_user_id) clickPersonNum
         FROM we_radar_click_record
         WHERE radar_id = #{channelRecord.radarId}
         <if test="channelRecord.channelName != null and channelRecord.channelName != ''">

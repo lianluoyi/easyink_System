@@ -188,14 +188,12 @@
     <select id="getDetailStatisticByCustomer"
             resultType="com.easyink.wecom.domain.vo.emple.AssistantDetailStatisticCustomerVO">
         SELECT
-            wc.`name` AS externalUserName, wc.`avatar` AS externalUserHeadImage, wc.external_userid, wu.user_name, wu.user_id, wd.`name` AS departmentName, DATE_FORMAT(wfcr.create_time,
+            wc.`name` AS externalUserName, wc.`avatar` AS externalUserHeadImage, wc.external_userid, wu.user_name, wu.user_id, wd.`name` AS departmentName, DATE_FORMAT(weca.add_time,
         '%Y-%m-%d %H:%i') AS addTime, weca.channel_id AS state
         FROM we_emple_code_analyse weca
         INNER JOIN we_customer wc ON weca.external_userid = wc.external_userid
         INNER JOIN we_user wu ON weca.user_id = wu.user_id
         INNER JOIN we_department wd ON wu.main_department = wd.id AND wd.corp_id = weca.corp_id
-        INNER JOIN we_flower_customer_rel wfcr
-        ON wfcr.external_userid = weca.external_userid AND wfcr.user_id = weca.user_id
         WHERE weca.corp_id = #{corpId} AND weca.`type` = '${@com.easyink.common.enums.WeEmpleCodeAnalyseTypeEnum@ADD.type}'
         <if test="name != null">
             AND wc.name LIKE CONCAT("%", #{name}, "%")
@@ -221,10 +219,10 @@
             AND weca.channel_id = #{channelId}
         </if>
         <if test="beginTime != null and beginTime != ''">
-            AND wfcr.create_time &gt;= #{beginTime}
+            AND weca.add_time &gt;= #{beginTime}
         </if>
         <if test="endTime != null and endTime != ''">
-            AND wfcr.create_time &lt;= #{endTime}
+            AND weca.add_time &lt;= #{endTime}
         </if>
         ORDER BY addTime DESC
     </select>
@@ -333,7 +331,8 @@
         `user_id`,
         `external_userid`,
         `time`,
-        `type`
+        `type`,
+        `add_time`
         )
         VALUES
         (
@@ -343,7 +342,8 @@
         #{userId},
         #{externalUserId},
         #{time},
-        #{type}
+        #{type},
+        #{addTime}
         );
     </insert>
 

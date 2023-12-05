@@ -1,6 +1,7 @@
 package com.easyink.wecom.factory.impl.tag;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.easyink.common.constant.Constants;
 import com.easyink.wecom.domain.WeTag;
 import com.easyink.wecom.domain.vo.WxCpXmlMessageVO;
 import com.easyink.wecom.factory.WeEventStrategy;
@@ -46,10 +47,11 @@ public class WeCallBackDeleteCustomerTagImpl extends WeEventStrategy {
             switch (message.getTagType()) {
                 case tagGroup:
                     weTagGroupService.deleteTagGroup(message.getTagId(), message.getToUserName());
-                    // 获取标签组下的所有标签ID
+                    // 获取标签组下的所有状态正常的标签ID
                     List<WeTag> weTags = weTagService.list(new LambdaQueryWrapper<WeTag>().select(WeTag::getTagId)
                                                                                           .eq(WeTag::getCorpId, message.getToUserName())
-                                                                                          .eq(WeTag::getGroupId, message.getTagId()));
+                                                                                          .eq(WeTag::getGroupId, message.getTagId())
+                                                                                          .eq(WeTag::getStatus, Constants.NORMAL_CODE));
                     if (CollectionUtils.isEmpty(weTags)) {
                         return;
                     }

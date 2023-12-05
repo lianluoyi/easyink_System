@@ -83,7 +83,7 @@
             AND wfcf.create_time &lt;= #{endTime}
         </if>
     </select>
-     <!-- 获取所有人的好评数据   -->
+    <!-- 获取所有人的好评数据   -->
     <select id="selsectGoodReviewsForPerson"
             resultType="com.easyink.wecom.domain.dto.statistics.UserGoodReviewDTO">
         SELECT

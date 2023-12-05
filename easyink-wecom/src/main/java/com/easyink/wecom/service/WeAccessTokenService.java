@@ -20,13 +20,6 @@ public interface WeAccessTokenService {
     String findContactAccessToken(String corpId);
 
     /**
-     * 获取客户联系凭证
-     *
-     * @return AccessToken
-     */
-    String findCustomAccessToken(String corpId);
-
-    /**
      * 获取服务商凭证
      *
      * @return AccessToken
@@ -54,6 +47,13 @@ public interface WeAccessTokenService {
      */
     String find3rdAppCorpAuthAccessToken(String corpId);
 
+    /**
+     * 获取自建/代开发应用凭证
+     *
+     * @param agentId 自建/代开发应用ID
+     * @param corpId  企业ID
+     * @return AccessToken
+     */
     String findInternalAppAccessToken(String agentId, String corpId);
 
 
