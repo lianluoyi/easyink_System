@@ -28,14 +28,14 @@ public class WeCallBackDeletePartyImpl extends WeEventStrategy {
             log.error("message不能为空");
             return;
         }
-        if (StringUtils.isBlank(message.getToUserName()) || message.getId() == null) {
-            log.error("企业id,部门id，corpId：{}，部门id:{}，事件类型:{}", message.getToUserName(), message.getId(), message.getChangeType());
+        if (StringUtils.isBlank(message.getToUserName()) || message.getTagId() == null) {
+            log.error("企业id,部门id，corpId：{}，部门id:{}，事件类型:{}", message.getToUserName(), message.getTagId(), message.getChangeType());
             return;
         }
         try {
             weDepartmentService.remove(new LambdaQueryWrapper<WeDepartment>()
                     .eq(WeDepartment::getCorpId,message.getToUserName())
-                    .eq(WeDepartment::getId,message.getId()));
+                    .eq(WeDepartment::getId,message.getTagId()));
         } catch (Exception e) {
             log.error("删除部门添加到数据库失败：ex:{}", ExceptionUtils.getStackTrace(e));
         }

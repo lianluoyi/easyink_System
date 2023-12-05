@@ -99,5 +99,20 @@
                 </foreach>
         </if>
     </select>
+    <!--查询单个群标签组信息-->
+    <select id="selectSingleWeGroupTag" resultMap="WeGroupTagCategoryResult">
+        SELECT
+        wgtc.id,
+        wgtc.corp_id,
+        wgtc.name
+        FROM
+        we_group_tag_category wgtc
+        LEFT JOIN we_group_tag wgt ON wgtc.id = wgt.group_id AND wgtc.corp_id = wgt.corp_id
+        WHERE
+        wgtc.`corp_id` = #{corpId}
+        AND wgtc.id = #{id}
+        GROUP BY wgtc.id
+        ORDER BY wgtc.id DESC
+    </select>
 
 </mapper>

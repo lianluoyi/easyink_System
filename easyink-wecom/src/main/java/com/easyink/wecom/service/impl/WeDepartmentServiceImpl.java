@@ -329,19 +329,21 @@ public class WeDepartmentServiceImpl extends ServiceImpl<WeDepartmentMapper, WeD
      */
     @Override
     public List<String> getDataScopeUserIdList(List<String> departmentIds, List<String> userIds, String corpId) {
-        if (CollectionUtils.isEmpty(departmentIds) || CollectionUtils.isEmpty(userIds) || StringUtils.isBlank(corpId)) {
+        if (StringUtils.isBlank(corpId)) {
             return Collections.emptyList();
         }
-        // 如果存在根部们，则表示全部的员工id查询，返回空列表
-        if (isHaveRootDepartment(departmentIds)) {
-            return Collections.emptyList();
-        }
-        // 部门下的员工id列表
-        List<String> userIdsByDepartment = weUserService.listOfUserId(corpId, departmentIds.toArray(new String[0]));
         // 使用hashSet去重
         HashSet<String> userIdList = new HashSet<>();
-        userIdList.addAll(userIdsByDepartment);
-        userIdList.addAll(userIds);
+        if (CollectionUtils.isNotEmpty(departmentIds)) {
+            // 部门下的员工id列表
+            List<String> userIdsByDepartment = weUserService.listOfUserId(corpId, departmentIds.toArray(new String[0]));
+            if (CollectionUtils.isNotEmpty(userIdsByDepartment)) {
+                userIdList.addAll(userIdsByDepartment);
+            }
+        }
+        if (CollectionUtils.isNotEmpty(userIds)) {
+            userIdList.addAll(userIds);
+        }
         return new ArrayList<>(userIdList);
     }
 

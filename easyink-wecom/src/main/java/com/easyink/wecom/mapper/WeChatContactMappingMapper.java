@@ -72,4 +72,13 @@ public interface WeChatContactMappingMapper extends BaseMapper<WeChatContactMapp
      * @return 结果
      */
     int deleteWeChatContactMappingByIds(Long[] ids);
+
+    /**
+     * 更新所有群聊成员的聊天时间
+     *
+     * @param roomId   群聊id
+     * @param chatTime 聊天时间
+     * @return 结果
+     */
+    int updateAllChatTimeByRoomId(@Param("roomId") String roomId, @Param("chatTime") String chatTime);
 }

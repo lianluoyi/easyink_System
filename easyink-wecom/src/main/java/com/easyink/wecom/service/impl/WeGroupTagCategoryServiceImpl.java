@@ -41,7 +41,7 @@ public class WeGroupTagCategoryServiceImpl extends ServiceImpl<WeGroupTagCategor
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void add(AddWeGroupTagCategoryDTO weGroupTagCategory) {
+    public WeGroupTagCategoryVO add(AddWeGroupTagCategoryDTO weGroupTagCategory) {
         //校验请求参数
         if (weGroupTagCategory == null || StringUtils.isBlank(weGroupTagCategory.getCorpId()) || StringUtils.isBlank(weGroupTagCategory.getName())) {
             throw new CustomException(ResultTip.TIP_GENERAL_BAD_REQUEST);
@@ -62,11 +62,12 @@ public class WeGroupTagCategoryServiceImpl extends ServiceImpl<WeGroupTagCategor
         if (CollectionUtils.isNotEmpty(weGroupTagCategory.getTagList())) {
             weGroupTagService.batchInsert(weGroupTagCategory.getCorpId(), weGroupTagCategory.getId(), weGroupTagCategory.getTagList());
         }
+        return this.baseMapper.selectSingleWeGroupTag(weGroupTagCategory);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void update(UpdateWeGroupTagCategoryDTO weGroupTagCategory) {
+    public WeGroupTagCategoryVO update(UpdateWeGroupTagCategoryDTO weGroupTagCategory) {
         if (weGroupTagCategory == null || StringUtils.isBlank(weGroupTagCategory.getCorpId()) || weGroupTagCategory.getId() == null) {
             throw new CustomException(ResultTip.TIP_GENERAL_BAD_REQUEST);
         }
@@ -78,6 +79,7 @@ public class WeGroupTagCategoryServiceImpl extends ServiceImpl<WeGroupTagCategor
         if (CollectionUtils.isNotEmpty(weGroupTagCategory.getAddList())) {
             weGroupTagService.batchInsert(weGroupTagCategory.getCorpId(), weGroupTagCategory.getId(), weGroupTagCategory.getAddList());
         }
+        return this.baseMapper.selectSingleWeGroupTag(weGroupTagCategory);
     }
 
     @Override

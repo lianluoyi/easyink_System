@@ -154,5 +154,19 @@
         </if>
         ORDER BY create_time
     </select>
+    <!--查询单个标签组信息-->
+    <select id="selectSingleWeTagGroup" parameterType="com.easyink.wecom.domain.WeTagGroup" resultMap="WeTagGroupMap">
+        SELECT
+        wtg.*,
+        wtg.create_by,
+        wtg.group_id as tag_group_id
+        FROM
+        we_tag_group wtg
+        where
+        wtg.corp_id = #{corpId}
+        AND wtg.status= '${@com.easyink.common.constant.Constants@NORMAL_CODE}'
+        AND wtg.group_id = #{groupId}
+        ORDER BY wtg.create_time DESC
+    </select>
 
 </mapper>

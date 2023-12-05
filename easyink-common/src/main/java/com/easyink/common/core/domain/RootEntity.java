@@ -5,6 +5,7 @@ import io.swagger.annotations.ApiModelProperty;
 
 import java.io.Serializable;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 /**
  * 类名： RootEntity
@@ -23,6 +24,13 @@ public class RootEntity implements Serializable {
     @ApiModelProperty(hidden = true)
     private Map<String, Object> params;
 
+    /**
+     * 数据权限下的员工id列表
+     */
+    @TableField(exist = false)
+    @ApiModelProperty(hidden = true)
+    private List<String> dataScopeUserIds;
+
     public Map<String, Object> getParams() {
         if (params == null) {
             params = new HashMap<>();
@@ -32,5 +40,13 @@ public class RootEntity implements Serializable {
 
     public void setParams(Map<String, Object> params) {
         this.params = params;
+    }
+
+    public List<String> getDataScopeUserIds() {
+        return dataScopeUserIds;
+    }
+
+    public void setDataScopeUserIds(List<String> dataScopeUserIds) {
+        this.dataScopeUserIds = dataScopeUserIds;
     }
 }

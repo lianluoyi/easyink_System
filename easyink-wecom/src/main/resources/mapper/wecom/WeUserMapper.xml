@@ -525,6 +525,20 @@
             </foreach>
         </if>
     </select>
+    <!--根据userId列表获取员工名称和部门信息-->
+    <select id="selectWeUserInfoByUserIdList" resultType="com.easyink.wecom.domain.vo.WeUserVO">
+        SELECT
+            wu.user_id,
+            wu.user_name,
+            wu.head_image_url AS headImageUrl,
+            wd.name as mainDepartmentName
+        FROM we_user wu LEFT JOIN we_department wd ON wu.main_department = wd.id
+        WHERE wu.corp_id = #{corpId}
+        AND wu.user_id IN
+        <foreach collection="userIdList" item="userId" separator="," open="(" close=")">
+            #{userId}
+        </foreach>
+    </select>
     <!--    批量更新员工隐私信息-->
     <insert id="batchUpdateUserPrivacy">
         INSERT INTO we_user (

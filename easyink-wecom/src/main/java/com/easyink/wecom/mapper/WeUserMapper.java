@@ -3,9 +3,7 @@ package com.easyink.wecom.mapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.easyink.common.core.domain.wecom.WeUser;
 import com.easyink.wecom.domain.WeCustomerAddUser;
-import com.easyink.wecom.domain.WeTag;
 import com.easyink.wecom.domain.dto.QueryUserDTO;
-import com.easyink.wecom.domain.dto.statistics.WeTagStatisticsDTO;
 import com.easyink.wecom.domain.dto.transfer.TransferResignedUserListDTO;
 import com.easyink.wecom.domain.vo.WeEmpleCodeVO;
 import com.easyink.wecom.domain.vo.WeUserVO;
@@ -13,6 +11,7 @@ import com.easyink.wecom.domain.vo.transfer.TransferResignedUserVO;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 
+import javax.validation.constraints.NotNull;
 import java.util.List;
 
 /**
@@ -184,4 +183,14 @@ public interface WeUserMapper extends BaseMapper<WeUser> {
      * @return 主部门名称信息列表
      */
     List<WeEmpleCodeVO> selectUserMainDepartmentByUsername(@Param("userNameList") List<String> userNameList, @Param("corpId") String corpId);
+
+    /**
+     * 根据userId列表获取员工名称和部门信息
+     * 说明：员工id列表不能为空
+     *
+     * @param userIdList 员工id列表
+     * @param corpId     企业id
+     * @return {@link List<WeUserVO>}
+     */
+    List<WeUserVO> selectWeUserInfoByUserIdList(@NotNull @Param("userIdList") List<String> userIdList, @Param("corpId") String corpId);
 }

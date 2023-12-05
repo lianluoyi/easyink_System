@@ -111,7 +111,7 @@ public class WeTagGroupServiceImpl extends ServiceImpl<WeTagGroupMapper, WeTagGr
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void insertWeTagGroup(WeTagGroup weTagGroup) {
+    public WeTagGroup insertWeTagGroup(WeTagGroup weTagGroup) {
         if (weTagGroup == null || org.apache.commons.lang3.StringUtils.isBlank(weTagGroup.getCorpId())) {
             log.error("新增标签组失败，公司id不能为空");
             throw new BaseException("新增标签组id失败");
@@ -138,10 +138,12 @@ public class WeTagGroupServiceImpl extends ServiceImpl<WeTagGroupMapper, WeTagGr
             weCropGropTagDtlDTO.getTag_group().setTag(cropTagDTOList);
 
             if (weCropGropTagDtlDTO.getErrcode().equals(WeConstans.WE_SUCCESS_CODE) && weCropGropTagDtlDTO.getTag_group() != null) {
+                weTagGroup.setGroupId(weCropGropTagDtlDTO.getTag_group().getGroup_id());
                 this.batchSaveOrUpdateTagGroupAndTag(ListUtil.toList(weCropGropTagDtlDTO.getTag_group()), false, weTagGroup.getCorpId());
             }
 
         }
+        return this.baseMapper.selectSingleWeTagGroup(weTagGroup);
     }
 
     /**
@@ -152,7 +154,7 @@ public class WeTagGroupServiceImpl extends ServiceImpl<WeTagGroupMapper, WeTagGr
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void updateWeTagGroup(WeTagGroup weTagGroup) {
+    public WeTagGroup updateWeTagGroup(WeTagGroup weTagGroup) {
         if (weTagGroup == null || org.apache.commons.lang3.StringUtils.isBlank(weTagGroup.getCorpId())) {
             log.error("修改标签组失败，企业id不能为空");
             throw new BaseException("修改标签组失败");
@@ -214,8 +216,7 @@ public class WeTagGroupServiceImpl extends ServiceImpl<WeTagGroupMapper, WeTagGr
             // 删除标签-员工-客户关系
             delFlowerTagRel(removeWeTags.stream().map(WeTag::getTagId).collect(Collectors.toList()), weTagGroup.getCorpId());
         }
-
-
+        return this.baseMapper.selectSingleWeTagGroup(weTagGroup);
     }
 
 

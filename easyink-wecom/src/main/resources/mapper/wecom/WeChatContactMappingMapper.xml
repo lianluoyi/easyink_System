@@ -102,6 +102,7 @@
         <if test="(mapping.isRoom != null and mapping.isRoom == 0) or mapping.isRoom == null">
             group by wccm.from_id,wccm.receive_id,wccm.room_id
         </if>
+        ORDER BY chat_time DESC
     </select>
 
     <insert id="insertWeChatContactMapping" parameterType="WeChatContactMapping" useGeneratedKeys="true"
@@ -113,6 +114,7 @@
             <if test="roomId != null">room_id,</if>
             <if test="isCustom != null">is_custom,</if>
             <if test="corpId != null and corpId != ''">corp_id,</if>
+            <if test="chatTime != null and chatTime != ''">chat_time</if>
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="fromId != null and fromId != ''">#{fromId},</if>
@@ -120,6 +122,7 @@
             <if test="roomId != null">#{roomId},</if>
             <if test="isCustom != null">#{isCustom},</if>
             <if test="corpId != null and corpId != ''">#{corpId},</if>
+            <if test="chatTime != null and chatTime != ''">#{chatTime},</if>
         </trim>
     </insert>
 
@@ -130,8 +133,17 @@
             <if test="receiveId != null and receiveId != ''">receive_id = #{receiveId},</if>
             <if test="roomId != null">room_id = #{roomId},</if>
             <if test="isCustom != null">is_custom = #{isCustom},</if>
+            <if test="chatTime != null and chatTime != ''">chat_time = #{chatTime}</if>
         </trim>
         where id = #{id}
+    </update>
+    <!--更新所有群聊成员的聊天时间-->
+    <update id="updateAllChatTimeByRoomId">
+        UPDATE we_chat_contact_mapping
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="chatTime != null and chatTime != ''">chat_time = #{chatTime}</if>
+        </trim>
+        WHERE room_id = #{roomId}
     </update>
 
     <delete id="deleteWeChatContactMappingById" parameterType="Long">

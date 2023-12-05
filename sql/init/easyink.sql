@@ -1259,6 +1259,7 @@ CREATE TABLE `we_chat_contact_mapping`
     `room_id`    varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '群聊id',
     `is_custom`  tinyint(4) NOT NULL DEFAULT 0 COMMENT '接收人是否为客户 0-成员 1-客户 2-机器人',
     `corp_id`    varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '企业id',
+    `chat_time` datetime NOT NULL DEFAULT '0000-00-00 00:00:00' COMMENT '聊天时间',
     PRIMARY KEY (`id`) USING BTREE,
     INDEX        `we_chat_contact_mapping_from_id_IDX`(`from_id`, `is_custom`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 23 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '聊天关系映射表' ROW_FORMAT = Dynamic;

@@ -25,6 +25,40 @@
             AND wucms.send_time &lt;= #{endTime}
         </if>
     </sql>
+    <!--客户活跃度查询条件-->
+    <sql id="customerActivitySearchCondition">
+        corp_id = #{dto.corpId}
+        AND external_userid > '-1'
+        AND external_user_send_message_cnt > 0
+        <if test="dto.beginTime !=null">
+            AND add_time &gt;= #{dto.beginTime}
+        </if>
+        <if test="dto.endTime !=null">
+            AND add_time &lt;= #{dto.endTime}
+        </if>
+        <if test="dto.sendStartTime !=null">
+            AND send_time &gt;= #{dto.sendStartTime}
+        </if>
+        <if test="dto.sendEndTime !=null">
+            AND send_time &lt;= #{dto.sendEndTime}
+        </if>
+        <choose>
+            <when test="userIdList != null and userIdList.size > 0">
+                AND user_id IN
+                <foreach collection="userIdList" item="userId" open="(" separator="," close=")">
+                    #{userId}
+                </foreach>
+            </when>
+            <otherwise>
+                <if test="dto.dataScopeUserIds != null and dto.dataScopeUserIds.size() > 0">
+                    AND user_id IN
+                    <foreach collection="dto.dataScopeUserIds" item="userId" open="(" separator="," close=")">
+                        #{userId}
+                    </foreach>
+                </if>
+            </otherwise>
+        </choose>
+    </sql>
     <!--获取员工服务-数据总览-员工维度-->
     <select id="getUserServiceOfUser" resultType="com.easyink.wecom.domain.vo.statistics.UserServiceVO">
         SELECT
@@ -304,29 +338,16 @@
     <select id="getCustomerActivityOfDate"
             resultType="com.easyink.wecom.domain.vo.statistics.CustomerActivityOfDateVO">
         SELECT
-            a.send_time AS `time`,
-            IFNULL(b.userSendMessageCnt, 0) userSendMessageCnt,
-            IFNULL(b.customerSendMessageCnt, 0) customerSendMessageCnt,
-            IFNULL(b.chatCustomerCnt, 0) chatCustomerCnt
+        send_time AS `time`,
+        IFNULL( SUM( user_send_message_cnt ), 0 ) AS userSendMessageCnt,
+        IFNULL( SUM( external_user_send_message_cnt ), 0 ) AS customerSendMessageCnt,
+        IFNULL(COUNT(DISTINCT external_userid), 0) AS chatCustomerCnt
         FROM
-            ( SELECT DISTINCT send_time FROM we_user_customer_message_statistics WHERE corp_id =  #{corpId} AND send_time BETWEEN #{sendStartTime} AND #{sendEndTime}) a
-        LEFT JOIN (
-            SELECT
-                IFNULL( SUM( ucms.user_send_message_cnt ), 0 ) AS userSendMessageCnt,
-                IFNULL( SUM( ucms.external_user_send_message_cnt ), 0 ) AS customerSendMessageCnt,
-                ucms.send_time,
-                IFNULL(COUNT(DISTINCT ucms.external_userid), 0) AS chatCustomerCnt
-            FROM
-                we_user_customer_message_statistics ucms
-            LEFT JOIN we_user wu ON wu.corp_id = ucms.corp_id
-                AND wu.user_id = ucms.user_id AND wu.is_activate = ${@com.easyink.common.constant.WeConstans@WE_USER_IS_ACTIVATE}
-            WHERE
-                <include refid="searchCondition"/>
-                ${params.dataScope}
-            GROUP BY
-            ucms.send_time
-        ) b ON a.send_time = b.send_time
-        ORDER BY a.send_time
+        we_user_customer_message_statistics
+        WHERE
+        <include refid="customerActivitySearchCondition"></include>
+        GROUP BY
+        send_time
     </select>
 
     <!--获取客户活跃度-趋势图-->
@@ -361,45 +382,29 @@
     <select id="getCustomerActivityOfUser"
             resultType="com.easyink.wecom.domain.vo.statistics.CustomerActivityOfUserVO">
         SELECT
-            ucms.user_id,
-            wu.`user_name`,
-            wd.`name` departmentName,
-            wu.`head_image_url` userHeadImage,
-            IFNULL(SUM(ucms.user_send_message_cnt), 0) AS userSendMessageCnt,
-            IFNULL(SUM(ucms.external_user_send_message_cnt), 0) AS customerSendMessageCnt,
-            IFNULL(COUNT(DISTINCT ucms.external_userid), 0) AS chatCustomerCnt
-        FROM we_user_customer_message_statistics ucms
-                 LEFT JOIN we_user wu ON wu.user_id = ucms.user_id AND wu.corp_id = ucms.corp_id
-                 LEFT JOIN we_department wd ON wd.id = wu.main_department AND wd.corp_id = wu.corp_id
+        user_id,
+        IFNULL(SUM(user_send_message_cnt), 0) AS userSendMessageCnt,
+        IFNULL(SUM(external_user_send_message_cnt), 0) AS customerSendMessageCnt,
+        IFNULL(COUNT(DISTINCT external_userid), 0) AS chatCustomerCnt
+        FROM we_user_customer_message_statistics
         WHERE
-            <include refid="searchCondition"/>
-        ${params.dataScope}
-        AND wu.is_activate = ${@com.easyink.common.constant.WeConstans@WE_USER_IS_ACTIVATE}
-        GROUP BY ucms.user_id
+        <include refid="customerActivitySearchCondition"></include>
+        GROUP BY user_id
         ORDER BY customerSendMessageCnt DESC
     </select>
 
     <!--获取客户活跃度-客户维度-->
     <select id="getCustomerActivityOfCustomer"
-            resultType="com.easyink.wecom.domain.vo.statistics.CustomerActivityOfCustomerVO">
+         resultType="com.easyink.wecom.domain.vo.statistics.CustomerActivityOfCustomerVO">
         SELECT
-            ucms.external_userid,
-            wc.`name` externalUserName,
-            wc.`avatar` externalUserHeadImage,
-            ucms.user_id,
-            wu.`user_name`,
-            wd.`name` departmentName,
-            IFNULL(SUM(ucms.user_send_message_cnt), 0) AS userSendMessageCnt,
-            IFNULL(SUM(ucms.external_user_send_message_cnt), 0) AS customerSendMessageCnt
-        FROM we_user_customer_message_statistics ucms
-            LEFT JOIN we_customer wc ON wc.`external_userid` = ucms.external_userid AND wc.corp_id = ucms.corp_id
-            LEFT JOIN we_user wu ON wu.user_id = ucms.user_id AND wu.corp_id = ucms.corp_id
-            LEFT JOIN we_department wd ON wd.id = wu.main_department AND wd.corp_id = wu.corp_id
+        user_id,
+        external_userid,
+        IFNULL(SUM(user_send_message_cnt), 0) AS userSendMessageCnt,
+        IFNULL(SUM(external_user_send_message_cnt), 0) AS customerSendMessageCnt
+        FROM we_user_customer_message_statistics
         WHERE
-            <include refid="searchCondition"/>
-        ${params.dataScope}
-        AND wu.is_activate = ${@com.easyink.common.constant.WeConstans@WE_USER_IS_ACTIVATE}
-        GROUP BY ucms.external_userid
+        <include refid="customerActivitySearchCondition"></include>
+        GROUP BY external_userid
         ORDER BY customerSendMessageCnt DESC
     </select>
 

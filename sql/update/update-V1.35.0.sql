@@ -1,0 +1,2 @@
+-- 2023-11-3 lcy 为聊天关系映射表添加聊天时间字段 Tower 任务: 会话存档排序异常 ( https://tower.im/teams/636204/todos/77004 )
+ALTER TABLE `we_chat_contact_mapping` ADD COLUMN `chat_time` datetime NOT NULL DEFAULT '0000-00-00 00:00:00' COMMENT '聊天时间';

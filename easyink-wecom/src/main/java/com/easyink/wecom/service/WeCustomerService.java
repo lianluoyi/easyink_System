@@ -18,10 +18,7 @@ import com.easyink.wecom.domain.dto.unionid.GetUnionIdDTO;
 import com.easyink.wecom.domain.entity.WeCustomerExportDTO;
 import com.easyink.wecom.domain.vo.QueryCustomerFromPlusVO;
 import com.easyink.wecom.domain.vo.WeMakeCustomerTagVO;
-import com.easyink.wecom.domain.vo.customer.SessionArchiveCustomerVO;
-import com.easyink.wecom.domain.vo.customer.WeCustomerSumVO;
-import com.easyink.wecom.domain.vo.customer.WeCustomerUserListVO;
-import com.easyink.wecom.domain.vo.customer.WeCustomerVO;
+import com.easyink.wecom.domain.vo.customer.*;
 import com.easyink.wecom.domain.vo.sop.CustomerSopVO;
 import com.easyink.wecom.domain.vo.unionid.GetUnionIdVO;
 import org.springframework.validation.annotation.Validated;
@@ -280,6 +277,23 @@ public interface WeCustomerService extends IService<WeCustomer> {
     List<WeCustomerVO> selectWeCustomerListV3(WeCustomer weCustomer);
 
     /**
+     * 为客户设置客户信息
+     *
+     * @param list   客户列表
+     * @param corpId 企业id
+     */
+    void setCustomerInfoByList(List<WeCustomerVO> list, String corpId);
+
+    /**
+     * 根据查询条件，构建过滤客户id列表
+     *
+     * @param corpId     企业id
+     * @param weCustomer {@link WeCustomer}
+     * @return true 有符合条件的客户id列表，false 无符合条件的客户id列表
+     */
+    boolean buildFilterExternalUseridList(String corpId, WeCustomer weCustomer);
+
+    /**
      * 将用户DTO转化为实体类
      *
      * @param weCustomerSearchDTO
@@ -312,7 +326,16 @@ public interface WeCustomerService extends IService<WeCustomer> {
      * @param weCustomer {@link WeCustomer}
      * @return 客户信息列表
      */
+    @Deprecated
     List<SessionArchiveCustomerVO> selectWeCustomerListDistinctV2(WeCustomer weCustomer);
+
+    /**
+     * 查询去重客户去重后企业微信客户列表V3
+     *
+     * @param weCustomer {@link WeCustomer}
+     * @return 客户信息列表
+     */
+    List<SessionArchiveCustomerVO> selectWeCustomerListDistinctV3(WeCustomer weCustomer);
 
     /**
      * 获取会话存档-客户检索-客户列表-去重后的客户数

@@ -38,7 +38,7 @@ public interface WeTagGroupService extends IService<WeTagGroup> {
      * @param weTagGroup 标签组
      * @return 结果
      */
-    void insertWeTagGroup(WeTagGroup weTagGroup);
+    WeTagGroup insertWeTagGroup(WeTagGroup weTagGroup);
 
     /**
      * 修改标签组
@@ -46,7 +46,7 @@ public interface WeTagGroupService extends IService<WeTagGroup> {
      * @param weTagGroup 标签组
      * @return 结果
      */
-    void updateWeTagGroup(WeTagGroup weTagGroup);
+    WeTagGroup updateWeTagGroup(WeTagGroup weTagGroup);
 
     /**
      * 批量删除标签组

@@ -259,6 +259,16 @@ public interface WeFlowerCustomerRelMapper extends BaseMapper<WeFlowerCustomerRe
     List<SessionArchiveCustomerVO> selectExternalUseridByDataScope(@Param("corpId") String corpId, @Param("rootEntity") RootEntity rootEntity, @Param("externalUseridList") List<String> externalUseridList, @Param("pageNum") int pageNum, @Param("pageSize") int pageSize);
 
     /**
+     * 获取数据权限下的externalUserid列表(去重）
+     *
+     * @param corpId             企业ID
+     * @param rootEntity         {@link RootEntity}
+     * @param externalUseridList 客户ID列表
+     * @return externalUserid列表
+     */
+    List<SessionArchiveCustomerVO> selectExternalUseridByDataScopeV2(@Param("corpId") String corpId, @Param("rootEntity") RootEntity rootEntity, @Param("externalUseridList") List<String> externalUseridList);
+
+    /**
      * 获取数据权限下的externalUserid去重后的客户数量
      *
      * @param corpId             企业ID

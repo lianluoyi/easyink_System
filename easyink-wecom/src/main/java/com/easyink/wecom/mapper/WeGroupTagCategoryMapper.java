@@ -1,12 +1,10 @@
 package com.easyink.wecom.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.easyink.wecom.domain.WeGroupTag;
 import com.easyink.wecom.domain.WeGroupTagCategory;
 import com.easyink.wecom.domain.dto.statistics.WeTagStatisticsDTO;
 import com.easyink.wecom.domain.dto.wegrouptag.FindWeGroupTagCategoryDTO;
 import com.easyink.wecom.domain.dto.wegrouptag.PageWeGroupTagCategoryDTO;
-import com.easyink.wecom.domain.vo.statistics.WeTagGroupListVO;
 import com.easyink.wecom.domain.vo.wegrouptag.PageWeGroupTagCategoryVO;
 import com.easyink.wecom.domain.vo.wegrouptag.WeGroupTagCategoryVO;
 import org.apache.ibatis.annotations.Param;
@@ -48,6 +46,14 @@ public interface WeGroupTagCategoryMapper extends BaseMapper<WeGroupTagCategory>
      * @return List<WeGroupTagCategoryVO>
      */
     List<WeGroupTagCategoryVO> list(FindWeGroupTagCategoryDTO weGroupTagCategory);
+
+    /**
+     * 查询单个群标签组信息
+     *
+     * @param weGroupTagCategory weGroupTagCategory
+     * @return WeGroupTagCategoryVO
+     */
+    WeGroupTagCategoryVO selectSingleWeGroupTag(WeGroupTagCategory weGroupTagCategory);
 
     /**
      * 分页查询标签列表

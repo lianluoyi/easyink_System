@@ -1,9 +1,11 @@
 package com.easyink.wecom.domain.vo;
 
+import com.easyink.common.constant.redeemcode.RedeemCodeConstants;
 import com.easyink.common.enums.EmployCodeSourceEnum;
 import com.easyink.wecom.domain.dto.AddWeMaterialDTO;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.List;
 
@@ -105,4 +107,20 @@ public class SelectWeEmplyCodeWelcomeMsgVO {
 
     @ApiModelProperty(value = "活动欢迎语type，1：发送成功，2：发送失败，3：发送限制", hidden = true)
     private Integer redeemCodeActivityType;
+
+
+    /**
+     * 判断发送的欢迎语是否存在"#兑换码#"替换词
+     *
+     * @return true 存在， false 不存在
+     */
+    public boolean isHaveCodeActivityMsg() {
+        if (StringUtils.isBlank(this.welcomeMsg)) {
+            return false;
+        }
+        if (this.welcomeMsg.contains(RedeemCodeConstants.REDEEM_CODE)) {
+            return true;
+        }
+        return false;
+    }
 }

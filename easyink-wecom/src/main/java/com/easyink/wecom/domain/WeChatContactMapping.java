@@ -50,6 +50,10 @@ public class WeChatContactMapping extends RootEntity implements Comparable<WeCha
     @Excel(name = "是否为客户 0-成员 1-客户 2-机器人")
     private Integer isCustom;
 
+    @ApiModelProperty(value = "聊天时间")
+    @TableField("chat_time")
+    private String chatTime;
+
     /**
      * 是否为客户 0-内部 1-外部 2-群聊
      */

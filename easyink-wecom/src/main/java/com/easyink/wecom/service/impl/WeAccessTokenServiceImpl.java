@@ -17,6 +17,7 @@ import com.easyink.wecom.domain.dto.app.WeSuiteTokenResp;
 import com.easyink.wecom.service.WeAccessTokenService;
 import com.easyink.wecom.service.WeAuthCorpInfoService;
 import com.easyink.wecom.service.WeCorpAccountService;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +32,7 @@ import java.util.concurrent.TimeUnit;
  * @create: 2020-08-26 14:43
  **/
 @Service
+@Slf4j
 public class WeAccessTokenServiceImpl implements WeAccessTokenService {
 
     private String noUseCorpidSecret = "请联系管理员进行企业微信配置";
@@ -228,7 +230,7 @@ public class WeAccessTokenServiceImpl implements WeAccessTokenService {
     private String findAccessToken(String accessTokenKey, String corpId) {
         String redisKey = accessTokenKey + ":" + corpId;
         String weAccessToken = redisCache.getCacheObject(redisKey);
-
+        log.info("[获取Access-Token] 当前获取的key：{}，corpId：{}", redisKey, corpId);
         //为空,请求微信服务器同时缓存到redis中
         if (StringUtils.isNotBlank(weAccessToken)) {
             return weAccessToken;
@@ -245,18 +247,23 @@ public class WeAccessTokenServiceImpl implements WeAccessTokenService {
         switch (accessTokenKey) {
             case WeConstans.WE_CHAT_ACCESS_TOKEN:
                 weAccessTokenDTO = accessTokenClient.getToken(wxCorpAccount.getCorpId(), wxCorpAccount.getChatSecret());
+                log.info("[获取会话存档相关token] 使用的secret：{}，corpId：{}", wxCorpAccount.getChatSecret(), corpId);
                 break;
             case WeConstans.WE_AGENT_ACCESS_TOKEN:
                 weAccessTokenDTO = accessTokenClient.getToken(wxCorpAccount.getCorpId(), wxCorpAccount.getAgentSecret());
+                log.info("[获取应用相关token] 使用的secret：{}，corpId：{}", wxCorpAccount.getAgentSecret(), corpId);
                 break;
             case WeConstans.WE_CUSTOM_ACCESS_TOKEN:
                 weAccessTokenDTO = accessTokenClient.getToken(wxCorpAccount.getCorpId(), wxCorpAccount.getCustomSecret());
+                log.info("[获取客户联系相关token] 使用的secret：{}，corpId：{}", wxCorpAccount.getCustomSecret(), corpId);
                 break;
             case WeConstans.WE_CONTACT_ACCESS_TOKEN:
                 weAccessTokenDTO = accessTokenClient.getToken(wxCorpAccount.getCorpId(), wxCorpAccount.getContactSecret());
+                log.info("[获取获取外部联系人相关token] 使用的secret：{}，corpId：{}", wxCorpAccount.getContactSecret(), corpId);
                 break;
             default:
                 weAccessTokenDTO = accessTokenClient.getToken(wxCorpAccount.getCorpId(), wxCorpAccount.getCorpSecret());
+                log.info("[获取Common相关token] 使用的secret：{}，corpId：{}", wxCorpAccount.getCorpSecret(), corpId);
         }
         if (ObjectUtils.isNotEmpty(weAccessTokenDTO) && StringUtils.isNotBlank(weAccessTokenDTO.getAccess_token())) {
             token = weAccessTokenDTO.getAccess_token();
@@ -267,6 +274,7 @@ public class WeAccessTokenServiceImpl implements WeAccessTokenService {
         //缓存token
         if (StringUtils.isNotBlank(token)) {
             redisCache.setCacheObject(redisKey, token, expiresIn.intValue(), TimeUnit.SECONDS);
+            log.info("[获取Access-Token] 存入redis的key：{}，corpId：{}，token：{}", redisKey, corpId, token);
             weAccessToken = token;
         }
         return weAccessToken;

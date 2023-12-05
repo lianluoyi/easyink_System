@@ -53,9 +53,10 @@ public interface WeUserCustomerMessageStatisticsMapper extends BaseMapper<WeUser
      * 获取客户活跃度-日期维度
      *
      * @param dto   {@link CustomerActivityDTO}
+     * @param userIdList 员工id列表
      * @return  {@link ChatMessageCntVO}
      */
-    List<CustomerActivityOfDateVO> getCustomerActivityOfDate(CustomerActivityDTO dto);
+    CustomerActivityOfDateVO getCustomerActivityOfDate(@Param("dto") CustomerActivityDTO dto, @Param("userIdList") List<String> userIdList);
 
     /**
      * 获取客户活跃度-日期维度-趋势
@@ -68,18 +69,20 @@ public interface WeUserCustomerMessageStatisticsMapper extends BaseMapper<WeUser
     /**
      * 获取客户活跃度-员工维度
      *
-     * @param dto   {@link CustomerActivityDTO}
-     * @return  @link CustomerActivityOfUserVO}
+     * @param dto        {@link CustomerActivityDTO}
+     * @param userIdList 员工id列表
+     * @return @link CustomerActivityOfUserVO}
      */
-    List<CustomerActivityOfUserVO> getCustomerActivityOfUser(CustomerActivityDTO dto);
+    List<CustomerActivityOfUserVO> getCustomerActivityOfUser(@Param("dto") CustomerActivityDTO dto, @Param("userIdList") List<String> userIdList);
 
     /**
      * 获取客户活跃度-客户维度
      *
-     * @param dto   {@link CustomerActivityDTO}
-     * @return  @link CustomerActivityOfCustomerVO}
+     * @param dto        {@link CustomerActivityDTO}
+     * @param userIdList 员工id列表
+     * @return @link CustomerActivityOfCustomerVO}
      */
-    List<CustomerActivityOfCustomerVO> getCustomerActivityOfCustomer(CustomerActivityDTO dto);
+    List<CustomerActivityOfCustomerVO> getCustomerActivityOfCustomer(@Param("dto") CustomerActivityDTO dto, @Param("userIdList") List<String> userIdList);
 
     /**
      * 获取客户活跃度-员工维度-详情

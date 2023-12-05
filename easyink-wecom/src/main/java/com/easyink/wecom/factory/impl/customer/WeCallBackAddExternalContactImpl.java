@@ -614,7 +614,7 @@ public class WeCallBackAddExternalContactImpl extends WeEventStrategy {
         // 3.调用企业微信接口发送欢迎语
         weCustomerService.sendWelcomeMsg(weWelcomeMsgBuilder.attachments(attachmentList).build(), corpId);
 
-        if (WelcomeMsgTypeEnum.REDEEM_CODE_WELCOME_MSG_TYPE.getType().equals(messageMap.getWelcomeMsgType())) {
+        if (WelcomeMsgTypeEnum.REDEEM_CODE_WELCOME_MSG_TYPE.getType().equals(messageMap.getWelcomeMsgType()) && messageMap.isHaveCodeActivityMsg()) {
             // 4.更新兑换码的发送状态
             if (StringUtils.isNotBlank(messageMap.getRedeemCode())) {
                 weRedeemCodeService.updateRedeemCode(WeRedeemCodeDTO.builder()

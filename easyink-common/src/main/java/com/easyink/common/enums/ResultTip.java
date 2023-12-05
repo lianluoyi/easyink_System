@@ -82,6 +82,7 @@ public enum ResultTip {
     TIP_LOCK_CONFIG_MISSING(1025, "AppID或AppSecret错误，请重新配置"),
     TIP_ILLEGAL_TRUSTEDIP(1026, "企业可信IP配置失败"),
     TIP_MULTIPART_FILE_NOT_EXISTS(1027, "上传的Multipart文件内容不存在"),
+    TIP_DATA_SCOPE_ERROR(1028, "数据权限获取异常，检查登陆员工是否非法"),
 
 
     //运营模块返回码

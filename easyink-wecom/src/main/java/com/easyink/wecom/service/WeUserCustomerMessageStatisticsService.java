@@ -62,10 +62,11 @@ public interface WeUserCustomerMessageStatisticsService extends IService<WeUserC
     /**
      * 获取客户概况-日期维度
      *
-     * @param dto {@link CustomerOverviewDTO}
+     * @param dto      {@link CustomerOverviewDTO}
+     * @param pageFlag 是否分页，true 是， false 否
      * @return 结果VO {@link CustomerOverviewDateVO}
      */
-    List<CustomerOverviewDateVO> getCustomerOverViewOfDate(CustomerOverviewDTO dto);
+    List<CustomerOverviewDateVO> getCustomerOverViewOfDate(CustomerOverviewDTO dto, Boolean pageFlag);
 
     /**
      * 导出客户概况-数据总览-日期维度

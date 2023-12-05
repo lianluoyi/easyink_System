@@ -18,4 +18,7 @@ public class CustomerActivityDTO extends StatisticsDTO{
 
     @ApiModelProperty("发送时间的结束时间")
     private String sendEndTime;
+
+    @ApiModelProperty("数据总数")
+    private Long total;
 }
