@@ -79,18 +79,6 @@ public class WeAccessTokenServiceImpl implements WeAccessTokenService {
     }
 
     /**
-     * 获取使用客户联系Secert获取的凭证
-     *
-     * @param corpId 企业ID
-     * @return 凭证
-     */
-    @Override
-    public String findCustomAccessToken(String corpId) {
-        return findAccessToken(WeConstans.WE_CUSTOM_ACCESS_TOKEN, corpId);
-    }
-
-
-    /**
      * 获取使用服务商Secert获取的凭证
      *
      * @return 凭证
@@ -253,13 +241,9 @@ public class WeAccessTokenServiceImpl implements WeAccessTokenService {
                 weAccessTokenDTO = accessTokenClient.getToken(wxCorpAccount.getCorpId(), wxCorpAccount.getAgentSecret());
                 log.info("[获取应用相关token] 使用的secret：{}，corpId：{}", wxCorpAccount.getAgentSecret(), corpId);
                 break;
-            case WeConstans.WE_CUSTOM_ACCESS_TOKEN:
-                weAccessTokenDTO = accessTokenClient.getToken(wxCorpAccount.getCorpId(), wxCorpAccount.getCustomSecret());
-                log.info("[获取客户联系相关token] 使用的secret：{}，corpId：{}", wxCorpAccount.getCustomSecret(), corpId);
-                break;
             case WeConstans.WE_CONTACT_ACCESS_TOKEN:
                 weAccessTokenDTO = accessTokenClient.getToken(wxCorpAccount.getCorpId(), wxCorpAccount.getContactSecret());
-                log.info("[获取获取外部联系人相关token] 使用的secret：{}，corpId：{}", wxCorpAccount.getContactSecret(), corpId);
+                log.info("[获取获取内部联系人相关token] 使用的secret：{}，corpId：{}", wxCorpAccount.getContactSecret(), corpId);
                 break;
             default:
                 weAccessTokenDTO = accessTokenClient.getToken(wxCorpAccount.getCorpId(), wxCorpAccount.getCorpSecret());
@@ -293,7 +277,6 @@ public class WeAccessTokenServiceImpl implements WeAccessTokenService {
         redisCache.deleteObject(WeConstans.WE_COMMON_ACCESS_TOKEN + ":" + wxCorpAccount.getCorpId());
         redisCache.deleteObject(WeConstans.WE_CONTACT_ACCESS_TOKEN + ":" + wxCorpAccount.getCorpId());
         redisCache.deleteObject(WeConstans.WE_CORP_ACCOUNT + ":" + wxCorpAccount.getCorpId());
-        redisCache.deleteObject(WeConstans.WE_CUSTOM_ACCESS_TOKEN + ":" + wxCorpAccount.getCorpId());
         //内部应用缓存的企业配置是没有corpid的
         if (ruoYiConfig.isInternalServer()) {
             redisCache.deleteObject(WeConstans.WE_CORP_ACCOUNT);

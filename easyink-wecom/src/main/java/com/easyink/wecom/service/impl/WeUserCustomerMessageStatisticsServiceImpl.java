@@ -41,8 +41,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 /**
@@ -917,6 +916,7 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
         }
         return userServiceVOS;
     }
+
     /**
      * 进行手动分页
      *
@@ -992,7 +992,6 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
             }
         }
     }
-
 
     @Override
     @DataScope

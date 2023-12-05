@@ -5,17 +5,16 @@ import cn.hutool.core.collection.ListUtil;
 import cn.hutool.core.util.ArrayUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.easyink.common.constant.Constants;
 import com.easyink.common.constant.WeConstans;
-import com.easyink.common.core.domain.wecom.WeUser;
 import com.easyink.common.enums.ResultTip;
 import com.easyink.common.exception.BaseException;
 import com.easyink.common.exception.CustomException;
 import com.easyink.common.exception.wecom.WeComException;
 import com.easyink.common.utils.StringUtils;
 import com.easyink.wecom.client.WeCropTagClient;
-import com.easyink.wecom.domain.WeFlowerCustomerRel;
 import com.easyink.wecom.domain.WeFlowerCustomerTagRel;
 import com.easyink.wecom.domain.WeTag;
 import com.easyink.wecom.domain.WeTagGroup;
@@ -122,6 +121,10 @@ public class WeTagGroupServiceImpl extends ServiceImpl<WeTagGroupMapper, WeTagGr
         } else {
             //使用企微新接口
             WeCropGropTagDtlDTO weCropGropTagDtlDTO = weCropTagClient.addCorpTag(WeCropGroupTagDTO.transformAddTag(weTagGroup), weTagGroup.getCorpId());
+            // 返回的结果不为null，且code不为0，抛出企微对应异常
+            if (weCropGropTagDtlDTO != null && !WeConstans.WE_SUCCESS_CODE.equals(weCropGropTagDtlDTO.getErrcode())) {
+                throw new WeComException(weCropGropTagDtlDTO.getErrcode());
+            }
             List<String> tagNameList = weTags.stream().map(WeTag::getName).collect(Collectors.toList());
             //用来装按传参顺序排序后的标签内容
             List<WeCropTagDTO> cropTagDTOList = new ArrayList<>();
@@ -265,13 +268,13 @@ public class WeTagGroupServiceImpl extends ServiceImpl<WeTagGroupMapper, WeTagGr
      */
     @Async
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void synchWeTags(String corpId) {
         if (org.apache.commons.lang3.StringUtils.isBlank(corpId)) {
             log.error("同步标签失败，企业id不能为空");
             throw new BaseException("同步标签失败");
         }
-        log.info("开始同步标签,{}", corpId);
+        log.info(">>>>>>>>>>开始同步标签,{}", corpId);
         // 使用企微新接口
         WeCropGroupTagListDTO weCropGroupTagListDTO = weCropTagClient.getAllCorpTagList(corpId);
         // 删除本地中不存在的标签组与客户-员工之间的关系
@@ -282,7 +285,7 @@ public class WeTagGroupServiceImpl extends ServiceImpl<WeTagGroupMapper, WeTagGr
         if (weCropGroupTagListDTO.getErrcode().equals(WeConstans.WE_SUCCESS_CODE)) {
             this.batchSaveOrUpdateTagGroupAndTag(weCropGroupTagListDTO.getTag_group(), true, corpId);
         }
-
+        log.info(">>>>>>>>>>同步标签结束,{}", corpId);
     }
 
     /**
@@ -294,10 +297,11 @@ public class WeTagGroupServiceImpl extends ServiceImpl<WeTagGroupMapper, WeTagGr
     private void delNotExistTagIdRel(WeCropGroupTagListDTO weCropGroupTagListDTO, String corpId) {
         for (WeCropGroupTagDTO weCropGroupTagDTO : weCropGroupTagListDTO.getTag_group()) {
             if (CollectionUtils.isNotEmpty(weCropGroupTagDTO.getTag())) {
-                // 获取本地数据库中对应标签组下的所有标签Id
+                // 获取本地数据库中对应标签组下的所有状态正常的标签Id
                 List<WeTag> weTags = weTagService.list(new LambdaQueryWrapper<WeTag>().select(WeTag::getTagId)
                                                  .eq(WeTag::getCorpId, corpId)
-                                                 .eq(WeTag::getGroupId, weCropGroupTagDTO.getGroup_id()));
+                                                 .eq(WeTag::getGroupId, weCropGroupTagDTO.getGroup_id())
+                                                 .eq(WeTag::getStatus, Constants.NORMAL_CODE));
                 // 不存在则进行下一个循环
                 if (CollectionUtils.isEmpty(weTags)) {
                     continue;
@@ -328,9 +332,10 @@ public class WeTagGroupServiceImpl extends ServiceImpl<WeTagGroupMapper, WeTagGr
      */
     private void delNotExistTagGroupRel(WeCropGroupTagListDTO weCropGroupTagListDTO, String corpId) {
         List<String> delTagGroupIdList = new ArrayList<>();
-        // 获取本地所有的标签组列表
+        // 获取本地所有状态正常的标签组列表
         List<WeTagGroup> weTagGroupList = this.list(new LambdaQueryWrapper<WeTagGroup>().select(WeTagGroup::getGroupId)
-                .eq(WeTagGroup::getCorpId, corpId));
+                .eq(WeTagGroup::getCorpId, corpId)
+                .eq(WeTagGroup::getStatus, Constants.NORMAL_CODE));
         // 不存在标签组则不处理
         if (CollectionUtils.isEmpty(weTagGroupList)) {
             return;
@@ -344,10 +349,11 @@ public class WeTagGroupServiceImpl extends ServiceImpl<WeTagGroupMapper, WeTagGr
                 // 如果远端标签组中不存在本地的标签组ID，表示该标签组已经被删除
                 if (!remoteTagGroupIdList.contains(localTagGroupId)) {
                     delTagGroupIdList.add(localTagGroupId);
-                    // 获取这个已经被删除的标签组在本地数据库下标签Id
+                    // 获取这个已经被删除的标签组在本地数据库下状态正常的标签Id
                     List<WeTag> weTags = weTagService.list(new LambdaQueryWrapper<WeTag>().select(WeTag::getTagId)
                             .eq(WeTag::getCorpId, corpId)
-                            .eq(WeTag::getGroupId, localTagGroupId));
+                            .eq(WeTag::getGroupId, localTagGroupId)
+                            .eq(WeTag::getStatus, Constants.NORMAL_CODE));
                     // 删除标签-员工-客户关系
                     delFlowerTagRel(weTags.stream().map(WeTag::getTagId).collect(Collectors.toList()), corpId);
                 }
@@ -375,26 +381,9 @@ public class WeTagGroupServiceImpl extends ServiceImpl<WeTagGroupMapper, WeTagGr
             return;
         }
         log.info("[同步标签] 本地不存在的要删除的标签ID列表:{}，corpId:{}", tagIdList, corpId);
-        // 获取企业下所有有效员工的userId
-        List<WeUser> weUserList = weUserService.list(new LambdaQueryWrapper<WeUser>().select(WeUser::getUserId)
-                .eq(WeUser::getCorpId, corpId)
-                .eq(WeUser::getIsActivate, WeConstans.WE_USER_IS_ACTIVATE));
-        if (CollectionUtils.isEmpty(weUserList)) {
-            return;
-        }
-        List<String> userIdList = weUserList.stream().map(item -> item.getUserId()).collect(Collectors.toList());
-        // 获取所有的员工-客户关系id
-        List<WeFlowerCustomerRel> weFlowerCustomerRels = weFlowerCustomerRelService.list(new LambdaQueryWrapper<WeFlowerCustomerRel>()
-                .eq(WeFlowerCustomerRel::getCorpId, corpId)
-                .in(WeFlowerCustomerRel::getUserId, userIdList));
-        if (CollectionUtils.isEmpty(weFlowerCustomerRels)) {
-            return;
-        }
-        List<Long> flowerIdList = weFlowerCustomerRels.stream().map(item -> item.getId()).collect(Collectors.toList());
         // 删除该企业下所有员工-客户中有打上标签的关系
-        weFlowerCustomerTagRelService.remove(new LambdaQueryWrapper<WeFlowerCustomerTagRel>()
-                .in(WeFlowerCustomerTagRel::getFlowerCustomerRelId, flowerIdList)
-                .in(WeFlowerCustomerTagRel::getTagId, tagIdList));
+        weFlowerCustomerTagRelService.remove(Wrappers.lambdaQuery(WeFlowerCustomerTagRel.class)
+                                                     .in(WeFlowerCustomerTagRel::getTagId, tagIdList));
         // 更新标签的状态为删除
         UpdateWrapper<WeTag> updateWrapper = new UpdateWrapper<>();
         updateWrapper.lambda().set(WeTag::getStatus, Constants.DELETE_CODE)

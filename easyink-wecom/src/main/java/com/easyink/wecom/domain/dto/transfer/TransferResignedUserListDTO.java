@@ -25,4 +25,10 @@ public class TransferResignedUserListDTO extends BaseEntity {
     @ApiModelProperty(value = "离职是否分配(1:已分配;0:未分配)", required = true)
     private Integer isAllocate;
 
+    @ApiModelProperty("开始行数")
+    private Integer startNum;
+
+    @ApiModelProperty("查询行数")
+    private Integer limit;
+
 }

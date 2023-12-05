@@ -101,15 +101,17 @@ public class WeRadarClickRecordServiceImpl extends ServiceImpl<WeRadarClickRecor
     /**
      * 查询渠道排序
      *
-     * @param radarId
-     * @return
+     * @param radarId   雷达ID
+     * @param beginTime 开始时间，格式为YYYY-MM-DD
+     * @param endTime   结束时间，格式为YYYY-MM-DD
+     * @return {@link RadarChannelSortVO}
      */
     @Override
-    public List<RadarChannelSortVO> getChannelSort(Long radarId) {
+    public List<RadarChannelSortVO> getChannelSort(Long radarId, String beginTime, String endTime) {
         if (ObjectUtils.isEmpty(radarId)) {
             throw new CustomException(RadarConstants.ParamVerify.PARAM_NULL);
         }
-        return this.baseMapper.selectChannelSort(radarId);
+        return this.baseMapper.selectChannelSort(radarId, beginTime, endTime);
     }
 
     /**

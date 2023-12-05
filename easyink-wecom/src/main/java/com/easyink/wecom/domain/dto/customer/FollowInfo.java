@@ -32,7 +32,7 @@ public class FollowInfo {
     /**
      * 该成员对此客户备注的企业名称
      */
-    private String remark_company;
+    private String remark_corp_name;
     /**
      * 该成员对此客户备注的手机号码
      */
@@ -110,10 +110,10 @@ public class FollowInfo {
     }
 
     public String getRemark_company() {
-        if (remark_company == null) {
+        if (remark_corp_name == null) {
             return StringUtils.EMPTY;
         }
-        return remark_company;
+        return remark_corp_name;
     }
 
 

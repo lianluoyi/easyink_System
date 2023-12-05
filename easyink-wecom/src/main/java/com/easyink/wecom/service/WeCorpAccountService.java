@@ -148,4 +148,12 @@ public interface WeCorpAccountService extends IService<WeCorpAccount> {
      * @return 实际url路径
      */
     String getUrl(String url, String corpId);
+
+    /**
+     * 获取自建/代开发应用ID
+     *
+     * @param corpId 企业ID
+     * @return 自建/代开发应用ID
+     */
+    String getAgentId(String corpId);
 }

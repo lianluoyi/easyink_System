@@ -15,6 +15,7 @@ import com.easyink.common.utils.StringUtils;
 import com.easyink.common.utils.spring.SpringUtils;
 import com.easyink.wecom.domain.dto.WeResultDTO;
 import com.easyink.wecom.service.WeAccessTokenService;
+import com.easyink.wecom.service.WeCorpAccountService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.context.annotation.Lazy;
@@ -38,12 +39,14 @@ public class WeAccessTokenInterceptor implements Interceptor<Object> {
     private final WeComeConfig weComeConfig;
     private final ForestConfiguration forestConfiguration;
     private final String urlPrefix;
+    private final WeCorpAccountService weCorpAccountService;
 
     @Lazy
     public WeAccessTokenInterceptor() {
         weComeConfig = SpringUtils.getBean(WeComeConfig.class);
         weAccessTokenService = SpringUtils.getBean(WeAccessTokenService.class);
         forestConfiguration = SpringUtils.getBean(ForestConfiguration.class);
+        weCorpAccountService = SpringUtils.getBean(WeCorpAccountService.class);
         String weComServerUrl = String.valueOf(forestConfiguration.getVariableValue(WeConstans.WECOM_SERVER_URL));
         String weComePrefix = String.valueOf(forestConfiguration.getVariableValue(WeConstans.WECOM_PREFIX));
         this.urlPrefix = weComServerUrl + weComePrefix;
@@ -79,10 +82,11 @@ public class WeAccessTokenInterceptor implements Interceptor<Object> {
             //内部应用token
             String agentId = StrUtil.isEmpty(request.getHeaderValue(WeConstans.THIRD_APP_PARAM_TIP)) ?
                     (String) request.getQuery(WeConstans.THIRD_APP_PARAM_TIP) : request.getHeaderValue(WeConstans.THIRD_APP_PARAM_TIP);
+            // V1.36.0，企微调整，去除了客户联系token，转为使用内部应用token，如果从请求头或Query参数中未获取到应用id，则根据corpId获取
+            if (StringUtils.isBlank(agentId)) {
+                agentId = weCorpAccountService.getAgentId(corpid);
+            }
             token = weAccessTokenService.findInternalAppAccessToken(agentId, corpid);
-        } else if (PatternMatchUtils.simpleMatch(weComeConfig.getNeedCustomTokenUrl(), uri)) {
-            //客服联系token
-            token = weAccessTokenService.findCustomAccessToken(corpid);
         } else {
             token = weAccessTokenService.findCommonAccessToken(corpid);
         }

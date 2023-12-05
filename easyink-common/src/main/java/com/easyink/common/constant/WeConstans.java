@@ -128,7 +128,7 @@ public class WeConstans {
 
 
     /**
-     * 获取外部联系人相关 token
+     * 获取内部联系人相关 token
      */
     public static final String WE_CONTACT_ACCESS_TOKEN = "we_contact_access_token";
     /**
@@ -738,9 +738,10 @@ public class WeConstans {
 
 
     /**
-     * 客户群标签最大创建数量(默认值3000)
+     * 客户群标签最大创建数量(默认值10000)
+     * V1.36.0版本 企微官方调整，由3000 => 10000
      */
-    public static final Integer DEFAULT_WE_GROUP_TAG_CATEGORY_SIZE = 3000;
+    public static final Integer DEFAULT_WE_GROUP_TAG_CATEGORY_SIZE = 10000;
 
     /**
      * 成员类型:1 企业成员

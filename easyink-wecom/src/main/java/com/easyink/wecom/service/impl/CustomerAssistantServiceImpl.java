@@ -14,6 +14,7 @@ import com.easyink.common.core.domain.wecom.WeUser;
 import com.easyink.common.enums.*;
 import com.easyink.common.enums.code.WelcomeMsgTypeEnum;
 import com.easyink.common.exception.CustomException;
+import com.easyink.common.exception.wecom.WeComException;
 import com.easyink.common.utils.DateUtils;
 import com.easyink.common.utils.DictUtils;
 import com.easyink.common.utils.PageInfoUtil;
@@ -125,6 +126,10 @@ public class CustomerAssistantServiceImpl implements CustomerAssistantService {
         }
         CustomerAssistantDTO customerAssistantDTO = getCustomerAssistantDTO(addWeEmpleCodeDTO);
         CustomerAssistantResp customerAssistantResp = weCustomerAcquisitionClient.createLink(customerAssistantDTO, addWeEmpleCodeDTO.getCorpId());
+        // 更新结果不为null，且code不为0，抛出企微对应异常
+        if (customerAssistantResp != null && !WeConstans.WE_SUCCESS_CODE.equals(customerAssistantResp.getErrcode())) {
+            throw new WeComException(customerAssistantResp.getErrcode());
+        }
         if (customerAssistantResp != null && customerAssistantResp.getLink() != null && StringUtils.isNotBlank(customerAssistantResp.getLink().getUrl())) {
             // 创建默认渠道信息
             WeEmpleCodeChannel weEmpleCodeChannel = new WeEmpleCodeChannel(customerAssistantResp.getLink().getUrl(), CustomerAssistantConstants.DEFAULT_CHANNEL_NAME, addWeEmpleCodeDTO.getId());
@@ -184,7 +189,11 @@ public class CustomerAssistantServiceImpl implements CustomerAssistantService {
             // 获取获客链接请求参数
             CustomerAssistantDTO customerAssistantDTO = getCustomerAssistantDTO(customerAssistant);
             // 调用企微接口更新
-            weCustomerAcquisitionClient.updateLink(customerAssistantDTO, customerAssistant.getCorpId());
+            CustomerAssistantResp customerAssistantResp = weCustomerAcquisitionClient.updateLink(customerAssistantDTO, customerAssistant.getCorpId());
+            // 更新结果不为null，且code不为0，抛出企微对应异常
+            if (customerAssistantResp != null && !WeConstans.WE_SUCCESS_CODE.equals(customerAssistantResp.getErrcode())) {
+                throw new WeComException(customerAssistantResp.getErrcode());
+            }
         }
 
         // 更新标签信息
@@ -913,8 +922,7 @@ public class CustomerAssistantServiceImpl implements CustomerAssistantService {
                 }
             }
         });
-        // 创建前判断员工数量是否超出API最大限制100个，超出则只截取前100个员工
-        String[] userIdArr = userIdList.size() >= CustomerAssistantConstants.MAX_LINK_USER_NUMS ? userIdList.subList(0, CustomerAssistantConstants.MAX_LINK_USER_NUMS).toArray(new String[]{}) : userIdList.toArray(new String[]{});
+        String[] userIdArr = userIdList.toArray(new String[]{});
         range.setUser_list(userIdArr);
         Long[] departmentArr = departmentIdList.toArray(new Long[]{});
         range.setDepartment_list(departmentArr);

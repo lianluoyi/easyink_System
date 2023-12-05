@@ -110,10 +110,6 @@ public class WeCorpAccount extends BaseEntity {
     @TableField("corp_account")
     private String corpAccount;
 
-    @ApiModelProperty("客户联系密钥")
-    @TableField("custom_secret")
-    private String customSecret;
-
     @ApiModelProperty("应用回调aesKey")
     @TableField("encoding_aes_key")
     private String encodingAesKey;

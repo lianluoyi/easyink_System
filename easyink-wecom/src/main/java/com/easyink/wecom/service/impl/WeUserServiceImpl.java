@@ -1021,12 +1021,24 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
         if (dto == null || StringUtils.isBlank(dto.getCorpId()) || dto.getIsAllocate() == null) {
             throw new CustomException(ResultTip.TIP_GENERAL_PARAM_ERROR);
         }
-        List<TransferResignedUserVO> list = weUserMapper.leaveUserListV3(dto);
-        if (CollectionUtils.isEmpty(list)) {
-            return Collections.emptyList();
-        }
-        return list.stream().filter(a -> a.getAllocateGroupNum() > 0 || a.getAllocateCustomerNum() > 0).collect(Collectors.toList());
-
+        // 最多返回1000条数据
+        int limit = 1000;
+        // 游标
+        int startNum = 0;
+        List<TransferResignedUserVO> list;
+        List<TransferResignedUserVO> result = new ArrayList<>();
+        do {
+            dto.setStartNum(startNum);
+            dto.setLimit(limit - result.size());
+            list = weUserMapper.leaveUserListV3(dto);
+            if (CollectionUtils.isEmpty(list)) {
+                break;
+            }
+            startNum = startNum + limit;
+            result.addAll(list.stream().filter(a -> a.getAllocateGroupNum() > 0 || a.getAllocateCustomerNum() > 0).collect(Collectors.toList()));
+            // 当查询结果=1000时意味着还有数据，且结果集过滤后小于1000需要再查一遍
+        } while (result.size() < limit && list.size() == limit);
+        return result;
     }
 
     /**

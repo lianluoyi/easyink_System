@@ -330,6 +330,5 @@ public class UpdateIDSecurityServiceImpl extends ServiceImpl<UpdateIDSecurityMap
         redisCache.deleteObject(WeConstans.WE_AUTH_CORP_ACCESS_TOKEN + corpId);
         redisCache.deleteObject(WeConstans.WE_COMMON_ACCESS_TOKEN + ":" + corpId);
         redisCache.deleteObject(WeConstans.WE_CONTACT_ACCESS_TOKEN + ":" + corpId);
-        redisCache.deleteObject(WeConstans.WE_CUSTOM_ACCESS_TOKEN + ":" + corpId);
     }
 }

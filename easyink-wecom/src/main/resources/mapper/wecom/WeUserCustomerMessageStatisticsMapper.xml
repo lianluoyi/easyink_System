@@ -462,6 +462,5 @@
             send_time,
             user_id
     </select>
-
 </mapper>
 

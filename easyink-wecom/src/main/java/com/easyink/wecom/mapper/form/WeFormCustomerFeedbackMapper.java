@@ -5,7 +5,6 @@ import java.util.List;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.easyink.wecom.domain.dto.statistics.GoodCommitDTO;
 import com.easyink.wecom.domain.dto.statistics.UserGoodReviewDTO;
-import com.easyink.wecom.domain.dto.statistics.UserServiceDTO;
 import org.apache.ibatis.annotations.Param;
 import com.easyink.wecom.domain.entity.form.WeFormCustomerFeedback;
 
