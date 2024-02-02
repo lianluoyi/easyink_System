@@ -6,6 +6,7 @@
   <img src="https://img.shields.io/badge/license-GPL%203.0-yellow" />
   <img src="https://img.shields.io/badge/mysql-5.7.41-orange" />
   <img src="https://img.shields.io/badge/jdk-1.8.301(64bit)%2B-red" />
+  <img src="https://img.shields.io/badge/es-7.16.2-orange" />
 </p>
 <h4 align="center">
  <a href="http://www.lianluoyi.cn" target="_blank">官网</a> |
