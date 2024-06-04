@@ -12,7 +12,7 @@
         `emple_code_id`,
         `user_id`,
         `external_userid`,
-        `time`,
+        `add_code_time` as `time`,
         `type`
         FROM
         we_emple_code_analyse
@@ -24,10 +24,10 @@
             AND user_id = #{userId}
         </if>
         <if test="beginTime!=null and beginTime!=''">
-            AND `time` &gt;= #{beginTime}
+            AND `add_code_time` &gt;= #{beginTime}
         </if>
         <if test="endTime!=null and endTime!=''">
-            AND `time` &lt;= #{endTime}
+            AND `add_code_time` &lt;= #{endTime}
         </if>
     </select>
 
@@ -36,7 +36,7 @@
         SELECT
         SUM(IF( `type` = 1, 1, 0 )) addCount,
         SUM(IF( `type` = 0, 1, 0 )) loseCount,
-        `time`
+        `add_code_time` AS `time`
         FROM
         we_emple_code_analyse
         WHERE corp_id = #{corpId}
@@ -54,12 +54,12 @@
             )
         </if>
         <if test="beginTime!=null and beginTime!=''">
-            AND `time` &gt;= #{beginTime}
+            AND `add_code_time` &gt;= #{beginTime}
         </if>
         <if test="endTime!=null and endTime!=''">
-            AND `time` &lt;= #{endTime}
+            AND `add_code_time` &lt;= #{endTime}
         </if>
-        GROUP BY `time`
+        GROUP BY `add_code_time`
     </select>
     <!--获取企业下所有活码-员工对应的新增客户数和流失客户数-->
     <select id="getEmpleStatisticDateData" resultType="com.easyink.wecom.domain.WeEmpleCodeStatistic">
@@ -67,7 +67,7 @@
                user_id,
                SUM(CASE WHEN type = '${@com.easyink.common.enums.WeEmpleCodeAnalyseTypeEnum@ADD.type}' THEN 1 ELSE 0 END) AS newCustomerCnt,
                SUM(CASE WHEN type = '${@com.easyink.common.enums.WeEmpleCodeAnalyseTypeEnum@DEL.type}' THEN 1 ELSE 0 END) AS lossCustomerCnt,
-               `time`
+               `add_code_time` AS `time`
         FROM we_emple_code_analyse
         WHERE corp_id = #{corpId}
         <if test="empleCodeIdList != null and empleCodeIdList.size() > 0">
@@ -76,7 +76,7 @@
                 #{empleCodeId}
             </foreach>
         </if>
-        AND `time` = #{date}
+        AND `add_code_time` = #{date}
         GROUP BY emple_code_id, user_id
     </select>
     <!--获取企业下所有活码-员工对应的累计客户数-->
@@ -92,7 +92,7 @@
                 #{empleCodeId}
             </foreach>
         </if>
-        AND `time` &lt;= #{date}
+        AND `add_code_time` &lt;= #{date}
         GROUP BY emple_code_id, user_id
     </select>
     <!--获取企业下所有活码-员工对应的留存客户数总数-->
@@ -106,7 +106,7 @@
         LEFT JOIN we_flower_customer_rel wfcr ON weca.corp_id = wfcr.corp_id
         AND weca.user_id = wfcr.user_id
         AND weca.external_userid = wfcr.external_userid
-        AND wfcr.create_time &lt;= DATE_FORMAT(weca.`time`, '%Y-%m-%d 23:59:59')
+        AND wfcr.create_time &lt;= DATE_FORMAT(weca.`add_code_time`, '%Y-%m-%d 23:59:59')
         AND wfcr.delete_time &lt;= wfcr.create_time
         WHERE weca.corp_id = #{corpId}
         <if test="empleCodeIdList != null and empleCodeIdList.size() > 0">
@@ -116,7 +116,7 @@
             </foreach>
         </if>
         AND type = '${@com.easyink.common.enums.WeEmpleCodeAnalyseTypeEnum@ADD.type}'
-        AND weca.`time` &lt;= #{date}
+        AND weca.`add_code_time` &lt;= #{date}
         GROUP BY weca.emple_code_id, weca.user_id
     </select>
     <!--根据活码Id获取员工Id列表-->
@@ -127,8 +127,8 @@
     <select id="getAssistantDetailTotal" resultType="com.easyink.wecom.domain.vo.emple.CustomerAssistantDetailTotalVO">
         SELECT
         SUM(CASE WHEN weca.`type` = '${@com.easyink.common.enums.WeEmpleCodeAnalyseTypeEnum@ADD.type}' THEN 1 ELSE 0 END) AS accumulateCustomerCnt,
-        SUM(CASE WHEN weca.`type` = '${@com.easyink.common.enums.WeEmpleCodeAnalyseTypeEnum@ADD.type}' and `time` = #{time} THEN 1 ELSE 0 END) AS newCustomerCnt,
-        SUM(CASE WHEN weca.`type` = '${@com.easyink.common.enums.WeEmpleCodeAnalyseTypeEnum@DEL.type}' and `time` = #{time} THEN 1 ELSE 0 END) AS lossCustomerCnt
+        SUM(CASE WHEN weca.`type` = '${@com.easyink.common.enums.WeEmpleCodeAnalyseTypeEnum@ADD.type}' and `add_code_time` = #{time} THEN 1 ELSE 0 END) AS newCustomerCnt,
+        SUM(CASE WHEN weca.`type` = '${@com.easyink.common.enums.WeEmpleCodeAnalyseTypeEnum@DEL.type}' and `add_code_time` = #{time} THEN 1 ELSE 0 END) AS lossCustomerCnt
         FROM we_emple_code_analyse weca LEFT JOIN we_flower_customer_rel wfcr ON weca.corp_id = wfcr.corp_id
         AND weca.user_id = wfcr.user_id
         AND weca.external_userid = wfcr.external_userid
@@ -155,17 +155,17 @@
             </foreach>
         </if>
         <if test="beginTime != null and beginTime != ''">
-            AND `time` &gt;= #{beginTime}
+            AND `add_code_time` &gt;= #{beginTime}
         </if>
         <if test="endTime != null and endTime != ''">
-            AND `time` &lt;= #{endTime}
+            AND `add_code_time` &lt;= #{endTime}
         </if>
         GROUP BY wecc.`name`
     </select>
     <!--获客链接-详情-趋势图-->
     <select id="getChannelChartList" resultType="com.easyink.wecom.domain.vo.emple.ChannelDetailChartVO">
         SELECT
-            `time`,
+            `add_code_time` as `time`,
             SUM(CASE WHEN `type` = '${@com.easyink.common.enums.WeEmpleCodeAnalyseTypeEnum@ADD.type}' THEN 1 ELSE 0 END) AS newCustomerCnt,
             SUM(CASE WHEN `type` = '${@com.easyink.common.enums.WeEmpleCodeAnalyseTypeEnum@DEL.type}' THEN 1 ELSE 0 END) AS lossCustomerCnt
         FROM we_emple_code_analyse
@@ -177,12 +177,12 @@
             </foreach>
         </if>
         <if test="beginTime != null and beginTime != ''">
-            AND `time` &gt;= #{beginTime}
+            AND `add_code_time` &gt;= #{beginTime}
         </if>
         <if test="endTime != null and endTime != ''">
-            AND `time` &lt;= #{endTime}
+            AND `add_code_time` &lt;= #{endTime}
         </if>
-        GROUP BY `time`
+        GROUP BY `add_code_time`
     </select>
     <!--获客链接详情-数据统计-客户维度-->
     <select id="getDetailStatisticByCustomer"
@@ -258,10 +258,10 @@
             AND weca.channel_id = #{channelId}
         </if>
         <if test="beginTime != null and beginTime != ''">
-            AND weca.`time` &gt;= DATE_FORMAT(#{beginTime}, '%Y-%m-%d')
+            AND weca.`add_code_time` &gt;= DATE_FORMAT(#{beginTime}, '%Y-%m-%d')
         </if>
         <if test="endTime != null and endTime != ''">
-            AND weca.`time` &lt;= DATE_FORMAT(#{endTime}, '%Y-%m-%d')
+            AND weca.`add_code_time` &lt;= DATE_FORMAT(#{endTime}, '%Y-%m-%d')
         </if>
         GROUP BY weca.channel_id
     </select>
@@ -270,7 +270,7 @@
             resultType="com.easyink.wecom.domain.vo.emple.AssistantDetailStatisticDateVO">
         SELECT SUM(CASE WHEN weca.`type` = '${@com.easyink.common.enums.WeEmpleCodeAnalyseTypeEnum@ADD.type}' THEN 1 ELSE 0 END) AS newCustomerCnt,
         SUM(CASE WHEN weca.`type` = '${@com.easyink.common.enums.WeEmpleCodeAnalyseTypeEnum@DEL.type}' THEN 1 ELSE 0 END) AS lossCustomerCnt,
-        weca.`time` AS `date`
+        weca.`add_code_time` AS `date`
         FROM we_emple_code_analyse weca INNER JOIN we_emple_code_channel wecc ON wecc.id = weca.channel_id LEFT JOIN we_flower_customer_rel wfcr ON weca.corp_id = wfcr.corp_id AND weca.user_id = wfcr.user_id
         AND weca.external_userid = wfcr.external_userid
         WHERE weca.corp_id = #{corpId}
@@ -295,10 +295,10 @@
             AND weca.channel_id = #{channelId}
         </if>
         <if test="beginTime != null and beginTime != ''">
-            AND weca.`time` &gt;= DATE_FORMAT(#{beginTime}, '%Y-%m-%d')
+            AND weca.`add_code_time` &gt;= DATE_FORMAT(#{beginTime}, '%Y-%m-%d')
         </if>
         <if test="endTime != null and endTime != ''">
-            AND weca.`time` &lt;= DATE_FORMAT(#{endTime}, '%Y-%m-%d')
+            AND weca.`add_code_time` &lt;= DATE_FORMAT(#{endTime}, '%Y-%m-%d')
         </if>
         GROUP BY `date`
     </select>
@@ -330,7 +330,7 @@
         `channel_id`,
         `user_id`,
         `external_userid`,
-        `time`,
+        `add_code_time`,
         `type`,
         `add_time`
         )

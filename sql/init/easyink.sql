@@ -1228,7 +1228,7 @@ CREATE TABLE `we_category`
     `id`          bigint(100) NOT NULL COMMENT '主键id',
     `corp_id`     varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '授权企业ID',
     `media_type`  int(1) NOT NULL DEFAULT 0 COMMENT '0 海报、1 语音（voice）、2 视频（video），3 普通文件(file) 4 文本 、5图文链接、6小程序',
-    `using`       tinyint(1) NOT NULL DEFAULT 1 COMMENT '是否启用到侧边栏(0否，1是)',
+    `use_flag`       tinyint(1) NOT NULL DEFAULT 1 COMMENT '是否启用到侧边栏(0否，1是)',
     `name`        varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '分类名称',
     `create_by`   varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '创建人',
     `create_time` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -1275,7 +1275,7 @@ CREATE TABLE `we_chat_side`
     `media_type`  tinyint(4) NOT NULL DEFAULT -1 COMMENT '素材类型 0 图片（image）、1 语音（voice）、2 视频（video），3 普通文件(file) 4 文本 5 海报',
     `side_name`   varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '聊天工具栏名称',
     `total`       int(10) NOT NULL DEFAULT 0 COMMENT '已抓取素材数量',
-    `using`       tinyint(1) NOT NULL DEFAULT 0 COMMENT '是否启用 0 启用 1 未启用',
+    `use_flag`       tinyint(1) NOT NULL DEFAULT 0 COMMENT '是否启用 0 启用 1 未启用',
     `create_by`   varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '创建人',
     `create_time` datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `update_by`   varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '更新人',
@@ -1432,7 +1432,7 @@ CREATE TABLE `we_customer_messageoriginal`
     `staff_id`            text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '员工id',
     `task_name`           varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci   NOT NULL DEFAULT '' COMMENT '任务名称',
     `department`          varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '部门id',
-    `group`               varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '群组名称id',
+    `group_id`               varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '群组名称id',
     `tag`                 varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '客户标签id列表',
     `filter_tags`         varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '过滤标签id列表',
     `filter_users`        varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '过滤员工id列表',
@@ -2767,11 +2767,11 @@ CREATE TABLE `we_emple_code_analyse`
     `channel_id`      bigint(20) NOT NULL DEFAULT '0' COMMENT '获客链接渠道id',
     `user_id`         varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '企业成员userId',
     `external_userid` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '客户ID',
-    `time`            date        NOT NULL COMMENT 'type为1时是添加时间，type为0时是流失时间',
+    `add_code_time`            date        NOT NULL COMMENT 'type为1时是添加时间，type为0时是流失时间',
     `type`            tinyint(1) NOT NULL COMMENT '1:新增，0:流失',
     `add_time`        datetime NOT NULL DEFAULT '0000-00-00 00:00:00' COMMENT '添加时间（冗余字段），用于获客链接客户维度显示，格式YYYY-MM-DD HH:MM:SS',
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uniq_corpid_codeid_channelid_userid_extid_type_time` (`corp_id`,`emple_code_id`,`channel_id`,`user_id`,`external_userid`,`type`,`time`) USING BTREE COMMENT '唯一索引'
+    UNIQUE KEY `uniq_corpid_codeid_channelid_userid_extid_type_time` (`corp_id`,`emple_code_id`,`channel_id`,`user_id`,`external_userid`,`type`,`add_code_time`) USING BTREE COMMENT '唯一索引'
 ) ENGINE=InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
 
@@ -3756,9 +3756,9 @@ CREATE TABLE `we_emple_code_statistic` (
                                            `retain_customer_cnt` int(11) NOT NULL DEFAULT '0' COMMENT '留存客户数',
                                            `new_customer_cnt` int(11) NOT NULL DEFAULT '0' COMMENT '新增客户数',
                                            `loss_customer_cnt` int(11) NOT NULL DEFAULT '0' COMMENT '流失客户数',
-                                           `time` date NOT NULL COMMENT '日期',
+                                           `statistics_time` date NOT NULL COMMENT '日期',
                                            PRIMARY KEY (`id`),
-                                           UNIQUE KEY `uni_emple_user_time` (`emple_code_id`,`user_id`,`time`) USING BTREE,
+                                           UNIQUE KEY `uni_emple_user_time` (`emple_code_id`,`user_id`,`statistics_time`) USING BTREE,
                                            KEY `idx_corp_user_id` (`corp_id`,`user_id`) USING BTREE,
                                            KEY `idx_emple_user_id` (`emple_code_id`,`user_id`) USING BTREE
 ) ENGINE=InnoDB AUTO_INCREMENT=1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT='活码数据统计表-每天凌晨3点更新前一天的数据';

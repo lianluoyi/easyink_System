@@ -550,6 +550,16 @@
         WHERE corp_id = #{corpId} AND link_id = #{linkId}
         LIMIT 1;
     </select>
+    <select id="selectDepartTypeEmpleCodeIdList" resultType="java.lang.Long">
+        SELECT distinct emple_code_id
+            FROM we_emple_code_use_scop cus
+            INNER JOIN we_emple_code ec ON ec.id = cus.emple_code_id
+            WHERE cus.del_flag = 0
+            AND cus.business_id_type = ${@com.easyink.common.constant.WeConstans@USE_SCOP_BUSINESSID_TYPE_ORG}
+            AND ec.del_flag = 0
+              AND ec.source = ${@com.easyink.common.enums.EmployCodeSourceEnum@CODE_CREATE.source}
+              AND ec.code_type = ${@com.easyink.common.enums.WeEmpleCodeType@MULTI.type}
+    </select>
 
 
 </mapper>

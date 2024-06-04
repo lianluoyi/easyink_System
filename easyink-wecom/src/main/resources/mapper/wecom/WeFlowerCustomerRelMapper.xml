@@ -509,7 +509,7 @@
             </foreach>
         </if>
         <if test="endTime != null and endTime != ''">
-            AND time &lt;= DATE_FORMAT(#{endTime}, '%Y-%m-%d')
+            AND add_code_time &lt;= DATE_FORMAT(#{endTime}, '%Y-%m-%d')
         </if>
         GROUP BY `state`
     </select>
@@ -548,7 +548,7 @@
     <select id="getChannelDateRelAccumulateCnt"
             resultType="com.easyink.wecom.domain.vo.emple.WeEmpleCodeChannelRelVO">
         SELECT SUM(CASE WHEN `type` = '${@com.easyink.common.enums.WeEmpleCodeAnalyseTypeEnum@ADD.type}' THEN 1 ELSE 0 END) AS customerCnt,
-               `time` AS `date`
+               `add_code_time` AS `date`
         FROM we_emple_code_analyse WHERE corp_id = #{corpId}
         <if test="userIds != null and userIds !=''">
             <if test="userIds.indexOf(',') != -1">
@@ -568,7 +568,7 @@
             </foreach>
         </if>
         <if test="endTime != null and endTime != ''">
-            AND `time` &lt;= DATE_FORMAT(#{endTime}, '%Y-%m-%d')
+            AND `add_code_time` &lt;= DATE_FORMAT(#{endTime}, '%Y-%m-%d')
         </if>
         GROUP BY `date`
     </select>

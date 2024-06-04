@@ -1,6 +1,6 @@
 package com.easyink.wecom.openapi.util;
 
-import com.easyink.wecom.openapi.exception.AppGenException;
+import com.easyink.common.exception.openapi.AppGenException;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;

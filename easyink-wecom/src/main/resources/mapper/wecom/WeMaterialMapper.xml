@@ -344,7 +344,7 @@
             AND show_material = #{showMaterial}
         </if>
         <if test="usingFlag != null">
-            AND wc.using = #{usingFlag}
+            AND wc.use_flag = #{usingFlag}
         </if>
         <if test="isExpire!=null">
             <choose>

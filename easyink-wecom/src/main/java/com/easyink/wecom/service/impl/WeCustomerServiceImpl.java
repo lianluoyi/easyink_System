@@ -63,7 +63,10 @@ import com.easyink.wecom.domain.entity.WeExternalUseridMapping;
 import com.easyink.wecom.domain.vo.QueryCustomerFromPlusVO;
 import com.easyink.wecom.domain.vo.WeCustomerExportVO;
 import com.easyink.wecom.domain.vo.WeMakeCustomerTagVO;
-import com.easyink.wecom.domain.vo.customer.*;
+import com.easyink.wecom.domain.vo.customer.SessionArchiveCustomerVO;
+import com.easyink.wecom.domain.vo.customer.WeCustomerSumVO;
+import com.easyink.wecom.domain.vo.customer.WeCustomerUserListVO;
+import com.easyink.wecom.domain.vo.customer.WeCustomerVO;
 import com.easyink.wecom.domain.vo.sop.CustomerSopVO;
 import com.easyink.wecom.domain.vo.unionid.GetUnionIdVO;
 import com.easyink.wecom.handler.ExtendPropHolder;
@@ -71,6 +74,7 @@ import com.easyink.wecom.login.util.LoginTokenService;
 import com.easyink.wecom.mapper.WeCustomerMapper;
 import com.easyink.wecom.mapper.WeExternalUseridMappingMapper;
 import com.easyink.wecom.mapper.WeFlowerCustomerRelMapper;
+import com.easyink.wecom.openapi.dto.GetWeCustomerByUnionIdDTO;
 import com.easyink.wecom.service.*;
 import com.easyink.wecom.service.wechatopen.WechatOpenService;
 import com.easyink.wecom.utils.redis.CustomerRedisCache;
@@ -2137,6 +2141,17 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
                     .set(WeCustomer::getUnionid, unionId));
         }
         return customer;
+    }
+
+    @Override
+    public WeCustomer getCustomerByUnionId(GetWeCustomerByUnionIdDTO dto) {
+        String unionId = dto.getUnionId();
+        if (StringUtils.isBlank(unionId)) {
+            return null;
+        }
+        return this.getOne(new LambdaQueryWrapper<WeCustomer>()
+                .eq(WeCustomer::getUnionid, unionId)
+                .last(GenConstants.LIMIT_1));
     }
 
     @Override

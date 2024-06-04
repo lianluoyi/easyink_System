@@ -47,7 +47,7 @@ public class WeCategory extends BaseEntity {
 
 
     @ApiModelProperty(value = "是否启用到侧边栏(0否，1是)")
-    @TableField("using")
+    @TableField("use_flag")
     private Boolean using;
 
     @ApiModelProperty(value = "分类名称", required = true)

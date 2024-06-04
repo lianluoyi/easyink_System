@@ -5,7 +5,7 @@
 <mapper namespace="com.easyink.wecom.mapper.statistic.WeEmpleCodeStatisticMapper">
     <!--批量插入或更新统计数据-->
     <insert id="batchInsertOrUpdate">
-        INSERT INTO we_emple_code_statistic (corp_id, emple_code_id, user_id, accumulate_customer_cnt, retain_customer_cnt, new_customer_cnt, loss_customer_cnt, `time`)
+        INSERT INTO we_emple_code_statistic (corp_id, emple_code_id, user_id, accumulate_customer_cnt, retain_customer_cnt, new_customer_cnt, loss_customer_cnt, `statistics_time`)
         VALUES
         <foreach collection="list" item="item" separator=",">
             (
@@ -22,8 +22,8 @@
     <!--活码统计-数据总览-->
     <select id="listEmpleTotal" resultType="com.easyink.wecom.domain.vo.statistics.emplecode.EmpleCodeBaseVO">
         SELECT
-        SUM(CASE WHEN `time` = #{endDate} THEN accumulate_customer_cnt ELSE 0 END) AS accumulateCustomerCnt,
-        SUM(CASE WHEN `time` = #{endDate} THEN retain_customer_cnt ELSE 0 END) AS retainCustomerCnt,
+        SUM(CASE WHEN `statistics_time` = #{endDate} THEN accumulate_customer_cnt ELSE 0 END) AS accumulateCustomerCnt,
+        SUM(CASE WHEN `statistics_time` = #{endDate} THEN retain_customer_cnt ELSE 0 END) AS retainCustomerCnt,
         SUM( new_customer_cnt ) AS newCustomerCnt,
         SUM( loss_customer_cnt ) AS lossCustomerCnt
         FROM
@@ -42,9 +42,9 @@
             </foreach>
         </if>
         <if test="beginDate != null and beginDate != ''">
-            AND `time` &gt;= #{beginDate}
+            AND `statistics_time` &gt;= #{beginDate}
         </if><if test="endDate != null and endDate != ''">
-            AND `time` &lt;= #{endDate}
+            AND `statistics_time` &lt;= #{endDate}
         </if>
     </select>
     <!--活码统计-员工维度-获取截止当前时间下，员工新增客户数-->
@@ -79,8 +79,8 @@
         wu.user_name AS userName,
         wd.name AS departmentName,
         wu.head_image_url AS userHeadImage,
-        SUM( CASE WHEN `time` = #{endDate} THEN wecs.accumulate_customer_cnt ELSE 0 END ) AS accumulateCustomerCnt,
-        SUM( CASE WHEN `time` = #{endDate} THEN wecs.retain_customer_cnt ELSE 0 END ) AS retainCustomerCnt,
+        SUM( CASE WHEN `statistics_time` = #{endDate} THEN wecs.accumulate_customer_cnt ELSE 0 END ) AS accumulateCustomerCnt,
+        SUM( CASE WHEN `statistics_time` = #{endDate} THEN wecs.retain_customer_cnt ELSE 0 END ) AS retainCustomerCnt,
         SUM( wecs.new_customer_cnt ) AS newCustomerCnt,
         SUM( wecs.loss_customer_cnt ) AS lossCustomerCnt
         FROM
@@ -101,10 +101,10 @@
             </foreach>
         </if>
         <if test="beginDate != null and beginDate != ''">
-            AND wecs.`time` &gt;= #{beginDate}
+            AND wecs.`statistics_time` &gt;= #{beginDate}
         </if>
         <if test="endDate != null and endDate != ''">
-            AND wecs.`time` &lt;= #{endDate}
+            AND wecs.`statistics_time` &lt;= #{endDate}
         </if>
         GROUP BY wecs.user_id
     </select>
@@ -113,8 +113,8 @@
         SELECT
         wec.scenario AS empleName,
         wecs.emple_code_id AS empleCodeId,
-        SUM( CASE WHEN `time` = #{endDate} THEN wecs.accumulate_customer_cnt ELSE 0 END ) AS accumulateCustomerCnt,
-        SUM( CASE WHEN `time` = #{endDate} THEN wecs.retain_customer_cnt ELSE 0 END ) AS retainCustomerCnt,
+        SUM( CASE WHEN `statistics_time` = #{endDate} THEN wecs.accumulate_customer_cnt ELSE 0 END ) AS accumulateCustomerCnt,
+        SUM( CASE WHEN `statistics_time` = #{endDate} THEN wecs.retain_customer_cnt ELSE 0 END ) AS retainCustomerCnt,
         SUM( wecs.new_customer_cnt ) AS newCustomerCnt,
         SUM( wecs.loss_customer_cnt ) AS lossCustomerCnt
         FROM
@@ -134,10 +134,10 @@
             </foreach>
         </if>
         <if test="beginDate != null and beginDate != ''">
-            AND wecs.`time` &gt;= #{beginDate}
+            AND wecs.`statistics_time` &gt;= #{beginDate}
         </if>
         <if test="endDate != null and endDate != ''">
-            AND wecs.`time` &lt;= #{endDate}
+            AND wecs.`statistics_time` &lt;= #{endDate}
         </if>
         GROUP BY wecs.emple_code_id
         ORDER BY wec.create_time DESC
@@ -170,7 +170,7 @@
     <!--活码统计-日期维度-获取基础数据-->
     <select id="listEmpleDate" resultType="com.easyink.wecom.domain.vo.statistics.emplecode.EmpleCodeDateVO">
         SELECT
-        `time`,
+        `statistics_time` as `time`,
         SUM( new_customer_cnt ) AS newCustomerCnt,
         SUM( loss_customer_cnt ) AS lossCustomerCnt
         FROM
@@ -189,12 +189,12 @@
             </foreach>
         </if>
         <if test="beginDate != null and beginDate != ''">
-            AND `time` &gt;= #{beginDate}
+            AND `statistics_time` &gt;= #{beginDate}
         </if>
         <if test="endDate != null and endDate != ''">
-            AND `time` &lt;= #{endDate}
+            AND `statistics_time` &lt;= #{endDate}
         </if>
-        GROUP BY `time`
+        GROUP BY `statistics_time`
     </select>
     <!--活码统计-日期维度-获取截止当前时间下，员工新增客户数-->
     <select id="listEmpleDateUserCustomerRel"
@@ -224,7 +224,7 @@
     <select id="listDateAccumulateRetainCnt"
             resultType="com.easyink.wecom.domain.vo.statistics.emplecode.EmpleCodeDateVO">
         SELECT
-        `time`,
+        `statistics_time` as `time`,
         SUM(accumulate_customer_cnt)  AS accumulateCustomerCnt,
         SUM(retain_customer_cnt) AS retainCustomerCnt
         FROM
@@ -243,11 +243,11 @@
             </foreach>
         </if>
         <if test="beginDate != null and beginDate != ''">
-            AND `time` &gt;= #{beginDate}
+            AND `statistics_time` &gt;= #{beginDate}
         </if>
         <if test="endDate != null and endDate != ''">
-            AND `time` &lt;= #{endDate}
+            AND `statistics_time` &lt;= #{endDate}
         </if>
-        GROUP BY `time`
+        GROUP BY `statistics_time`
     </select>
 </mapper>

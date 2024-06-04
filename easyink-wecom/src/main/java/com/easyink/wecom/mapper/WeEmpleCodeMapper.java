@@ -175,4 +175,12 @@ public interface WeEmpleCodeMapper extends BaseMapper<WeEmpleCode> {
      * @return 结果
      */
     Integer removeAssistantByLinkId(@Param("linkId") String linkId, @Param("corpId") String corpId);
+
+    /**
+     * 查询需要处理的部门活码id列表
+     * @return id列表
+     */
+    List<Long> selectDepartTypeEmpleCodeIdList();
+
+
 }

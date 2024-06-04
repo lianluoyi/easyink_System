@@ -218,4 +218,10 @@ public class WeEmpleCodeController extends BaseController {
     public AjaxResult getCodeAppLink(@ApiParam("活码id")Long id ) {
         return AjaxResult.success("success",weEmpleCodeService.getCodeAppLink(id));
     }
+    @PostMapping("/refresh/code")
+    @ApiOperation("刷新活码")
+    public AjaxResult refreshCode(@RequestBody @ApiParam("活码id")List<Long> ids ) {
+        weEmpleCodeService.refreshCode(ids);
+        return AjaxResult.success("success");
+    }
 }

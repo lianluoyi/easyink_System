@@ -18,7 +18,10 @@ import com.easyink.common.utils.DateUtils;
 import com.easyink.common.utils.spring.SpringUtils;
 import com.easyink.wecom.client.WeExternalContactClient;
 import com.easyink.wecom.domain.*;
-import com.easyink.wecom.domain.dto.*;
+import com.easyink.wecom.domain.dto.AddWeMaterialDTO;
+import com.easyink.wecom.domain.dto.UpdateWeMaterialDTO;
+import com.easyink.wecom.domain.dto.WeEmpleCodeDTO;
+import com.easyink.wecom.domain.dto.WeExternalContactDTO;
 import com.easyink.wecom.domain.dto.emplecode.AddWeEmpleCodeDTO;
 import com.easyink.wecom.domain.dto.emplecode.FindAssistantDTO;
 import com.easyink.wecom.domain.dto.emplecode.FindWeEmpleCodeDTO;
@@ -28,7 +31,6 @@ import com.easyink.wecom.domain.vo.redeemcode.WeRedeemCodeActivityVO;
 import com.easyink.wecom.domain.vo.statistics.emplecode.EmpleCodeByNameVO;
 import com.easyink.wecom.handler.shorturl.EmpleCodeShortUrlHandler;
 import com.easyink.wecom.login.util.LoginTokenService;
-import com.easyink.wecom.mapper.WeEmpleCodeAnalyseMapper;
 import com.easyink.wecom.mapper.WeEmpleCodeMapper;
 import com.easyink.wecom.mapper.WeUserMapper;
 import com.easyink.wecom.mapper.redeemcode.WeRedeemCodeMapper;
@@ -47,7 +49,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ObjectUtils;
-import org.springframework.util.StopWatch;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -296,6 +297,31 @@ public class WeEmpleCodeServiceImpl extends ServiceImpl<WeEmpleCodeMapper, WeEmp
             buildExtraMaterial(repeatMaterialList, corpId);
             employCode.setCodeRepeatMaterialList(repeatMaterialList);
         }
+    }
+
+    @Override
+    @Transactional
+    public void refreshCode(List<Long> ids) {
+        String corpId = LoginTokenService.getLoginUser().getCorpId();
+        List<Long> handleIds = new ArrayList<>();
+        if (CollectionUtils.isNotEmpty(ids)) {
+            handleIds.addAll(ids);
+        } else {
+            handleIds.addAll(this.baseMapper.selectDepartTypeEmpleCodeIdList());
+        }
+        if (CollectionUtils.isEmpty(handleIds)) {
+            throw new CustomException("没有可处理的数据");
+        }
+
+        log.info("[刷新活码处理], 开始处理: size: {}", handleIds.size());
+        for (Long handleId : handleIds) {
+            WeEmpleCodeVO weEmpleCodeVO = this.selectWeEmpleCodeById(handleId, corpId);
+            AddWeEmpleCodeDTO weEmpleCode = new AddWeEmpleCodeDTO();
+            BeanUtils.copyProperties(weEmpleCodeVO, weEmpleCode);
+            this.updateWeEmpleCode(weEmpleCode);
+            log.info("[刷新活码处理] 处理任务: {} 完成", handleId);
+        }
+        log.info("[刷新活码处理] 结束处理");
     }
 
     /**
