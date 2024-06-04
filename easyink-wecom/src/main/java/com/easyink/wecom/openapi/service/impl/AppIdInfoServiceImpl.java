@@ -2,10 +2,10 @@ package com.easyink.wecom.openapi.service.impl;
 
 
 import com.easyink.common.exception.CustomException;
+import com.easyink.common.exception.openapi.OpenApiException;
 import com.easyink.wecom.openapi.dao.AppIdInfoMapper;
 import com.easyink.wecom.openapi.domain.entity.AppIdInfo;
 import com.easyink.wecom.openapi.domain.vo.AppIdGenVO;
-import com.easyink.wecom.openapi.exception.OpenApiException;
 import com.easyink.wecom.openapi.service.AppIdInfoService;
 import com.easyink.wecom.openapi.util.AppGenUtil;
 import com.easyink.wecom.openapi.util.AppIdCache;
@@ -29,10 +29,12 @@ public class AppIdInfoServiceImpl implements AppIdInfoService {
 
     private final AppIdInfoMapper appIdInfoMapper;
     private final AppInfoRedisClient appInfoRedisClient;
+    private final AppIdCache appIdCache;
 
-    public AppIdInfoServiceImpl(@NotNull AppIdInfoMapper appIdInfoMapper, AppInfoRedisClient appInfoRedisClient) {
+    public AppIdInfoServiceImpl(@NotNull AppIdInfoMapper appIdInfoMapper, AppInfoRedisClient appInfoRedisClient, AppIdCache appIdCache) {
         this.appIdInfoMapper = appIdInfoMapper;
         this.appInfoRedisClient = appInfoRedisClient;
+        this.appIdCache = appIdCache;
     }
 
 
@@ -73,7 +75,7 @@ public class AppIdInfoServiceImpl implements AppIdInfoService {
         if (res == 0) {
             throw new CustomException("获取开发配置异常");
         }
-        AppIdCache.INSTANCE.put(appId, appIdInfo);
+        appIdCache.put(appId, appIdInfo);
         return new AppIdGenVO(appIdInfo);
     }
 
@@ -95,7 +97,7 @@ public class AppIdInfoServiceImpl implements AppIdInfoService {
         if (res == 0) {
             throw new CustomException("重置失败");
         }
-        AppIdCache.INSTANCE.put(appId, appIdInfo);
+        appIdCache.put(appId, appIdInfo);
         return new AppIdGenVO(appIdInfo);
     }
 
@@ -105,7 +107,7 @@ public class AppIdInfoServiceImpl implements AppIdInfoService {
             throw new OpenApiException("param missing");
         }
         // 判断appId是否存在
-        AppIdInfo appIdInfo = AppIdCache.INSTANCE.get(appId);
+        AppIdInfo appIdInfo = appIdCache.get(appId);
         if (appIdInfo == null) {
             throw new OpenApiException("invalid appId");
         }

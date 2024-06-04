@@ -233,4 +233,9 @@ public interface WeEmpleCodeService extends IService<WeEmpleCode> {
      * @param corpId
      */
     void buildEmployCodeMaterial(WeEmpleCodeVO employCode, String corpId);
+
+    /**
+     * 刷新活码
+     */
+    void refreshCode(List<Long> ids);
 }

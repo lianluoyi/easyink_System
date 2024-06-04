@@ -59,7 +59,7 @@ public class WeEmpleCodeStatistic implements Serializable {
     private Integer lossCustomerCnt;
 
     @ApiModelProperty("日期")
-    @TableField("time")
+    @TableField("statistics_time")
     private String time;
 
     /**

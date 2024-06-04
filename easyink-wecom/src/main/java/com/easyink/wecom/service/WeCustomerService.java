@@ -18,9 +18,13 @@ import com.easyink.wecom.domain.dto.unionid.GetUnionIdDTO;
 import com.easyink.wecom.domain.entity.WeCustomerExportDTO;
 import com.easyink.wecom.domain.vo.QueryCustomerFromPlusVO;
 import com.easyink.wecom.domain.vo.WeMakeCustomerTagVO;
-import com.easyink.wecom.domain.vo.customer.*;
+import com.easyink.wecom.domain.vo.customer.SessionArchiveCustomerVO;
+import com.easyink.wecom.domain.vo.customer.WeCustomerSumVO;
+import com.easyink.wecom.domain.vo.customer.WeCustomerUserListVO;
+import com.easyink.wecom.domain.vo.customer.WeCustomerVO;
 import com.easyink.wecom.domain.vo.sop.CustomerSopVO;
 import com.easyink.wecom.domain.vo.unionid.GetUnionIdVO;
+import com.easyink.wecom.openapi.dto.GetWeCustomerByUnionIdDTO;
 import org.springframework.validation.annotation.Validated;
 
 import javax.validation.constraints.NotBlank;
@@ -390,6 +394,14 @@ public interface WeCustomerService extends IService<WeCustomer> {
      * @return
      */
     WeCustomer getCustomerByUnionId(String unionId, String openId, String corpId);
+
+    /**
+     * 通过unionId获取员工详情
+     *
+     * @param dto {@link GetWeCustomerByUnionIdDTO}
+     * @return {@link WeCustomer}
+     */
+    WeCustomer getCustomerByUnionId(GetWeCustomerByUnionIdDTO dto);
 
     /**
      * 通过明文获取密文外部联系人exUserId

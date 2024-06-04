@@ -1,6 +1,5 @@
 package com.easyink.framework.web.exception;
 
-import cn.hutool.http.HttpResponse;
 import cn.hutool.json.JSONUtil;
 import com.dtflys.forest.exceptions.ForestRuntimeException;
 import com.easyink.common.constant.WeConstans;
@@ -10,6 +9,7 @@ import com.easyink.common.enums.WeExceptionTip;
 import com.easyink.common.exception.BaseException;
 import com.easyink.common.exception.CustomException;
 import com.easyink.common.exception.file.NoFileException;
+import com.easyink.common.exception.openapi.OpenApiException;
 import com.easyink.common.utils.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.poi.ss.formula.functions.T;
@@ -70,6 +70,16 @@ public class GlobalExceptionHandler {
         }
         return AjaxResult.error(errCode, errTipMsg);
     }
+
+
+    @ExceptionHandler(OpenApiException.class)
+    public AjaxResult<T> businessException(OpenApiException e, HttpServletResponse response) {
+        String errTipMsg = e.getMessage();
+        Integer errCode = ResultTip.TIP_GENERAL_BAD_REQUEST.getCode();
+        return AjaxResult.error(errCode, errTipMsg);
+    }
+
+
 
     @ExceptionHandler(NoHandlerFoundException.class)
     public AjaxResult<T> handlerNoFoundException(Exception e) {

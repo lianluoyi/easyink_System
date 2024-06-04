@@ -1,6 +1,6 @@
 package com.easyink.wecom.openapi.util;
 
-import com.easyink.wecom.openapi.exception.SignValidateException;
+import com.easyink.common.exception.openapi.SignValidateException;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.DigestUtils;
 

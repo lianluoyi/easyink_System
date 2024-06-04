@@ -23,7 +23,7 @@
                                 id
                                 ,corp_id
                                 ,media_type
-                                ,`using`
+                                ,`use_flag`
                                 ,`name`
                                 ,create_by
                                 ,update_by
@@ -47,7 +47,7 @@
         id
         ,corp_id
         ,media_type
-        ,`using`
+        ,`use_flag` AS `using`
         ,`name`
         ,create_by
         ,update_by
@@ -68,7 +68,7 @@
 
     <select id="updateSidebarSwitch">
         UPDATE we_category
-        set `using` = #{using}
+        set `use_flag` = #{using}
         where
             corp_id = #{corpId}
             and id = #{id}
@@ -79,14 +79,14 @@
         id
         ,media_type
         ,`name`
-        ,`using`
+        ,`use_flag` AS `using`
         FROM
         we_category
         WHERE
         corp_id = #{corpId}
         AND del_flag = ${@com.easyink.common.constant.WeConstans@WE_CUSTOMER_MSG_RESULT_NO_DEFALE}
         <if test="using!=null">
-            AND `using` = #{using}
+            AND `use_flag` = #{using}
             AND media_type NOT IN ( ${@com.easyink.common.enums.WeCategoryMediaTypeEnum@RADAR.getMediaType()},
             ${@com.easyink.common.enums.WeCategoryMediaTypeEnum@FORM.getMediaType()})
         </if>

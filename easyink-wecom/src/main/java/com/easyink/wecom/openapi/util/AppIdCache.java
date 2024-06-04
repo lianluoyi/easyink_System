@@ -6,6 +6,7 @@ import com.easyink.wecom.openapi.dao.AppIdInfoMapper;
 import com.easyink.wecom.openapi.domain.entity.AppIdInfo;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
+import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.util.List;
@@ -18,11 +19,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * @date : 2022/3/14 14:24
  */
 @Slf4j
-public enum AppIdCache {
-    /**
-     * 缓存单例
-     */
-    INSTANCE;
+@Component
+public class AppIdCache {
+
     /**
      * app开发设置缓存
      */

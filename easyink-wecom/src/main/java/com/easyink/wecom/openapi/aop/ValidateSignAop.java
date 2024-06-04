@@ -1,10 +1,10 @@
 package com.easyink.wecom.openapi.aop;
 
 
+import com.easyink.common.exception.openapi.SignValidateException;
 import com.easyink.common.utils.ServletUtils;
 import com.easyink.wecom.openapi.constant.AppInfoConst;
 import com.easyink.wecom.openapi.domain.entity.AppIdInfo;
-import com.easyink.wecom.openapi.exception.SignValidateException;
 import com.easyink.wecom.openapi.util.AppGenUtil;
 import com.easyink.wecom.openapi.util.AppIdCache;
 import com.easyink.wecom.openapi.util.AppInfoRedisClient;
@@ -17,7 +17,6 @@ import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
 import org.aspectj.lang.annotation.Pointcut;
 import org.springframework.stereotype.Component;
-import org.springframework.web.bind.ServletRequestUtils;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.NotNull;
@@ -33,9 +32,11 @@ import javax.validation.constraints.NotNull;
 @Component
 public class ValidateSignAop {
     private final AppInfoRedisClient appInfoRedisClient;
+    private final AppIdCache appIdCache;
 
-    public ValidateSignAop(@NotNull AppInfoRedisClient appInfoRedisClient) {
+    public ValidateSignAop(@NotNull AppInfoRedisClient appInfoRedisClient, AppIdCache appIdCache) {
         this.appInfoRedisClient = appInfoRedisClient;
+        this.appIdCache = appIdCache;
     }
 
     @Pointcut("@annotation(com.easyink.wecom.openapi.aop.ValidateSign)")
@@ -162,7 +163,7 @@ public class ValidateSignAop {
         if (StringUtils.isBlank(appId)) {
             throw new SignValidateException("appId cannot be null");
         }
-        AppIdInfo appIdInfo = AppIdCache.INSTANCE.get(appId);
+        AppIdInfo appIdInfo = appIdCache.get(appId);
         if (appIdInfo == null || StringUtils.isBlank(appIdInfo.getAppSecret())) {
             throw new SignValidateException("invalid appId");
         }

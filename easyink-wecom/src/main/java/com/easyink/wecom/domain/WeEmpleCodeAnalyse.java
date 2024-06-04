@@ -47,7 +47,7 @@ public class WeEmpleCodeAnalyse {
     private String externalUserId;
 
     @ApiModelProperty(value = "添加时间")
-    @TableField("time")
+    @TableField("add_code_time")
     private Date time;
 
     @ApiModelProperty(value = "1:新增，0:流失")
