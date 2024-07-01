@@ -1,5 +1,6 @@
 package com.easyink.web.controller.wecom;
 
+import com.easyink.common.annotation.RepeatSubmit;
 import com.easyink.common.core.controller.BaseController;
 import com.easyink.common.core.domain.AjaxResult;
 import com.easyink.common.core.page.TableDataInfo;
@@ -39,6 +40,7 @@ public class WeMomentController extends BaseController {
     @PreAuthorize("@ss.hasPermi('wecom:moments:publish')")
     @PostMapping("/create")
     @ApiOperation("创建朋友圈任务")
+    @RepeatSubmit
     public AjaxResult createMoment(@Validated @RequestBody CreateMomentTaskDTO createMomentTaskDTO) {
         createMomentTaskDTO.setCorpId(LoginTokenService.getLoginUser().getCorpId());
         weMomentTaskService.createMomentTask(createMomentTaskDTO, LoginTokenService.getLoginUser());
@@ -56,6 +58,7 @@ public class WeMomentController extends BaseController {
     @PreAuthorize("@ss.hasPermi('wecom:moments:edit')")
     @PostMapping("/updateMoment")
     @ApiOperation("编辑朋友圈")
+    @RepeatSubmit
     public AjaxResult updateMoment(@RequestBody CreateMomentTaskDTO createMomentTaskDTO) {
         weMomentTaskService.updateMoment(createMomentTaskDTO);
         return AjaxResult.success();

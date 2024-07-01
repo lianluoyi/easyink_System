@@ -16,7 +16,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
-import javax.validation.constraints.NotEmpty;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.text.MessageFormat;
@@ -50,9 +49,9 @@ public class ApplicationMessageUtil {
      * @param userIds  员工id列表
      * @param corpId   企业id
      * @param msg      消息模板 例如 “员工姓名：{0},年龄：{1}”
-     * @param paramMsg 替换占位符{}消息
+     * @param paramMsgs 替换占位符{}消息
      */
-    public void sendAppMessage(@NotEmpty List<String> userIds, String corpId, String msg, String... paramMsg) {
+    public void sendAppMessage(List<String> userIds, String corpId, String msg, String[] paramMsgs) {
         WeMessagePushDTO pushDto = new WeMessagePushDTO();
         WeCorpAccount validWeCorpAccount = corpAccountService.findValidWeCorpAccount(corpId);
         String agentId = validWeCorpAccount.getAgentId();
@@ -61,7 +60,7 @@ public class ApplicationMessageUtil {
         //设置发送者 发送给企业员工
         String userString = getUserString(userIds);
         pushDto.setTouser(userString);
-        text.setContent(MessageFormat.format(msg, paramMsg));
+        text.setContent(MessageFormat.format(msg, paramMsgs));
         pushDto.setAgentid(Integer.valueOf(agentId));
         pushDto.setText(text);
         pushDto.setMsgtype(MessageType.TEXT.getMessageType());

@@ -16,6 +16,7 @@ import com.easyink.wecom.domain.dto.pro.EditCustomerFromPlusDTO;
 import com.easyink.wecom.domain.dto.tag.RemoveWeCustomerTagDTO;
 import com.easyink.wecom.domain.dto.unionid.GetUnionIdDTO;
 import com.easyink.wecom.domain.entity.WeCustomerExportDTO;
+import com.easyink.wecom.domain.model.customer.UserIdAndExternalUserIdModel;
 import com.easyink.wecom.domain.vo.QueryCustomerFromPlusVO;
 import com.easyink.wecom.domain.vo.WeMakeCustomerTagVO;
 import com.easyink.wecom.domain.vo.customer.SessionArchiveCustomerVO;
@@ -30,6 +31,7 @@ import org.springframework.validation.annotation.Validated;
 import javax.validation.constraints.NotBlank;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 企业微信客户Service接口
@@ -178,6 +180,26 @@ public interface WeCustomerService extends IService<WeCustomer> {
      * @return 企业微信客户集合
      */
     List<WeCustomer> selectWeCustomerListNoRel(WeCustomerPushMessageDTO weCustomer);
+
+
+    /**
+     * 根据员工和部门获取员工列表id
+     * @param users 员工ids
+     * @param departments 部门ids
+     * @param corpId 企业id
+     * @return 员工id列表
+     */
+    List<String> getUserIdList(String users, String departments, String corpId);
+
+    /**
+     * 根据员工和部门获取员工列表id
+     * @param users 员工ids
+     * @param departments 部门ids
+     * @param tags 标签id
+     * @param corpId 企业id
+     * @return 员工id列表
+     */
+    List<String> getUserIdList(String users, String departments, String tags, String corpId);
 
     /**
      * 查询sop详情客户信息
@@ -431,4 +453,22 @@ public interface WeCustomerService extends IService<WeCustomer> {
     Boolean getExportResult(String oprId);
 
     WeCustomerExportDTO transferData(WeCustomerExportDTO dto);
+
+    /**
+     * 查询员工和客户关系列表
+     * @param users 员工ids
+     * @param tags 标签ids
+     * @param corpId 企业id
+     * @return 关系Set列表
+     */
+    List<UserIdAndExternalUserIdModel> selectUserIdFromRef(String users,String tags, String corpId);
+
+    /**
+     * 过滤查询存在客户关系表的员工id列表
+     * @param candidateUserIdList 候选员工id 原数据
+     * @param tags 标签列表
+     * @param corpId 企业id
+     * @return
+     */
+    List<String> listExistDbUserIdByTagAndUserIdList(List<String> candidateUserIdList, String tags, String corpId);
 }

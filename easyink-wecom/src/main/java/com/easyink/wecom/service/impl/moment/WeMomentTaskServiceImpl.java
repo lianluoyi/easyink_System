@@ -2,8 +2,10 @@ package com.easyink.wecom.service.impl.moment;
 
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.extra.spring.SpringUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.easyink.common.constant.WeConstans;
 import com.easyink.common.core.domain.model.LoginUser;
@@ -14,21 +16,23 @@ import com.easyink.common.enums.ResultTip;
 import com.easyink.common.enums.moment.*;
 import com.easyink.common.exception.CustomException;
 import com.easyink.common.utils.DateUtils;
+import com.easyink.common.utils.sql.BatchInsertUtil;
 import com.easyink.wecom.client.WeMomentClient;
-import com.easyink.wecom.domain.WeCustomer;
 import com.easyink.wecom.domain.WeTag;
 import com.easyink.wecom.domain.WeWordsDetailEntity;
-import com.easyink.wecom.domain.dto.WeCustomerPushMessageDTO;
 import com.easyink.wecom.domain.dto.message.ImageMessageDTO;
 import com.easyink.wecom.domain.dto.message.LinkMessageDTO;
 import com.easyink.wecom.domain.dto.moment.*;
 import com.easyink.wecom.domain.entity.moment.*;
+import com.easyink.wecom.domain.entity.moment.VisibleRange.SenderList;
 import com.easyink.wecom.domain.vo.WeUserVO;
 import com.easyink.wecom.domain.vo.moment.*;
 import com.easyink.wecom.domain.vo.sop.DepartmentVO;
 import com.easyink.wecom.login.util.LoginTokenService;
 import com.easyink.wecom.mapper.moment.WeMomentTaskMapper;
 import com.easyink.wecom.mapper.moment.WeMomentUserCustomerRelMapper;
+import com.easyink.wecom.publishevent.SaveMomentCustomerRefEvent;
+import com.easyink.wecom.publishevent.SendAppMessageEvent;
 import com.easyink.wecom.service.*;
 import com.easyink.wecom.service.moment.WeMomentDetailRelService;
 import com.easyink.wecom.service.moment.WeMomentTaskResultService;
@@ -37,15 +41,16 @@ import com.easyink.wecom.service.moment.WeMomentUserCustomerRelService;
 import com.easyink.wecom.utils.ApplicationMessageUtil;
 import com.github.pagehelper.PageHelper;
 import com.google.common.collect.Lists;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -56,6 +61,7 @@ import java.util.stream.Collectors;
  */
 @Service
 @Slf4j
+@AllArgsConstructor
 public class WeMomentTaskServiceImpl extends ServiceImpl<WeMomentTaskMapper, WeMomentTaskEntity> implements WeMomentTaskService {
 
     private final WeMomentClient momentClient;
@@ -71,22 +77,6 @@ public class WeMomentTaskServiceImpl extends ServiceImpl<WeMomentTaskMapper, WeM
     private final WeMomentUserCustomerRelMapper weMomentUserCustomerRelMapper;
     private final WeDepartmentService weDepartmentService;
 
-    @Autowired
-    public WeMomentTaskServiceImpl(WeMomentClient momentClient, WeWordsDetailService weWordsDetailService, WeMomentTaskResultService weMomentTaskResultService, WeCustomerMessageService weCustomerMessageService, WeMomentDetailRelService weMomentDetailRelService, WeUserService weUserService, ApplicationMessageUtil applicationMessageUtil, WeMomentUserCustomerRelService weMomentUserCustomerRelService, WeCustomerService weCustomerService, WeTagService weTagService, WeMomentUserCustomerRelMapper weMomentUserCustomerRelMapper, WeDepartmentService weDepartmentService) {
-        this.momentClient = momentClient;
-        this.weWordsDetailService = weWordsDetailService;
-        this.weMomentTaskResultService = weMomentTaskResultService;
-        this.weCustomerMessageService = weCustomerMessageService;
-        this.weMomentDetailRelService = weMomentDetailRelService;
-        this.weUserService = weUserService;
-        this.applicationMessageUtil = applicationMessageUtil;
-        this.weMomentUserCustomerRelService = weMomentUserCustomerRelService;
-        this.weCustomerService = weCustomerService;
-        this.weTagService = weTagService;
-        this.weMomentUserCustomerRelMapper = weMomentUserCustomerRelMapper;
-        this.weDepartmentService = weDepartmentService;
-    }
-
     /**
      * 创建朋友圈任务
      *
@@ -96,51 +86,109 @@ public class WeMomentTaskServiceImpl extends ServiceImpl<WeMomentTaskMapper, WeM
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void createMomentTask(CreateMomentTaskDTO createMomentTaskDTO, LoginUser loginUser) {
+        long beginTime = System.currentTimeMillis();
         //校验参数
         checkCreateMomentTaskParam(createMomentTaskDTO);
-        //权限下的部门
-        List<String> departmentScope = getDepartmentScope(loginUser, createMomentTaskDTO.getDepartments());
-        //权限下的员工
-        Set<String> userScope = getUserScope(loginUser, createMomentTaskDTO.getUsers(), departmentScope);
-
-        WeMomentTaskEntity weMomentTaskEntity = new WeMomentTaskEntity(createMomentTaskDTO, new ArrayList<>(userScope), departmentScope, loginUser.getUserId());
-        if (CollectionUtils.isNotEmpty(createMomentTaskDTO.getUsers()) || CollectionUtils.isNotEmpty(createMomentTaskDTO.getDepartments())) {
-            weMomentTaskEntity.setSelectUser(MomentSelectUserEnum.SELECT_USER.getType());
+        WeMomentTaskEntity weMomentTaskEntity = buildMomentTask(loginUser, createMomentTaskDTO);
+        // 上传并保存任务附件
+        uploadAndSaveAttachment(createMomentTaskDTO, weMomentTaskEntity);
+        // 根据员工和部门查询员工id列表
+        log.info("根据权限下的员工和部门查询需要发送的的员工id列表");
+        List<String> candidateUserIdList = weCustomerService.getUserIdList(weMomentTaskEntity.getUsers(), weMomentTaskEntity.getDepartments(), createMomentTaskDTO.getCorpId());
+        log.info("根据权限下的员工和部门查询需要发送的的员工id列表： {}", candidateUserIdList.size());
+        // 查询客户列表
+        log.info("查询过滤员工");
+        List<String> existDbUserId = weCustomerService.listExistDbUserIdByTagAndUserIdList(candidateUserIdList, weMomentTaskEntity.getTags(), weMomentTaskEntity.getCorpId());
+        log.info("查询过滤员工： {}", existDbUserId.size());
+        //朋友圈无客户抛出异常
+        if (CollectionUtils.isEmpty(existDbUserId)) {
+            throw new CustomException(ResultTip.TIP_MOMENT_CREATE_ERROR);
         }
+
+        //保存执行结果
+        saveTaskNotPublishResult(weMomentTaskEntity.getId(), candidateUserIdList, new HashSet<>(existDbUserId), createMomentTaskDTO.getType(), createMomentTaskDTO.getPushRange());
+        Runnable saveCustomerRefInvoke = () -> {
+            SpringUtil.getApplicationContext().publishEvent(new SaveMomentCustomerRefEvent(
+                    candidateUserIdList,
+                    weMomentTaskEntity.getTags(),
+                    weMomentTaskEntity.getCorpId(),
+                    weMomentTaskEntity.getId()
+            ));
+        };
+
+
+        if (MomentTaskTypeEnum.RIGHT_NOW.getType().equals(createMomentTaskDTO.getTaskType())) {
+            // 立即发送
+            weMomentTaskEntity.setSendTime(DateUtils.getNowDate());
+            if (MomentTypeEnum.ENTERPRISE_MOMENT.getType().equals(weMomentTaskEntity.getType())) {
+                // 企业
+                //创建企业朋友圈任务
+                addMomentTask(createMomentTaskDTO.getAttachments(), weMomentTaskEntity, () -> new ArrayList<>(candidateUserIdList));
+                //更新创建状态
+                updateTaskStatus(weMomentTaskEntity);
+            } else {
+                // 个人
+                weMomentTaskEntity.setStatus(MomentStatusEnum.FINISH.getType());
+                // 过滤不在客户不正常的
+                SpringUtil.getApplicationContext().publishEvent(new SendAppMessageEvent(
+                        weMomentTaskEntity.getCorpId(),
+                        candidateUserIdList.stream().filter(existDbUserId::contains).collect(Collectors.toList()),
+                        WeConstans.PERSONAL_MOMENT_MSG,
+                        new String[]{
+                                DateUtils.parseDateToStr(DateUtils.YYYY_MM_DD_HH_MM, weMomentTaskEntity.getSendTime()),
+                                applicationMessageUtil.getMomentUrl(weMomentTaskEntity.getCorpId(), weMomentTaskEntity.getId())
+                        }
+                ));
+
+                // 保存客户关系
+                saveCustomerRefInvoke.run();
+                //保存个人朋友圈任务
+                this.saveOrUpdate(weMomentTaskEntity);
+            }
+        } else {
+            // 定时发送
+            // 个人朋友圈保存客户关系
+            if (MomentTypeEnum.PERSONAL_MOMENT.getType().equals(weMomentTaskEntity.getType())) {
+                saveCustomerRefInvoke.run();
+            }
+            weMomentTaskEntity.setStatus(MomentStatusEnum.NOT_START.getType());
+            this.save(weMomentTaskEntity);
+        }
+        log.info("耗时: {}ms", System.currentTimeMillis() - beginTime);
+    }
+
+    /**
+     * 构建朋友圈任务
+     * @param loginUser 当前登录用户
+     * @param createMomentTaskDTO 创建朋友圈DTO
+     * @return 朋友圈任务entity
+     */
+    private WeMomentTaskEntity buildMomentTask(LoginUser loginUser, CreateMomentTaskDTO createMomentTaskDTO) {
+        //权限下的部门
+        //        sw.start("查询权限下部门");
+        List<String> departmentScope = getDepartmentScope(loginUser, createMomentTaskDTO.getDepartments());
+        //        sw.stop();
+        //权限下的员工
+        //        sw.start("查询权限下员工");
+        Set<String> userScope = getUserScope(loginUser, createMomentTaskDTO.getUsers(), departmentScope);
+        return new WeMomentTaskEntity(createMomentTaskDTO, new ArrayList<>(userScope), departmentScope, loginUser.getUserId());
+    }
+
+    /**
+     * 上传资源附件以及落库
+     * @param createMomentTaskDTO 创建朋友圈实体
+     * @param weMomentTaskEntity 朋友圈任务实体
+     */
+    private void uploadAndSaveAttachment(CreateMomentTaskDTO createMomentTaskDTO, WeMomentTaskEntity weMomentTaskEntity) {
         //先上传一遍素材判断是否合法
         if (CollectionUtils.isNotEmpty(createMomentTaskDTO.getAttachments())) {
             buildMomentAttachment(createMomentTaskDTO.getAttachments(), weMomentTaskEntity.getCorpId());
         }
         //保存任务附件
         saveMomentDetail(createMomentTaskDTO.getCorpId(), createMomentTaskDTO.getAttachments());
-        if (createMomentTaskDTO.getText() != null && StringUtils.isNotBlank(createMomentTaskDTO.getText().getContent())) {
-            weMomentTaskEntity.setContent(createMomentTaskDTO.getText().getContent());
-        }
+
         //保存we_moment_detail_rel附件关联表
         saveMomentDetailRel(createMomentTaskDTO.getAttachments(), weMomentTaskEntity.getId());
-        String users = CollectionUtils.isNotEmpty(createMomentTaskDTO.getUsers()) ? String.join(StrUtil.COMMA, createMomentTaskDTO.getUsers()) : StringUtils.EMPTY;
-        String departments = CollectionUtils.isNotEmpty(createMomentTaskDTO.getDepartments()) ? String.join(StrUtil.COMMA, createMomentTaskDTO.getDepartments()) : StringUtils.EMPTY;
-        List<WeCustomer> weCustomers = weCustomerService.selectWeCustomerListNoRel(new WeCustomerPushMessageDTO(users, weMomentTaskEntity.getTags(), weMomentTaskEntity.getCorpId(), departments, String.valueOf(createMomentTaskDTO.getPushRange())));
-        //朋友圈无客户抛出异常
-        if (CollectionUtils.isEmpty(weCustomers)) {
-            throw new CustomException(ResultTip.TIP_MOMENT_CREATE_ERROR);
-        }
-
-        Set<String> userIdSet = weCustomers.stream().map(WeCustomer::getUserId).collect(Collectors.toSet());
-        List<String> userScopeByDepartment = weUserService.listOfUserId(weMomentTaskEntity.getCorpId(),departmentScope.toArray(new String[]{}));
-        if(CollectionUtils.isNotEmpty(userScopeByDepartment)){
-            userScope.addAll(userScopeByDepartment);
-        }
-        List<String> userScopeList = new ArrayList<>(userScope);
-        //保存执行结果
-        saveTaskNotPublishResult(weMomentTaskEntity.getId(), userScopeList,userIdSet,createMomentTaskDTO.getType(),createMomentTaskDTO.getPushRange());
-        //是否为定时任务
-        if (MomentTaskTypeEnum.RIGHT_NOW.getType().equals(createMomentTaskDTO.getTaskType())){
-            startCreatMoment(weMomentTaskEntity,createMomentTaskDTO.getAttachments());
-        }else {
-            weMomentTaskEntity.setStatus(MomentStatusEnum.NOT_START.getType());
-            this.save(weMomentTaskEntity);
-        }
     }
 
     /**
@@ -164,40 +212,36 @@ public class WeMomentTaskServiceImpl extends ServiceImpl<WeMomentTaskMapper, WeM
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void startCreatMoment(WeMomentTaskEntity weMomentTaskEntity,List<WeWordsDetailEntity> attachments){
+    public void startCreatMoment(WeMomentTaskEntity weMomentTaskEntity, List<WeWordsDetailEntity> attachments) {
         weMomentTaskEntity.setSendTime(DateUtils.getNowDate());
         //是否为企业朋友圈
+        List<String> createMomentUserList = weCustomerService.getUserIdList(weMomentTaskEntity.getUsers(), weMomentTaskEntity.getDepartments(), weMomentTaskEntity.getCorpId());
         if (MomentTypeEnum.ENTERPRISE_MOMENT.getType().equals(weMomentTaskEntity.getType())) {
             //创建企业朋友圈任务
-            addMomentTask(attachments,weMomentTaskEntity);
+            addMomentTask(attachments, weMomentTaskEntity,
+                    () -> new ArrayList<>(createMomentUserList)
+            );
             //更新创建状态
             updateTaskStatus(weMomentTaskEntity);
         } else {
             //个人朋友圈、发送应用消息、设置创建状态
-            List<WeCustomer> weCustomers = weCustomerService.selectWeCustomerListNoRel(new WeCustomerPushMessageDTO(weMomentTaskEntity.getUsers(), weMomentTaskEntity.getTags(), weMomentTaskEntity.getCorpId(), weMomentTaskEntity.getDepartments(), String.valueOf(weMomentTaskEntity.getPushRange())));
-            List<String> userIds = new ArrayList<>();
-            if(StringUtils.isNotBlank(weMomentTaskEntity.getUsers())){
-                userIds.addAll(Arrays.asList(weMomentTaskEntity.getUsers().split(StrUtil.COMMA)));
-            }
-            //通过部门查询员工
-            if(StringUtils.isNotBlank(weMomentTaskEntity.getDepartments())){
-                List<String> userIdsByDepartment = weUserService.listOfUserId(weMomentTaskEntity.getCorpId(),weMomentTaskEntity.getDepartments().split(StrUtil.COMMA));
-                if(CollectionUtils.isNotEmpty(userIdsByDepartment)){
-                    userIds.addAll(userIdsByDepartment);
-                }
-            }
-            if (CollectionUtils.isNotEmpty(weCustomers)){
-                Set<String> userIdSet = weCustomers.stream().map(WeCustomer::getUserId).collect(Collectors.toSet());
-                userIds = userIds.stream().filter(userIdSet::contains).collect(Collectors.toList());
-            }
-            applicationMessageUtil.sendAppMessage(userIds, weMomentTaskEntity.getCorpId(), WeConstans.PERSONAL_MOMENT_MSG, DateUtils.parseDateToStr(DateUtils.YYYY_MM_DD_HH_MM, weMomentTaskEntity.getSendTime()), applicationMessageUtil.getMomentUrl(weMomentTaskEntity.getCorpId(), weMomentTaskEntity.getId()));
+            List<String> existDbUserId = weCustomerService.listExistDbUserIdByTagAndUserIdList(
+                    createMomentUserList,
+                    weMomentTaskEntity.getTags(),
+                    weMomentTaskEntity.getCorpId()
+            );
+            // 发送应用通知
+            SpringUtil.getApplicationContext().publishEvent(new SendAppMessageEvent(
+                    weMomentTaskEntity.getCorpId(),
+                    // 过滤不在客户不正常的
+                    createMomentUserList.stream().filter(existDbUserId::contains).collect(Collectors.toList()),
+                    WeConstans.PERSONAL_MOMENT_MSG,
+                    new String[]{
+                            DateUtils.parseDateToStr(DateUtils.YYYY_MM_DD_HH_MM, weMomentTaskEntity.getSendTime()),
+                            applicationMessageUtil.getMomentUrl(weMomentTaskEntity.getCorpId(), weMomentTaskEntity.getId())
+                    }
+            ));
             weMomentTaskEntity.setStatus(MomentStatusEnum.FINISH.getType());
-            //保存个人朋友圈客户员工关联表 we_moment_user_customer_rel
-            List<WeMomentUserCustomerRelEntity> weMomentUserCustomerRelEntityList = new ArrayList<>();
-            if (CollectionUtils.isNotEmpty(weCustomers)){
-                weCustomers.forEach(weCustomer -> weMomentUserCustomerRelEntityList.add(new WeMomentUserCustomerRelEntity(weMomentTaskEntity.getId(),weCustomer.getExternalUserid(),weCustomer.getUserId())));
-                weMomentUserCustomerRelService.saveBatch(weMomentUserCustomerRelEntityList);
-            }
             //保存个人朋友圈任务
             this.saveOrUpdate(weMomentTaskEntity);
         }
@@ -211,9 +255,8 @@ public class WeMomentTaskServiceImpl extends ServiceImpl<WeMomentTaskMapper, WeM
     @Override
     public List<SearchMomentVO> listOfMomentTask(SearchMomentContentDTO searchMomentContentDTO, LoginUser loginUser) {
         //朋友圈内容
-        List<WeUser> userInDataScope = weUserService.getUserInDataScope(loginUser);
-        List<String> userIds = userInDataScope.stream().map(WeUser::getUserId).collect(Collectors.toList());
-        if (loginUser.isSuperAdmin()){
+        List<String> userIds = weUserService.getUserInDataScope(loginUser).stream().map(WeUser::getUserId).collect(Collectors.toList());
+        if (loginUser.isSuperAdmin()) {
             userIds.add("admin");
         }
         //权限下的任务
@@ -268,6 +311,14 @@ public class WeMomentTaskServiceImpl extends ServiceImpl<WeMomentTaskMapper, WeM
     public SearchMomentVO getMomentTaskBasicInfo(Long momentTaskId) {
         String corpId = LoginTokenService.getLoginUser().getCorpId();
         SearchMomentVO momentTaskBasicInfo = baseMapper.getMomentTaskBasicInfo(momentTaskId,LoginTokenService.getLoginUser().getCorpId());
+        // 设置可提醒员工列表
+        List<String> reMaindUserIdList = weMomentTaskResultService.list(
+                Wrappers.lambdaQuery(WeMomentTaskResultEntity.class)
+                        .select(WeMomentTaskResultEntity::getUserId)
+                        .eq(WeMomentTaskResultEntity::getMomentTaskId, momentTaskId)
+        ).stream().map(WeMomentTaskResultEntity::getUserId).collect(Collectors.toList());
+        momentTaskBasicInfo.setRemindUserIdList(reMaindUserIdList);
+
         //设置使用员工、部门
         if(StringUtils.isNotBlank(momentTaskBasicInfo.getUsers())){
             List<WeUserVO> weUsers = weUserService.listOfUser(corpId, Arrays.asList(momentTaskBasicInfo.getUsers().split(StrUtil.COMMA)));
@@ -454,11 +505,16 @@ public class WeMomentTaskServiceImpl extends ServiceImpl<WeMomentTaskMapper, WeM
             log.info("可发送员工为空发送朋友圈提醒信息失败,momentTaskId：{}",momentTaskId);
             return;
         }
-        log.info("发送员工朋友圈提醒信息,momentTaskId：{}",momentTaskId);
-        if (MomentTypeEnum.ENTERPRISE_MOMENT.getType().equals(type)){
-            applicationMessageUtil.sendAppMessage(sendList,LoginTokenService.getLoginUser().getCorpId(), WeConstans.ENTERPRISE_MOMENT_USER_MSG,sendTime);
-        }else {
-            applicationMessageUtil.sendAppMessage(sendList,LoginTokenService.getLoginUser().getCorpId(), WeConstans.PERSONAL_MOMENT_USER_MSG,sendTime,applicationMessageUtil.getMomentUrl(LoginTokenService.getLoginUser().getCorpId(),momentTaskId));
+        log.info("发送员工朋友圈提醒信息,momentTaskId：{}", momentTaskId);
+        if (MomentTypeEnum.ENTERPRISE_MOMENT.getType().equals(type)) {
+            applicationMessageUtil.sendAppMessage(sendList, LoginTokenService.getLoginUser().getCorpId(), WeConstans.ENTERPRISE_MOMENT_USER_MSG, new String[]{
+                    sendTime
+            });
+        } else {
+            applicationMessageUtil.sendAppMessage(sendList, LoginTokenService.getLoginUser().getCorpId(), WeConstans.PERSONAL_MOMENT_USER_MSG, new String[]{
+                    sendTime,
+                    applicationMessageUtil.getMomentUrl(LoginTokenService.getLoginUser().getCorpId(), momentTaskId)
+            });
         }
     }
 
@@ -519,56 +575,73 @@ public class WeMomentTaskServiceImpl extends ServiceImpl<WeMomentTaskMapper, WeM
         } while (StringUtils.isNotBlank(momentCustomerVO.getNext_cursor()));
     }
 
-    private Set<String> getUserScope(LoginUser loginUser, List<String> users, List<String> departmentScope){
-        List<WeUser> userInDataScope = weUserService.getUserInDataScope(loginUser);
-        Set<String> userIds = userInDataScope.stream().map(WeUser::getUserId).collect(Collectors.toSet());
-        if(CollectionUtils.isEmpty(users)){
-            if(CollectionUtils.isEmpty(departmentScope)){
-                return userIds;
-            }
+    /**
+     * 获取权限下员工范围数据
+     * @param loginUser
+     * @param users
+     * @param departmentScope
+     * @return
+     */
+    private Set<String> getUserScope(LoginUser loginUser, List<String> users, List<String> departmentScope) {
+        // 获取数据权限下的所有员工id
+        Set<String> loginUserScopeUserId = weUserService.getUserInDataScope(loginUser).stream().map(WeUser::getUserId).collect(Collectors.toSet());
+
+        if (CollectionUtils.isEmpty(users) && CollectionUtils.isEmpty(departmentScope)) {
+            return loginUserScopeUserId;
+        } else if (CollectionUtils.isNotEmpty(users)) {
+            // 返回账号权限下的员工
+            return users.stream().filter(loginUserScopeUserId::contains).collect(Collectors.toSet());
+        } else {
+            // 部门不为空
             List<String> userIdsFromDepartment = weUserService.listOfUserId(loginUser.getCorpId(), departmentScope.toArray(new String[]{}));
-            if(CollectionUtils.isEmpty(userIdsFromDepartment)){
-                return userIds;
-            }else{
+            if (CollectionUtils.isEmpty(userIdsFromDepartment)) {
+                return loginUserScopeUserId;
+            } else {
+                // 部门下员工不为空,则返回员工的范围数据空
                 return new HashSet<>();
             }
-        }else{
-            return users.stream().filter(userIds::contains).collect(Collectors.toSet());
         }
+
     }
 
     /**
      * 需要保证详情能查询数据，插入成员待发布结果
      * @param taskId    任务id
-     * @param userIds   待发送员工
-     * @param userIdSet 客户所属员工
-     * @param type
-     * @param pushRange
+     * @param candidateUserIdList   待发送员工
+     * @param existDbUserId 客户所属员工
+     * @param type 朋友圈创建类型 {@link MomentTypeEnum}
+     * @param pushRange 选择发送类型 {@link MomentPushRangeEnum}
      */
-    private void saveTaskNotPublishResult(Long taskId, List<String> userIds, Set<String> userIdSet, Integer type, Integer pushRange) {
-        if (CollectionUtils.isEmpty(userIds) || taskId == null) {
+    private void saveTaskNotPublishResult(Long taskId, List<String> candidateUserIdList, Set<String> existDbUserId, Integer type, Integer pushRange) {
+        if (CollectionUtils.isEmpty(candidateUserIdList) || taskId == null) {
             return;
         }
+
         //个人朋友圈发送员工限制
-        if(MomentTypeEnum.PERSONAL_MOMENT.getType().equals(type) && MomentPushRangeEnum.SELECT_CUSTOMER.getType().equals(pushRange)){
-            userIds = userIds.stream().filter(userIdSet::contains).collect(Collectors.toList());
+        Set<String> existDbUserIdSet = new HashSet<>(candidateUserIdList);
+        if (MomentTypeEnum.PERSONAL_MOMENT.getType().equals(type) && MomentPushRangeEnum.SELECT_CUSTOMER.getType().equals(pushRange)) {
+            existDbUserIdSet = existDbUserIdSet.stream().filter(existDbUserId::contains).collect(Collectors.toSet());
         }
         List<WeMomentTaskResultEntity> resultEntityList = new ArrayList<>();
         //构造执行详情数据
-        for (String userId : userIds) {
-            WeMomentTaskResultEntity resultEntity = new WeMomentTaskResultEntity();
+        WeMomentTaskResultEntity resultEntity;
+        for (String userId : existDbUserIdSet) {
+            resultEntity = new WeMomentTaskResultEntity();
             resultEntity.setUserId(userId);
             resultEntity.setMomentTaskId(taskId);
-            if (CollectionUtils.isNotEmpty(userIdSet) && userIdSet.contains(userId)){
+            if (CollectionUtils.isNotEmpty(existDbUserId) && existDbUserId.contains(userId)) {
                 resultEntity.setPublishStatus(MomentPublishStatusEnum.NOT_PUBLISH.getType());
-            }else {
+            } else {
                 resultEntity.setPublishStatus(MomentPublishStatusEnum.NO_AUTHORITY.getType());
                 resultEntity.setRemark(WeConstans.MOMENT_NO_CUSTOMER);
             }
             resultEntityList.add(resultEntity);
         }
         //构造执行详情数据
-        weMomentTaskResultService.saveBatch(resultEntityList);
+        log.info("保存执行结果开始");
+        BatchInsertUtil.doInsert(resultEntityList, weMomentTaskResultService::saveBatch, 500);
+        log.info("保存执行结果结束, size: {}", resultEntityList.size());
+
     }
 
     /**
@@ -576,21 +649,22 @@ public class WeMomentTaskServiceImpl extends ServiceImpl<WeMomentTaskMapper, WeM
      *
      * @param weMomentTaskEntity  任务实体
      */
-    private void addMomentTask(List<WeWordsDetailEntity> attachmentDetails, WeMomentTaskEntity weMomentTaskEntity) {
+    private void addMomentTask(List<WeWordsDetailEntity> attachmentDetails, WeMomentTaskEntity weMomentTaskEntity, Supplier<List<String>> createUserIdSupplier) {
         //构造创建企业朋友圈参数
-        Set<String> users = StringUtils.isNotBlank(weMomentTaskEntity.getUsers())?new HashSet<>(Arrays.asList(weMomentTaskEntity.getUsers().split(StrUtil.COMMA))) : new HashSet<>();
-        List<Integer> departments = StringUtils.isNotBlank(weMomentTaskEntity.getDepartments())?
-                Arrays.asList(weMomentTaskEntity.getDepartments().split(StrUtil.COMMA)).stream().map(Integer::valueOf).collect(Collectors.toList()) :
-                Lists.newArrayList();
-        List<String> tags = StringUtils.isNotBlank(weMomentTaskEntity.getTags())?Arrays.asList(weMomentTaskEntity.getTags().split(StrUtil.COMMA)):new ArrayList<>();
-        final List<String> userIds = weUserService.listOfUserId(weMomentTaskEntity.getCorpId(), StringUtils.join(departments,StrUtil.COMMA));
-        if(CollectionUtils.isNotEmpty(userIds)){
-            users.addAll(userIds);
-        }
-        List<String> userIdList = new ArrayList<>(users);
-        AddMomentTaskDTO addMomentTaskDTO = new AddMomentTaskDTO(userIdList, departments, tags, weMomentTaskEntity.getContent());
+
+        List<Integer> selectDepartments = StringUtils.isNotBlank(weMomentTaskEntity.getDepartments())
+                ? Arrays.stream(weMomentTaskEntity.getDepartments().split(StrUtil.COMMA)).map(Integer::valueOf).collect(Collectors.toList())
+                : Lists.newArrayList();
+
+        List<String> selectTags = StringUtils.isNotBlank(weMomentTaskEntity.getTags())
+                ? Arrays.asList(weMomentTaskEntity.getTags().split(StrUtil.COMMA))
+                : Lists.newArrayList();
+
+        // 查询部门下的员工列表
+        // 发送的总员工列表 = 选择的员工 + 选择的部门下的员工
+        AddMomentTaskDTO addMomentTaskDTO = new AddMomentTaskDTO(createUserIdSupplier.get(), selectDepartments, selectTags, weMomentTaskEntity.getContent());
         //临时素材id
-        if (CollectionUtils.isNotEmpty(attachmentDetails)){
+        if (CollectionUtils.isNotEmpty(attachmentDetails)) {
             List<MomentAttachment> attachments = buildMomentAttachment(attachmentDetails, weMomentTaskEntity.getCorpId());
             addMomentTaskDTO.setAttachments(attachments);
         }
@@ -715,6 +789,8 @@ public class WeMomentTaskServiceImpl extends ServiceImpl<WeMomentTaskMapper, WeM
      */
     private void checkCreateMomentTaskParam(CreateMomentTaskDTO createMomentTaskDTO) {
         Map<String, Integer> typeNumMap = new HashMap<>();
+        MomentPushRangeEnum.validCode(createMomentTaskDTO.getPushRange());
+
         //校验corpId
         if (StringUtils.isBlank(createMomentTaskDTO.getCorpId())) {
             throw new CustomException(ResultTip.TIP_MISS_CORP_ID);

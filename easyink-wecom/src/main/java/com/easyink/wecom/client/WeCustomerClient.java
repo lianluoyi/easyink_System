@@ -51,7 +51,7 @@ public interface WeCustomerClient {
      * @param corpId         企业ID
      * @return
      */
-    @EnableRetry(maxAttempts = 1)
+    @EnableRetry(retryExceptionClass = RetryException.class)
     @Get(url = "/externalcontact/get", interceptor = WeAccessTokenInterceptor.class)
     GetExternalDetailResp getV2(@Query("external_userid") String externalUserid, @Header("corpid") String corpId);
 

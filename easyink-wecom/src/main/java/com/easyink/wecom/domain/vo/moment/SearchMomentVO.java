@@ -93,6 +93,9 @@ public class SearchMomentVO {
     @ApiModelProperty("可见范围（0：全部客户 1：部分客户）")
     private Integer pushRange;
 
+    @ApiModelProperty("可提醒员工列表")
+    private List<String> remindUserIdList;
+
     public SearchMomentVO(Integer type) {
         this.status = type;
     }

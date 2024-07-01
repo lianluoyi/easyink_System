@@ -8,8 +8,10 @@ import com.easyink.common.annotation.DataScope;
 import com.easyink.common.constant.Constants;
 import com.easyink.common.constant.GenConstants;
 import com.easyink.common.constant.WeConstans;
+import com.easyink.common.constant.conversation.ConversationArchiveConstants;
 import com.easyink.common.core.domain.AjaxResult;
 import com.easyink.common.core.domain.ConversationArchiveQuery;
+import com.easyink.common.core.domain.conversation.msgtype.MsgTypeEnum;
 import com.easyink.common.core.domain.entity.WeCorpAccount;
 import com.easyink.common.core.domain.wecom.WeUser;
 import com.easyink.common.enums.ContactSpeakEnum;
@@ -261,6 +263,7 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
         // 统计客户发送消息
         for (Map.Entry<String, List<ConversationArchiveVO>> entry : customerSendMessageMap.entrySet()) {
             String externalUserId = entry.getKey();
+            List<ConversationArchiveVO> customerSendMessageRecords = entry.getValue();
             WeUserCustomerMessageStatistics userCustomerMessageStatistics = new WeUserCustomerMessageStatistics();
             userCustomerMessageStatistics.setCorpId(weUser.getCorpId());
             userCustomerMessageStatistics.setUserId(weUser.getUserId());
@@ -268,13 +271,13 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
             // 员工对该客户发送的消息数
             userCustomerMessageStatistics.setUserSendMessageCnt(receiveUserMessageMap.getOrDefault(externalUserId, new ArrayList<>()).size());
             // 该客户对员工发送的消息数
-            userCustomerMessageStatistics.setExternalUserSendMessageCnt(entry.getValue().size());
+            userCustomerMessageStatistics.setExternalUserSendMessageCnt(customerSendMessageRecords.size());
             // 获取添加客户时间
-            userCustomerMessageStatistics.setAddTime(getCustomerAddTime(entry.getValue(), false));
+            userCustomerMessageStatistics.setAddTime(getCustomerAddTime(customerSendMessageRecords, false));
             // 发送消息时间
             userCustomerMessageStatistics.setSendTime(nowDate);
             // 构建聊天记录并统计
-            buildContactAndSet(weUser, userCustomerMessageStatistics, entry.getValue(), receiveUserMessageMap.getOrDefault(externalUserId, new ArrayList<>()));
+            buildContactAndSet(weUser, userCustomerMessageStatistics, customerSendMessageRecords, receiveUserMessageMap.getOrDefault(externalUserId, new ArrayList<>()));
             if (userCustomerMessageStatistics.getUserActiveDialogue() != null){
                 if (userCustomerMessageStatistics.getUserActiveDialogue()){
                     userActiveChatCnt++;
@@ -284,8 +287,8 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
             if (Boolean.TRUE.equals(userCustomerMessageStatistics.getRepliedWithinThirtyMinCustomerFlag())) {
                 thirtyMinReplyCount ++;
             }
-            // 是否为新客户 当天新加的客户
-            if (isNewCustomer(entry.getValue(), nowDate)) {
+            // 是否为新客户 当天新加的客户 并且条件得话术不只是系统得打招呼消息
+            if (isNewCustomer(customerSendMessageRecords, nowDate) && notOnlySystemSayHiMessage(customerSendMessageRecords)) {
                 newCustomerStartContactCnt++;
             }
             receiveUserMessageMap.remove(externalUserId);
@@ -295,15 +298,16 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
         // 统计员工发送消息 但 客户未回复消息
         for (Map.Entry<String, List<ConversationArchiveVO>> entry : receiveUserMessageMap.entrySet()) {
             String externalUserId = entry.getKey();
+            List<ConversationArchiveVO> userSendMessageRecords = entry.getValue();
             WeUserCustomerMessageStatistics userCustomerMessageStatistics = new WeUserCustomerMessageStatistics();
             userCustomerMessageStatistics.setCorpId(weUser.getCorpId());
             userCustomerMessageStatistics.setUserId(weUser.getUserId());
             userCustomerMessageStatistics.setExternalUserid(externalUserId);
             // 员工对该客户发送的消息数
-            userCustomerMessageStatistics.setUserSendMessageCnt(entry.getValue().size());
+            userCustomerMessageStatistics.setUserSendMessageCnt(userSendMessageRecords.size());
             // 获取添加客户时间
-            if (!Objects.isNull(getCustomerAddTime(entry.getValue(), true))) {
-                userCustomerMessageStatistics.setAddTime(getCustomerAddTime(entry.getValue(), true));
+            if (!Objects.isNull(getCustomerAddTime(userSendMessageRecords, true))) {
+                userCustomerMessageStatistics.setAddTime(getCustomerAddTime(userSendMessageRecords, true));
             }
             // 发送消息时间
             userCustomerMessageStatistics.setSendTime(nowDate);
@@ -325,6 +329,19 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
         this.saveBatch(userCustomerMessageStatisticsList);
         // 保存用户行为
         saveUserBehaviorDate(userBehaviorData, thirtyMinReplyCount, newCustomerStartContactCnt, chatCnt, userActiveChatCnt);
+    }
+
+    /**
+     * 不包含系统的打招呼消息
+     * @param customerSendMessageRecords 客户发送的消息记录
+     * @return 是否只包含客户发送的系统的打招呼消息
+     */
+    private boolean notOnlySystemSayHiMessage(List<ConversationArchiveVO> customerSendMessageRecords) {
+        return customerSendMessageRecords.stream().anyMatch(it ->
+                // 不是文本消息 或者 文本消息不包含打招呼消息
+                !MsgTypeEnum.TEXT.getType().equals(it.getMsgType()) || !ConversationArchiveConstants.isSystemSayHiMessage(it.getText().getContent())
+        );
+
     }
 
     /**
@@ -643,7 +660,7 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
         for (CustomerActivityOfDateVO customerActivityOfDateVO : resultVOList) {
             CompletableFuture<Void> buildDataFuture = CompletableFuture.runAsync(() -> {
                 try {
-                    buildCustomerActivityOfDateVOData(dto, customerActivityOfDateVO, userIdList);
+                    buildCustomerActivityOfDateVOData(dto.clone(), customerActivityOfDateVO, userIdList);
                 } catch (Exception e) {
                     log.info("[客户活跃度-日期维度] 处理单个日期维度数据异常，异常原因ex：{}，日期：{}，corpId：{}", ExceptionUtils.getStackTrace(e), customerActivityOfDateVO.getTime(), dto.getCorpId());
                 }

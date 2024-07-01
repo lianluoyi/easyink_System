@@ -1,6 +1,7 @@
 package com.easyink.framework.interceptor.impl;
 
 import com.alibaba.fastjson.JSON;
+import com.easyink.common.annotation.RepeatSubmit;
 import com.easyink.common.constant.Constants;
 import com.easyink.common.core.redis.RedisCache;
 import com.easyink.common.filter.RepeatedlyRequestWrapper;
@@ -35,20 +36,10 @@ public class SameUrlDataInterceptor extends RepeatSubmitInterceptor {
     @Autowired
     private RedisCache redisCache;
 
-    /**
-     * 间隔时间，单位:秒 默认10秒
-     * <p>
-     * 两次相同参数的请求，如果间隔时间大于该参数，系统不会认定为重复提交的数据
-     */
-    private int intervalTime = 10;
-
-    public void setIntervalTime(int intervalTime) {
-        this.intervalTime = intervalTime;
-    }
 
     @SuppressWarnings("unchecked")
     @Override
-    public boolean isRepeatSubmit(HttpServletRequest request) {
+    public boolean isRepeatSubmit(HttpServletRequest request, RepeatSubmit annotation) {
         String nowParams = "";
         if (request instanceof RepeatedlyRequestWrapper) {
             RepeatedlyRequestWrapper repeatedlyRequest = (RepeatedlyRequestWrapper) request;
@@ -80,14 +71,14 @@ public class SameUrlDataInterceptor extends RepeatSubmitInterceptor {
             Map<String, Object> sessionMap = (Map<String, Object>) sessionObj;
             if (sessionMap.containsKey(url)) {
                 Map<String, Object> preDataMap = (Map<String, Object>) sessionMap.get(url);
-                if (compareParams(nowDataMap, preDataMap) && compareTime(nowDataMap, preDataMap)) {
+                if (compareParams(nowDataMap, preDataMap) && compareTime(nowDataMap, preDataMap, annotation)) {
                     return true;
                 }
             }
         }
         Map<String, Object> cacheMap = new HashMap<>();
         cacheMap.put(url, nowDataMap);
-        redisCache.setCacheObject(cacheRepeatKey, cacheMap, intervalTime, TimeUnit.SECONDS);
+        redisCache.setCacheObject(cacheRepeatKey, cacheMap, annotation.expireTime(), TimeUnit.SECONDS);
         return false;
     }
 
@@ -103,9 +94,9 @@ public class SameUrlDataInterceptor extends RepeatSubmitInterceptor {
     /**
      * 判断两次间隔时间
      */
-    private boolean compareTime(Map<String, Object> nowMap, Map<String, Object> preMap) {
+    private boolean compareTime(Map<String, Object> nowMap, Map<String, Object> preMap, RepeatSubmit annotation) {
         long time1 = (Long) nowMap.get(repeatTime);
         long time2 = (Long) preMap.get(repeatTime);
-        return (time1 - time2) < (this.intervalTime * 1000);
+        return (time1 - time2) < annotation.unit().toMillis(annotation.expireTime());
     }
 }
