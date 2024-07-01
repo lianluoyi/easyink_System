@@ -256,7 +256,13 @@ public class WeOperationsCenterSopTask {
                 List<WeSopUserIdAndTargetIdVO> value = obj.getValue();
                 String urlContent = applicationMessageUtil.getUrlContent(corpId, CommunityTaskType.GROUP_SOP.getType());
                 try {//异常捕获保证消息发送失败后不影响任务的保存
-                    applicationMessageUtil.sendAppMessage(userIdList, corpId, content, name, value.get(0).getTargetName(), String.valueOf(value.size()), rulesEntity.getName(), urlContent);
+                    applicationMessageUtil.sendAppMessage(userIdList, corpId, content, new String[]{
+                            name,
+                            value.get(0).getTargetName(),
+                            String.valueOf(value.size()),
+                            rulesEntity.getName(),
+                            urlContent
+                    });
                 } catch (ForestRuntimeException e) {
                     log.error("发送sop应用消息失败：userId:{}, corpId:{}, ex:{}", obj.getKey(), corpId, ExceptionUtils.getStackTrace(e));
                 }

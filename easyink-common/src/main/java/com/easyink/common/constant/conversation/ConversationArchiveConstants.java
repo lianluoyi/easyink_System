@@ -1,5 +1,7 @@
 package com.easyink.common.constant.conversation;
 
+import com.easyink.common.utils.StringUtils;
+
 /**
  * 会话存档常量类
  *
@@ -52,4 +54,23 @@ public class ConversationArchiveConstants {
      * 分页查询上下文信息的聊天条数
      */
     public static final int PAGE_CONTEXT_NUM = 20;
+
+    /**
+     * 系统打招呼消息, 统计需要排序这些消息的计算
+     */
+    public static String SAY_HI_MSG_CONTENT = "我已经添加了你，现在我们可以开始聊天了。";
+    public static String PASS_ADD_CONTACT_MSG_CONTENT = "我通过了你的联系人验证请求，现在我们可以开始聊天了";
+
+    /**
+     * 是否客户系统下发的打招呼消息
+     * @param content 消息内容
+     * @return
+     */
+    public static boolean isSystemSayHiMessage(String content) {
+        if (StringUtils.isBlank(content)) {
+            return true;
+        }
+        return StringUtils.equals(content, SAY_HI_MSG_CONTENT) ||
+                StringUtils.equals(content, PASS_ADD_CONTACT_MSG_CONTENT);
+    }
 }

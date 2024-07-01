@@ -5,6 +5,7 @@ import com.easyink.wecom.domain.entity.moment.VisibleRange;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 /**
  * 类名： 获取任务创建结果VO
@@ -12,6 +13,7 @@ import lombok.Data;
  * @author 佚名
  * @date 2022/1/6 17:26
  */
+@EqualsAndHashCode(callSuper = true)
 @Data
 @ApiModel("获取任务创建结果VO")
 public class MomentTaskResultVO extends WeResultDTO {
@@ -22,9 +24,10 @@ public class MomentTaskResultVO extends WeResultDTO {
     @ApiModelProperty("详细的处理结果。当任务完成后此字段有效")
     private AddMomentResult result;
 
+    @EqualsAndHashCode(callSuper = true)
     @ApiModel("任务创建结果")
     @Data
-    public class AddMomentResult extends WeResultDTO {
+    public static class AddMomentResult extends WeResultDTO {
         @ApiModelProperty("朋友圈id，可通过获取客户朋友圈企业发表的列表接口获取朋友圈企业发表的列表")
         private String moment_id;
         @ApiModelProperty("不合法的执行者列表，包括不存在的id以及不在应用可见范围内的部门或者成员")

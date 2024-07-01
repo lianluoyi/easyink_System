@@ -42,23 +42,23 @@ public class MomentStartCreateTask {
         //查询定时任务
         List<WeMomentTaskEntity> weMomentTaskEntities = weMomentTaskService.listOfSettingTask(new Date());
         if (CollectionUtils.isEmpty(weMomentTaskEntities)){
-            log.info("不存在待发送定时朋友圈停止定时任务");
+            log.info("[朋友圈定时任务] 不存在待发送定时朋友圈停止定时任务");
             return;
         }
         for (WeMomentTaskEntity weMomentTaskEntity : weMomentTaskEntities) {
             List<WeMomentDetailRelEntity> detailRelEntities = weMomentDetailRelService.list(new LambdaQueryWrapper<WeMomentDetailRelEntity>()
                     .eq(WeMomentDetailRelEntity::getMomentTaskId, weMomentTaskEntity.getId()));
-            List<WeWordsDetailEntity> attachments =CollectionUtils.isNotEmpty(detailRelEntities)
-                    ?weWordsDetailService.listByIds(detailRelEntities.stream().map(WeMomentDetailRelEntity::getDetailId).collect(Collectors.toList()))
-                    :new ArrayList<>();
-            if (CollectionUtils.isEmpty(attachments)&& StringUtils.isBlank(weMomentTaskEntity.getContent())){
-                log.error("不存在发送附件停止执行发送朋友圈定时任务，corpId:{},taskId:{}",weMomentTaskEntity.getCorpId(),weMomentTaskEntity.getId());
-               continue;
+            List<WeWordsDetailEntity> attachments = CollectionUtils.isNotEmpty(detailRelEntities)
+                    ? weWordsDetailService.listByIds(detailRelEntities.stream().map(WeMomentDetailRelEntity::getDetailId).collect(Collectors.toList()))
+                    : new ArrayList<>();
+            if (CollectionUtils.isEmpty(attachments) && StringUtils.isBlank(weMomentTaskEntity.getContent())) {
+                log.error("[朋友圈定时任务] 不存在发送附件停止执行发送朋友圈定时任务，corpId:{},taskId:{}", weMomentTaskEntity.getCorpId(), weMomentTaskEntity.getId());
+                continue;
             }
             try{
                 weMomentTaskService.startCreatMoment(weMomentTaskEntity,attachments);
             }catch (Exception e){
-                log.error("执行定时发送朋友圈失败，corpId:{},momentTaskId:{} e:{}",weMomentTaskEntity.getCorpId(),weMomentTaskEntity.getId(), ExceptionUtil.getExceptionMessage(e));
+                log.error("[朋友圈定时任务] 执行定时发送朋友圈失败，corpId:{},momentTaskId:{} e:{}",weMomentTaskEntity.getCorpId(),weMomentTaskEntity.getId(), ExceptionUtil.getExceptionMessage(e));
             }
         }
     }

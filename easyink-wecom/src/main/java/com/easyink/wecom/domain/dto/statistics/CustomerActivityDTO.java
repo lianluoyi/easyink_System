@@ -2,6 +2,7 @@ package com.easyink.wecom.domain.dto.statistics;
 
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 
 /**
@@ -10,8 +11,9 @@ import lombok.Data;
  * @author wx
  * 2023/2/14 14:16
  **/
+@EqualsAndHashCode(callSuper = true)
 @Data
-public class CustomerActivityDTO extends StatisticsDTO{
+public class CustomerActivityDTO extends StatisticsDTO implements Cloneable  {
 
     @ApiModelProperty("发送时间的开始时间")
     private String sendStartTime;
@@ -21,4 +23,10 @@ public class CustomerActivityDTO extends StatisticsDTO{
 
     @ApiModelProperty("数据总数")
     private Long total;
+
+
+    @Override
+    public CustomerActivityDTO clone() throws CloneNotSupportedException {
+        return (CustomerActivityDTO)super.clone();
+    }
 }

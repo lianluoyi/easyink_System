@@ -125,6 +125,17 @@ public class ThreadPoolConfig {
     }
 
     /**
+     * 新增员工与客户群发关系表线程池
+     *
+     * @return
+     */
+    @Bean("momentSaveCustomerAndUserRefTaskExecutor")
+    public ThreadPoolTaskExecutor momentSaveCustomerAndUserRefTaskExecutor() {
+        ThreadPoolProperties.BaseThreadProperty prop = threadPoolProperties.getMomentRefTask();
+        return init(prop.getCorePoolSize(), prop.getMaxPoolSize(), null, prop.getKeepAliveSeconds(), "messageResultTask");
+    }
+
+    /**
      * 构建线程池
      *
      * @param corePoolSize             核心线程数

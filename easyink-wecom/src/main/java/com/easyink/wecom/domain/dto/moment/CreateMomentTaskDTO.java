@@ -8,6 +8,7 @@ import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
+import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import java.util.Date;
 import java.util.List;
@@ -60,4 +61,8 @@ public class CreateMomentTaskDTO {
     @ApiModelProperty(value = "可见范围（0：全部客户 1：部分客户）",required = true)
     @NotNull(message = "pushRange可见范围不能为空")
     private Integer pushRange;
+
+    @ApiModelProperty(value = "接口tokenId", required = true)
+    @NotBlank(message = "幂等token缺失")
+    private String tokenId;
 }

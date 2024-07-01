@@ -25,8 +25,11 @@ public abstract class RepeatSubmitInterceptor extends HandlerInterceptorAdapter 
             HandlerMethod handlerMethod = (HandlerMethod) handler;
             Method method = handlerMethod.getMethod();
             RepeatSubmit annotation = method.getAnnotation(RepeatSubmit.class);
-            if (annotation != null&&this.isRepeatSubmit(request)) {
-                    AjaxResult ajaxResult = AjaxResult.error("不允许重复提交，请稍后再试");
+            if (annotation == null) {
+                return true;
+            }
+            if (this.isRepeatSubmit(request, annotation)) {
+                AjaxResult ajaxResult = AjaxResult.error("操作频繁，请稍后再试");
                     ServletUtils.renderString(response, JSON.toJSONString(ajaxResult));
                     return false;
             }
@@ -40,8 +43,9 @@ public abstract class RepeatSubmitInterceptor extends HandlerInterceptorAdapter 
      * 验证是否重复提交由子类实现具体的防重复提交的规则
      *
      * @param request
+     * @param annotation
      * @return
      * @throws Exception
      */
-    public abstract boolean isRepeatSubmit(HttpServletRequest request);
+    public abstract boolean isRepeatSubmit(HttpServletRequest request, RepeatSubmit annotation);
 }

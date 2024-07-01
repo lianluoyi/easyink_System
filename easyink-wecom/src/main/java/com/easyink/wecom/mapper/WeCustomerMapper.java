@@ -1,12 +1,15 @@
 package com.easyink.wecom.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.easyink.common.annotation.DataScope;
 import com.easyink.common.core.domain.wecom.BaseExtendPropertyRel;
 import com.easyink.wecom.domain.WeCustomer;
 import com.easyink.wecom.domain.WeCustomerPortrait;
 import com.easyink.wecom.domain.WeCustomerSocialConn;
 import com.easyink.wecom.domain.dto.WeCustomerPushMessageDTO;
 import com.easyink.wecom.domain.entity.WeCustomerExportDTO;
+import com.easyink.wecom.domain.model.customer.UserIdAndExternalUserIdModel;
+import com.easyink.wecom.domain.model.moment.MomentCustomerQueryModel;
 import com.easyink.wecom.domain.vo.WeCustomerNameAndUserIdVO;
 import com.easyink.wecom.domain.vo.customer.SessionArchiveCustomerVO;
 import com.easyink.wecom.domain.vo.customer.WeCustomerUserListVO;
@@ -284,4 +287,28 @@ public interface WeCustomerMapper extends BaseMapper<WeCustomer> {
      * @return {@link List<WeCustomer>}
      */
     List<WeCustomer> selectCustomerInfoByExternalIdList(@NotNull @Param("externalUserIdList") List<String> externalUserIdList, @Param("corpId") String corpId);
+
+    /**
+     * 查询员工id 通过标签
+     * @param tagIdList 标签id列表
+     * @return 员工id列表
+     */
+    List<String> selectUserIdByTag(@Param("tagIds") List<String> tagIdList);
+
+    /**
+     * 查询员工id与客户id 去重集合
+     * @param query 查询条件实体
+     * @return Set列表
+     */
+    @DataScope(userAlias = "wfcr")
+    List<UserIdAndExternalUserIdModel> selectUserExternalByNormalUserId(MomentCustomerQueryModel query);
+
+    /**
+     * 根据传入的员工id筛选过滤出正常的员工id
+     * @param query 查询model
+     * @return
+     */
+    @DataScope(userAlias = "wfcr")
+    List<String> selectUserIdListByNormalUserId(MomentCustomerQueryModel query);
+
 }

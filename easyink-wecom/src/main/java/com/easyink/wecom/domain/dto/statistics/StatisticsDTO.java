@@ -2,9 +2,9 @@ package com.easyink.wecom.domain.dto.statistics;
 
 import com.easyink.common.core.domain.RootEntity;
 import com.easyink.common.utils.DateUtils;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.util.List;
 
@@ -14,6 +14,7 @@ import java.util.List;
  * @author wx
  * 2023/2/14 14:04
  **/
+@EqualsAndHashCode(callSuper = true)
 @Data
 public class StatisticsDTO extends RootEntity {
 

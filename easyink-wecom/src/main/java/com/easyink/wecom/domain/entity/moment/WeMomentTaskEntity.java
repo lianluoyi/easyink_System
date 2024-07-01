@@ -3,6 +3,7 @@ package com.easyink.wecom.domain.entity.moment;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.easyink.common.enums.moment.MomentSelectUserEnum;
 import com.easyink.common.enums.moment.MomentStatusEnum;
 import com.easyink.common.utils.SnowFlakeUtil;
 import com.easyink.wecom.domain.dto.moment.CreateMomentTaskDTO;
@@ -11,6 +12,8 @@ import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 
 import java.util.Date;
@@ -129,13 +132,19 @@ public class WeMomentTaskEntity {
      * @param createMomentTaskDTO 参数
      * @return {@link WeMomentTaskEntity}
      */
-    public WeMomentTaskEntity(CreateMomentTaskDTO createMomentTaskDTO,List<String> users, List<String> departments,String createBy) {
+    public WeMomentTaskEntity(CreateMomentTaskDTO createMomentTaskDTO, List<String> users, List<String> departments, String createBy) {
         this.setId(SnowFlakeUtil.nextId());
         BeanUtils.copyProperties(createMomentTaskDTO, this);
         this.setUsers(String.join(StrUtil.COMMA, users));
-        this.setDepartments(String.join(StrUtil.COMMA,departments));
+        this.setDepartments(String.join(StrUtil.COMMA, departments));
         this.setTags(String.join(StrUtil.COMMA, createMomentTaskDTO.getTags()));
         this.setStatus(MomentStatusEnum.START.getType());
+        // 是否选择了员工或者部门
+        this.selectUser = CollectionUtils.isNotEmpty(createMomentTaskDTO.getUsers()) || CollectionUtils.isNotEmpty(createMomentTaskDTO.getDepartments())
+                ? MomentSelectUserEnum.SELECT_USER.getType() : MomentSelectUserEnum.NOT_SELECT_USER.getType();
+        if (createMomentTaskDTO.getText() != null && StringUtils.isNotBlank(createMomentTaskDTO.getText().getContent())) {
+            this.content = createMomentTaskDTO.getText().getContent();
+        }
         this.createBy = createBy;
     }
 

@@ -38,6 +38,10 @@ public class ThreadPoolProperties {
      * 获取员工执行群发结果 线程池参数(因为企微官方接口频率限制，所以这个线程池的最大线程数限制为5）
      */
     private BaseThreadProperty messageResultTask;
+    /**
+     * 新增员工与客户群发关系表线程池
+     */
+    private BaseThreadProperty momentRefTask;
 
     /**
      * 基础线程池 参数

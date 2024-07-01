@@ -60,6 +60,9 @@ import com.easyink.wecom.domain.dto.tag.RemoveWeCustomerTagDTO;
 import com.easyink.wecom.domain.dto.unionid.GetUnionIdDTO;
 import com.easyink.wecom.domain.entity.WeCustomerExportDTO;
 import com.easyink.wecom.domain.entity.WeExternalUseridMapping;
+import com.easyink.wecom.domain.model.customer.UserIdAndExternalUserIdModel;
+import com.easyink.wecom.domain.model.moment.MomentCustomerQueryModel;
+import com.easyink.wecom.domain.model.user.UserIdFilterModel;
 import com.easyink.wecom.domain.vo.QueryCustomerFromPlusVO;
 import com.easyink.wecom.domain.vo.WeCustomerExportVO;
 import com.easyink.wecom.domain.vo.WeMakeCustomerTagVO;
@@ -80,6 +83,7 @@ import com.easyink.wecom.service.wechatopen.WechatOpenService;
 import com.easyink.wecom.utils.redis.CustomerRedisCache;
 import com.github.pagehelper.PageHelper;
 import com.google.common.base.Stopwatch;
+import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
@@ -150,9 +154,9 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
     @Lazy
     private WeCustomerExtendPropertyService weCustomerExtendPropertyService;
     @Autowired
-    private WeUnionIdClient weUnionIdClient ;
+    private WeUnionIdClient weUnionIdClient;
     @Autowired
-    private CorpSecretDecryptUtil corpSecretDecryptUtil ;
+    private CorpSecretDecryptUtil corpSecretDecryptUtil;
 
     @Autowired
     private We3rdAppService we3rdAppService;
@@ -1493,9 +1497,10 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
      * @param corpId 企业ID
      * @return 员工id列表
      */
-    private List<String> getUserIdList(String users, String departments, String corpId) {
+    @Override
+    public List<String> getUserIdList(String users, String departments, String corpId) {
         if ((StringUtils.isBlank(users) && StringUtils.isBlank(departments)) || StringUtils.isBlank(corpId)) {
-            return Collections.emptyList();
+            return new ArrayList<>();
         }
         // 员工id列表
         List<String> filterUserIdList = new ArrayList<>();
@@ -1505,7 +1510,20 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
         if (StringUtils.isNotBlank(departments)) {
             filterUserIdList.addAll(weUserService.listOfUserId(corpId, departments.split(WeConstans.COMMA)));
         }
+
         return filterUserIdList;
+    }
+
+    @Override
+    public List<String> getUserIdList(String users, String departments, String tags, String corpId) {
+        List<String> userIdList = this.getUserIdList(users, departments, corpId);
+
+        // 标签单独查询
+        if (StringUtils.isNotBlank(tags)) {
+            List<String> userIdByTag = weCustomerMapper.selectUserIdByTag(Lists.newArrayList(StringUtils.split(tags, WeConstans.COMMA)));
+            userIdList.addAll(userIdByTag);
+        }
+        return userIdList;
     }
 
     @Override
@@ -2048,6 +2066,49 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
     @DataScope
     public  WeCustomerExportDTO transferData(WeCustomerExportDTO dto) {
         return dto;
+    }
+
+    @Override
+    public List<UserIdAndExternalUserIdModel> selectUserIdFromRef(String users, String tags, String corpId) {
+        UserIdFilterModel userIdFilterModel = new UserIdFilterModel();
+
+        // 获取所属员工/部门下的员工id列表
+        userIdFilterModel.addIdAndConditionFilter(Lists.newArrayList(StringUtils.split(users, WeConstans.COMMA)));
+
+        // 标签单独查询
+        if (StringUtils.isNotBlank(tags)) {
+            List<String> userIdByTag = weCustomerMapper.selectUserIdByTag(Lists.newArrayList(StringUtils.split(tags, WeConstans.COMMA)));
+            userIdFilterModel.addIdAndConditionFilter(userIdByTag);
+        }
+
+        // 取交集
+        if (userIdFilterModel.isFilterFlag() && CollectionUtils.isEmpty(userIdFilterModel.getIdList())) {
+            return new ArrayList<>();
+
+        }
+        return weCustomerMapper.selectUserExternalByNormalUserId(new MomentCustomerQueryModel(corpId, userIdFilterModel.getIdList()));
+    }
+
+    @Override
+    public List<String> listExistDbUserIdByTagAndUserIdList(List<String> candidateUserIdList, String tags, String corpId) {
+
+        UserIdFilterModel userIdFilterModel = new UserIdFilterModel();
+
+        // 获取所属员工/部门下的员工id列表
+        userIdFilterModel.addIdAndConditionFilter(candidateUserIdList);
+
+        // 标签单独查询
+        if (StringUtils.isNotBlank(tags)) {
+            List<String> userIdByTag = weCustomerMapper.selectUserIdByTag(Lists.newArrayList(StringUtils.split(tags, WeConstans.COMMA)));
+            userIdFilterModel.addIdAndConditionFilter(userIdByTag);
+        }
+
+        // 取交集
+        if (userIdFilterModel.isFilterFlag() && CollectionUtils.isEmpty(userIdFilterModel.getIdList())) {
+            return new ArrayList<>();
+
+        }
+        return weCustomerMapper.selectUserIdListByNormalUserId(new MomentCustomerQueryModel(corpId, userIdFilterModel.getIdList()));
     }
 
     public String getAbsoluteFile(String filename) {
