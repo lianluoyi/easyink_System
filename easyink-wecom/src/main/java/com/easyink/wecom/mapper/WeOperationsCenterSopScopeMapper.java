@@ -6,6 +6,7 @@ import com.easyink.wecom.domain.vo.sop.WeOperationsCenterSopScopeVO;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.HashSet;
 import java.util.List;
 
 /**
@@ -32,4 +33,13 @@ public interface WeOperationsCenterSopScopeMapper extends BaseMapper<WeOperation
      * @param list list
      */
     void batchSaveOrUpdate(List<WeOperationsCenterSopScopeEntity> list);
+
+    /**
+     * 根据目标id列表，查询对应的sopid列表
+     *
+     * @param corpId     企业id
+     * @param userIdList 员工id列表
+     * @return sopId列表
+     */
+    HashSet<Long> selectSopIdsByUseIdList(@Param("corpId") String corpId, @Param("userIdList") List<String> userIdList);
 }

@@ -277,4 +277,24 @@ public interface WeFlowerCustomerRelMapper extends BaseMapper<WeFlowerCustomerRe
      * @return 去重后的客户总数
      */
     Integer selectExternalUseridByDataScopeCount(@Param("corpId") String corpId, @Param("rootEntity") RootEntity rootEntity, @Param("externalUseridList") List<String> externalUseridList);
+
+    /**
+     * 根据员工id列表和标签id列表，查询有客户的员工id列表（去重）
+     *
+     * @param userIdList 员工id列表
+     * @param tagIdList  标签id列表
+     * @param corpId     企业id
+     * @return 有客户的员工id列表
+     */
+    List<String> selectHaveCustomerUserIdList(@Param("userIdList") List<String> userIdList, @Param("tagIdList") List<String> tagIdList, @Param("corpId") String corpId);
+
+    /**
+     * 保存触达客户关系
+     *
+     * @param userIdList   员工id列表
+     * @param tagIdList    标签id列表
+     * @param corpId       企业id
+     * @param momentTaskId 朋友圈任务id
+     */
+    void insertUserCustomerRel(@Param("userIdList") List<String> userIdList, @Param("tagIdList") List<String> tagIdList, @Param("corpId") String corpId, @Param("momentTaskId") Long momentTaskId);
 }

@@ -1322,7 +1322,8 @@
             gender,
             birthday,
             corp_name,
-            corp_full_name
+            corp_full_name,
+            unionid
         FROM we_customer
         WHERE corp_id = #{corpId}
         AND external_userid IN
@@ -1337,6 +1338,125 @@
         FROM
             we_flower_customer_rel wfcr
         <include refid="customerConditionV2"></include>
+    </select>
+    <select id="ignoreDuplicateCustomerCntV2" resultType="java.lang.Integer">
+        select count(1)
+        from (
+        SELECT
+        1
+        FROM we_flower_customer_rel wfcr force index(`index_groupBy_external_userid`)
+        <if test="leftJoinCustomerTable">
+            LEFT JOIN we_customer wc ON wc.external_userid=wfcr.external_userid AND wc.corp_id = wfcr.corp_id
+        </if>
+        <where>
+            AND wfcr.corp_id = #{corpId}
+            <choose>
+                <when test="status != null">
+                    AND wfcr.status= #{status}
+                </when>
+                <otherwise>
+                    <!--                    AND wfcr.status != '${@com.easyink.common.enums.CustomerStatusEnum@DELETE.code}'-->
+                    AND wfcr.status IN (
+                    '${@com.easyink.common.enums.CustomerStatusEnum@NORMAL.code}' ,
+                    '${@com.easyink.common.enums.CustomerStatusEnum@DRAIN.code}',
+                    '${@com.easyink.common.enums.CustomerStatusEnum@TO_BE_TRANSFERRED.code}',
+                    '${@com.easyink.common.enums.CustomerStatusEnum@TRANSFERRING.code}'
+                    )
+                    <!--                    AND wfcr.del_flag = 0-->
+                </otherwise>
+            </choose>
+            <if test="userExternalList != null and userExternalList.size()>0">
+                AND (wfcr.external_userid, wfcr.user_id) IN
+                <foreach collection="extendList" index="index" item="item" separator="," open="(" close=")">
+                    (#{item.externalUserid},#{item.userId})
+                </foreach>
+            </if>
+            <if test="refIdFilter.filterIdList != null and refIdFilter.filterIdList.size() > 0">
+                AND wfcr.id IN
+                <foreach collection="refIdFilter.filterIdList" item="item" separator="," open="(" close=")">
+                    #{item}
+                </foreach>
+            </if>
+            <if test="customerIdFilter.filterIdList != null and customerIdFilter.filterIdList.size() > 0">
+                AND wfcr.external_userid in
+                <foreach item="item" index="index" collection="customerIdFilter.filterIdList" open="(" separator="," close=")">
+                    #{item}
+                </foreach>
+            </if>
+            <if test="userIdFilter.idList != null and userIdFilter.idList.size() > 0">
+                AND wfcr.user_id in
+                <foreach item="item" index="index" collection="userIdFilter.idList" open="(" separator="," close=")">
+                    #{item}
+                </foreach>
+            </if>
+            <if test="beginTime != null and beginTime != ''"><!-- 开始时间检索 -->
+                AND wfcr.create_time &gt;= #{beginTime}
+            </if>
+            <if test="endTime != null and endTime != ''"><!-- 结束时间检索 -->
+                AND wfcr.create_time &lt;= #{endTime}
+            </if>
+            <if test="corpFullName!= null and corpFullName !=''">
+                AND wc.corp_full_name like concat('%', #{corpFullName}, '%')
+            </if>
+            <if test="phone!= null and phone !=''">
+                AND wfcr.remark_mobiles=#{phone}
+            </if>
+            <if test="desc!= null and desc !=''">
+                AND wfcr.description like concat('%', #{desc}, '%')
+            </if>
+            <if test="gender != null and gender !=''">
+                <if test="gender.indexOf(',') != -1">
+                    AND wc.gender in
+                    <foreach item="item" index="index" collection="gender.split(',')" open="(" separator="," close=")">
+                        #{item}
+                    </foreach>
+                </if>
+                <if test="gender.indexOf(',') == -1">
+                    AND wc.gender=#{gender}
+                </if>
+            </if>
+            <if test="weFlowerCustomerRels!= null and  weFlowerCustomerRels.size()>0">
+                <foreach item="item" index="index" collection="weFlowerCustomerRels" separator=",">
+                    <if test="item.addWay != null and item.addWay !=''">
+                        <if test="item.addWay.indexOf(',') != -1">
+                            AND
+                            <foreach item="items" index="index" collection="item.addWay.split(',')" open="("
+                                     separator="OR" close=")">
+                                wfcr.add_way= #{items}
+                            </foreach>
+                        </if>
+                        <if test="item.addWay.indexOf(',') == -1">
+                            AND wfcr.add_way=#{item.addWay}
+                        </if>
+                    </if>
+                    <if test="item.email!= null and item.email !=''">
+                        AND wfcr.email=#{item.email}
+                    </if>
+                    <if test="item.address!= null and item.address !=''">
+                        AND wfcr.address like concat('%', #{item.address}, '%')
+                    </if>
+                </foreach>
+            </if>
+        </where>
+        GROUP BY wfcr.external_userid
+        ) as temp
+    </select>
+    <select id="selectExternalUserIdLikeName" resultType="java.lang.String">
+        SELECT external_userid
+        FROM we_customer wc FORCE INDEX(`index_corpId_name_externalUserId`)
+        WHERE wc.corp_id = #{corpId}
+          AND (wc.name LIKE concat('%', #{name}, '%'))
+        UNION ALL
+        SELECT external_userid
+        FROM we_flower_customer_rel wfcr FORCE INDEX(`index_corpId_remark_externalUserId`)
+        WHERE wfcr.corp_id = #{corpId}
+          AND wfcr.remark LIKE concat('%', #{name}, '%')
+    </select>
+    <select id="selectExternalUserIdByBirthday" resultType="java.lang.String">
+        select external_userid
+        FROM we_customer FORCE INDEX (`index_corpId_birthday`)
+        WHERE corp_id = #{corpId}
+        AND birthday &gt;=#{startTime} AND birthday &lt;=#{endTime}
     </select>
     <!--查询员工id根据标签-->
     <select id="selectUserIdByTag" resultType="java.lang.String">

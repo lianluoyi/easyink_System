@@ -90,6 +90,24 @@
         wwd.group_id = -1
         AND wocsm.rule_id = #{id}
     </select>
+    <!--根据话术id，查询附件详情-->
+    <select id="selectWordsDetailByGroupId" resultType="com.easyink.wecom.domain.WeWordsDetailEntity">
+        SELECT id
+             , corp_id
+             , group_id
+             , media_type
+             , content
+             , title
+             , url
+             , cover_url
+             , account_original_id
+             , appid
+             , is_defined
+             , extra_id
+        FROM we_words_detail
+        WHERE corp_id = #{corpId}
+          AND group_id = #{groupId}
+    </select>
 
     <!-- 批量新增或更新 -->
     <insert id="batchInsertOrUpdate">

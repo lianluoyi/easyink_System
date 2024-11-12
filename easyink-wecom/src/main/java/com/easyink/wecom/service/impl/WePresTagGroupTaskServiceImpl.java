@@ -27,6 +27,7 @@ import com.easyink.wecom.domain.dto.common.Attachment;
 import com.easyink.wecom.domain.dto.common.Attachments;
 import com.easyink.wecom.domain.dto.message.*;
 import com.easyink.wecom.domain.entity.BaseExternalUserEntity;
+import com.easyink.wecom.domain.model.groupcode.GroupCodeTotalNumberModel;
 import com.easyink.wecom.domain.vo.*;
 import com.easyink.wecom.login.util.LoginTokenService;
 import com.easyink.wecom.mapper.*;
@@ -74,13 +75,15 @@ public class WePresTagGroupTaskServiceImpl extends ServiceImpl<WePresTagGroupTas
     private final WeGroupMemberService weGroupMemberService;
     private final WeGroupService weGroupService;
     private final WeCustomerService weCustomerService;
+    private final WeUserMapper weUserMapper;
+
 
     @Value("${wecome.authorizeUrl}")
     private String authorizeUrl;
 
     @Lazy
     @Autowired
-    public WePresTagGroupTaskServiceImpl(WePresTagGroupTaskMapper taskMapper, WePresTagGroupTaskStatMapper taskStatMapper, WePresTagGroupTaskScopeMapper taskScopeMapper, WePresTagGroupTaskTagMapper taskTagMapper, WeCustomerMessagePushClient customerMessagePushClient, WeMessagePushClient messagePushClient, WeMaterialService materialService, WeGroupCodeMapper groupCodeMapper, WeUserService weUserService, WeCorpAccountService corpAccountService, WeCustomerMapper customerMapper, WePresTagGroupTaskStatMapper wePresTagGroupTaskStatMapper, WeGroupCodeService weGroupCodeService, WeGroupMemberService weGroupMemberService, WeGroupService weGroupService, WeCustomerService weCustomerService) {
+    public WePresTagGroupTaskServiceImpl(WePresTagGroupTaskMapper taskMapper, WePresTagGroupTaskStatMapper taskStatMapper, WePresTagGroupTaskScopeMapper taskScopeMapper, WePresTagGroupTaskTagMapper taskTagMapper, WeCustomerMessagePushClient customerMessagePushClient, WeMessagePushClient messagePushClient, WeMaterialService materialService, WeGroupCodeMapper groupCodeMapper, WeUserService weUserService, WeCorpAccountService corpAccountService, WeCustomerMapper customerMapper, WePresTagGroupTaskStatMapper wePresTagGroupTaskStatMapper, WeGroupCodeService weGroupCodeService, WeGroupMemberService weGroupMemberService, WeGroupService weGroupService, WeCustomerService weCustomerService, WeUserMapper weUserMapper) {
         this.taskMapper = taskMapper;
         this.taskStatMapper = taskStatMapper;
         this.taskScopeMapper = taskScopeMapper;
@@ -97,6 +100,7 @@ public class WePresTagGroupTaskServiceImpl extends ServiceImpl<WePresTagGroupTas
         this.weGroupMemberService = weGroupMemberService;
         this.weGroupService = weGroupService;
         this.weCustomerService = weCustomerService;
+        this.weUserMapper = weUserMapper;
     }
 
     /**
@@ -241,10 +245,40 @@ public class WePresTagGroupTaskServiceImpl extends ServiceImpl<WePresTagGroupTas
         endTime = DateUtils.parseEndDay(endTime);
         // 查询任务列表
         List<WePresTagGroupTaskVO> taskVoList = taskMapper.selectTaskList(corpId, taskName, sendType, createBy, beginTime, endTime);
+
+        fillTotalNumberAndMainDepartmentName(taskVoList, corpId);
         if (CollUtil.isNotEmpty(taskVoList)) {
             taskVoList.forEach(task -> this.setGroupCodeAndScopeAndTag(task, corpId));
         }
         return taskVoList;
+    }
+
+    /**
+     * 填充字段
+     *
+     * @param taskVoList 分页列表
+     * @param corpId
+     */
+    private void fillTotalNumberAndMainDepartmentName(List<WePresTagGroupTaskVO> taskVoList, String corpId) {
+        if (CollectionUtils.isEmpty(taskVoList)) {
+            return;
+        }
+        // 1.totalNumber
+        List<String> groupCodeIdList = taskVoList.stream().map(WePresTagGroupTaskVO::getGroupCodeId).collect(Collectors.toList());
+        Map<String, Integer> groupCodeTotalNumber = taskMapper.selectTotalNumberByGroupCodeIdList(groupCodeIdList)
+                .stream().collect(Collectors.toMap(GroupCodeTotalNumberModel::getGroupCodeId, GroupCodeTotalNumberModel::getTotalNumber, (v1, v2) -> v1));
+
+        // 2.mainDepartmentName
+        List<String> createByList = taskVoList.stream().map(WePresTagGroupTaskVO::getCreateBy).collect(Collectors.toList());
+        Map<String, String> userToMainDepartmentName = weUserMapper.selectUserMainDepartmentByUsername(createByList, corpId)
+                .stream().collect(Collectors.toMap(WeEmpleCodeVO::getUseUserName, WeEmpleCodeVO::getMainDepartmentName, (v1, v2) -> v1));
+
+
+        for (WePresTagGroupTaskVO wePresTagGroupTaskVO : taskVoList) {
+            wePresTagGroupTaskVO.setTotalMember(groupCodeTotalNumber.getOrDefault(wePresTagGroupTaskVO.getGroupCodeId(), 0));
+            wePresTagGroupTaskVO.setMainDepartmentName(userToMainDepartmentName.getOrDefault(wePresTagGroupTaskVO.getCreateBy(), ""));
+        }
+
     }
 
     /**

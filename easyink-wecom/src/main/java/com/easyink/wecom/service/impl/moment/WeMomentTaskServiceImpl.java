@@ -10,6 +10,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.easyink.common.constant.WeConstans;
 import com.easyink.common.core.domain.model.LoginUser;
 import com.easyink.common.core.domain.wecom.WeUser;
+import com.easyink.common.core.page.PageDomain;
 import com.easyink.common.enums.GroupMessageType;
 import com.easyink.common.enums.MediaType;
 import com.easyink.common.enums.ResultTip;
@@ -24,12 +25,19 @@ import com.easyink.wecom.domain.dto.message.ImageMessageDTO;
 import com.easyink.wecom.domain.dto.message.LinkMessageDTO;
 import com.easyink.wecom.domain.dto.moment.*;
 import com.easyink.wecom.domain.entity.moment.*;
-import com.easyink.wecom.domain.entity.moment.VisibleRange.SenderList;
+import com.easyink.wecom.domain.model.customer.CustomerUserNameModel;
+import com.easyink.wecom.domain.model.moment.MomentResultFilterModel;
+import com.easyink.wecom.domain.model.user.UserNameHeadImgModel;
+import com.easyink.wecom.domain.query.moment.MomentDetailQueryContext;
 import com.easyink.wecom.domain.vo.WeUserVO;
 import com.easyink.wecom.domain.vo.moment.*;
 import com.easyink.wecom.domain.vo.sop.DepartmentVO;
 import com.easyink.wecom.login.util.LoginTokenService;
+import com.easyink.wecom.mapper.WeFlowerCustomerRelMapper;
+import com.easyink.wecom.mapper.WeUserMapper;
+import com.easyink.wecom.mapper.moment.WeMomentDetailRelMapper;
 import com.easyink.wecom.mapper.moment.WeMomentTaskMapper;
+import com.easyink.wecom.mapper.moment.WeMomentTaskResultMapper;
 import com.easyink.wecom.mapper.moment.WeMomentUserCustomerRelMapper;
 import com.easyink.wecom.publishevent.SaveMomentCustomerRefEvent;
 import com.easyink.wecom.publishevent.SendAppMessageEvent;
@@ -66,16 +74,20 @@ public class WeMomentTaskServiceImpl extends ServiceImpl<WeMomentTaskMapper, WeM
 
     private final WeMomentClient momentClient;
     private final WeWordsDetailService weWordsDetailService;
+    private final WeMomentDetailRelMapper weMomentDetailRelMapper;
     private final WeMomentTaskResultService weMomentTaskResultService;
+    private final WeMomentTaskResultMapper weMomentTaskResultMapper;
     private final WeCustomerMessageService weCustomerMessageService;
     private final WeMomentDetailRelService weMomentDetailRelService;
     private final WeUserService weUserService;
     private final ApplicationMessageUtil applicationMessageUtil;
     private final WeMomentUserCustomerRelService weMomentUserCustomerRelService;
-    private final WeCustomerService weCustomerService;
     private final WeTagService weTagService;
     private final WeMomentUserCustomerRelMapper weMomentUserCustomerRelMapper;
     private final WeDepartmentService weDepartmentService;
+    private final WeFlowerCustomerRelMapper weFlowerCustomerRelMapper;
+    private final WeUserMapper weUserMapper;
+    private final WeCustomerService weCustomerService;
 
     /**
      * 创建朋友圈任务
@@ -297,9 +309,84 @@ public class WeMomentTaskServiceImpl extends ServiceImpl<WeMomentTaskMapper, WeM
 
 
     @Override
-    public List<MomentUserCustomerVO> listOfMomentPublishDetail(MomentUserCustomerDTO momentUserCustomerDTO) {
-        momentUserCustomerDTO.setCorpId(LoginTokenService.getLoginUser().getCorpId());
-        return baseMapper.listOfMomentPublishDetail(momentUserCustomerDTO);
+    public List<MomentUserCustomerVO> listOfMomentPublishDetail(MomentUserCustomerDTO momentUserCustomerDTO, PageDomain pageDomain) {
+        String corpId = LoginTokenService.getLoginUser().getCorpId();
+        Long momentTaskId = momentUserCustomerDTO.getMomentTaskId();
+        MomentResultFilterModel filterModel = buildMomentDetailFilterModel(momentUserCustomerDTO, corpId);
+        if (CollectionUtils.isEmpty(filterModel.getFilterResultIdList()) && filterModel.isFilterFlag()) {
+            return new ArrayList<>();
+        }
+        pageDomain.page();
+        List<MomentUserCustomerVO> momentDetailList = baseMapper.listOfMomentPublishDetail(
+                new MomentDetailQueryContext(
+                        corpId, momentTaskId, filterModel));
+
+
+        fillMomentUserAndCustomerInfo(momentDetailList, momentTaskId, corpId);
+        return momentDetailList;
+    }
+
+    /**
+     * 填充用户和客户信息
+     * @param momentDetailList 朋友圈详情
+     * @param momentTaskId 朋友圈任务id
+     * @param corpId 企业id
+     */
+    private void fillMomentUserAndCustomerInfo(List<MomentUserCustomerVO> momentDetailList, Long momentTaskId, String corpId) {
+        // 1.填充员工信息, 同一个企业下, userId唯一
+        List<String> userIdList = momentDetailList.stream().map(MomentUserCustomerVO::getUserId).collect(Collectors.toList());
+        // key:userId value:
+        Map<String, UserNameHeadImgModel> userToInfoMapping = weUserMapper.selectList(new LambdaQueryWrapper<WeUser>()
+                .select(WeUser::getUserId, WeUser::getName, WeUser::getAvatarMediaid)
+                .eq(WeUser::getCorpId, corpId)
+                .in(WeUser::getUserId, userIdList)
+        ).stream().collect(Collectors.toMap(WeUser::getUserId, value -> new UserNameHeadImgModel(value.getUserId(), value.getName(), value.getAvatarMediaid()), (v1, v2) -> v1));
+
+
+        // 2.填充客户昵称, 根据员工id分组, 对列表转化为客户昵称, 并逗号拼接昵称
+        // key:userId value: customerName1,customerName2
+        Map<String, String> userToCustomerNameMapping = weMomentTaskResultMapper.selectCustomerInfo(userIdList, corpId, momentTaskId)
+                .stream()
+                .collect(Collectors.groupingBy(CustomerUserNameModel::getUserId, Collectors.mapping(CustomerUserNameModel::getCustomerName, Collectors.joining(","))));
+
+        momentDetailList.forEach(it -> {
+            // 员工信息
+            UserNameHeadImgModel userModel = userToInfoMapping.getOrDefault(it.getUserId(), new UserNameHeadImgModel());
+            it.setUserName(userModel.getUserName());
+            it.setHeadImageUrl(userModel.getHeadImg());
+
+            // 客户昵称
+            it.setCustomerName(userToCustomerNameMapping.getOrDefault(it.getUserId(), ""));
+
+        });
+
+    }
+
+    /**
+     * 构建朋友圈详情过滤条件model
+     * @param momentUserCustomerDTO 朋友圈客户条件DTO
+     * @param corpId 企业id
+     * @return 过滤model
+     */
+    private MomentResultFilterModel buildMomentDetailFilterModel(MomentUserCustomerDTO momentUserCustomerDTO, String corpId) {
+
+        MomentResultFilterModel resultFilterModel = new MomentResultFilterModel();
+        // 1.userName过滤
+        if (StringUtils.isNotBlank(momentUserCustomerDTO.getUserName())) {
+            List<Long> userNameFilterDetailIdList = weMomentTaskResultMapper.selectIdListLikeUserNameKeyword(momentUserCustomerDTO.getMomentTaskId(), corpId, momentUserCustomerDTO.getUserName());
+            resultFilterModel.addDetailIdAndConditionFilter(userNameFilterDetailIdList);
+        }
+        // 2.publishStatus过滤
+        if (momentUserCustomerDTO.getPublishStatus() != null) {
+
+            List<Long> pushStatusFilterDetailIdList = weMomentTaskResultMapper.selectList(new LambdaQueryWrapper<WeMomentTaskResultEntity>()
+                    .select(WeMomentTaskResultEntity::getId)
+                    .eq(WeMomentTaskResultEntity::getPublishStatus, momentUserCustomerDTO.getPublishStatus())
+            ).stream().map(WeMomentTaskResultEntity::getId).collect(Collectors.toList());
+            resultFilterModel.addDetailIdAndConditionFilter(pushStatusFilterDetailIdList);
+        }
+
+        return resultFilterModel;
     }
 
     @Override

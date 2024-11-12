@@ -2,8 +2,12 @@ package com.easyink.wecom.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.easyink.wecom.domain.WeCustomerMessage;
+import com.easyink.wecom.domain.model.message.GroupMessageCountModel;
+import com.easyink.wecom.domain.vo.WeCustomerSeedMessageVO;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
+
+import java.util.List;
 
 /**
  * 群发消息  微信消息表Mapper接口
@@ -40,4 +44,13 @@ public interface WeCustomerMessageMapper extends BaseMapper<WeCustomerMessage> {
      * @return 受影响行数
      */
     int deleteByMessageId(@Param("messageId") Long messageId, @Param("corpId") String corpId);
+
+    List<GroupMessageCountModel> countGroupByMessageId(@Param("messageIdList") List<Long> messageIdList);
+
+    /**
+     * 查询消息列表根据消息id列表
+     * @param messageIdList 消息id列表
+     * @return 群发消息seedMessage列表
+     */
+    List<WeCustomerSeedMessageVO> selectMessageListByMessageIdList(@Param("messageIdList") List<Long> messageIdList);
 }

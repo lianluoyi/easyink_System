@@ -454,6 +454,14 @@ public interface WeCustomerService extends IService<WeCustomer> {
 
     WeCustomerExportDTO transferData(WeCustomerExportDTO dto);
 
+
+    /**
+     * 客户去重统计
+     * @param weCustomer 客户查询过滤信息实体
+     * @return 客户去重countVO
+     */
+    WeCustomerSumVO weCustomerCountV2(WeCustomer weCustomer);
+
     /**
      * 查询员工和客户关系列表
      * @param users 员工ids

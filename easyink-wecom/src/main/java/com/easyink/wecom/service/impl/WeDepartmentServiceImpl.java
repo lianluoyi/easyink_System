@@ -347,6 +347,14 @@ public class WeDepartmentServiceImpl extends ServiceImpl<WeDepartmentMapper, WeD
         return new ArrayList<>(userIdList);
     }
 
+    @Override
+    public List<String> listUserIdByMainDepartmentIds(List<String> departmentIdList, String corpId) {
+        if(CollectionUtils.isEmpty(departmentIdList) || StringUtils.isBlank(corpId)){
+            return new ArrayList<>();
+        }
+        return baseMapper.selectUserIdByMaindepartmentIds(departmentIdList, corpId);
+    }
+
     /**
      * 判断是否存在根部们
      *

@@ -6,6 +6,7 @@ import com.easyink.common.core.domain.RootEntity;
 import com.easyink.wecom.domain.WeSensitiveAct;
 import com.easyink.wecom.domain.WeSensitiveActHit;
 import com.easyink.common.core.domain.conversation.ChatInfoVO;
+import com.easyink.wecom.domain.query.sensitiveact.WeSensitiveActQuery;
 
 import java.util.List;
 
@@ -27,9 +28,10 @@ public interface WeSensitiveActHitService extends IService<WeSensitiveActHit> {
      * 查询敏感行为记录列表
      *
      * @param rootEntity 基础实体
+     * @param actQuery
      * @return 敏感行为记录
      */
-    List<WeSensitiveActHit> selectWeSensitiveActHitList(RootEntity rootEntity);
+    List<WeSensitiveActHit> selectWeSensitiveActHitList(RootEntity rootEntity, WeSensitiveActQuery actQuery);
 
     /**
      * 新增敏感行为记录

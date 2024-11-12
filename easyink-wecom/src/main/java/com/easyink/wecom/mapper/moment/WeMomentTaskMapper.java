@@ -1,8 +1,8 @@
 package com.easyink.wecom.mapper.moment;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.easyink.wecom.domain.dto.moment.MomentUserCustomerDTO;
 import com.easyink.wecom.domain.entity.moment.WeMomentTaskEntity;
+import com.easyink.wecom.domain.query.moment.MomentDetailQueryContext;
 import com.easyink.wecom.domain.vo.moment.MomentTotalVO;
 import com.easyink.wecom.domain.vo.moment.MomentUserCustomerVO;
 import com.easyink.wecom.domain.vo.moment.SearchMomentVO;
@@ -50,7 +50,7 @@ public interface WeMomentTaskMapper extends BaseMapper<WeMomentTaskEntity> {
      * @param momentUserCustomerDTO 参数
      * @return {@link List<MomentUserCustomerVO>}
      */
-    List<MomentUserCustomerVO> listOfMomentPublishDetail(MomentUserCustomerDTO momentUserCustomerDTO);
+    List<MomentUserCustomerVO> listOfMomentPublishDetail(MomentDetailQueryContext momentUserCustomerDTO);
 
     /**
      * 获得统计详情

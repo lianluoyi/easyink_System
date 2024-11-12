@@ -10,6 +10,7 @@ import com.easyink.common.enums.ResultTip;
 import com.easyink.common.utils.poi.ExcelUtil;
 import com.easyink.wecom.domain.WeSensitiveAct;
 import com.easyink.wecom.domain.WeSensitiveActHit;
+import com.easyink.wecom.domain.query.sensitiveact.WeSensitiveActQuery;
 import com.easyink.wecom.login.util.LoginTokenService;
 import com.easyink.wecom.service.WeSensitiveActHitService;
 import com.easyink.wecom.service.WeSensitiveActService;
@@ -118,11 +119,11 @@ public class WeSensitiveActController extends BaseController {
     //    @PreAuthorize("@ss.hasPermi('wecom:sensitiveacthit:list')")
     @GetMapping("/hit/list")
     @ApiOperation("敏感词命中查询")
-    public TableDataInfo hitList() {
+    public TableDataInfo hitList(WeSensitiveActQuery actQuery) {
         startPage();
         RootEntity rootEntity = new RootEntity();
         rootEntity.getParams().put("corpId", LoginTokenService.getLoginUser().getCorpId());
-        List<WeSensitiveActHit> list = weSensitiveActHitService.selectWeSensitiveActHitList(rootEntity);
+        List<WeSensitiveActHit> list = weSensitiveActHitService.selectWeSensitiveActHitList(rootEntity, actQuery);
         return getDataTable(list);
     }
 

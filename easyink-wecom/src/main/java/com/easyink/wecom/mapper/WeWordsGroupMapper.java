@@ -45,9 +45,10 @@ public interface WeWordsGroupMapper extends BaseMapper<WeWordsGroupEntity> {
      * 查询话术库
      *
      * @param weWordsQueryDTO 话术dto
+     * @param groupIdList     话术id列表
      * @return {@link List<WeWordsVO>}
      */
-    List<WeWordsVO> listOfWords(WeWordsQueryDTO weWordsQueryDTO);
+    List<WeWordsVO> listOfWords(@Param("dto") WeWordsQueryDTO weWordsQueryDTO, @Param("groupIdList") List<Long> groupIdList);
 
     /**
      * 根据id查询话术库（按最近使用话术排序）

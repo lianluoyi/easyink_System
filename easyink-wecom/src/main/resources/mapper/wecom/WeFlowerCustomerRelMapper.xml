@@ -32,6 +32,34 @@
                customer_id
         from we_flower_customer_rel
     </sql>
+    <!--根据员工id列表和标签id列表，查询对应员工的客户信息（去重）-->
+    <sql id="selectUserCustomerInfo">
+        SELECT
+        #{momentTaskId},
+        wfcr.user_id,
+        wfcr.external_userid
+        FROM
+        we_flower_customer_rel wfcr
+        <if test="tagIdList != null and tagIdList.size() > 0">
+            LEFT JOIN we_flower_customer_tag_rel wfcrf ON wfcrf.flower_customer_rel_id = wfcr.id
+        </if>
+        WHERE
+        wfcr.corp_id = #{corpId}
+        AND wfcr.`status` = '${@com.easyink.common.enums.CustomerStatusEnum@NORMAL.code}'
+        <if test="userIdList != null and userIdList.size() > 0">
+            AND wfcr.user_id IN
+            <foreach collection="userIdList" item="userId" open="(" separator="," close=")">
+                #{userId}
+            </foreach>
+        </if>
+        <if test="tagIdList != null and tagIdList.size() > 0">
+            AND wfcrf.tag_id IN
+            <foreach collection="tagIdList" item="tagId" open="(" separator="," close=")">
+                #{tagId}
+            </foreach>
+        </if>
+        GROUP BY wfcr.external_userid
+    </sql>
 
     <insert id="insertWeFlowerCustomerRel" parameterType="WeFlowerCustomerRel">
         insert into we_flower_customer_rel
@@ -299,7 +327,11 @@
         ON DUPLICATE KEY UPDATE
         `status`=VALUES(`status`),`create_time` = IFNULL(VALUES(`create_time`), `create_time`)
     </insert>
-
+    <!--保存触达客户关系-->
+    <insert id="insertUserCustomerRel">
+        INSERT INTO we_moment_user_customer_rel (moment_task_id, user_id, external_userid)
+        <include refid="selectUserCustomerInfo"></include>
+    </insert>
     <!--    转接员工客户关系-->
     <update id="transferRel">
         UPDATE we_flower_customer_rel
@@ -739,29 +771,55 @@
         SELECT
         external_userid, create_time
         FROM
-        we_flower_customer_rel
+        we_flower_customer_rel FORCE INDEX(`index_groupBy_external_userid`)
         WHERE
-        user_id IN (
-        SELECT
-        user_id
-        FROM
-        we_user wu
-        INNER JOIN we_department wd ON wu.corp_id = wd.corp_id
-        AND wd.id = wu.main_department
-        AND wu.is_activate = ${@com.easyink.common.constant.WeConstans@WE_USER_IS_ACTIVATE}
-        ${rootEntity.params.dataScope})
+        corp_id = #{corpId}
+        AND user_id IN (
+            SELECT
+            user_id
+            FROM
+            we_user wu
+            INNER JOIN we_department wd ON wu.corp_id = wd.corp_id AND wd.id = wu.main_department
+            AND wu.is_activate = ${@com.easyink.common.constant.WeConstans@WE_USER_IS_ACTIVATE}
+            ${rootEntity.params.dataScope}
+        )
         <if test="externalUseridList != null and externalUseridList.size() > 0">
             AND external_userid IN
             <foreach collection="externalUseridList" item="externalUserid" open="(" separator="," close=")">
                 #{externalUserid}
             </foreach>
         </if>
-        AND corp_id = #{corpId}
         AND status IN ('${@com.easyink.common.enums.CustomerStatusEnum@NORMAL.code}',
         '${@com.easyink.common.enums.CustomerStatusEnum@DRAIN.code}',
         '${@com.easyink.common.enums.CustomerStatusEnum@TO_BE_TRANSFERRED.code}',
         '${@com.easyink.common.enums.CustomerStatusEnum@TRANSFERRING.code}')
         GROUP BY external_userid
-        ORDER BY create_time DESC
+    </select>
+    <!--根据员工id列表和标签id列表，查询有客户的员工id列表（去重）-->
+    <select id="selectHaveCustomerUserIdList" resultType="java.lang.String">
+        SELECT user_id FROM (
+        SELECT
+        wfcr.user_id,
+        wfcr.status
+        FROM
+        we_flower_customer_rel wfcr
+        <if test="tagIdList != null and tagIdList.size() > 0">
+            LEFT JOIN we_flower_customer_tag_rel wfcrf ON wfcrf.flower_customer_rel_id = wfcr.id
+        </if>
+        WHERE
+        wfcr.corp_id = #{corpId}
+        <if test="userIdList != null and userIdList.size() > 0">
+            AND wfcr.user_id IN
+            <foreach collection="userIdList" item="userId" open="(" separator="," close=")">
+                #{userId}
+            </foreach>
+        </if>
+        <if test="tagIdList != null and tagIdList.size() > 0">
+            AND wfcrf.tag_id IN
+            <foreach collection="tagIdList" item="tagId" open="(" separator="," close=")">
+                #{tagId}
+            </foreach>
+        </if>
+        GROUP BY wfcr.corp_id, wfcr.user_id, wfcr.`status` ) as temp WHERE status = '${@com.easyink.common.enums.CustomerStatusEnum@NORMAL.code}';
     </select>
 </mapper>

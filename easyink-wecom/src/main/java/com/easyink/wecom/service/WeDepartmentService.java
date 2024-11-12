@@ -137,4 +137,13 @@ public interface WeDepartmentService extends IService<WeDepartment> {
      * @return 数据权限下的员工id列表
      */
     List<String> getDataScopeUserIdList(List<String> departmentIds, List<String> userIds, String corpId);
+
+    /**
+     * 查询主部门列表下的员工id列表
+     *
+     * @param departmentIdList 主部门id列表
+     * @param corpId 企业id
+     * @return 员工id列表
+     */
+    List<String> listUserIdByMainDepartmentIds(List<String> departmentIdList, String corpId);
 }

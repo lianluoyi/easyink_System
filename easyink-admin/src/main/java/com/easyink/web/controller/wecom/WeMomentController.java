@@ -1,8 +1,11 @@
 package com.easyink.web.controller.wecom;
 
+import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.date.TimeInterval;
 import com.easyink.common.annotation.RepeatSubmit;
 import com.easyink.common.core.controller.BaseController;
 import com.easyink.common.core.domain.AjaxResult;
+import com.easyink.common.core.page.PageDomain;
 import com.easyink.common.core.page.TableDataInfo;
 import com.easyink.wecom.domain.dto.moment.CreateMomentTaskDTO;
 import com.easyink.wecom.domain.dto.moment.MomentUserCustomerDTO;
@@ -15,10 +18,13 @@ import com.easyink.wecom.login.util.LoginTokenService;
 import com.easyink.wecom.service.moment.WeMomentTaskService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * 类名： 朋友圈接口
@@ -26,6 +32,7 @@ import org.springframework.web.bind.annotation.*;
  * @author 佚名
  * @date 2022/1/11 11:29
  */
+@Slf4j
 @RestController
 @RequestMapping("/wecom/moment")
 @Api(tags = "朋友圈")
@@ -75,8 +82,11 @@ public class WeMomentController extends BaseController {
     @GetMapping("/listOfMomentPublishDetail")
     @ApiOperation("查询朋友圈发布记录详情")
     public TableDataInfo<MomentUserCustomerVO> listOfMomentPublishDetail(@Validated MomentUserCustomerDTO momentUserCustomerDTO) {
-        startPage();
-        return getDataTable(weMomentTaskService.listOfMomentPublishDetail(momentUserCustomerDTO));
+        PageDomain pageDomain = startPageManual();
+        TimeInterval timer = DateUtil.timer();
+        List<MomentUserCustomerVO> list = weMomentTaskService.listOfMomentPublishDetail(momentUserCustomerDTO, pageDomain);
+        log.info("查询朋友圈发布记录详情: {}毫秒", timer.interval());
+        return getDataTable(list);
     }
 
     @PreAuthorize("@ss.hasPermi('wecom:moments:detail')")

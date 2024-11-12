@@ -139,4 +139,6 @@ public interface WechatOpenService extends IService<WeOpenConfig> {
      * @return
      */
     String handle3rdAuthOfficeAccount(String corpId, String userId, String authCode);
+
+
 }

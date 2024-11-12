@@ -1,6 +1,5 @@
 package com.easyink.wecom.domain.dto.moment;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
@@ -24,9 +23,6 @@ public class MomentUserCustomerDTO {
     @Max(3)
     @Min(0)
     private Integer publishStatus;
-    @ApiModelProperty(value = "企业id",hidden = true)
-    @JsonIgnore
-    private String corpId;
     @ApiModelProperty(value = "朋友圈任务id",required = true)
     @NotNull(message = "朋友圈任务id不能为空")
     private Long momentTaskId;

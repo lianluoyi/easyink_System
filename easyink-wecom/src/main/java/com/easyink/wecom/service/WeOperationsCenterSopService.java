@@ -20,10 +20,11 @@ public interface WeOperationsCenterSopService extends IService<WeOperationsCente
     /**
      * 查询sop列表
      *
-     * @param corpId  企业id
-     * @param sopType sop类型
-     * @param name    sop名称
-     * @param isOpen  是否开启
+     * @param corpId   企业id
+     * @param sopType  sop类型
+     * @param name     sop名称
+     * @param userName 员工名称
+     * @param isOpen   是否开启
      * @return List<BaseWeOperationsCenterSopVo>
      */
     List<BaseWeOperationsCenterSopVo> list(String corpId, Integer sopType, String name, String userName, Integer isOpen);

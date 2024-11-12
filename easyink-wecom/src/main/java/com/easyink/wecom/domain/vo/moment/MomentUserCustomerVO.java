@@ -16,6 +16,9 @@ import java.util.Date;
 @Data
 @ApiModel("朋友圈成员执行情况VO")
 public class MomentUserCustomerVO {
+
+    @ApiModelProperty("朋友圈详情结果id")
+    private Long id;
     @ApiModelProperty("员工头像")
     private String headImageUrl;
     @ApiModelProperty("员工姓名")

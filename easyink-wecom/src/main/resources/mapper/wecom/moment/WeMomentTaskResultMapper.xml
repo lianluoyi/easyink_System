@@ -2,7 +2,34 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
 <mapper namespace="com.easyink.wecom.mapper.moment.WeMomentTaskResultMapper">
-
+    <!--批量保存或更新结果-->
+    <insert id="batchSaveOrUpdateResult">
+        <foreach collection="list" item="item" separator=";">
+            INSERT INTO we_moment_task_result
+            (
+            <trim prefixOverrides="" suffixOverrides=",">
+                <if test="item.momentTaskId != null">moment_task_id,</if>
+                <if test="item.userId != null">user_id,</if>
+                <if test="item.publishStatus != null">publish_status,</if>
+                <if test="item.remark != null">remark,</if>
+            </trim>
+            )
+            VALUES
+            (
+            <trim prefixOverrides="" suffixOverrides=",">
+                <if test="item.momentTaskId != null">#{item.momentTaskId},</if>
+                <if test="item.userId != null">#{item.userId},</if>
+                <if test="item.publishStatus != null">#{item.publishStatus},</if>
+                <if test="item.remark != null">#{item.remark},</if>
+            </trim>
+            )
+            ON DUPLICATE KEY UPDATE
+            <trim prefixOverrides="" suffixOverrides=",">
+                <if test="item.publishStatus != null">publish_status = #{item.publishStatus},</if>
+                <if test="item.remark != null">remark = #{item.remark},</if>
+            </trim>
+        </foreach>
+    </insert>
     <!--更新发布信息-->
     <update id="updatePublishInfo">
         UPDATE we_moment_task_result SET
@@ -12,4 +39,29 @@
         publish_status = #{publishStatus}
         WHERE user_id = #{userId} AND moment_task_id = #{momentTaskId}
     </update>
+    <select id="selectIdListLikeUserNameKeyword" resultType="java.lang.Long">
+        SELECT id FROM
+        we_moment_task_result wmtr
+        LEFT JOIN we_user wu ON wu.user_id = wmtr.user_id
+        WHERE wmtr.moment_task_id = #{momentTaskId}
+        AND wu.corp_id = #{corpId}
+        <if test="userNameKeyword != null and userNameKeyword != ''">
+            <bind name="likeUserNameKeyword" value="'%' + userNameKeyword + '%'"/>
+            AND wu.user_name LIKE #{likeUserNameKeyword}
+        </if>
+    </select>
+    <select id="selectCustomerInfo" resultType="com.easyink.wecom.domain.model.customer.CustomerUserNameModel">
+        SELECT
+        wmucr.user_id,
+        wc.name AS customer_name
+        FROM we_moment_user_customer_rel wmucr
+        INNER JOIN we_customer wc ON wmucr.external_userid = wc.external_userid AND wc.corp_id = #{corpId} AND wc.type = '${@com.easyink.common.enums.customer.CustomerTypeEnum@WX_CUSTOMER.type}'
+        <where>
+            AND wmucr.moment_task_id = #{momentTaskId}
+            AND wmucr.user_id IN
+            <foreach collection="userIdList" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </where>
+    </select>
 </mapper>

@@ -17,6 +17,16 @@
         </collection>
     </resultMap>
 
+    <!-- 话术信息转换Map -->
+    <resultMap type="com.easyink.wecom.domain.vo.WeWordsVO" id="weWordsGroupMapV2">
+        <result property="id" column="id"/>
+        <result property="categoryId" column="category_id"/>
+        <result property="title" column="title"/>
+        <result property="sort" column="sort"/>
+        <result property="seq" column="seq" typeHandler="com.easyink.framework.handler.StringArrayJoinTypeHandler"/>
+        <result property="isPush" column="is_push"/>
+    </resultMap>
+
     <!-- 新增 -->
     <insert id="insert" parameterType="com.easyink.wecom.domain.WeWordsGroupEntity"
             keyProperty="id" keyColumn="id" useGeneratedKeys="true">
@@ -151,33 +161,38 @@
             </foreach>
         </where>
     </select>
-    <select id="listOfWords" resultMap="weWordsGroupMap">
-        select
-        wwg.id
-        ,wwg.corp_id
-        ,wwg.category_id
-        ,wwg.title
-        ,wwg.seq
-        ,wwg.is_push
-        ,wwg.sort
-        from we_words_group wwg
-        left join we_words_detail wwd on wwg.id = wwd.group_id
-        where
-        wwg.corp_id = #{corpId}
-        <if test="content!=null and content!=''">
-            and (wwg.title like concat('%',#{content},'%') or wwd.content LIKE concat('%', #{content}, '%') or wwd.title LIKE concat('%',#{content},'%') )
+    <!--查询话术库-->
+    <select id="listOfWords" resultMap="weWordsGroupMapV2">
+        SELECT
+        id,
+        category_id,
+        title,
+        seq,
+        is_push,
+        sort
+        FROM
+        we_words_group
+        WHERE
+        corp_id = #{dto.corpId}
+        <if test="dto.content != null and dto.content!=''">
+            AND title like concat('%',#{dto.content},'%')
         </if>
-        and wwg.category_id in
-        <foreach collection="categoryIds" index="index" item="item" separator="," open="(" close=")">
+        AND category_id IN
+        <foreach collection="dto.categoryIds" index="index" item="item" separator="," open="(" close=")">
             #{item}
         </foreach>
-        <if test="sort != null">
-            and wwg.sort &lt; #{sort}
+        <if test="dto.sort != null">
+            and sort &lt; #{dto.sort}
         </if>
-        group by wwg.id
-        order by wwg.sort desc
+        <if test="groupIdList.size() > 0">
+            OR id IN
+            <foreach collection="groupIdList" item="groupId" open="(" separator="," close=")">
+                #{groupId}
+            </foreach>
+        </if>
+        group by id
+        order by sort desc
     </select>
-
     <select id="listOfWordsById" resultMap="weWordsGroupMap">
         select
         wwg.id

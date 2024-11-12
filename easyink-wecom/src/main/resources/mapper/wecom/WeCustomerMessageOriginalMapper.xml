@@ -58,7 +58,7 @@
             message_id = #{message_id}
     </select>
     <select id="selectCustomerMessagePushs" parameterType="com.easyink.wecom.domain.dto.WeCustomerMessageDTO"
-            resultMap="customerMessagePushVOMap">
+            resultType="com.easyink.wecom.domain.vo.CustomerMessagePushVO">
         SELECT
         wcmo.push_type,
         wcmo.message_type,
@@ -71,10 +71,6 @@
         wcm.content,
         wcm.chat_type,
         wcm.setting_time,
-        (SELECT count(*) FROM `we_customer_messgaeResult` wcmr where wcmr.message_id=wcm.message_id) as
-        expect_send,
-        (SELECT count(*) FROM `we_customer_messgaeResult` wcmr where wcmr.message_id=wcm.message_id and `status`=1) as
-        actual_send,
         wcm.timed_task,
         wcm.msgid,
         wcm.check_status
@@ -95,7 +91,6 @@
             <if test="beginTime != null and beginTime != ''"><!-- 开始时间检索 -->
                 AND wcmo.create_time &gt;= #{beginTime}
             </if>
-
             <if test="endTime != null and endTime != ''"><!-- 结束时间检索 -->
                 AND wcmo.create_time &lt;= #{endTime}
             </if>

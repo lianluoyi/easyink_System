@@ -81,6 +81,11 @@ public class RuoYiConfig {
     private boolean enableExceptionDetailResp;
 
     /**
+     * 压测标识
+     */
+    private boolean pressure;
+
+    /**
      * 是否内部应用服务器
      *
      * @return true是内部，false三方应用

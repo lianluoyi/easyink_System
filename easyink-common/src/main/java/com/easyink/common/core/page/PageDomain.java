@@ -1,5 +1,6 @@
 package com.easyink.common.core.page;
 
+import com.easyink.common.utils.ServletUtils;
 import com.easyink.common.utils.StringUtils;
 
 /**
@@ -7,7 +8,7 @@ import com.easyink.common.utils.StringUtils;
  *
  * @author admin
  */
-public class PageDomain {
+public class PageDomain implements PageInvoke {
     /**
      * 当前记录起始索引
      */
@@ -27,6 +28,20 @@ public class PageDomain {
      * 排序的方向desc或者asc
      */
     private String isAsc = "asc";
+
+
+    public PageDomain() {
+        //lastId存在，则采用游标分页方式
+        if (StringUtils.isNotBlank(ServletUtils.getParameter(TableSupport.LAST_ID))) {
+            //默认从第一页开始
+            this.pageNum = Integer.valueOf("1");
+        } else {
+            this.pageNum = ServletUtils.getParameterToInt(TableSupport.PAGE_NUM);
+        }
+        this.pageSize = ServletUtils.getParameterToInt(TableSupport.PAGE_SIZE);
+        this.orderByColumn = ServletUtils.getParameter(TableSupport.ORDER_BY_COLUMN);
+        this.isAsc = ServletUtils.getParameter(TableSupport.IS_ASC);
+    }
 
     public String getOrderBy() {
         if (StringUtils.isEmpty(orderByColumn)) {
@@ -65,5 +80,15 @@ public class PageDomain {
 
     public void setIsAsc(String isAsc) {
         this.isAsc = isAsc;
+    }
+
+    @Override
+    public void page() {
+
+    }
+
+    @Override
+    public void clear() {
+
     }
 }

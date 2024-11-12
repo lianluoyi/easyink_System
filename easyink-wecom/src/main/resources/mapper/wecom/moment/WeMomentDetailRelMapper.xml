@@ -8,6 +8,17 @@
      ,moment_task_id
      ,detail_id
     </sql>
+    <!--批量保存-->
+    <insert id="saveBatchDetailRel">
+        INSERT INTO
+            we_moment_detail_rel (moment_task_id, detail_id)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+             #{item.momentTaskId}, #{item.detailId}
+            )
+        </foreach>
+    </insert>
 
     <select id="listOfAttachment" resultType="com.easyink.wecom.domain.WeWordsDetailEntity">
         SELECT

@@ -1,6 +1,8 @@
 package com.easyink.web.controller.wecom;
 
 
+import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.date.TimeInterval;
 import com.easyink.common.core.controller.BaseController;
 import com.easyink.common.core.domain.AjaxResult;
 import com.easyink.common.core.page.TableDataInfo;
@@ -21,6 +23,7 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
@@ -37,6 +40,7 @@ import java.util.List;
 @RestController
 @RequestMapping(value = "/wecom/communityPresTagGroupV2")
 @Api(tags = "老客进群")
+@Slf4j
 public class WeCommunityPresTagGroupV2Controller extends BaseController {
 
     private final WePresTagGroupTaskService taskService;
@@ -53,9 +57,11 @@ public class WeCommunityPresTagGroupV2Controller extends BaseController {
     public TableDataInfo<WePresTagGroupTaskVO> getList(QueryPresTagGroupDTO queryPresTagGroupDTO) {
         String corpId = LoginTokenService.getLoginUser().getCorpId();
         startPage();
+        TimeInterval timer = DateUtil.timer();
         List<WePresTagGroupTaskVO> wePresTagGroupTaskVoList =
                 taskService.selectTaskList(corpId, queryPresTagGroupDTO.getTaskName(), queryPresTagGroupDTO.getSendType()
                         , queryPresTagGroupDTO.getCreateBy(), queryPresTagGroupDTO.getBeginTime(), queryPresTagGroupDTO.getEndTime());
+        log.info("查询老客进群列表耗时:{}ms", timer.interval());
         return getDataTable(wePresTagGroupTaskVoList);
     }
 

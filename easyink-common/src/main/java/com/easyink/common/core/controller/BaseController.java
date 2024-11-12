@@ -2,6 +2,7 @@ package com.easyink.common.core.controller;
 
 import com.easyink.common.core.domain.AjaxResult;
 import com.easyink.common.core.page.PageDomain;
+import com.easyink.common.core.page.PageDomainAdvice;
 import com.easyink.common.core.page.TableDataInfo;
 import com.easyink.common.core.page.TableSupport;
 import com.easyink.common.enums.ResultTip;
@@ -51,6 +52,16 @@ public class BaseController {
             String orderBy = SqlUtil.escapeOrderBySql(pageDomain.getOrderBy());
             PageHelper.startPage(pageNum, pageSize, orderBy);
         }
+    }
+
+    /**
+     * 手动分页方法
+     * 用于处理执行逻辑中存在其他sql操作,在需要执行分页的时候才进行分页处理,调用{@link PageDataAdvice#page()}
+     *
+     * @return PageDataAdvice
+     */
+    protected PageDomain startPageManual() {
+        return new PageDomainAdvice<>();
     }
 
     /**

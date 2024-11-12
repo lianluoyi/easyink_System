@@ -3,6 +3,8 @@ package com.easyink.common.core.domain.conversation;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.List;
 
@@ -40,4 +42,11 @@ public class ChatInfoVO extends ChatBodyVO {
     private Object toListInfo;
     private Object roomInfo;
 
+    /**
+     * 校验参数非法
+     * @return
+     */
+    public boolean invalid() {
+        return StringUtils.isAnyBlank(this.from, this.msgid, this.msgtype, this.action) || CollectionUtils.isEmpty(this.tolist);
+    }
 }

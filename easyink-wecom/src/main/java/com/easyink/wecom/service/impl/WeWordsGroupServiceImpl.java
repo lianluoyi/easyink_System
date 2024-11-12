@@ -1,9 +1,11 @@
 package com.easyink.wecom.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.easyink.common.config.CosConfig;
 import com.easyink.common.config.RuoYiConfig;
+import com.easyink.common.constant.Constants;
 import com.easyink.common.constant.GenConstants;
 import com.easyink.common.constant.WeConstans;
 import com.easyink.common.core.domain.entity.WeCorpAccount;
@@ -12,6 +14,7 @@ import com.easyink.common.enums.MessageType;
 import com.easyink.common.enums.ResultTip;
 import com.easyink.common.enums.WeWordsCategoryTypeEnum;
 import com.easyink.common.exception.CustomException;
+import com.easyink.common.utils.PageInfoUtil;
 import com.easyink.common.utils.StringUtils;
 import com.easyink.common.utils.file.FileUploadUtils;
 import com.easyink.common.utils.poi.ExcelUtil;
@@ -39,10 +42,12 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.annotation.Resource;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -50,6 +55,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 /**
@@ -67,6 +73,8 @@ public class WeWordsGroupServiceImpl extends ServiceImpl<WeWordsGroupMapper, WeW
     private final WeWordsCategoryService weWordsCategoryService;
     private final WeMessagePushClient messagePushClient;
     private final WeCorpAccountService corpAccountService;
+    @Resource(name = "threadPoolTaskExecutor")
+    private ThreadPoolTaskExecutor threadPoolTaskExecutor;
 
 
     @Autowired
@@ -168,12 +176,57 @@ public class WeWordsGroupServiceImpl extends ServiceImpl<WeWordsGroupMapper, WeW
         }
     }
 
+    /**
+     * 查询话术库
+     *
+     * @param weWordsQueryDTO 话术dto
+     * @return {@link List<WeWordsVO>}
+     */
     @Override
     public List<WeWordsVO> listOfWords(WeWordsQueryDTO weWordsQueryDTO) {
         if (weWordsQueryDTO == null || CollectionUtils.isEmpty(weWordsQueryDTO.getCategoryIds())) {
             throw new CustomException(ResultTip.TIP_MISS_WORDS_CATEGORY_ID);
         }
-        return weWordsGroupMapper.listOfWords(weWordsQueryDTO);
+        String corpId = weWordsQueryDTO.getCorpId();
+        List<Long> searchGroupIdList = new ArrayList<>();
+        // 若标题、内容查询条件不为空，则先查询符合条件的话术id
+        if (StringUtils.isNotBlank(weWordsQueryDTO.getContent())) {
+            String content = weWordsQueryDTO.getContent();
+            List<WeWordsDetailEntity> wordsDetailEntities = weWordsDetailMapper.selectList(Wrappers.lambdaQuery(WeWordsDetailEntity.class).select(WeWordsDetailEntity::getGroupId)
+                                                                               .eq(WeWordsDetailEntity::getCorpId, corpId)
+                                                                               .gt(WeWordsDetailEntity::getGroupId, Constants.DEFAULT_ID)
+                                                                               .like(WeWordsDetailEntity::getTitle, content)
+                                                                               .or()
+                                                                               .like(WeWordsDetailEntity::getContent, content));
+            searchGroupIdList = wordsDetailEntities.stream().map(WeWordsDetailEntity::getGroupId).collect(Collectors.toList());
+        }
+        // 启动分页
+        PageInfoUtil.startPage();
+        // 根据条件查询
+        List<WeWordsVO> resultList = weWordsGroupMapper.listOfWords(weWordsQueryDTO, searchGroupIdList);
+        if (CollectionUtils.isEmpty(resultList)) {
+            return new ArrayList<>();
+        }
+        // 补充话术对应的附件信息
+        List<CompletableFuture<Void>> completableFutures = new ArrayList<>();
+        for (WeWordsVO weWordsVO : resultList) {
+            CompletableFuture<Void> addWordsDetailFuture = CompletableFuture.runAsync(() -> {
+                List<WeWordsDetailEntity> weWordsDetailList = weWordsDetailMapper.selectWordsDetailByGroupId(corpId, Math.toIntExact(weWordsVO.getId()));
+                weWordsVO.setWeWordsDetailList(weWordsDetailList);
+            }, threadPoolTaskExecutor);
+            completableFutures.add(addWordsDetailFuture);
+        }
+        CompletableFuture<Void> finalFuture = CompletableFuture.allOf(completableFutures.toArray(new CompletableFuture[0]));
+        // 异常捕获处理
+        try {
+            finalFuture.exceptionally(ex -> {
+                log.error("[查询话术库附件列表] 出现异常，异常原因：{}，corpId：{}", ExceptionUtils.getStackTrace(ex), corpId);
+                return null;
+            }).get();
+        } catch (Exception e) {
+            log.error("[查询话术库附件列表] 出现异常，异常原因：{}，corpId：{}", ExceptionUtils.getStackTrace(e), corpId);
+        }
+        return resultList;
     }
 
     @Override

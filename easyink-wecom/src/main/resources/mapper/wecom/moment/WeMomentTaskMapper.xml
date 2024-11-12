@@ -115,31 +115,23 @@
     <select id="listOfMomentPublishDetail"
             resultType="com.easyink.wecom.domain.vo.moment.MomentUserCustomerVO">
           SELECT
-            wu.user_name,
-            wu.head_image_url,
-            wmtr.publish_status,
-            wmtr.publish_time,
-            wmt.push_range,
-            wu.user_id,
-            wmtr.remark,
-            IF(wmtr.publish_status = '${@com.easyink.common.enums.moment.MomentPublishStatusEnum@PUBLISH.type}',GROUP_CONCAT(wc.`name`),'')  customerName
-            FROM
-            we_moment_task wmt
-            LEFT JOIN we_moment_task_result wmtr on wmtr.moment_task_id = wmt.id
-            LEFT JOIN we_moment_user_customer_rel wmucr ON wmtr.moment_task_id = wmucr.moment_task_id AND wmucr.user_id = wmtr.user_id
-            LEFT JOIN we_user wu on wu.user_id = wmtr.user_id AND wmt.corp_id = wu.corp_id
-            LEFT JOIN we_customer wc ON wmucr.external_userid = wc.external_userid AND wc.corp_id = wmt.corp_id AND wc.type = '${@com.easyink.common.enums.customer.CustomerTypeEnum@WX_CUSTOMER.type}'
-            WHERE
-            wmt.id = #{momentTaskId}
-            AND wmt.corp_id = #{corpId}
-            <if test="userName != null and userName != ''"><!-- 开始时间检索 -->
-                <bind name="likeUserName" value="'%' + userName + '%'"/>
-                AND wu.user_name LIKE #{likeUserName}
-            </if>
-            <if test="publishStatus != null">
-                AND wmtr.publish_status = #{publishStatus}
-            </if>
-            GROUP BY wu.user_id
+        wmtr.id,
+        wmtr.user_id,
+        wmtr.publish_status,
+        wmtr.publish_time,
+        wmtr.remark,
+        wmt.push_range
+        FROM
+        we_moment_task_result wmtr
+        INNER JOIN we_moment_task wmt ON wmt.id = wmtr.moment_task_id AND wmt.corp_id = #{corpId}
+        WHERE
+        wmtr.moment_task_id = #{momentTaskId}
+        <if test="resultFilterModel.filterResultIdList != null and resultFilterModel.filterResultIdList.size() != 0">
+            AND wmtr.id IN
+            <foreach collection="resultFilterModel.filterResultIdList" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
     </select>
 
     <select id="getTotal" resultType="com.easyink.wecom.domain.vo.moment.MomentTotalVO">

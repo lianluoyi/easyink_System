@@ -7,6 +7,7 @@ import com.easyink.common.enums.ResultTip;
 import com.easyink.common.enums.WeCategoryMediaTypeEnum;
 import com.easyink.common.exception.CustomException;
 import com.easyink.common.utils.SnowFlakeUtil;
+import com.easyink.common.utils.sql.BatchInsertUtil;
 import com.easyink.wecom.domain.WeWordsDetailEntity;
 import com.easyink.wecom.domain.vo.sop.SopAttachmentVO;
 import com.easyink.wecom.mapper.WeWordsDetailMapper;
@@ -48,7 +49,7 @@ public class WeWordsDetailServiceImpl extends ServiceImpl<WeWordsDetailMapper, W
     @Override
     public void saveOrUpdate(List<WeWordsDetailEntity> wordsDetailEntities) {
         buildWordsDetails(wordsDetailEntities);
-        weWordsDetailMapper.batchInsertOrUpdate(wordsDetailEntities);
+        BatchInsertUtil.doInsert(wordsDetailEntities, list -> weWordsDetailMapper.batchInsertOrUpdate(wordsDetailEntities));
     }
 
     @Override

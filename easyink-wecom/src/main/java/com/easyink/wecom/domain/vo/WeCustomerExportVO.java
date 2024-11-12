@@ -87,6 +87,11 @@ public class WeCustomerExportVO extends WeCustomer {
     @ExcelProperty(value = "地址", index = 12)
     private String address;
 
+    @TableField(exist = false)
+    @Excel(name = "客户unionId", sort = 15)
+    @ExcelProperty(value = "客户unionId", index = 15)
+    private String unionId;
+
     /**
      * 扩展属性与值的映射,K:扩展属性名字,V该客户对应的值
      */
@@ -97,6 +102,7 @@ public class WeCustomerExportVO extends WeCustomer {
         BeanUtils.copyProperties(weCustomer, this);
         // 标签格式转换成字符串
         this.customerStatus = weCustomer.getStatus();
+        this.unionId = weCustomer.getUnionId();
         this.setPhone(weCustomer.getRemarkMobiles());
         if (CollectionUtils.isEmpty(this.getExtendProperties())){
             this.setExtendProperties(new ArrayList<>());

@@ -5,12 +5,16 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.easyink.common.constant.Constants;
 import com.easyink.common.constant.WeConstans;
 import com.easyink.common.core.domain.wecom.WeDepartment;
+import com.easyink.common.core.domain.wecom.WeUser;
 import com.easyink.common.enums.ResultTip;
 import com.easyink.common.enums.WeOperationsCenterSop;
 import com.easyink.common.exception.CustomException;
+import com.easyink.common.utils.PageInfoUtil;
 import com.easyink.wecom.domain.*;
 import com.easyink.wecom.domain.dto.customersop.EditUserDTO;
 import com.easyink.wecom.domain.dto.groupsop.SopBatchSwitchDTO;
@@ -18,18 +22,26 @@ import com.easyink.wecom.domain.vo.WeOperationsCenterSopVo;
 import com.easyink.wecom.domain.vo.WeUserVO;
 import com.easyink.wecom.domain.vo.sop.*;
 import com.easyink.wecom.mapper.WeOperationsCenterSopMapper;
+import com.easyink.wecom.mapper.WeOperationsCenterSopScopeMapper;
+import com.easyink.wecom.mapper.WeUserMapper;
 import com.easyink.wecom.service.*;
 import com.google.common.collect.Lists;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
+import javax.annotation.Resource;
 import javax.validation.constraints.NotEmpty;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -40,6 +52,7 @@ import java.util.stream.Collectors;
  */
 @Service
 @Validated
+@Slf4j
 public class WeOperationsCenterSopServiceImpl extends ServiceImpl<WeOperationsCenterSopMapper, WeOperationsCenterSopEntity> implements WeOperationsCenterSopService {
 
     private final WeOperationsCenterGroupSopFilterService sopFilterService;
@@ -51,9 +64,14 @@ public class WeOperationsCenterSopServiceImpl extends ServiceImpl<WeOperationsCe
     private final WeGroupService weGroupService;
     private final WeTagService weTagService;
     private final WeDepartmentService weDepartmentService;
+    private final WeUserMapper weUserMapper;
+    private final WeOperationsCenterSopScopeMapper weOperationsCenterSopScopeMapper;
+    @Resource(name = "threadPoolTaskExecutor")
+    private ThreadPoolTaskExecutor threadPoolTaskExecutor;
+
 
     @Autowired
-    public WeOperationsCenterSopServiceImpl(WeOperationsCenterGroupSopFilterService sopFilterService, WeOperationsCenterSopScopeService sopScopeService, WeOperationsCenterSopRulesService sopRulesService, WeOperationsCenterCustomerSopFilterService customerSopFilterService, WeUserService weUserService, WeCustomerService weCustomerService, WeGroupService weGroupService, WeTagService weTagService, WeDepartmentService weDepartmentService) {
+    public WeOperationsCenterSopServiceImpl(WeOperationsCenterGroupSopFilterService sopFilterService, WeOperationsCenterSopScopeService sopScopeService, WeOperationsCenterSopRulesService sopRulesService, WeOperationsCenterCustomerSopFilterService customerSopFilterService, WeUserService weUserService, WeCustomerService weCustomerService, WeGroupService weGroupService, WeTagService weTagService, WeDepartmentService weDepartmentService, WeUserMapper weUserMapper, WeOperationsCenterSopScopeMapper weOperationsCenterSopScopeMapper) {
         this.sopFilterService = sopFilterService;
         this.sopScopeService = sopScopeService;
         this.sopRulesService = sopRulesService;
@@ -63,6 +81,8 @@ public class WeOperationsCenterSopServiceImpl extends ServiceImpl<WeOperationsCe
         this.weGroupService = weGroupService;
         this.weTagService = weTagService;
         this.weDepartmentService = weDepartmentService;
+        this.weUserMapper = weUserMapper;
+        this.weOperationsCenterSopScopeMapper = weOperationsCenterSopScopeMapper;
     }
 
     @Override
@@ -380,9 +400,115 @@ public class WeOperationsCenterSopServiceImpl extends ServiceImpl<WeOperationsCe
     }
 
 
+    /**
+     * 查询sop列表
+     *
+     * @param corpId   企业id
+     * @param sopType  sop类型，0：定时sop，1：循环sop，2：新客sop，3：活动sop，4：生日sop，5：群日历
+     * @param name     sop名称
+     * @param userName 员工名称
+     * @param isOpen   是否开启
+     * @return List<BaseWeOperationsCenterSopVo>
+     */
     @Override
     public List<BaseWeOperationsCenterSopVo> list(String corpId, Integer sopType, String name, String userName, Integer isOpen) {
-        return baseMapper.list(corpId, sopType, name, userName, isOpen);
+        if (StringUtils.isBlank(corpId)) {
+            return new ArrayList<>();
+        }
+        // 若存在员工姓名搜索条件，先根据员工姓名模糊匹配，获取sopId列表。
+        List<Long> sopIdList = new ArrayList<>();
+        if (StringUtils.isNotBlank(userName)) {
+            // 根据员工姓名，模糊匹配员工id列表
+            List<WeUser> weUsers = weUserMapper.selectList(Wrappers.lambdaQuery(WeUser.class).select(WeUser::getUserId).like(WeUser::getName, userName));
+            List<String> userIds = weUsers.stream().map(WeUser::getUserId).collect(Collectors.toList());
+            // 没有符合的条件，返回空列表
+            if (CollectionUtils.isEmpty(userIds)) {
+                return new ArrayList<>();
+            }
+            // 根据员工id列表，获取sopId列表
+            HashSet<Long> sopSet = weOperationsCenterSopScopeMapper.selectSopIdsByUseIdList(corpId, userIds);
+            // 没有符合的条件，返回空列表
+            if (CollectionUtils.isEmpty(sopSet)) {
+                return new ArrayList<>();
+            }
+            sopIdList.addAll(sopSet);
+        }
+        // 开启分页
+        PageInfoUtil.startPage();
+        List<BaseWeOperationsCenterSopVo> resultList = baseMapper.list(corpId, sopType, name, sopIdList, isOpen);
+        // 没有数据，返回空对象列表。
+        if (CollectionUtils.isEmpty(resultList)) {
+            return new ArrayList<>();
+        }
+        // 获取创建人id列表
+        List<String> userIdList = resultList.stream().map(BaseWeOperationsCenterSopVo::getCreateBy).distinct().collect(Collectors.toList());
+        // 补充创建人信息
+        supplyCreateByUserInfo(userIdList, corpId, resultList);
+        // 活动SOP，生日SOP，需要额外查询使用员工范围
+        if (WeOperationsCenterSop.SopTypeEnum.NEW_CUSTOMER.getSopType().equals(sopType) || WeOperationsCenterSop.SopTypeEnum.BIRTH_DAT.getSopType().equals(sopType)) {
+            supplyNewCustomerBirthdayScopeList(resultList, corpId);
+        }
+        return resultList;
+    }
+
+    /**
+     * 补充创建人信息
+     *
+     * @param userIdList 员工id列表
+     * @param corpId     企业id
+     * @param resultList {@link List<BaseWeOperationsCenterSopVo>}
+     */
+    private void supplyCreateByUserInfo(List<String> userIdList, String corpId, List<BaseWeOperationsCenterSopVo> resultList) {
+        if (CollectionUtils.isEmpty(resultList) || CollectionUtils.isEmpty(userIdList) || StringUtils.isBlank(corpId)) {
+            return;
+        }
+        // 根据员工id列表，获取员工信息列表。
+        List<WeUserVO> userInfoList = weUserMapper.selectWeUserInfoByUserIdList(userIdList, corpId);
+        for (BaseWeOperationsCenterSopVo baseWeOperationsCenterSopVo : resultList) {
+            // 员工信息，匹配上就退出当前循环，减少不必要的循环数量
+            if (CollectionUtils.isNotEmpty(userInfoList)) {
+                for (WeUserVO weUserVO : userInfoList) {
+                    if (baseWeOperationsCenterSopVo.getCreateBy().equals(weUserVO.getUserId())) {
+                        baseWeOperationsCenterSopVo.setCreateUserName(weUserVO.getUserName());
+                        baseWeOperationsCenterSopVo.setMainDepartmentName(weUserVO.getMainDepartmentName());
+                        break;
+                    }
+                }
+            }
+            // 如果是管理员创建，直接将管理员名称作为创建人名称
+            if (Constants.SUPER_ADMIN.equals(baseWeOperationsCenterSopVo.getCreateBy())) {
+                baseWeOperationsCenterSopVo.setCreateUserName(Constants.SUPER_ADMIN);
+            }
+        }
+    }
+
+    /**
+     * 补充新客SOP、生日SOP需要的使用员工范围列表
+     *
+     * @param resultList {@link List<BaseWeOperationsCenterSopVo>}
+     * @param corpId 企业id
+     */
+    private void supplyNewCustomerBirthdayScopeList(List<BaseWeOperationsCenterSopVo> resultList, String corpId) {
+        if (CollectionUtils.isEmpty(resultList) || StringUtils.isBlank(corpId)) {
+            return;
+        }
+        List<CompletableFuture<Void>> futureList = new ArrayList<>();
+        for (BaseWeOperationsCenterSopVo baseWeOperationsCenterSopVo : resultList) {
+            CompletableFuture<Void> sopFuture = CompletableFuture.runAsync(() -> {
+                List<WeOperationsCenterSopScopeVO> scopeList = weOperationsCenterSopScopeMapper.selectByCorpIdAndSopId(corpId, baseWeOperationsCenterSopVo.getId());
+                baseWeOperationsCenterSopVo.setScopeList(scopeList);
+            }, threadPoolTaskExecutor);
+            futureList.add(sopFuture);
+        }
+        CompletableFuture<Void> finalFuture = CompletableFuture.allOf(futureList.toArray(new CompletableFuture[0]));
+        try {
+            finalFuture.exceptionally(ex -> {
+                log.error("[查询sop作用范围列表] 出现异常，异常原因：{}，corpId：{}", ExceptionUtils.getStackTrace(ex), corpId);
+                return null;
+            }).get(Constants.CENTER_SOP_SCOPE_SEARCH_EXPIRE_TIME, TimeUnit.MILLISECONDS);
+        } catch (Exception e) {
+            log.error("[查询sop作用范围列表] 出现异常，异常原因：{}，corpId：{}", ExceptionUtils.getStackTrace(e), corpId);
+        }
     }
 
     /**

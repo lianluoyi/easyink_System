@@ -14,7 +14,6 @@
         <result property="createBy" column="create_by"/>
         <result property="createUserName" column="createUserName"/>
         <result property="mainDepartmentName" column="mainDepartmentName"/>
-        <collection property="scopeList" column="{corpId=corp_id,sopId=id}" ofType="com.easyink.wecom.domain.vo.sop.WeOperationsCenterSopScopeVO" select="com.easyink.wecom.mapper.WeOperationsCenterSopScopeMapper.selectByCorpIdAndSopId"/>
     </resultMap>
 
 
@@ -55,39 +54,36 @@
         </foreach>
     </delete>
 
-
+    <!--查询SOP列表-->
     <select id="list" resultMap="listOfMap">
         SELECT
-            wocs.id,
-            wocs.corp_id,
-            wocs.name,
-            wocs.create_time,
-            wocs.sop_type,
-            wocs.filter_type,
-            wocs.is_open,
-            wocs.create_by,
-            IF( wu.user_name IS NULL, wocs.create_by, wu.user_name ) createUserName,
-            IF( wd.`name` IS NULL, '', wd.`name` ) mainDepartmentName
+            id,
+            corp_id,
+            name,
+            create_time,
+            sop_type,
+            filter_type,
+            is_open,
+            create_by
         FROM
-            we_operations_center_sop wocs
-            LEFT JOIN we_user wu ON wocs.corp_id = wu.corp_id AND wocs.create_by = wu.user_id
-            LEFT JOIN we_department wd ON wocs.corp_id = wd.corp_id AND wu.main_department = wd.id
-            LEFT JOIN we_operations_center_sop_scope wescope ON wocs.corp_id = wescope.corp_id AND wocs.id = wescope.sop_id
-            LEFT JOIN we_user wu1 ON wescope.corp_id = wu1.corp_id AND wescope.target_id = wu1.user_id
+            we_operations_center_sop
         WHERE
-            wocs.corp_id = #{corpId}
-            AND wocs.sop_type = #{sopType}
-            <if test="userName !=null and userName != ''">
-                AND wu1.user_name LIKE concat('%', #{userName}, '%')
-            </if>
+            corp_id = #{corpId}
+            AND sop_type = #{sopType}
             <if test="isOpen !=null">
-                AND wocs.is_open = #{isOpen}
+                AND is_open = #{isOpen}
             </if>
             <if test="name !=null and name!=''">
-                AND wocs.name LIKE concat('%', #{name}, '%')
+                AND name LIKE concat('%', #{name}, '%')
             </if>
-        GROUP BY wocs.id
-        ORDER BY  wocs.id DESC
+            <if test="sopIdList.size() > 0">
+                AND id IN
+                <foreach collection="sopIdList" item="sopId" open="(" close=")" separator=",">
+                    #{sopId}
+                </foreach>
+            </if>
+        GROUP BY id
+        ORDER BY id DESC
     </select>
 
     <update id="batchSwitch">

@@ -1,5 +1,7 @@
 package com.easyink.web.controller.wecom;
 
+import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.date.TimeInterval;
 import com.easyink.common.annotation.Log;
 import com.easyink.common.constant.WeConstans;
 import com.easyink.common.core.controller.BaseController;
@@ -116,7 +118,10 @@ public class WeCustomerController extends BaseController {
         weCustomerSearchDTO.setCorpId(LoginTokenService.getLoginUser().getCorpId());
         WeCustomer weCustomer=weCustomerService.changeWecustomer(weCustomerSearchDTO);
         weCustomer.setCorpId(LoginTokenService.getLoginUser().getCorpId());
-        return AjaxResult.success(weCustomerService.weCustomerCount(weCustomer));
+        TimeInterval timer = DateUtil.timer();
+        WeCustomerSumVO weCustomerSumVO = weCustomerService.weCustomerCountV2(weCustomer);
+        log.info("从客户去重count耗时: {}ms", timer.interval());
+        return AjaxResult.success(weCustomerSumVO);
     }
 
     @PreAuthorize("@ss.hasPermi('customerManage:lossRemind:view') || @ss.hasPermi('customerManage:customer:view')")

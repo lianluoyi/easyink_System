@@ -76,6 +76,21 @@
             wocss.corp_id = #{corpId}
           AND wocss.sop_id = #{sopId} AND wocss.type = ${@com.easyink.common.constant.WeConstans@SOP_USE_DEPARTMENT}
     </select>
+    <!--根据目标id列表，查询对应的sopid列表-->
+    <select id="selectSopIdsByUseIdList" resultType="java.lang.Long">
+        SELECT
+            sop_id
+        FROM
+            we_operations_center_sop_scope
+        WHERE
+        corp_id = #{corpId}
+        AND target_id IN
+        <if test="userIdList.size() > 0" >
+            <foreach collection="userIdList" item="userId" open="(" separator="," close=")">
+                #{userId}
+            </foreach>
+        </if>
+    </select>
 
     <insert id="batchSaveOrUpdate">
         INSERT INTO we_operations_center_sop_scope (

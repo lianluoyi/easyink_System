@@ -105,6 +105,10 @@ public class WePresTagGroupTaskVO {
 
     @ApiModelProperty("创建人部门名称")
     private String mainDepartmentName;
+    /**
+     * 群活码id
+     */
+    private String groupCodeId;
 
     /**
      * 设置群活码信息
