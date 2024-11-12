@@ -41,6 +41,52 @@
         wcm.message_id = #{messageId}
         AND wcmo.corp_id = #{corpId}
     </delete>
+    <select id="countGroupByMessageId"
+            resultType="com.easyink.wecom.domain.model.message.GroupMessageCountModel">
+        SELECT message_id, count(*) AS expect_send, SUM(IF(status = 1, 1, 0)) AS actual_send
+        FROM `we_customer_messgaeResult` wcmr
+        WHERE wcmr.message_id IN
+        <foreach collection="messageIdList" item="item" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+        GROUP BY message_id
+    </select>
+    <select id="selectMessageListByMessageIdList"
+            resultType="com.easyink.wecom.domain.vo.WeCustomerSeedMessageVO">
+        SELECT
+        message_type,
+        seed_message_id,
+        message_id,
+        media_id,
+        miniprogram_media_id,
+        appid,
+        content,
+        video_name,
+        video_url,
+        pic_name,
+        pic_url,
+        file_name,
+        file_url,
+        link_title,
+        link_picurl,
+        lin_desc,
+        is_defined,
+        link_url,
+        miniprogram_title,
+        page,
+        create_by,
+        create_time,
+        update_by,
+        update_time,
+        extra_id
+        FROM
+        we_customer_seedmessage
+        WHERE
+        message_id IN
+        <foreach collection="messageIdList" item="item" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+    </select>
 
 
 </mapper>

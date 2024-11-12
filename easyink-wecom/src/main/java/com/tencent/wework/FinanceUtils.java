@@ -29,7 +29,9 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.security.PrivateKey;
 import java.util.ArrayList;
@@ -95,8 +97,6 @@ public class FinanceUtils {
         if (StringUtils.isEmpty(corpId)) {
             return new ArrayList<>();
         }
-
-        List<ChatInfoVO> resList = new ArrayList<>();
         long slice = Finance.NewSlice();
         int ret = Finance.GetChatData(getSdk(corpId), seq, WeConstans.LIMIT, proxy, passwd, TIMEOUT, slice);
         if (ret != 0) {
@@ -104,6 +104,21 @@ public class FinanceUtils {
             Finance.FreeSlice(slice);
             return new ArrayList<>();
         }
+        // 正常逻辑
+        return getChatRecord(seq, corpId, slice, redisCache);
+    }
+
+    /**
+     * 获取会话记录
+     *
+     * @param seq        seq
+     * @param corpId     企业id
+     * @param slice      slice
+     * @param redisCache redisCache
+     * @return 会话记录
+     */
+    private static List<ChatInfoVO> getChatRecord(long seq, String corpId, long slice, RedisCache redisCache) {
+        List<ChatInfoVO> resList = new ArrayList<>();
         // 获取返回的消息字符串
         String content = Finance.GetContentFromSlice(slice);
         FinanceResVO result = JSONObject.parseObject(content, FinanceResVO.class);
@@ -139,6 +154,7 @@ public class FinanceUtils {
         redisCache.setCacheObject(WeConstans.getContactSeqKey(corpId), localSeq.get());
         return resList;
     }
+
 
     /**
      * @param sdk             初始化时候获取到的值
@@ -186,7 +202,7 @@ public class FinanceUtils {
      * @param msgType  消息类型
      * @param corpId   企业id
      */
-    private static void getSwitchType(ChatBodyVO realData, String msgType, String corpId) {
+    public static void getSwitchType(ChatBodyVO realData, String msgType, String corpId) {
         switch (msgType) {
             case "ChatRecordText":
             case "text":

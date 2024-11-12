@@ -10,6 +10,7 @@ import com.easyink.wecom.domain.dto.WeCustomerPushMessageDTO;
 import com.easyink.wecom.domain.entity.WeCustomerExportDTO;
 import com.easyink.wecom.domain.model.customer.UserIdAndExternalUserIdModel;
 import com.easyink.wecom.domain.model.moment.MomentCustomerQueryModel;
+import com.easyink.wecom.domain.query.customer.CustomerQueryContext;
 import com.easyink.wecom.domain.vo.WeCustomerNameAndUserIdVO;
 import com.easyink.wecom.domain.vo.customer.SessionArchiveCustomerVO;
 import com.easyink.wecom.domain.vo.customer.WeCustomerUserListVO;
@@ -311,4 +312,24 @@ public interface WeCustomerMapper extends BaseMapper<WeCustomer> {
     @DataScope(userAlias = "wfcr")
     List<String> selectUserIdListByNormalUserId(MomentCustomerQueryModel query);
 
+
+    Integer ignoreDuplicateCustomerCntV2(CustomerQueryContext customerQueryContext);
+
+    /**
+     * 根据传入得关键词,查询客户名称或者员工给客户的备注
+     *
+     * @param name   关键词name
+     * @param corpId 企业id
+     * @return
+     */
+    List<String> selectExternalUserIdLikeName(@Param("name") String name, @Param("corpId") String corpId);
+
+    /**
+     * 客户生日过滤客户
+     * @param startTime 开始时间
+     * @param endTime 结束时间
+     * @param corpId 企业id
+     * @return
+     */
+    List<String> selectExternalUserIdByBirthday(@Param("startTime") String startTime, @Param("endTime") String endTime, @Param("corpId") String corpId);
 }

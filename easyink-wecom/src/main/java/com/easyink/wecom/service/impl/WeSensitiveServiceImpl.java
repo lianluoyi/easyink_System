@@ -1,5 +1,6 @@
 package com.easyink.wecom.service.impl;
 
+import cn.hutool.core.date.DateUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.easyink.common.constant.GroupConstants;
@@ -231,6 +232,15 @@ public class WeSensitiveServiceImpl implements WeSensitiveService {
         builder.from(from);
         builder.sort(WeConstans.MSG_TIME, SortOrder.DESC);
         BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
+
+        if(weSensitiveHitQuery.getBeginTime() != null && weSensitiveHitQuery.getEndTime() != null){
+            BoolQueryBuilder msgTimeBuilder = QueryBuilders.boolQuery();
+            msgTimeBuilder
+                    .filter(QueryBuilders.rangeQuery(WeConstans.MSG_TIME)
+                    .gte(DateUtil.parseDateTime(weSensitiveHitQuery.getBeginTime()).getTime())
+                    .lte(DateUtil.parseDateTime(weSensitiveHitQuery.getEndTime()).getTime()));
+            boolQueryBuilder.filter(msgTimeBuilder);
+        }
         if (CollectionUtils.isNotEmpty(userIds)) {
             BoolQueryBuilder userBuilder = QueryBuilders.boolQuery();
             for (String user : userIds) {

@@ -3,6 +3,7 @@ package com.easyink.wecom.mapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.easyink.wecom.domain.WePresTagGroupTask;
 import com.easyink.wecom.domain.entity.BaseExternalUserEntity;
+import com.easyink.wecom.domain.model.groupcode.GroupCodeTotalNumberModel;
 import com.easyink.wecom.domain.vo.WePresTagGroupTaskVO;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
@@ -86,4 +87,11 @@ public interface WePresTagGroupTaskMapper extends BaseMapper<WePresTagGroupTask>
             @Param("beginTime") String beginTime,
             @Param("endTime") String endTime
     );
+
+    /**
+     * 获取群活码对应的使用统计数
+     * @param groupCodeIdList 群活码codeId列表
+     * @return 统计列表
+     */
+    List<GroupCodeTotalNumberModel> selectTotalNumberByGroupCodeIdList(@Param("groupCodeIdList") List<String> groupCodeIdList);
 }

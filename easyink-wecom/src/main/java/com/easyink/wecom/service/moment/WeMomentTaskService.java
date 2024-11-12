@@ -2,6 +2,7 @@ package com.easyink.wecom.service.moment;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.easyink.common.core.domain.model.LoginUser;
+import com.easyink.common.core.page.PageDomain;
 import com.easyink.wecom.domain.WeWordsDetailEntity;
 import com.easyink.wecom.domain.dto.moment.CreateMomentTaskDTO;
 import com.easyink.wecom.domain.dto.moment.MomentUserCustomerDTO;
@@ -72,10 +73,12 @@ public interface WeMomentTaskService extends IService<WeMomentTaskEntity> {
 
     /**
      * 查询朋友圈发布记录详情
+     *
      * @param momentUserCustomerDTO 查询条件
+     * @param pageDomain
      * @return {@link List<MomentUserCustomerVO>}
      */
-    List<MomentUserCustomerVO> listOfMomentPublishDetail(MomentUserCustomerDTO momentUserCustomerDTO);
+    List<MomentUserCustomerVO> listOfMomentPublishDetail(MomentUserCustomerDTO momentUserCustomerDTO, PageDomain pageDomain);
 
     /**
      * 获得朋友圈统计

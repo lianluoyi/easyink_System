@@ -1,6 +1,7 @@
 package com.easyink.wecom.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.date.StopWatch;
 import cn.hutool.core.util.ArrayUtil;
 import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.ExcelWriter;
@@ -60,6 +61,9 @@ import com.easyink.wecom.domain.dto.tag.RemoveWeCustomerTagDTO;
 import com.easyink.wecom.domain.dto.unionid.GetUnionIdDTO;
 import com.easyink.wecom.domain.entity.WeCustomerExportDTO;
 import com.easyink.wecom.domain.entity.WeExternalUseridMapping;
+import com.easyink.wecom.domain.model.customer.CustomerUnionIdModel;
+import com.easyink.wecom.domain.model.customer.UserIdAndExternalUserIdModel;
+import com.easyink.wecom.domain.query.customer.CustomerQueryContext;
 import com.easyink.wecom.domain.model.customer.UserIdAndExternalUserIdModel;
 import com.easyink.wecom.domain.model.moment.MomentCustomerQueryModel;
 import com.easyink.wecom.domain.model.user.UserIdFilterModel;
@@ -1427,6 +1431,13 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
      */
     @Override
     public void sendWelcomeMsg(WeWelcomeMsg weWelcomeMsg, String corpId) {
+        if((weWelcomeMsg.getText() == null || StringUtils.isBlank(weWelcomeMsg.getText().getContent()))
+                &&
+                CollectionUtils.isEmpty(weWelcomeMsg.getAttachments())
+        ){
+            log.info("[发送欢迎语] 没有配置欢迎语内容, 不发送, corpId: {}", corpId);
+            return;
+        }
         weCustomerClient.sendWelcomeMsg(weWelcomeMsg, corpId);
     }
 
@@ -1824,6 +1835,7 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
                     weCustomerVO.setBirthday(weCustomer.getBirthday());
                     weCustomerVO.setCorpName(weCustomer.getCorpName());
                     weCustomerVO.setCorpFullName(weCustomer.getCorpFullName());
+                    weCustomerVO.setUnionId(weCustomer.getUnionid());
                 }
             }
         }
@@ -2067,6 +2079,102 @@ public class WeCustomerServiceImpl extends ServiceImpl<WeCustomerMapper, WeCusto
     public  WeCustomerExportDTO transferData(WeCustomerExportDTO dto) {
         return dto;
     }
+
+    @Override
+    @DataScope
+    public WeCustomerSumVO weCustomerCountV2(WeCustomer weCustomer) {
+        if (StringUtils.isAnyBlank(weCustomer.getCorpId())) {
+            throw new CustomException(ResultTip.TIP_GENERAL_PARAM_ERROR);
+        }
+        CustomerQueryContext queryContext = buildCustomerQueryContext(weCustomer);
+        if (!queryContext.isHasDataScope()) {
+            return WeCustomerSumVO.empty();
+        }
+        Integer ignoreDuplicateCnt = weCustomerMapper.ignoreDuplicateCustomerCntV2(queryContext);
+        return WeCustomerSumVO.builder()
+                .ignoreDuplicateCount(ignoreDuplicateCnt)
+                .build();
+    }
+
+    /**
+     * 构建客户去重查询上下文
+     * @param weCustomer 客户过滤信息
+     * @return 上下文
+     */
+    private CustomerQueryContext buildCustomerQueryContext(WeCustomer weCustomer) {
+        CustomerQueryContext queryContext = new CustomerQueryContext();
+
+        BeanUtils.copyProperties(weCustomer, queryContext);
+
+        // 0.数据权限, 为null则为超级用户, 其余的都会有值
+        if (weCustomer.getDataScopeUserIds() != null) {
+            if (CollectionUtils.isEmpty(weCustomer.getDataScopeUserIds())) {
+                return queryContext.notDataSelect();
+            }
+            queryContext.getUserIdFilter().addIdAndConditionFilter(weCustomer.getDataScopeUserIds());
+        }
+
+        // 1.根据自定义字段 筛选满足条件 external_userid和 user_id
+        if (CollectionUtils.isNotEmpty(weCustomer.getExtendProperties())) {
+            List<WeCustomerRel> extendCustomers = extendProperties(weCustomer);
+            if (CollectionUtils.isEmpty(extendCustomers)) {
+                return queryContext.notDataSelect();
+            }
+            queryContext.setUserExternalList(extendCustomers.stream()
+                    .map(it -> new UserIdAndExternalUserIdModel(it.getUserId(), it.getExternalUserid())).collect(Collectors.toList()));
+        }
+
+        //  2.标签筛选满足条件 external_userid 和 user_id
+        if (StringUtils.isNotBlank(weCustomer.getTagIds())) {
+            List<Long> tagFilterCustomers = weTagService.getCustomerByTags(weCustomer.getCorpId(), weCustomer.getTagIds());
+            if (CollectionUtils.isEmpty(tagFilterCustomers)) {
+                return queryContext.notDataSelect();
+            }
+            queryContext.getRefIdFilter().addAndConditionFilter(new HashSet<>(tagFilterCustomers));
+        }
+
+        // 3.员工筛选
+        if (StringUtils.isNotBlank(weCustomer.getUserIds())) {
+            queryContext.getUserIdFilter().addIdAndConditionFilter(Arrays.stream(weCustomer.getUserIds().split(",")).collect(Collectors.toList()));
+        }
+
+
+        // 4.部门筛选 填充 com.easyink.wecom.domain.query.customer.CustomerQueryContext.userIdList
+        if (StringUtils.isNotBlank(weCustomer.getDepartmentIds())) {
+            List<String> userIdList = weDepartmentService.listUserIdByMainDepartmentIds(Arrays.stream(weCustomer.getDepartmentIds().split(",")).collect(Collectors.toList()), weCustomer.getCorpId());
+            if (CollectionUtils.isEmpty(userIdList)) {
+                return queryContext.notDataSelect();
+            }
+            queryContext.getUserIdFilter().addIdAndConditionFilter(userIdList);
+        }
+
+        // 5.客户昵称或者备注
+        if (StringUtils.isNotBlank(weCustomer.getName())) {
+            List<String> externalUserIdList = weCustomerMapper.selectExternalUserIdLikeName(weCustomer.getName(), weCustomer.getCorpId());
+            if (CollectionUtils.isEmpty(externalUserIdList)) {
+                return queryContext.notDataSelect();
+            }
+            queryContext.getCustomerIdFilter().addAndConditionFilter(new HashSet<>(externalUserIdList));
+        }
+
+        // 5.客户生日
+        if (StringUtils.isNotBlank(weCustomer.getBirthdayStr())) {
+            String[] birthdayStrArr = weCustomer.getBirthdayStr().split(",");
+            String startTime = birthdayStrArr[0];
+            String endTime = birthdayStrArr[1];
+            List<String> externalUserIdList = weCustomerMapper.selectExternalUserIdByBirthday(startTime, endTime,weCustomer.getCorpId());
+            if (CollectionUtils.isEmpty(externalUserIdList)) {
+                return queryContext.notDataSelect();
+            }
+            queryContext.getCustomerIdFilter().addAndConditionFilter(new HashSet<>(externalUserIdList));
+        }
+
+        if (!StringUtils.isAllBlank(weCustomer.getCorpFullName(), weCustomer.getGender())) {
+            queryContext.setLeftJoinCustomerTable(true);
+        }
+        return queryContext;
+    }
+
 
     @Override
     public List<UserIdAndExternalUserIdModel> selectUserIdFromRef(String users, String tags, String corpId) {

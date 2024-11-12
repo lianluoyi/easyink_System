@@ -146,6 +146,7 @@ ruoyi:
       - /wecom/transferData/**
       - /actuator/**
       - /open_api/**
+      - /transfer/**
 
 
 # 开发环境配置

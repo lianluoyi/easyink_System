@@ -319,4 +319,9 @@ public class Constants {
      * 如示例所示，员工id被``包围，通过``来定位员工id
      */
     public static final String CUSTOMER_PUSH_MESSAGE_NOT_EXIST_USER_MARK = "`";
+
+    /**
+     * 查询SOP任务作用范围超时时间 5s
+     */
+    public static final Long CENTER_SOP_SCOPE_SEARCH_EXPIRE_TIME = 5000L;
 }

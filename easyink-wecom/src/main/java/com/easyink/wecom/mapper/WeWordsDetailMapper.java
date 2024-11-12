@@ -43,6 +43,15 @@ public interface WeWordsDetailMapper extends BaseMapper<WeWordsDetailEntity> {
     List<WeWordsDetailEntity> listOfGroupId(@Param("corpId") String corpId, @Param("groupId") Integer groupId, @Param("seq") String seq);
 
     /**
+     * 根据话术id，查询附件详情
+     *
+     * @param corpId  企业id
+     * @param groupId 话术id
+     * @return {@link List<WeWordsDetailEntity>}
+     */
+    List<WeWordsDetailEntity> selectWordsDetailByGroupId(@Param("corpId") String corpId, @Param("groupId") Integer groupId);
+
+    /**
      * 通过id查询sop附件
      *
      * @param id id

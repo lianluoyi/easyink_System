@@ -4,6 +4,7 @@ import com.easyink.common.constant.WeConstans;
 import com.easyink.common.core.controller.BaseController;
 import com.easyink.common.core.domain.AjaxResult;
 import com.easyink.common.core.page.TableDataInfo;
+import com.easyink.common.utils.PageInfoUtil;
 import com.easyink.wecom.domain.WeWordsGroupEntity;
 import com.easyink.wecom.domain.WeWordsLastUseEntity;
 import com.easyink.wecom.domain.dto.WeWordsDTO;
@@ -16,7 +17,6 @@ import com.easyink.wecom.domain.vo.WeWordsVO;
 import com.easyink.wecom.login.util.LoginTokenService;
 import com.easyink.wecom.service.WeWordsGroupService;
 import com.easyink.wecom.service.WeWordsLastUseService;
-import com.github.pagehelper.PageHelper;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
@@ -87,7 +87,7 @@ public class WeWordsGroupController extends BaseController {
                 WeWordsGroupEntity weWordsGroupEntity = weWordsGroupService.get(weWordsQueryDTO.getId());
                 weWordsQueryDTO.setSort(weWordsGroupEntity.getSort());
             }
-            PageHelper.startPage(weWordsQueryDTO.getPageNum(), weWordsQueryDTO.getPageSize());
+            PageInfoUtil.setPage(weWordsQueryDTO.getPageNum(), weWordsQueryDTO.getPageSize());
         }
         return getDataTable(weWordsGroupService.listOfWords(weWordsQueryDTO));
     }

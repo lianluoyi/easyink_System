@@ -115,6 +115,17 @@
             department
         FROM we_user WHERE user_id = #{userId} AND corp_id = #{corpId}
     </select>
+    <select id="selectUserIdByMaindepartmentIds" resultType="java.lang.String">
+        select
+        user_id
+        FROM we_user
+        WHERE
+        corp_id = #{corpId}
+        AND main_department IN
+        <foreach collection="departmentIdList" item="item" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+    </select>
 
 
     <insert id="insertWeDepartment" parameterType="WeDepartment">

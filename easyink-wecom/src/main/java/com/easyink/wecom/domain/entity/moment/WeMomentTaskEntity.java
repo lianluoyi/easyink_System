@@ -135,6 +135,16 @@ public class WeMomentTaskEntity {
     public WeMomentTaskEntity(CreateMomentTaskDTO createMomentTaskDTO, List<String> users, List<String> departments, String createBy) {
         this.setId(SnowFlakeUtil.nextId());
         BeanUtils.copyProperties(createMomentTaskDTO, this);
+        // 保存文本内容
+        if (createMomentTaskDTO.getText() != null && StringUtils.isNotBlank(createMomentTaskDTO.getText().getContent())) {
+            this.setContent(createMomentTaskDTO.getText().getContent());
+        }
+        // 是否已选择员工
+        if (CollectionUtils.isNotEmpty(createMomentTaskDTO.getUsers()) || CollectionUtils.isNotEmpty(createMomentTaskDTO.getDepartments())) {
+            this.setSelectUser(MomentSelectUserEnum.SELECT_USER.getType());
+        } else {
+            this.setSelectUser(MomentSelectUserEnum.NOT_SELECT_USER.getType());
+        }
         this.setUsers(String.join(StrUtil.COMMA, users));
         this.setDepartments(String.join(StrUtil.COMMA, departments));
         this.setTags(String.join(StrUtil.COMMA, createMomentTaskDTO.getTags()));
@@ -146,6 +156,16 @@ public class WeMomentTaskEntity {
             this.content = createMomentTaskDTO.getText().getContent();
         }
         this.createBy = createBy;
+    }
+
+    /**
+     * "未选择员工"时，在保存前，需去除条件
+     */
+    public void clearCondition() {
+        if (MomentSelectUserEnum.NOT_SELECT_USER.getType().equals(this.getSelectUser())) {
+            this.users = StringUtils.EMPTY;
+            this.departments = StringUtils.EMPTY;
+        }
     }
 
 }

@@ -15,6 +15,7 @@ import com.easyink.wecom.domain.WeCustomer;
 import com.easyink.wecom.domain.WeSensitiveAct;
 import com.easyink.wecom.domain.WeSensitiveActHit;
 import com.easyink.common.core.domain.conversation.ChatInfoVO;
+import com.easyink.wecom.domain.query.sensitiveact.WeSensitiveActQuery;
 import com.easyink.wecom.login.util.LoginTokenService;
 import com.easyink.wecom.mapper.WeCustomerMapper;
 import com.easyink.wecom.mapper.WeSensitiveActHitMapper;
@@ -116,11 +117,11 @@ public class WeSensitiveActHitServiceImpl extends ServiceImpl<WeSensitiveActHitM
 
     @Override
     @DataScope
-    public List<WeSensitiveActHit> selectWeSensitiveActHitList(RootEntity rootEntity) {
+    public List<WeSensitiveActHit> selectWeSensitiveActHitList(RootEntity rootEntity, WeSensitiveActQuery actQuery) {
         if (ObjectUtils.isEmpty(rootEntity.getParams().get("corpId"))){
             return new ArrayList<>();
         }
-        return weSensitiveActHitMapper.listOfWeSensitiveActHit(rootEntity);
+        return weSensitiveActHitMapper.listOfWeSensitiveActHit(rootEntity, actQuery);
     }
 
     @Override

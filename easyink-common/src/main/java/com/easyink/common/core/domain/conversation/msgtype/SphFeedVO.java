@@ -13,11 +13,11 @@ import lombok.Data;
 public class SphFeedVO {
 
     @ApiModelProperty("视频号消息类型。2 图片、4 视频、9 直播。")
-    private Integer feedType;
+    private Integer feed_type;
 
     @ApiModelProperty("视频号账号名称")
-    private String sphName;
+    private String sph_name;
 
     @ApiModelProperty("视频号消息描述")
-    private String feedDesc;
+    private String feed_desc;
 }

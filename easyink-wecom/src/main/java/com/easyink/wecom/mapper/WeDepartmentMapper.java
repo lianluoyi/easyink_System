@@ -134,4 +134,13 @@ public interface WeDepartmentMapper extends BaseMapper<WeDepartment> {
      * @return 部门ids，多层级逗号分隔
      */
     String selectDepartmentIdByUserId(@Param("userId") String userId, @Param("corpId") String corpId);
+
+    /**
+     * 根据主部门id查询对应的员工ids
+     *
+     * @param departmentIdList 主部门id列表
+     * @param corpId
+     * @return
+     */
+    List<String> selectUserIdByMaindepartmentIds(@Param("departmentIdList") List<String> departmentIdList, @Param("corpId") String corpId);
 }

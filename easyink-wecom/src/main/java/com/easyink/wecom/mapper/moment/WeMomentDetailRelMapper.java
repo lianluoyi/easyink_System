@@ -24,4 +24,10 @@ public interface WeMomentDetailRelMapper extends BaseMapper<WeMomentDetailRelEnt
      */
     List<WeWordsDetailEntity> listOfAttachment(@Param("content") String content, @Param("momentTaskId") Long momentTaskId);
 
+    /**
+     * 批量保存朋友圈附件关联
+     *
+     * @param momentDetailRelEntities {@link List<WeMomentDetailRelEntity>}
+     */
+    void saveBatchDetailRel(@Param("list") List<WeMomentDetailRelEntity> momentDetailRelEntities);
 }

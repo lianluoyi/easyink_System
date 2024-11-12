@@ -13,12 +13,14 @@ import com.easyink.common.exception.wecom.WeComException;
 import com.easyink.common.utils.SnowFlakeUtil;
 import com.easyink.common.utils.StringUtils;
 import com.easyink.wecom.client.WeCustomerMessagePushClient;
-import com.easyink.wecom.domain.WeCustomerMessage;
 import com.easyink.wecom.domain.WeCustomerMessageOriginal;
 import com.easyink.wecom.domain.WeCustomerMessgaeResult;
 import com.easyink.wecom.domain.dto.WeCustomerMessageDTO;
 import com.easyink.wecom.domain.dto.message.*;
+import com.easyink.wecom.domain.model.message.GroupMessageCountModel;
 import com.easyink.wecom.domain.vo.CustomerMessagePushVO;
+import com.easyink.wecom.domain.vo.WeCustomerSeedMessageVO;
+import com.easyink.wecom.mapper.WeCustomerMessageMapper;
 import com.easyink.wecom.mapper.WeCustomerMessageOriginalMapper;
 import com.easyink.wecom.mapper.WeCustomerMessgaeResultMapper;
 import com.easyink.wecom.service.WeCustomerMessageOriginalService;
@@ -31,8 +33,9 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 /**
  * 群发消息 原始数据信息表 we_customer_messageOriginal
@@ -55,12 +58,46 @@ public class WeCustomerMessageOriginalServiceImpl extends ServiceImpl<WeCustomer
 
     @Autowired
     private WeCustomerMessageService weCustomerMessageService;
+    @Autowired
+    private WeCustomerMessageMapper weCustomerMessageMapper;
 
 
     @DataScope
     @Override
     public List<CustomerMessagePushVO> customerMessagePushs(WeCustomerMessageDTO weCustomerMessageDTO) {
-        return weCustomerMessageOriginalMapper.selectCustomerMessagePushs(weCustomerMessageDTO);
+        List<CustomerMessagePushVO> customerMessagePushVOS = weCustomerMessageOriginalMapper.selectCustomerMessagePushs(weCustomerMessageDTO);
+        // 补充 expectSend(预计发送消息数), actualSend(实际发送消息数), seedMessageList
+        fillMessageInfo(customerMessagePushVOS);
+        return customerMessagePushVOS;
+    }
+
+    /**
+     * 补充群发详情
+     * @param customerMessagePushVOS
+     */
+    private void fillMessageInfo(List<CustomerMessagePushVO> customerMessagePushVOS) {
+        List<Long> messageIdList = customerMessagePushVOS.stream().map(CustomerMessagePushVO::getMessageId).collect(Collectors.toList());
+        if (CollectionUtils.isEmpty(messageIdList)) {
+            return;
+        }
+        Map<Long, GroupMessageCountModel> messageSendCountResult = weCustomerMessageMapper.countGroupByMessageId(messageIdList)
+                .stream().collect(
+                        Collectors.toMap(GroupMessageCountModel::getMessageId, value -> value, (v1, v2) -> v1));
+        Map<Long, List<WeCustomerSeedMessageVO>> messageSeedResult = weCustomerMessageMapper.selectMessageListByMessageIdList(messageIdList)
+                .stream().collect(
+                        Collectors.groupingBy(WeCustomerSeedMessageVO::getMessageId));
+        //
+
+        for (CustomerMessagePushVO customerMessagePushVO : customerMessagePushVOS) {
+
+            Long messageId = customerMessagePushVO.getMessageId();
+            // 1/发送数补充
+            GroupMessageCountModel groupMessageCountModel = messageSendCountResult.getOrDefault(messageId, new GroupMessageCountModel());
+            customerMessagePushVO.setExpectSend(groupMessageCountModel.getExpectSend());
+            customerMessagePushVO.setActualSend(groupMessageCountModel.getActualSend());
+            // 2.消息seed补充
+            customerMessagePushVO.setSeedMessageList(messageSeedResult.getOrDefault(messageId, new ArrayList<>()));
+        }
     }
 
     @Override

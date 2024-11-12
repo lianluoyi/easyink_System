@@ -100,5 +100,8 @@ public class WeCustomerVO {
     @ApiModelProperty(value = "接替状态，接替状态,1-接替完毕 2-等待接替 3-客户拒绝 4-接替成员客户达到上限 5-无接替记录")
     private Integer transferStatus;
 
+    @ApiModelProperty(value = "客户unionId")
+    private String unionId;
+
 
 }

@@ -1393,7 +1393,9 @@ CREATE TABLE `we_customer`
     `create_by`       varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '创建人',
     `update_by`       varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '更新人',
     PRIMARY KEY (`external_userid`, `corp_id`) USING BTREE,
-    KEY               `idx_union_id` (`unionid`) USING BTREE
+    KEY               `idx_union_id` (`unionid`) USING BTREE,
+    KEY               `index_corpId_name_externalUserId`(`corp_id`, `name`, `external_userid`) COMMENT '客户昵称查询索引',
+    KEY               `index_corpId_birthday` (`corp_id`, `birthday`, `external_userid`)  COMMENT '客户生日索引'
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '企业微信客户表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
@@ -1448,7 +1450,8 @@ CREATE TABLE `we_customer_messageoriginal`
     `update_by`           varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci   NOT NULL DEFAULT '' COMMENT '更新人',
     `update_time`         datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '更新时间',
     `del_flag`            tinyint(1) NOT NULL DEFAULT 0 COMMENT '删除标志（0代表存在 1代表删除）',
-    PRIMARY KEY (`message_original_Id`) USING BTREE
+    PRIMARY KEY (`message_original_Id`) USING BTREE,
+    KEY `index_createTime_corpId` (`create_time`,`corp_id`) COMMENT '群发列表检索索引'
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '群发消息 原始数据信息表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
@@ -1676,9 +1679,11 @@ CREATE TABLE `we_flower_customer_rel`
     `wechat_channel`   varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '该成员添加此客户的来源add_way为10时，对应的视频号信息',
     PRIMARY KEY (`id`) USING BTREE,
     UNIQUE INDEX `un_user_external_userid_corpid` (`external_userid`, `user_id`, `corp_id`) USING BTREE,
-    KEY  `idx_corp_user_id` (`corp_id`,`user_id`) USING BTREE,
+    KEY `idx_corp_user_id_status` (`corp_id`,`user_id`,`status`) USING BTREE COMMENT '企业id-员工id-客户状态普通索引',
     KEY `idx_corp_status` (`corp_id`,`status`,`create_time`) USING BTREE,
-    KEY `idx_corp_create_time` (`corp_id`, `create_time`) USING BTREE COMMENT '企业ID-添加时间普通索引'
+    KEY `idx_corp_create_time` (`corp_id`, `create_time`) USING BTREE COMMENT '企业ID-添加时间普通索引',
+    KEY `index_groupBy_external_userid` (`external_userid`,`create_time`,`user_id`,`corp_id`,`status`) COMMENT '客户去重列表索引覆盖',
+    KEY `index_corpId_remark_externalUserId`(`corp_id`, `external_userid`, `remark`) COMMENT '客户备注查询索引'
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '企业员工与客户的关系表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
@@ -1775,7 +1780,8 @@ CREATE TABLE `we_group_code_actual`
     `state`                 varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '企业自定义的state参数，用于区分不同的入群渠道',
     `config_id`             varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '加群配置id',
     `sort_no`               int(11) unsigned NOT NULL DEFAULT '0' COMMENT '排序字段',
-    PRIMARY KEY (`id`) USING BTREE
+    PRIMARY KEY (`id`) USING BTREE,
+    KEY `index_groupCodeId` (`group_code_id`,`scan_code_times`) USING BTREE COMMENT '统计活码使用数量分组索引'
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '实际群码' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
@@ -2151,7 +2157,8 @@ CREATE TABLE `we_user`
     `ui_color`          varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '#6BB4AB' COMMENT '后台界面主题颜色',
     PRIMARY KEY (`corp_id`, `user_id`) USING BTREE,
     KEY                 `idx_is_activate` (`is_activate`) USING BTREE,
-    KEY                 `idx_user_id` (`user_id`) USING BTREE COMMENT '员工ID普通索引'
+    KEY                 `idx_user_id` (`user_id`) USING BTREE COMMENT '员工ID普通索引',
+    KEY                 `index_corpId_mainDepartment_user_Id` (`corp_id`, `main_department`, `user_id`)  COMMENT '主部门查询索引'
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '企业员工表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
@@ -2701,7 +2708,8 @@ CREATE TABLE `we_words_group`
     `seq`         longtext    NOT NULL COMMENT '附件ID用逗号隔开，从左往右表示先后顺序',
     `is_push`     tinyint(1) NOT NULL COMMENT '是否推送到应用（0：不推送，1推送）',
     `sort`        int(11) NOT NULL DEFAULT '0' COMMENT '排序',
-    PRIMARY KEY (`id`)
+    PRIMARY KEY (`id`),
+    KEY `idx_corp_category_sort` (`corp_id`,`category_id`,`sort`) COMMENT '企业id-文件夹id-排序普通索引'
 ) ENGINE=InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT='话术库主表';
 
 
@@ -2724,7 +2732,8 @@ CREATE TABLE `we_words_detail`
     `is_defined` tinyint(1) NOT NULL DEFAULT '0' COMMENT '链接时使用：0 默认，1 自定义',
     `size`       bigint(20) NOT NULL DEFAULT '0' COMMENT '视频大小',
     `extra_id`   bigint(20) NOT NULL DEFAULT '0' COMMENT '其他id, 素材类型为雷达时存储雷达id，为智能表单时为存储表单id',
-    PRIMARY KEY (`id`)
+    PRIMARY KEY (`id`),
+    KEY `idx_corp_group_id` (`corp_id`,`group_id`) COMMENT '企业id-话术id普通索引'
 ) ENGINE=InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT='话术库附件表';
 
 DROP TABLE IF EXISTS `we_words_last_use`;

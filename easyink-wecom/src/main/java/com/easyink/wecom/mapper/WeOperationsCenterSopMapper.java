@@ -31,13 +31,14 @@ public interface WeOperationsCenterSopMapper extends BaseMapper<WeOperationsCent
     /**
      * 查询SOP列表
      *
-     * @param corpId  企业ID
-     * @param sopType sop类型
-     * @param name    SOP名称
-     * @param isOpen  是否开启
+     * @param corpId    企业ID
+     * @param sopType   sop类型
+     * @param name      SOP名称
+     * @param sopIdList 员工id列表
+     * @param isOpen    是否开启
      * @return {@link List<WeOperationsCenterSopVo>}
      */
-    List<BaseWeOperationsCenterSopVo> list(@NotBlank @Param("corpId") String corpId, @NotNull @Param("sopType") Integer sopType, @Param("name") String name, @Param("userName") String userName, @Param("isOpen") Integer isOpen);
+    List<BaseWeOperationsCenterSopVo> list(@NotBlank @Param("corpId") String corpId, @NotNull @Param("sopType") Integer sopType, @Param("name") String name, @Param("sopIdList") List<Long> sopIdList, @Param("isOpen") Integer isOpen);
 
     /**
      * 批量删除SOP任务

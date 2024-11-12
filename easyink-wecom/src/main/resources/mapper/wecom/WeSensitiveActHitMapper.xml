@@ -39,8 +39,17 @@
         FROM we_sensitive_act_hit wsah
         LEFT JOIN we_user wu ON wu.user_id = wsah.operator_id and wu.corp_id = wsah.corp_id
         <where>
-            ${params.dataScope}
-            and wsah.corp_id = #{params.corpId}
+            ${rootEntity.params.dataScope}
+            and wsah.corp_id = #{rootEntity.params.corpId}
+            <if test="actQuery.beginTime != null and actQuery.endTime != null">
+                AND wsah.create_time BETWEEN #{actQuery.beginTime} AND #{actQuery.endTime}
+            </if>
+            <if test="actQuery.auditScopeId != null">
+                AND wsah.operator_id = #{actQuery.auditScopeId}
+            </if>
+        <if test="actQuery.actName != null and actQuery.actName != ''">
+            AND wsah.sensitive_act = #{actQuery.actName}
+        </if>
         </where>
         ORDER BY wsah.create_time DESC
     </select>
