@@ -89,6 +89,7 @@
             sop_id,
             `owner`,
             tag_id,
+            include_tag_mode,
             IF(create_time='${@com.easyink.common.constant.WeConstans@DEFAULT_SOP_START_TIME}',null,create_time) create_time,
 	        IF(end_time='${@com.easyink.common.constant.WeConstans@DEFAULT_SOP_END_TIME}',null,end_time) end_time
         FROM

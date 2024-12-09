@@ -40,6 +40,7 @@ public class FindGroupSopFilterVO extends WeOperationsCenterGroupSopFilterEntity
         this.setSopId(groupSopFilterEntity.getSopId());
         this.setOwner(groupSopFilterEntity.getOwner());
         this.setTagId(groupSopFilterEntity.getTagId());
+        this.setIncludeTagMode(groupSopFilterEntity.getIncludeTagMode());
         this.setCreateTime(groupSopFilterEntity.getCreateTime());
         this.setEndTime(groupSopFilterEntity.getEndTime());
         this.setCycleStart(cycleStart);

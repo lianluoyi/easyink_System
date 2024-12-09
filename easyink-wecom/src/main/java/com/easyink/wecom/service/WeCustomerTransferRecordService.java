@@ -2,6 +2,7 @@ package com.easyink.wecom.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.easyink.common.core.domain.wecom.WeUser;
+import com.easyink.common.core.page.TableDataInfo;
 import com.easyink.wecom.domain.WeCustomer;
 import com.easyink.wecom.domain.dto.transfer.TransferCustomerDTO;
 import com.easyink.wecom.domain.dto.transfer.TransferRecordPageDTO;
@@ -55,7 +56,7 @@ public interface WeCustomerTransferRecordService extends IService<WeCustomerTran
      * @param weCustomer {@link WeCustomer}
      * @return 客户列表
      */
-    List<WeCustomerVO> transferCustomerList(WeCustomer weCustomer);
+    TableDataInfo<WeCustomerVO> transferCustomerList(WeCustomer weCustomer);
 
     /**
      * 获取客户分配记录

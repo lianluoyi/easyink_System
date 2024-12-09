@@ -449,7 +449,7 @@ public class WeOperationsCenterSopTask {
                 return resultList;
             }
             //查询符合条件的群数据
-            groupList = weGroupService.listNoRelTag(corpId, filterEntity.getTagId(), filterEntity.getOwner(), filterEntity.getCreateTime(), filterEntity.getEndTime());
+            groupList = weGroupService.listNoRelTag(corpId, filterEntity.getTagId(),filterEntity.getIncludeTagMode(), filterEntity.getOwner(), filterEntity.getCreateTime(), filterEntity.getEndTime());
 
             //查询这分钟内符合条件的保存到scope
             List<String> chatIdList = groupList.stream().map(WeGroup::getChatId).collect(Collectors.toList());

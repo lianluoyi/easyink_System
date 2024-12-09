@@ -7,12 +7,14 @@ import com.easyink.common.annotation.DataScope;
 import com.easyink.common.constant.GenConstants;
 import com.easyink.common.constant.WeConstans;
 import com.easyink.common.core.domain.wecom.WeUser;
+import com.easyink.common.core.page.TableDataInfo;
 import com.easyink.common.enums.CustomerStatusEnum;
 import com.easyink.common.enums.CustomerTransferStatusEnum;
 import com.easyink.common.enums.ResultTip;
 import com.easyink.common.enums.StaffActivateEnum;
 import com.easyink.common.exception.CustomException;
 import com.easyink.common.utils.PageInfoUtil;
+import com.easyink.common.utils.ServletUtils;
 import com.easyink.wecom.client.WeExternalContactClient;
 import com.easyink.wecom.domain.WeCustomer;
 import com.easyink.wecom.domain.WeFlowerCustomerRel;
@@ -158,25 +160,28 @@ public class WeCustomerTransferRecordServiceImpl extends ServiceImpl<WeCustomerT
 
     @Override
     @DataScope
-    public List<WeCustomerVO> transferCustomerList(WeCustomer weCustomer) {
+    public TableDataInfo<WeCustomerVO> transferCustomerList(WeCustomer weCustomer) {
         if (StringUtils.isBlank(weCustomer.getCorpId())) {
             throw new CustomException(ResultTip.TIP_GENERAL_PARAM_ERROR);
         }
         String corpId = weCustomer.getCorpId();
         //  标签筛选满足条件 external_userid和 user_id
         if (!hasFilterCustomer(weCustomer)) {
-            return Collections.emptyList();
+            return PageInfoUtil.emptyData();
         }
         // 根据查询条件，构建过滤客户id列表
         if (!weCustomerService.buildFilterExternalUseridList(corpId, weCustomer)) {
-            return Collections.emptyList();
+            return PageInfoUtil.emptyData();
         }
         // 获取查询条件下的userid列表
         List<String> searchUserIdList = weDepartmentService.getDataScopeUserIdList(weCustomer.convertDepartmentList(), weCustomer.convertUserIdList(), weCustomer.getCorpId());
-        // 开启分页
-        PageInfoUtil.startPage();
-        // 获取客户列表
-        List<WeCustomerVO> list = weCustomerMapper.selectWeCustomerV4(weCustomer, searchUserIdList);
+        // 获取客户列表, 分页查询
+        Object pageSize = ServletUtils.getRequest().getAttribute("pageSize");
+        Object pageNum = ServletUtils.getRequest().getAttribute("pageNum");
+        Integer limit = pageSize != null? (int) pageSize: null;
+        Integer offset = pageNum != null && limit != null? ((int) ServletUtils.getRequest().getAttribute("pageNum")- 1) * limit: null;
+        List<WeCustomerVO> list = weCustomerMapper.selectWeCustomerV4(weCustomer, searchUserIdList, offset, limit);
+        Long count = Long.valueOf(weCustomerMapper.selectWeCustomerV4Count(weCustomer, searchUserIdList));
         // 根据返回的结果获取需要的标签详情
         CompletableFuture<Void> setTagRelFuture = CompletableFuture.runAsync(() -> {
             try {
@@ -210,7 +215,7 @@ public class WeCustomerTransferRecordServiceImpl extends ServiceImpl<WeCustomerT
             }
         }, threadPoolTaskExecutor);
         CompletableFuture.allOf(setTagRelFuture, setRecordFuture, setCustomerInfoFuture, setUserInfoFuture).join();
-        return list;
+        return PageInfoUtil.getDataTable(list, count);
     }
 
     /**

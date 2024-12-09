@@ -5,8 +5,10 @@ import com.easyink.wecom.domain.WeCustomer;
 import com.easyink.wecom.openapi.aop.ValidateSign;
 import com.easyink.wecom.openapi.domain.resp.BaseOpenApiResp;
 import com.easyink.wecom.openapi.domain.vo.GetWeCustomerByUnionIdVO;
+import com.easyink.wecom.openapi.dto.ConfigCorpSelfBuildDTO;
 import com.easyink.wecom.openapi.dto.GetWeCustomerByUnionIdDTO;
 import com.easyink.wecom.openapi.service.AppIdInfoService;
+import com.easyink.wecom.openapi.service.LockSelfBuildService;
 import com.easyink.wecom.service.WeCustomerService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -28,6 +30,7 @@ public class OpenApiController {
 
     private final AppIdInfoService appIdInfoService;
     private final WeCustomerService weChatCustomerService;
+    private final LockSelfBuildService lockSelfBuildService;
 
 
     @GetMapping("/getTicket")
@@ -46,6 +49,19 @@ public class OpenApiController {
             vo.initByWeCustomer(weCustomer);
         }
         return BaseOpenApiResp.success(vo);
+    }
+
+
+    /**
+     * 配置待开发对应的自建应用的服务器地址配置信息
+     * @param selfBuildDTO
+     * @return
+     */
+    @PostMapping("/selfbuild/config")
+    @ApiOperation("设置指定企业的自建应用配置信息")
+    public BaseOpenApiResp<GetWeCustomerByUnionIdVO> configSelfBuildByCorp(@Validated @RequestBody ConfigCorpSelfBuildDTO selfBuildDTO) {
+        lockSelfBuildService.config(selfBuildDTO);
+        return BaseOpenApiResp.success();
     }
 
 

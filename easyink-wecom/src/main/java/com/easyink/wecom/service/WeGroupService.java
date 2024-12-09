@@ -126,14 +126,15 @@ public interface WeGroupService extends IService<WeGroup> {
     /**
      * 查询群数据（结果数据不带群）
      *
-     * @param corpId    [必填]企业ID
-     * @param tagIds    [选填]标签列表（多个已逗号隔开）
-     * @param ownerIds  [选填]群主userId（多个已逗号隔开）
-     * @param beginTime [选填]开始时间
-     * @param endTime   [选填]结束时间
+     * @param corpId         [必填]企业ID
+     * @param tagIds         [选填]标签列表（多个已逗号隔开）
+     * @param includeTagMode 包含标签模式 {@link  TagFilterModeEnum}
+     * @param ownerIds       [选填]群主userId（多个已逗号隔开）
+     * @param beginTime      [选填]开始时间
+     * @param endTime        [选填]结束时间
      * @return List<WeGroup>
      */
-    List<WeGroup> listNoRelTag(String corpId, String tagIds, String ownerIds, String beginTime, String endTime);
+    List<WeGroup> listNoRelTag(String corpId, String tagIds, Integer includeTagMode, String ownerIds, String beginTime, String endTime);
 
     /**
      * 导出客户群信息

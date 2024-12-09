@@ -30,5 +30,4 @@ public class UnionIdController extends BaseController {
         return AjaxResult.success( weCustomerService.getDetailByExternalUserId(getUnionIdDTO) );
     }
 
-
 }

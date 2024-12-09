@@ -201,7 +201,7 @@ public class WeOperationsCenterSopServiceImpl extends ServiceImpl<WeOperationsCe
         sopDetailVO.setSopFilter(groupSopFilter);
         //当查无数据时,需要重新筛选一次数据
         if (CollectionUtils.isEmpty(groupSopVOList) && groupSopFilter != null) {
-            List<WeGroup> groupList = weGroupService.listNoRelTag(corpId, groupSopFilter.getTagId(), groupSopFilter.getOwner(), groupSopFilter.getCreateTime(), groupSopFilter.getEndTime());
+            List<WeGroup> groupList = weGroupService.listNoRelTag(corpId, groupSopFilter.getTagId(), groupSopFilter.getIncludeTagMode(), groupSopFilter.getOwner(), groupSopFilter.getCreateTime(), groupSopFilter.getEndTime());
             buildGroupSopList(groupSopVOList, groupList);
         }
         sopDetailVO.setGroupSopList(groupSopVOList);

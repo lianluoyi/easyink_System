@@ -51,6 +51,12 @@ public class WeOperationsCenterGroupSopFilterEntity {
     @TableField("tag_id")
     private String tagId;
     /**
+     * 包含标签过滤模式, 1:包含所有 2:包含任一
+     * {@link  com.easyink.wecom.domain.enums.TagFilterModeEnum}
+     */
+    @TableField("include_tag_mode")
+    private Integer includeTagMode;
+    /**
      * 群创建时间范围
      */
     @ApiModelProperty(value = "群创建时间范围")

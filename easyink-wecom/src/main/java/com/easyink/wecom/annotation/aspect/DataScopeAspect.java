@@ -72,6 +72,8 @@ public class DataScopeAspect {
         }
         // 如果是超级管理员 则不用过滤
         if (loginUser != null && !loginUser.isSuperAdmin()) {
+            RootEntity rootEntity = (RootEntity) joinPoint.getArgs()[0];
+            rootEntity.setNeedToCheckDataScope(true);
             dataScopeFilter(joinPoint, loginUser, controllerDataScope.userAlias());
             setDataScopeUserIds(joinPoint, loginUser);
         }
@@ -90,6 +92,9 @@ public class DataScopeAspect {
         if (ObjectUtil.isNull(role) || ObjectUtil.isNull(weUser)) {
             throw new CustomException(ResultTip.TIP_DATA_SCOPE_ERROR);
         }
+
+        RootEntity rootEntity = (RootEntity) joinPoint.getArgs()[0];
+
         // 当前登录员工的部门id列表
         List<String> departmentScopeList = Arrays.asList(loginUser.getDepartmentDataScope().split(DictUtils.SEPARATOR));
         // 当前登录员工的id
@@ -112,11 +117,14 @@ public class DataScopeAspect {
             case SELF:
                 dataScopeUserIds = weDepartmentService.getDataScopeUserIdList(null, userIdList, corpId);
                 break;
+            case ALL:
+                rootEntity.setNeedToCheckDataScope(false);
             default:
                 break;
         }
-        RootEntity rootEntity = (RootEntity) joinPoint.getArgs()[0];
         rootEntity.setDataScopeUserIds(dataScopeUserIds);
+
+
     }
 
     /**

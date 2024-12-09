@@ -41,8 +41,10 @@ public class GetCustomerSopFilterVO extends WeOperationsCenterCustomerSopFilterE
         this.setSopId(sopFilterEntity.getSopId());
         this.setUsers(sopFilterEntity.getUsers());
         this.setTagId(sopFilterEntity.getTagId());
+        this.setIncludeTagMode(sopFilterEntity.getIncludeTagMode());
         this.setCloumnInfo(sopFilterEntity.getCloumnInfo());
         this.setFilterTagId(sopFilterEntity.getFilterTagId());
+        this.setFilterTagMode(sopFilterEntity.getFilterTagMode());
         this.setStartTime(sopFilterEntity.getStartTime());
         this.setEndTime(sopFilterEntity.getEndTime());
     }

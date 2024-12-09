@@ -542,6 +542,9 @@
             #{userId}
         </foreach>
     </select>
+    <select id="selectByCorpId" resultType="java.lang.String">
+        select user_id FROM we_user WHERE corp_id = #{corpId}
+    </select>
     <!--    批量更新员工隐私信息-->
     <insert id="batchUpdateUserPrivacy">
         INSERT INTO we_user (

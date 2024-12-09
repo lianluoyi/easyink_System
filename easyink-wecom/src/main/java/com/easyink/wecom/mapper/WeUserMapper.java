@@ -193,4 +193,11 @@ public interface WeUserMapper extends BaseMapper<WeUser> {
      * @return {@link List<WeUserVO>}
      */
     List<WeUserVO> selectWeUserInfoByUserIdList(@NotNull @Param("userIdList") List<String> userIdList, @Param("corpId") String corpId);
+
+    /**
+     * 根据企业id查询员工id列表
+     * @param corpId 企业id
+     * @return 员工id列表
+     */
+    List<String> selectByCorpId(@Param("corpId") String corpId);
 }

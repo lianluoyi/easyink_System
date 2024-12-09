@@ -17,6 +17,8 @@ import com.easyink.common.exception.user.NoLoginTokenException;
 import com.easyink.common.exception.user.UserNoCorpException;
 import com.easyink.wecom.domain.vo.customerloss.CustomerLossSwitchVO;
 import com.easyink.wecom.login.util.LoginTokenService;
+import com.easyink.wecom.openapi.dao.LockSelfBuildConfigMapper;
+import com.easyink.wecom.openapi.domain.entity.LockSelfBuildConfig;
 import com.easyink.wecom.service.WeAuthCorpInfoExtendService;
 import com.easyink.wecom.service.WeCorpAccountService;
 import io.swagger.annotations.Api;
@@ -44,13 +46,15 @@ public class WeCorpAccountController extends BaseController {
     private final RuoYiConfig ruoYiConfig;
     private final WeAuthCorpInfoExtendService weAuthCorpInfoExtendService;
     private final ChatRsaKeyConfig chatRsaKeyConfig;
+    private final LockSelfBuildConfigMapper lockSelfBuildConfigMapper;
 
     @Autowired
-    public WeCorpAccountController(WeCorpAccountService weCorpAccountService, RuoYiConfig ruoYiConfig, WeAuthCorpInfoExtendService weAuthCorpInfoExtendService, ChatRsaKeyConfig chatRsaKeyConfig) {
+    public WeCorpAccountController(WeCorpAccountService weCorpAccountService, RuoYiConfig ruoYiConfig, WeAuthCorpInfoExtendService weAuthCorpInfoExtendService, ChatRsaKeyConfig chatRsaKeyConfig, LockSelfBuildConfigMapper lockSelfBuildConfigMapper) {
         this.weCorpAccountService = weCorpAccountService;
         this.ruoYiConfig = ruoYiConfig;
         this.weAuthCorpInfoExtendService = weAuthCorpInfoExtendService;
         this.chatRsaKeyConfig = chatRsaKeyConfig;
+        this.lockSelfBuildConfigMapper = lockSelfBuildConfigMapper;
     }
 
 
@@ -93,6 +97,8 @@ public class WeCorpAccountController extends BaseController {
         // 获取公司名称
         account.setCompanyName(weCorpAccountService.getCorpName(account.getCorpId()));
         account.setIsCustomizedApp(weAuthCorpInfoExtendService.isCustomizedApp(account.getCorpId()));
+        // 是否配置待开发自建应用的服务接口地址, 不为null则为配置
+        account.setIsConfigSelfBuildUrl(lockSelfBuildConfigMapper.get(account.getCorpId()) != null);
         return AjaxResult.success(account);
     }
 

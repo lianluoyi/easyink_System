@@ -56,4 +56,17 @@ public interface WeUserIdMappingService extends IService<WeUserIdMapping> {
      * @return 明文userid列表
      */
     List<String> transferUserIdsForDK(String corpId, List<String> userIds);
+
+    /**
+     * 批量保存或更新员工userId  明文和密文的映射关系
+     * @param mappingList 映射关系列表
+     */
+    void batchInsertOrUpdate(List<WeUserIdMapping> mappingList);
+
+    /**
+     * 批量保存或更新第三方服务商的员工userId  明文和密文的映射关系
+     * @param mappingList 映射关系列表
+     */
+    void batchInsertOrUpdateThirdService(List<WeUserIdMapping> mappingList);
+
 }

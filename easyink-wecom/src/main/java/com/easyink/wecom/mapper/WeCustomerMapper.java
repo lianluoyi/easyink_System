@@ -157,13 +157,6 @@ public interface WeCustomerMapper extends BaseMapper<WeCustomer> {
      */
     Integer updateBirthday(WeCustomer weCustomer);
 
-    /**
-     * 获取客户列表第二版
-     *
-     * @param weCustomer {@link WeCustomer}
-     * @return 客户列表
-     */
-    List<WeCustomerVO> selectWeCustomerListV2(WeCustomer weCustomer);
 
     /**
      * 筛选获取类型为单行文本与多行文本的用户自定义属性
@@ -242,9 +235,19 @@ public interface WeCustomerMapper extends BaseMapper<WeCustomer> {
      *
      * @param weCustomer 查询客户条件
      * @param userIdList 员工id列表
+     * @param offset
+     * @param limit
      * @return {@link WeCustomerVO }
      */
-    List<WeCustomerVO> selectWeCustomerV4(@Param("weCustomer") WeCustomer weCustomer, @Param("userIdList") List<String> userIdList);
+    List<WeCustomerVO> selectWeCustomerV4(@Param("weCustomer") WeCustomer weCustomer, @Param("userIdList") List<String> userIdList, @Param("offset") Integer offset, @Param("limit") Integer limit);
+
+    /**
+     * selectWeCustomerV4 的countsql
+     * @param weCustomer 查询客户条件
+     * @param userIdList 员工id列表
+     * @return 统计count数量
+     */
+    Integer selectWeCustomerV4Count(@Param("weCustomer") WeCustomer weCustomer, @Param("userIdList") List<String> userIdList);
 
     /**
      * 查看客户去重后的总数
@@ -269,15 +272,6 @@ public interface WeCustomerMapper extends BaseMapper<WeCustomer> {
      * @return 客户总数
      */
     Integer selectWeCustomerCount(WeCustomer dto);
-
-    /**
-     * 查询客户总数第二版
-     *
-     * @param weCustomer {@link WeCustomer}
-     * @param userIdList 员工id列表
-     * @return 客户总数
-     */
-    Integer selectWeCustomerCountV2(@Param("weCustomer") WeCustomer weCustomer, @Param("userIdList") List<String> userIdList);
 
     /**
      * 根据客户id列表获取客户信息
@@ -332,4 +326,12 @@ public interface WeCustomerMapper extends BaseMapper<WeCustomer> {
      * @return
      */
     List<String> selectExternalUserIdByBirthday(@Param("startTime") String startTime, @Param("endTime") String endTime, @Param("corpId") String corpId);
+
+    /**
+     * 根据企业id查询外部联系人id列表
+     * @param corpId 企业id
+     * @return 外部联系人id列表
+     */
+    List<String> selectExternalUserIdByCorpId(@Param("corpId") String corpId);
+
 }

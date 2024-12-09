@@ -97,6 +97,10 @@ public class WeCustomerSearchDTO extends BaseEntity {
 
     @ApiModelProperty(value = "页面大小")
     private Integer pageSize;
+    /**
+     * 是否对客户的员工去重
+     */
+    private Boolean duplicate;
 
 
 

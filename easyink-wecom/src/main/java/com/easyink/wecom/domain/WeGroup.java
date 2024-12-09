@@ -126,6 +126,11 @@ public class WeGroup extends RootEntity {
     @TableField(exist = false)
     @ApiModelProperty(value = "过滤的群id列表")
     private List<String> filterChatIds;
+    /**
+     * 群标签逗号分隔列表
+     */
+    @TableField(exist = false)
+    private String groupTagMarks;
 
     public void setBeginTime(String beginTime) {
         if (StringUtils.isNotBlank(beginTime)) {

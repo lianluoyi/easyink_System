@@ -39,7 +39,7 @@ public class CustomerQueryContext extends WeCustomer {
     /**
      * 客户状态
      */
-    private Integer status;
+    private String status;
     /**
      * 主键id列表
      */

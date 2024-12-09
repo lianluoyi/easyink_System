@@ -34,7 +34,6 @@ import com.easyink.wecom.service.WeGroupMemberService;
 import com.easyink.wecom.service.WeGroupService;
 import com.easyink.wecom.service.idmapping.WeExternalUserIdMappingService;
 import com.easyink.wecom.service.idmapping.WeUserIdMappingService;
-import com.easyink.wecom.utils.WeUserUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ObjectUtils;
@@ -501,14 +500,12 @@ public class WeChatContactMappingServiceImpl extends ServiceImpl<WeChatContactMa
         if (StringUtils.isEmpty(fromId) || StringUtils.isEmpty(key) || StringUtils.isEmpty(corpId)) {
             return;
         }
-        // 是否加密userid
-        boolean isopenUserId = WeUserUtils.isOpenExternalUserId(fromId);
         //获取发送人信息
         if (WeConstans.ID_TYPE_USER.equals(fromType)) {
             //成员信息
             WeUser weUser = weUserMapper.selectOne(new LambdaQueryWrapper<WeUser>()
                     .eq(WeUser::getCorpId, corpId)
-                    .eq(WeUser::getUserId, isopenUserId? fromId: weUserIdMappingService.getOpenUserIdByUserId(corpId, fromId)));
+                    .eq(WeUser::getUserId, weUserIdMappingService.getOpenUserIdByUserId(corpId, fromId)));
             log.info("[会话存档]获取员工信息,corpId:{}, user:{},fromId:{}", corpId, weUser, fromId);
             if (weUser == null) {
                 return;
@@ -529,7 +526,7 @@ public class WeChatContactMappingServiceImpl extends ServiceImpl<WeChatContactMa
             // 获取外部联系人信息
             WeCustomer weCustomer = weCustomerMapper.selectOne(new LambdaQueryWrapper<WeCustomer>()
                     .eq(WeCustomer::getCorpId, corpId)
-                    .eq(WeCustomer::getExternalUserid, isopenUserId?fromId:weExternalUserIdMappingService.getOpenExternalUserIdByExternalUserId(corpId, fromId))
+                    .eq(WeCustomer::getExternalUserid, weExternalUserIdMappingService.getOpenExternalUserIdByExternalUserId(corpId, fromId))
                     .last(GenConstants.LIMIT_1));
             log.info("[会话存档]获取客户信息,corpId:{}, customer:{},fromId:{}", corpId, weCustomer, fromId);
             if (weCustomer == null) {

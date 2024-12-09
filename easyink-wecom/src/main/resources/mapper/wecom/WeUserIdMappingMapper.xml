@@ -20,5 +20,22 @@
         ON DUPLICATE KEY UPDATE
         open_user_id = VALUES(open_user_id )
     </insert>
+    <insert id="batchInsertOrUpdateThirdService">
+        INSERT INTO
+        third_user_id_mapping
+        (
+        corp_id, user_id,open_user_id
+        )
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+            #{item.corpId},
+            #{item.userId},
+            #{item.openUserId}
+            )
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+        open_user_id = VALUES(open_user_id )
+    </insert>
 </mapper>
 

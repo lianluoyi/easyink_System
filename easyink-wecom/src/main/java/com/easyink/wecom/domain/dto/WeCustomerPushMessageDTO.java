@@ -24,7 +24,22 @@ import java.util.List;
 @NoArgsConstructor
 public class WeCustomerPushMessageDTO extends WeCustomer {
 
+    /**
+     * 包含标签模式 {@link com.easyink.wecom.domain.enums.TagFilterModeEnum}
+     */
+    private Integer includeTagMode;
+    /**
+     * 过滤的标签列表
+     */
     private String filterTags;
+    /**
+     * 过滤标签模式 {@link com.easyink.wecom.domain.enums.TagFilterModeEnum}
+     */
+    private Integer filterTagMode;
+    /**
+     * 是否需要sql过滤标签, 默认true, 兼容原来的逻辑
+     */
+    private boolean needSqlFilterTag = true;
     @ApiModelProperty("过滤员工列表，用逗号隔开")
     private String filterUsers;
     @ApiModelProperty("过滤部门列表，用逗号隔开")
