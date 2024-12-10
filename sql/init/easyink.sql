@@ -1679,7 +1679,7 @@ CREATE TABLE `we_flower_customer_rel`
     `wechat_channel`   varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '该成员添加此客户的来源add_way为10时，对应的视频号信息',
     PRIMARY KEY (`id`) USING BTREE,
     UNIQUE INDEX `un_user_external_userid_corpid` (`external_userid`, `user_id`, `corp_id`) USING BTREE,
-    KEY `idx_corp_user_id_status` (`corp_id`,`user_id`,`status`) USING BTREE COMMENT '企业id-员工id-客户状态普通索引',
+    KEY `idx_corp_user_id_status` (`corp_id`,`status`,`user_id`,`create_time`) USING BTREE COMMENT '企业id-员工id-客户状态普通索引',
     KEY `idx_corp_status` (`corp_id`,`status`,`create_time`) USING BTREE,
     KEY `idx_corp_create_time` (`corp_id`, `create_time`) USING BTREE COMMENT '企业ID-添加时间普通索引',
     KEY `index_groupBy_external_userid` (`external_userid`,`create_time`,`user_id`,`corp_id`,`status`) COMMENT '客户去重列表索引覆盖',
@@ -2922,6 +2922,7 @@ CREATE TABLE `we_operations_center_group_sop_filter`
     `sop_id`      bigint(20) NOT NULL DEFAULT '0' COMMENT 'we_operations_center_sop主键ID',
     `owner`       text        NOT NULL COMMENT '群主( 多个逗号隔开)',
     `tag_id`      text        NOT NULL COMMENT '群标签ID（多个逗号隔开）',
+    `include_tag_mode` tinyint(1) NOT NULL DEFAULT '2' COMMENT '包含标签模式, 1:满足全部 2:满足任一',
     `create_time` datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '群创建时间范围',
     `end_time`    datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '群创建时间',
     PRIMARY KEY (`id`),
@@ -2941,8 +2942,10 @@ CREATE TABLE `we_operations_center_customer_sop_filter`
     `users`         text        NOT NULL COMMENT '所属员工（多个逗号隔开 ）',
     `departments`   text        NOT NULL COMMENT '所属部门（多个逗号隔开 ）',
     `tag_id`        text        NOT NULL COMMENT '标签ID（多个逗号隔开 ）',
+    `include_tag_mode` tinyint(1) NOT NULL DEFAULT '1' COMMENT '包含标签模式, 1:满足全部 2:满足任一',
     `cloumn_info`   text        NOT NULL COMMENT '客户属性名和值，json存储',
     `filter_tag_id` text        NOT NULL COMMENT '标签ID(多个逗号隔开) ',
+    `filter_tag_mode` tinyint(1) NOT NULL DEFAULT '2' COMMENT '过滤标签模式, 1:满足全部 2:满足任一',
     `start_time`    datetime    NOT NULL DEFAULT '0000-00-00 00:00:00' COMMENT '客户添加开始时间',
     `end_time`      datetime    NOT NULL DEFAULT '0000-00-00 00:00:00' COMMENT '客户添加截止时间',
     PRIMARY KEY (`id`),
@@ -3854,3 +3857,28 @@ CREATE TABLE `we_msg_tlp_filter_rule`
     PRIMARY KEY (`id`),
     KEY                `idx_tlp_id` (`msg_tlp_id`) COMMENT '欢迎语id普通索引'
 ) ENGINE=InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT='欢迎语筛选条件表';
+
+-- tigger 24-11-20 Tower 任务: 客户资料导出增加明文externalUserId ( https://tower.im/teams/636204/todos/99982 )
+CREATE TABLE `lock_self_build_config` (
+                                          `encrypt_corp_id` varchar(64) NOT NULL DEFAULT '' COMMENT '企业id密文',
+                                          `decrypt_external_userid_url` varchar(255) NOT NULL DEFAULT '' COMMENT '请求自建应用解密外部联系人id的url',
+                                          `decrypt_userid_url` varchar(255) NOT NULL DEFAULT '' COMMENT '请求自建应用解密员工id的url',
+                                          PRIMARY KEY (`encrypt_corp_id`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='lock 自建应用配置表';
+
+CREATE TABLE `third_external_userid_mapping` (
+                                                 `corp_id` varchar(64) NOT NULL COMMENT '密文corpId',
+                                                 `external_userid` varchar(64) NOT NULL COMMENT '明文externalUserId',
+                                                 `open_external_userid` varchar(64) NOT NULL DEFAULT '' COMMENT '密文externalUserId',
+                                                 PRIMARY KEY (`corp_id`,`external_userid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='第三方服务商外部联系人externalUserId明密文映射表';
+
+CREATE TABLE `third_user_id_mapping` (
+                                         `corp_id` varchar(64) NOT NULL COMMENT '密文企业id',
+                                         `user_id` varchar(64) NOT NULL COMMENT '明文userId',
+                                         `open_user_id` varchar(64) DEFAULT '' COMMENT '密文userId',
+                                         PRIMARY KEY (`corp_id`,`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='第三方服务商员工userId明密文映射表';
+
+
+

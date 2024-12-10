@@ -85,9 +85,11 @@ public class WeCustomerController extends BaseController {
             PageInfoUtil.setPage(pageNum, pageSize);
         }
         weCustomerSearchDTO.setCorpId(LoginTokenService.getLoginUser().getCorpId());
-        WeCustomer weCustomer=weCustomerService.changeWecustomer(weCustomerSearchDTO);
-        List<WeCustomerVO> list = weCustomerService.selectWeCustomerListV3(weCustomer);
-        return getDataTable(list);
+        WeCustomer weCustomer = weCustomerService.changeWecustomer(weCustomerSearchDTO);
+        TimeInterval timer = DateUtil.timer();
+        TableDataInfo<WeCustomerVO> tableDataInfo = weCustomerService.selectWeCustomerListV3(weCustomer);
+        log.info("客户列表总耗时: {}ms", timer.interval());
+        return tableDataInfo;
     }
 
     /**
@@ -131,23 +133,7 @@ public class WeCustomerController extends BaseController {
         return AjaxResult.success(weCustomerService.getCustomersByUserIdV2(externalUserid, userId, LoginTokenService.getLoginUser().getCorpId()));
     }
 
-    /**
-     * 导出企业微信客户列表
-     */
-    @PreAuthorize("@ss.hasPermi('customerManage:customer:export') || @ss.hasPermi('customerManage:lossRemind:export')")
-    @Log(title = "企业微信客户", businessType = BusinessType.EXPORT)
-//    @PostMapping("/export")
-    @ApiOperation("导出企业微信客户列表")
-    @Deprecated
-    public <T> AjaxResult<T> export(@RequestBody WeCustomerExportDTO dto) {
-        dto.setCorpId(LoginTokenService.getLoginUser().getCorpId());
-        log.info("[导出客户]开始导出,corpId:{}", dto.getCorpId());
-        long startTime = System.currentTimeMillis();
-        AjaxResult<T> export = weCustomerService.export(dto);
-        long endTime = System.currentTimeMillis();
-        log.info("[导出客户]导出完成,corpId:{} , time:{} ", dto.getCorpId(), (endTime - startTime) / 1000.00D);
-        return export;
-    }
+
 
     /**
      * 导出企业微信客户列表V2

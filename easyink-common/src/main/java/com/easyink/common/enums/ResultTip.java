@@ -281,6 +281,10 @@ public enum ResultTip {
     DEL_URL_ERROR(10004,"删除回调地址失败"),
     CALLBACK_FAIL(10005,"回调地址请求不通过, 请检查代码"),
 
+    // selfbuild 11000 开始
+    SELF_BUILD_ACCESS_DENIED_URL(11000,"配置的服务地址不可用"),
+    SELF_BUILD_REQ_FAILED(11001,"请求失败"),
+
     ;
     @Getter
     private final Integer code;

@@ -22,5 +22,11 @@ public interface WeUserIdMappingMapper extends BaseMapper<WeUserIdMapping> {
      * @return affected rows
      */
     Integer batchInsertOrUpdate(@Param("list") List<WeUserIdMapping> mappingList);
+
+    /**
+     * 批量更新/插入 第三方服务商的 userid明文密文映射关系
+     * @param mappingList 映射关系列表
+     */
+    void batchInsertOrUpdateThirdService(@Param("list") List<WeUserIdMapping> mappingList);
 }
 

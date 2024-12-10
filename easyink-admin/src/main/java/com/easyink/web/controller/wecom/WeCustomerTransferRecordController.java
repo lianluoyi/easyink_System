@@ -2,8 +2,12 @@ package com.easyink.web.controller.wecom;
 
 import com.easyink.common.core.controller.BaseController;
 import com.easyink.common.core.domain.AjaxResult;
+import com.easyink.common.core.page.PageDomain;
 import com.easyink.common.core.page.TableDataInfo;
+import com.easyink.common.core.page.TableSupport;
 import com.easyink.common.utils.PageInfoUtil;
+import com.easyink.common.utils.ServletUtils;
+import com.easyink.common.utils.StringUtils;
 import com.easyink.wecom.domain.WeCustomer;
 import com.easyink.wecom.domain.dto.transfer.TransferCustomerDTO;
 import com.easyink.wecom.domain.dto.transfer.TransferRecordPageDTO;
@@ -65,10 +69,12 @@ public class WeCustomerTransferRecordController extends BaseController {
     @GetMapping("/customerList")
     @ApiOperation("在职继承客户列表")
     public TableDataInfo<WeCustomerVO> transferCustomerList(WeCustomer weCustomer) {
-        PageInfoUtil.setPage();
+        PageDomain pageDomain = TableSupport.buildPageRequest();
+        Integer pageNum = pageDomain.getPageNum();
+        Integer pageSize = pageDomain.getPageSize();
+        PageInfoUtil.setPage(pageNum, pageSize);
         weCustomer.setCorpId(LoginTokenService.getLoginUser().getCorpId());
-        List<WeCustomerVO> list = weCustomerTransferRecordService.transferCustomerList(weCustomer);
-        return getDataTable(list);
+        return weCustomerTransferRecordService.transferCustomerList(weCustomer);
     }
 
     @GetMapping("/config")

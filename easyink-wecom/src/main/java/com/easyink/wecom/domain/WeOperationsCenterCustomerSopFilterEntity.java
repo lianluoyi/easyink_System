@@ -58,6 +58,11 @@ public class WeOperationsCenterCustomerSopFilterEntity {
     @TableField("tag_id")
     private String tagId;
     /**
+     * 包含标签的过滤模式 {@link com.easyink.wecom.domain.enums.TagFilterModeEnum}
+     */
+    @TableField("include_tag_mode")
+    private Integer includeTagMode;
+    /**
      * 客户属性名和值，json存储
      */
     @ApiModelProperty(value = "客户属性名和值，json存储")
@@ -70,6 +75,11 @@ public class WeOperationsCenterCustomerSopFilterEntity {
     @ApiModelProperty(value = "标签ID(多个逗号隔开) ")
     @TableField("filter_tag_id")
     private String filterTagId;
+    /**
+     * 过滤标签的过滤模式 {@link com.easyink.wecom.domain.enums.TagFilterModeEnum}
+     */
+    @TableField("filter_tag_mode")
+    private Integer filterTagMode;
 
     @ApiModelProperty("客户添加开始时间")
     @TableField("start_time")

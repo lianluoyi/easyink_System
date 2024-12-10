@@ -4,6 +4,7 @@ import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 
 import java.io.Serializable;
+import java.util.List;
 
 /**
  * 表格分页数据对象
@@ -18,7 +19,7 @@ public class TableDataInfo<T> implements Serializable {
     private int total;
 
     @ApiModelProperty("列表数据")
-    private T rows;
+    private List<T> rows;
 
     @ApiModelProperty("消息状态码")
     private int code;
@@ -38,7 +39,7 @@ public class TableDataInfo<T> implements Serializable {
      * @param list  列表数据
      * @param total 总记录数
      */
-    public TableDataInfo(T list, int total) {
+    public TableDataInfo(List<T> list, int total) {
         this.rows = list;
         this.total = total;
     }
@@ -51,11 +52,11 @@ public class TableDataInfo<T> implements Serializable {
         this.total = total;
     }
 
-    public T getRows() {
+    public List<T> getRows() {
         return rows;
     }
 
-    public void setRows(T rows) {
+    public void setRows(List<T> rows) {
         this.rows = rows;
     }
 

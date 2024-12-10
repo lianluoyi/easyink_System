@@ -45,4 +45,9 @@ public class FindWeGroupDTO extends BaseEntity {
 
     @ApiModelProperty("群主userId（多个已逗号隔开）")
     private String ownerIds;
+
+    /**
+     * 是否需要sql过滤标签, 默认true, 兼容之前的查询
+     */
+    private boolean needSqlFilterTag = true;
 }

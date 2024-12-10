@@ -170,6 +170,23 @@ public class WeUserIdMappingServiceImpl extends ServiceImpl<WeUserIdMappingMappe
 
     }
 
+    @Override
+    public void batchInsertOrUpdate(List<WeUserIdMapping> mappingList) {
+        if(CollectionUtils.isEmpty(mappingList)){
+            return;
+        }
+
+        this.weUserIdMappingMapper.batchInsertOrUpdate(mappingList);
+    }
+
+    @Override
+    public void batchInsertOrUpdateThirdService(List<WeUserIdMapping> mappingList) {
+        if(CollectionUtils.isEmpty(mappingList)){
+            return;
+        }
+        this.weUserIdMappingMapper.batchInsertOrUpdateThirdService(mappingList);
+    }
+
 
     /**
      * 判断是否是密文userId

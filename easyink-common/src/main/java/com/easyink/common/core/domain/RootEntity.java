@@ -31,6 +31,16 @@ public class RootEntity implements Serializable {
     @ApiModelProperty(hidden = true)
     private List<String> dataScopeUserIds;
 
+    /**
+     * 用于判断员工自定义角色的所有权限设置项
+     * superadmin: needToCheckDataScope=fasle, 无需过滤权限
+     * 其他账号:
+     * 1) needToCheckDataScope = true, 需要按照dataSope列表过滤数据
+     * 2) needToCheckDataScope = false, 无需过滤权限, 目前只有自定义角色的所有权限设置项需要
+     */
+    @TableField(exist = false)
+    private Boolean needToCheckDataScope = false;
+
     public Map<String, Object> getParams() {
         if (params == null) {
             params = new HashMap<>();
@@ -48,5 +58,13 @@ public class RootEntity implements Serializable {
 
     public void setDataScopeUserIds(List<String> dataScopeUserIds) {
         this.dataScopeUserIds = dataScopeUserIds;
+    }
+
+    public Boolean getNeedToCheckDataScope() {
+        return needToCheckDataScope;
+    }
+
+    public void setNeedToCheckDataScope(Boolean needToCheckDataScope) {
+        this.needToCheckDataScope = needToCheckDataScope;
     }
 }

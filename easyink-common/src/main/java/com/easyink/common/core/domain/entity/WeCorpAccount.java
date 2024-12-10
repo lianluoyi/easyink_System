@@ -35,6 +35,11 @@ public class WeCorpAccount extends BaseEntity {
     @TableField("id")
     private Long id;
 
+
+    @ApiModelProperty(value = "是否配置待开发自建应用地址")
+    @TableField(exist = false)
+    private Boolean isConfigSelfBuildUrl;
+
     @ApiModelProperty(value = "是否为代开发自建应用(0N1Y)")
     @TableField(exist = false)
     private Boolean isCustomizedApp;

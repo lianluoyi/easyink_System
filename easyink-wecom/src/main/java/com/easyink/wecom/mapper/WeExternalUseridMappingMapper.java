@@ -30,5 +30,11 @@ public interface WeExternalUseridMappingMapper extends BaseMapper<WeExternalUser
      * @return affected rows
      */
     Integer batchInsertOrUpdate(@Param("list") List<WeExternalUseridMapping> mappings);
+
+    /**
+     * 批量插入或者更新第三方服务商的externalUserId映射关系
+     * @param mappingList 映射关系列表
+     */
+    void batchInsertOrUpdateThirdService(@Param("list") List<WeExternalUseridMapping> mappingList);
 }
 

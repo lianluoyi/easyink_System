@@ -86,7 +86,8 @@
         (SELECT wd.name FROM we_department wd WHERE wu.main_department = wd.id AND wd.corp_id = wg.corp_id) as mainDepartmentName,
         wg.status,
         wg.`owner`,
-        IF( wg.`status` = ${@com.easyink.common.constant.GroupConstants@NARMAL} OR wg.`status` = ${@com.easyink.common.constant.GroupConstants@OWNER_LEAVE_EXTEND_SUCCESS}, 0, 1 ) groupStatus
+        IF( wg.`status` = ${@com.easyink.common.constant.GroupConstants@NARMAL} OR wg.`status` = ${@com.easyink.common.constant.GroupConstants@OWNER_LEAVE_EXTEND_SUCCESS}, 0, 1 ) groupStatus,
+        GROUP_CONCAT(wgt.id) AS groupTagMarks
         FROM
         we_group wg
         LEFT JOIN we_user wu ON wg.corp_id = wu.corp_id AND wg.`owner`= wu.user_id
@@ -116,7 +117,7 @@
             <if test="groupStatus != null and groupStatus == 1">
                 AND wg.status IN (${@com.easyink.common.constant.GroupConstants@OWNER_LEAVE},${@com.easyink.common.constant.GroupConstants@OWNER_LEAVE_EXTEND})
             </if>
-            <if test="tagIds != null and tagIds !=''">
+            <if test="tagIds != null and tagIds !='' and needSqlFilterTag">
                 <if test="tagIds.indexOf(',') != -1">
                     AND wgt.`id` in
                     <foreach item="item" index="index" collection="tagIds.split(',')" open="(" separator="," close=")">

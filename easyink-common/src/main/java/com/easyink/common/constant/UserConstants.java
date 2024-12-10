@@ -152,9 +152,13 @@ public class UserConstants {
      */
     public static final String THIRD_APP_BAN_MENU_IDS = "102,109,110,111,112,2284";
     /**
+     * 明文excel表头名称
+     */
+    public static final String ORIGIN_EXTERNAL_USER_ID = "externalUserId（明文）";
+    /**
      * 系统默认字段
      */
-    protected static final String[] SYS_DEFAULT_PROPERTIES = {"客户", "备注", "来源", "添加时间", "所属员工", "标签", "所属部门", "客户状态", "出生日期", "电话", "邮箱", "地址", "描述"};
+    protected static final String[] SYS_DEFAULT_PROPERTIES = {"客户", "备注", "来源", "添加时间", "所属员工", "标签", "所属部门", "客户状态", "出生日期", "电话", "邮箱", "地址", "描述", "unionId", "externalUserId", ORIGIN_EXTERNAL_USER_ID};
 
     /**
      * 获取系统默认字段

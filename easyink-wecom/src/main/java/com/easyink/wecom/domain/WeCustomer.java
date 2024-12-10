@@ -47,7 +47,7 @@ public class WeCustomer extends BaseEntity {
 
     @ApiModelProperty(value = "外部联系人名称")
     @TableField("name")
-    @Excel(name = "客户",sort = 1)
+    @Excel(name = "客户")
     @ExcelProperty(value = "客户",index = 1)
     private String name;
 
@@ -76,7 +76,7 @@ public class WeCustomer extends BaseEntity {
     @ApiModelProperty(value = "生日")
     @TableField("birthday")
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "出生日期", dateFormat = "yyyy-MM-dd" ,sort = 9)
+    @Excel(name = "出生日期", dateFormat = "yyyy-MM-dd")
     @ExcelProperty(value = "出生日期",index = 9)
     @DateTimeFormat("yyyy-MM-dd")
     private Date birthday;
@@ -90,8 +90,8 @@ public class WeCustomer extends BaseEntity {
 
     @ApiModelProperty(value = "客户企业简称")
     @TableField("corp_name")
-    @Excel(name = "公司",sort = 3)
-    @ExcelProperty(value = "公司",index = 3)
+//    @Excel(name = "公司",sort = 3)
+//    @ExcelProperty(value = "公司",index = 3)
     private String corpName;
 
     @ApiModelProperty(value = "客户企业全称")
@@ -126,7 +126,7 @@ public class WeCustomer extends BaseEntity {
 
     @TableField(exist = false)
     @JSONField(defaultValue = "0")
-    private Integer status;
+    private String status;
 
     /**
      * 部门
@@ -138,7 +138,7 @@ public class WeCustomer extends BaseEntity {
      * 添加人名称
      */
     @TableField(exist = false)
-    @Excel(name = "所属员工",sort = 5)
+    @Excel(name = "所属员工")
     @ExcelProperty(value = "所属员工",index = 5)
     private String userName;
 
@@ -167,14 +167,14 @@ public class WeCustomer extends BaseEntity {
      * 备注
      */
     @TableField(exist = false)
-    @Excel(name = "备注",sort = 2)
+    @Excel(name = "备注")
     @ExcelProperty(value = "备注",index = 2)
     private String remark;
     /**
      * 手机号
      */
     @TableField(exist = false)
-    @Excel(name = "电话",sort = 10)
+    @Excel(name = "电话")
     @ExcelProperty(value = "电话",index = 10)
     private String phone;
     /**
@@ -189,7 +189,7 @@ public class WeCustomer extends BaseEntity {
 
 
     @ApiModelProperty(value = "部门")
-    @Excel(name = "所属部门", sort = 6)
+    @Excel(name = "所属部门")
     @TableField(exist = false)
     @ExcelProperty(value = "所属部门",index = 6)
     private String departmentName;
@@ -225,6 +225,11 @@ public class WeCustomer extends BaseEntity {
     @ApiModelProperty(value = "过滤查询条件的客户id列表")
     @TableField(exist = false)
     private List<String> filterExternalUseridList;
+    /**
+     * 是否对客户去重员工, 默认false, 兼容原来的
+     */
+    @TableField(exist = false)
+    private boolean duplicate = false;
 
 
     /**

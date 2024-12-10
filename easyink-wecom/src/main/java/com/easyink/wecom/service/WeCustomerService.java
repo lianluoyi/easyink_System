@@ -3,6 +3,7 @@ package com.easyink.wecom.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.easyink.common.annotation.DataScope;
 import com.easyink.common.core.domain.AjaxResult;
+import com.easyink.common.core.page.TableDataInfo;
 import com.easyink.wecom.domain.WeCustomer;
 import com.easyink.wecom.domain.WeCustomerPortrait;
 import com.easyink.wecom.domain.WeOperationsCenterCustomerSopFilterEntity;
@@ -250,15 +251,6 @@ public interface WeCustomerService extends IService<WeCustomer> {
      */
     void insert(WeCustomer weCustomer);
 
-    /**
-     * 导出客户
-     *
-     * @param dto {@link WeCustomerExportDTO}
-     * @param <T> 导出类型
-     * @return
-     */
-    @Deprecated
-    <T> AjaxResult<T> export(WeCustomerExportDTO dto);
 
     /**
      * 修改客户信息 (备注 、自定义字段、 标签 )
@@ -294,13 +286,9 @@ public interface WeCustomerService extends IService<WeCustomer> {
      *
      * @param weCustomer {@link WeCustomer}
      * @return 客户列表
-     * @update V1.28.1 由于慢查询 废弃,使用V3 接口
      */
-    @Deprecated
-    List<WeCustomerVO> selectWeCustomerListV2(WeCustomer weCustomer);
-
     @DataScope
-    List<WeCustomerVO> selectWeCustomerListV3(WeCustomer weCustomer);
+    TableDataInfo<WeCustomerVO> selectWeCustomerListV3(WeCustomer weCustomer);
 
     /**
      * 为客户设置客户信息
@@ -479,4 +467,11 @@ public interface WeCustomerService extends IService<WeCustomer> {
      * @return
      */
     List<String> listExistDbUserIdByTagAndUserIdList(List<String> candidateUserIdList, String tags, String corpId);
+
+    /**
+     * 补充externalUserId明文
+     * @param list 客户数据列表
+     * @param corpId 企业id(密文)
+     */
+    void setOriginExternalUserId(List<WeCustomerVO> list, String corpId);
 }

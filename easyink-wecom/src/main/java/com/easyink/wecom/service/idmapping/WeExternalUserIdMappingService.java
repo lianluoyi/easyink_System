@@ -3,6 +3,7 @@ package com.easyink.wecom.service.idmapping;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.easyink.wecom.domain.entity.WeExternalUseridMapping;
 
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -45,4 +46,17 @@ public interface WeExternalUserIdMappingService extends IService<WeExternalUseri
      * @return 密文客户id
      */
     String getOpenExternalUserIdByExternalUserId(String corpId, String externalUserId);
+
+
+    /**
+     * 批量插入或更新 客户externalUserId 的明文和密文的映射关系
+     * @param mappingList 映射列表
+     */
+    void batchInsertOrUpdate(List<WeExternalUseridMapping> mappingList);
+
+    /**
+     * 插入第三方服务商的externalUserId映射
+     * @param externalUseridMappingList 映射列表
+     */
+    void batchInsertOrUpdateThirdService(List<WeExternalUseridMapping> externalUseridMappingList);
 }

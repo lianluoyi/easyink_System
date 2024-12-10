@@ -4,6 +4,7 @@ import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.easyink.common.constant.WeConstans;
+import com.easyink.common.core.page.TableDataInfo;
 import com.easyink.common.enums.ResultTip;
 import com.easyink.common.enums.WeOperationsCenterSop;
 import com.easyink.common.exception.CustomException;
@@ -473,7 +474,8 @@ public class WeGroupSopV2ServiceImpl implements WeGroupSopV2Service {
             weCustomer.setTagIds(weCustomerSopDTO.getTagId());
         }
         weCustomer.setUserIds(weCustomerSopDTO.getUsers());
-        List<WeCustomerVO> weCustomers = weCustomerService.selectWeCustomerListV3(weCustomer);
+        TableDataInfo<WeCustomerVO> tableDataInfo = weCustomerService.selectWeCustomerListV3(weCustomer);
+        List<WeCustomerVO> weCustomers = tableDataInfo.getRows();
         List<String> customerList = CollectionUtils.isNotEmpty(customerIds)
                 ? weCustomers.stream().filter(customer -> customerIds.contains(customer.getExternalUserid())).map(WeCustomerVO::getExternalUserid).collect(Collectors.toList())
                 : weCustomers.stream().map(WeCustomerVO::getExternalUserid).collect(Collectors.toList());

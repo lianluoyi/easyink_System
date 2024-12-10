@@ -1,0 +1,2 @@
+-- tigger 2024-08-27 优化员工查询 Tower 任务: 客户慢查询处理 ( https://tower.im/teams/636204/todos/80430 )
+ALTER TABLE we_flower_customer_rel DROP INDEX idx_corp_user_id_status, ADD INDEX idx_corp_user_id_status(corp_id, status, user_id, create_time) COMMENT '企业id-员工id-客户状态普通索引';

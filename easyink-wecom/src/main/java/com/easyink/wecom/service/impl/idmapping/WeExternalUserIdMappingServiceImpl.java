@@ -159,6 +159,22 @@ public class WeExternalUserIdMappingServiceImpl extends ServiceImpl<WeExternalUs
         return mapping.getOpenExternalUserid();
     }
 
+    @Override
+    public void batchInsertOrUpdate(List<WeExternalUseridMapping> mappingList) {
+        if(CollectionUtils.isEmpty(mappingList)){
+            return;
+        }
+        this.weExternalUseridMappingMapper.batchInsertOrUpdate(mappingList);
+    }
+
+    @Override
+    public void batchInsertOrUpdateThirdService(List<WeExternalUseridMapping> mappingList) {
+        if(CollectionUtils.isEmpty(mappingList)){
+            return;
+        }
+        this.weExternalUseridMappingMapper.batchInsertOrUpdateThirdService(mappingList);
+    }
+
 
     /**
      * 判断是否是加密的客户id

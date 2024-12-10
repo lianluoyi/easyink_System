@@ -48,13 +48,13 @@ public class WeCustomerExportVO extends WeCustomer {
 
     @ApiModelProperty(value = "添加方式,0=未知来源,1=扫描二维码,2=搜索手机号,3=名片分享,4=群聊,5=手机通讯录,6=微信联系人,7=来自微信的添加好友申请,8=安装第三方应用时自动添加的客服人员,9=搜索邮箱,16=通过获客链接添加,201=内部成员共享,202=管理员负责人分配")
     @TableField(exist = false)
-    @Excel(name = "来源", sort = 13, readConverterExp = "0=未知来源,1=扫描二维码,2=搜索手机号,3=名片分享,4=群聊,5=手机通讯录,6=微信联系人,7=来自微信的添加好友申请,8=安装第三方应用时自动添加的客服人员,9=搜索邮箱,16=通过获客链接添加,201=内部成员共享,202=管理员负责人分配")
+    @Excel(name = "来源",  readConverterExp = "0=未知来源,1=扫描二维码,2=搜索手机号,3=名片分享,4=群聊,5=手机通讯录,6=微信联系人,7=来自微信的添加好友申请,8=安装第三方应用时自动添加的客服人员,9=搜索邮箱,16=通过获客链接添加,201=内部成员共享,202=管理员负责人分配")
     @ExcelProperty(value = "来源", index = 13)
     private String addWay;
 
     @ApiModelProperty(value = "添加时间")
     @TableField(exist = false)
-    @Excel(name = "添加时间", sort = 4, dateFormat = "yyyy-MM-dd")
+    @Excel(name = "添加时间",  dateFormat = "yyyy-MM-dd")
     @JsonFormat(pattern = "yyyy-MM-dd")
     @ExcelProperty(value = "添加时间", index = 4)
     @DateTimeFormat("yyyy-MM-dd")
@@ -62,36 +62,45 @@ public class WeCustomerExportVO extends WeCustomer {
 
     @ApiModelProperty(value = "该成员对此外部联系人的描述")
     @TableField(exist = false)
-    @Excel(name = "描述", sort = 14)
+    @Excel(name = "描述" )
     @ExcelProperty(value = "描述", index = 14)
     private String description;
 
 
     @ApiModelProperty(value = "标签")
     @TableField(exist = false)
-    @Excel(name = "标签", sort = 7)
+    @Excel(name = "标签")
     @ExcelProperty(value = "标签", index = 7)
     private String tags;
 
     @TableField(exist = false)
-    @Excel(name = "客户状态" , sort = 8 ,readConverterExp = "0=正常,1=已流失,2=已流失,3=待继承,4=转接中" , defaultValue = "待继承")
+    @Excel(name = "客户状态"  ,readConverterExp = "0=正常,1=已流失,2=已流失,3=待继承,4=转接中" , defaultValue = "待继承")
     @ExcelProperty(value = "客户状态", index = 8)
     private String customerStatus;
 
     @TableField(exist = false)
-    @Excel(name = "邮箱", sort = 11)
+    @Excel(name = "邮箱")
     @ExcelProperty(value = "邮箱", index = 11)
     private String email;
 
-    @Excel(name = "地址", sort = 12)
+    @Excel(name = "地址")
     @ExcelProperty(value = "地址", index = 12)
     private String address;
 
     @TableField(exist = false)
-    @Excel(name = "客户unionId", sort = 15)
-    @ExcelProperty(value = "客户unionId", index = 15)
+    @Excel(name = "unionId")
+    @ExcelProperty(value = "unionId", index = 15)
     private String unionId;
 
+    @TableField(exist = false)
+    @Excel(name = "externalUserId")
+    @ExcelProperty(value = "externalUserId", index = 16)
+    private String externalUserId;
+
+    @TableField(exist = false)
+    @Excel(name = "externalUserId（明文）")
+    @ExcelProperty(value = "externalUserId（明文）", index = 16)
+    private String originExternalUserId;
     /**
      * 扩展属性与值的映射,K:扩展属性名字,V该客户对应的值
      */
@@ -104,6 +113,8 @@ public class WeCustomerExportVO extends WeCustomer {
         this.customerStatus = weCustomer.getStatus();
         this.unionId = weCustomer.getUnionId();
         this.setPhone(weCustomer.getRemarkMobiles());
+        this.externalUserId = weCustomer.getExternalUserid();
+        this.originExternalUserId = weCustomer.getOriginExternalUserId();
         if (CollectionUtils.isEmpty(this.getExtendProperties())){
             this.setExtendProperties(new ArrayList<>());
         }

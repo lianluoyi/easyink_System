@@ -103,5 +103,10 @@ public class WeCustomerVO {
     @ApiModelProperty(value = "客户unionId")
     private String unionId;
 
+    /**
+     * 客户externalUserId明文
+     */
+    private String originExternalUserId;
+
 
 }

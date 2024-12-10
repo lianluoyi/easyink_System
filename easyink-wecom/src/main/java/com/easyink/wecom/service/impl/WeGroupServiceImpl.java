@@ -12,7 +12,6 @@ import com.easyink.common.constant.WeConstans;
 import com.easyink.common.core.domain.AjaxResult;
 import com.easyink.common.core.domain.wecom.WeUser;
 import com.easyink.common.enums.CustomerTrajectoryEnums;
-import com.easyink.common.enums.MethodParamType;
 import com.easyink.common.enums.ResultTip;
 import com.easyink.common.exception.BaseException;
 import com.easyink.common.exception.CustomException;
@@ -37,8 +36,8 @@ import com.easyink.wecom.domain.dto.customer.CustomerGroupList;
 import com.easyink.wecom.domain.dto.customer.CustomerGroupMember;
 import com.easyink.wecom.domain.dto.group.GroupChatListReq;
 import com.easyink.wecom.domain.dto.group.GroupChatListResp;
+import com.easyink.wecom.domain.enums.TagFilterModeEnum;
 import com.easyink.wecom.domain.query.GroupChatStatisticQuery;
-import com.easyink.wecom.domain.resp.WePageBaseResp;
 import com.easyink.wecom.domain.vo.WeGroupExportVO;
 import com.easyink.wecom.domain.vo.sop.GroupSopVO;
 import com.easyink.wecom.domain.vo.wegrouptag.WeGroupTagRelDetail;
@@ -611,7 +610,7 @@ public class WeGroupServiceImpl extends ServiceImpl<WeGroupMapper, WeGroup> impl
     }
 
     @Override
-    public List<WeGroup> listNoRelTag(String corpId, String tagIds, String ownerIds, String beginTime, String endTime) {
+    public List<WeGroup> listNoRelTag(String corpId, String tagIds, Integer includeTagMode, String ownerIds, String beginTime, String endTime) {
         if (org.apache.commons.lang3.StringUtils.isBlank(corpId)) {
             throw new CustomException(ResultTip.TIP_GENERAL_BAD_REQUEST);
         }
@@ -621,7 +620,31 @@ public class WeGroupServiceImpl extends ServiceImpl<WeGroupMapper, WeGroup> impl
         findWeGroupDTO.setOwnerIds(ownerIds);
         findWeGroupDTO.setBeginTime(beginTime);
         findWeGroupDTO.setEndTime(endTime);
-        return baseMapper.list(findWeGroupDTO);
+        findWeGroupDTO.setNeedSqlFilterTag(false);
+        List<WeGroup> groupList = baseMapper.list(findWeGroupDTO);
+        groupList = groupList.stream().filter(group -> {
+            if(org.apache.commons.lang3.StringUtils.isBlank(tagIds)){
+                // 指定包含的标签为空, 返回true
+                return true;
+            }
+            if(StringUtils.isBlank(group.getGroupTagMarks())){
+                // 指定的包含标签不为空, 且拥有的标签为空, 返回false
+                return false;
+            }
+            Set<String> hasGroupTags = new HashSet<>(Arrays.asList(group.getGroupTagMarks().split(",")));
+            Set<String> filterTags = new HashSet<>(Arrays.asList(tagIds.split(",")));
+            if(TagFilterModeEnum.ALL.getCode().equals(includeTagMode)){
+                return hasGroupTags.containsAll(filterTags);
+            }else{
+                for (String hasGroupTag : hasGroupTags) {
+                    if(filterTags.contains(hasGroupTag)){
+                        return true;
+                    }
+                }
+                return false;
+            }
+        }).collect(Collectors.toList());
+        return groupList;
     }
 
     @Override
