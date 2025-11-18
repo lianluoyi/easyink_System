@@ -2,7 +2,7 @@ package com.easyink.framework.config;
 
 import com.google.code.kaptcha.text.impl.DefaultTextCreator;
 
-import java.util.Random;
+import java.security.SecureRandom;
 
 /**
  * 验证码文本生成器
@@ -11,14 +11,14 @@ import java.util.Random;
  */
 public class KaptchaTextCreator extends DefaultTextCreator {
     private static final String[] CNUMBERS = "0,1,2,3,4,5,6,7,8,9,10".split(",");
-    private Random random = new Random();
+    private SecureRandom secureRandom = new SecureRandom();
     @Override
     public String getText() {
         Integer result = 0;
-        int x = random.nextInt(10);
-        int y = random.nextInt(10);
+        int x = secureRandom.nextInt(10);
+        int y = secureRandom.nextInt(10);
         StringBuilder suChinese = new StringBuilder();
-        int randomoperands = (int) Math.round(Math.random() * 2);
+        int randomoperands = secureRandom.nextInt(3);
         if (randomoperands == 0) {
             result = x * y;
             suChinese.append(CNUMBERS[x]);

@@ -2,16 +2,20 @@ package com.easyink.wecom.domain;
 
 import com.alibaba.excel.annotation.ExcelProperty;
 import com.alibaba.excel.annotation.format.DateTimeFormat;
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.annotation.JSONField;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.easyink.common.annotation.EncryptField;
 import com.easyink.common.annotation.Excel;
 import com.easyink.common.core.domain.BaseEntity;
 import com.easyink.common.core.domain.wecom.BaseExtendPropertyRel;
 import com.easyink.common.utils.DictUtils;
 import com.easyink.common.utils.StringUtils;
 import com.easyink.wecom.domain.dto.customer.ExternalContact;
+import com.easyink.wecom.domain.model.customer.AddressModel;
+import com.easyink.wecom.domain.model.customer.CustomerExtendedProperties;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -48,7 +52,7 @@ public class WeCustomer extends BaseEntity {
     @ApiModelProperty(value = "外部联系人名称")
     @TableField("name")
     @Excel(name = "客户")
-    @ExcelProperty(value = "客户",index = 1)
+    @ExcelProperty(value = "客户", index = 1)
     private String name;
 
     /**
@@ -176,12 +180,47 @@ public class WeCustomer extends BaseEntity {
     @TableField(exist = false)
     @Excel(name = "电话")
     @ExcelProperty(value = "电话",index = 10)
+    @EncryptField(EncryptField.FieldType.MOBILE)
     private String phone;
+    @TableField(exist = false)
+    private String phoneEncrypt;
     /**
      * 描述
      */
     @TableField(exist = false)
     private String desc;
+    @TableField(exist = false)
+    private String email;
+    @TableField(exist = false)
+    @EncryptField(EncryptField.FieldType.ADDRESS)
+    private String address;
+    @TableField(exist = false)
+    private String addressEncrypt;
+    /**
+     * 第一级行政区, 省
+     */
+    @TableField(exist = false)
+    private String province;
+    /**
+     * 第二级行政区, 市
+     */
+    @TableField(exist = false)
+    private String city;
+    /**
+     * 第三级行政区, 区/县
+     */
+    @TableField(exist = false)
+    private String area;
+    /**
+     * 第四级行政区, 街道/镇
+     */
+    @TableField(exist = false)
+    private String town;
+    /**
+     * 位置的详细地址
+     */
+    @TableField(exist = false)
+    private String detailAddress;
 
     @TableField(exist = false)
     @ApiModelProperty(value = "查询过滤类型：1：根据客户id：external_userid过滤，2：根据员工id：user_id和客户id：external_userid")
@@ -239,15 +278,15 @@ public class WeCustomer extends BaseEntity {
      * @param corpId          企业ID
      */
     public WeCustomer(ExternalContact externalContact, String corpId) {
-        this.externalUserid=externalContact.getExternalUserid();
-        this.name=externalContact.getName();
-        this.position=externalContact.getPosition();
-        this.avatar=externalContact.getAvatar();
-        this.corpName=externalContact.getCorpName();
-        this.corpFullName=externalContact.getCorpFullName();
-        this.type=externalContact.getType();
-        this.gender= String.valueOf(externalContact.getGender());
-        this.unionid=externalContact.getUnionid();
+        this.externalUserid = externalContact.getExternalUserid();
+        this.name = externalContact.getName();
+        this.position = externalContact.getPosition();
+        this.avatar = externalContact.getAvatar();
+        this.corpName = externalContact.getCorpName();
+        this.corpFullName = externalContact.getCorpFullName();
+        this.type = externalContact.getType();
+        this.gender = String.valueOf(externalContact.getGender());
+        this.unionid = externalContact.getUnionid();
         this.corpId = corpId;
         if (StringUtils.isBlank(externalContact.getUnionid())) {
             this.unionid = StringUtils.EMPTY;
@@ -314,4 +353,17 @@ public class WeCustomer extends BaseEntity {
         this.setFilterExternalUseridList(distinctList);
     }
 
+    /**
+     * 填充位置信息
+     * @param extendedProperties 客户扩展属性
+     */
+    public void fillLocationInfo(CustomerExtendedProperties extendedProperties) {
+        String propertyValue = extendedProperties.getValue();
+        AddressModel addressModel = JSON.parseObject(propertyValue, AddressModel.class);
+        this.province = addressModel.getProvince();
+        this.city = addressModel.getCity();
+        this.area = addressModel.getArea();
+        this.town = addressModel.getTown();
+        this.detailAddress = addressModel.getDetailAddress();
+    }
 }

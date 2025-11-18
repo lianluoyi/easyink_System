@@ -5,19 +5,19 @@ import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.easyink.common.config.RuoYiConfig;
-import com.easyink.common.constant.Constants;
 import com.easyink.common.constant.WeConstans;
 import com.easyink.common.constant.redeemcode.RedeemCodeConstants;
-import com.easyink.common.core.domain.entity.WeCorpAccount;
+import com.easyink.common.enums.AttachmentTypeEnum;
 import com.easyink.common.enums.MediaType;
 import com.easyink.common.enums.ResultTip;
-import com.easyink.common.enums.AttachmentTypeEnum;
 import com.easyink.common.enums.wemsgtlp.WeMsgTlpEnum;
 import com.easyink.common.exception.CustomException;
 import com.easyink.common.utils.StringUtils;
-import com.easyink.common.utils.file.FileUploadUtils;
 import com.easyink.wecom.client.WeWelcomeMsgClient;
-import com.easyink.wecom.domain.*;
+import com.easyink.wecom.domain.WeCustomer;
+import com.easyink.wecom.domain.WeMsgTlp;
+import com.easyink.wecom.domain.WeMsgTlpMaterial;
+import com.easyink.wecom.domain.WeMsgTlpSpecialRule;
 import com.easyink.wecom.domain.dto.WeMediaDTO;
 import com.easyink.wecom.domain.dto.WeWelcomeMsg;
 import com.easyink.wecom.domain.dto.common.*;
@@ -25,6 +25,7 @@ import com.easyink.wecom.domain.dto.welcomemsg.GroupWelcomeMsgAddDTO;
 import com.easyink.wecom.domain.dto.welcomemsg.GroupWelcomeMsgDeleteDTO;
 import com.easyink.wecom.domain.dto.welcomemsg.GroupWelcomeMsgResult;
 import com.easyink.wecom.domain.dto.welcomemsg.GroupWelcomeMsgUpdateDTO;
+import com.easyink.wecom.domain.model.customer.CustomerId;
 import com.easyink.wecom.domain.vo.WeUserVO;
 import com.easyink.wecom.mapper.WeMsgTlpMaterialMapper;
 import com.easyink.wecom.service.*;
@@ -297,20 +298,18 @@ public class WeMsgTlpMaterialServiceImpl extends ServiceImpl<WeMsgTlpMaterialMap
      * @param defaultMsg          默认欢迎语
      * @param materialList        欢迎语素材
      * @param weWelcomeMsgBuilder 发送欢迎语DTO
-     * @param userId              员工id
-     * @param externalUserId      客户id
-     * @param corpId              企业id
+     * @param customerId          客户id
      * @param remark              备注
      * @return 欢迎语实体DTO
      */
     @Override
-    public WeWelcomeMsg buildWeWelcomeMsg(String defaultMsg, List<WeMsgTlpMaterial> materialList, WeWelcomeMsg.WeWelcomeMsgBuilder weWelcomeMsgBuilder, String userId, String externalUserId, String corpId, String remark) {
+    public WeWelcomeMsg buildWeWelcomeMsg(String defaultMsg, List<WeMsgTlpMaterial> materialList, WeWelcomeMsg.WeWelcomeMsgBuilder weWelcomeMsgBuilder, CustomerId customerId, String remark) {
         if (StringUtils.isEmpty(defaultMsg) && CollectionUtils.isEmpty(materialList)) {
             log.error("欢迎语和素材都为空，欢迎语发送失败");
             throw new CustomException(ResultTip.TIP_GENERAL_BAD_REQUEST);
         }
-        if (StringUtils.isEmpty(userId) || StringUtils.isEmpty(externalUserId) || StringUtils.isEmpty(corpId)) {
-            log.error("params missing, userid:{}, externalUserId:{}, corpId: {}", userId, externalUserId, corpId);
+        if (StringUtils.isEmpty(customerId.getUserId()) || StringUtils.isEmpty(customerId.getExternalUserid()) || StringUtils.isEmpty(customerId.getCorpId())) {
+            log.error("params missing, customerId:{}", customerId);
             throw new CustomException(ResultTip.TIP_GENERAL_BAD_REQUEST);
         }
 
@@ -318,7 +317,7 @@ public class WeMsgTlpMaterialServiceImpl extends ServiceImpl<WeMsgTlpMaterialMap
         // 兑换码
         String redeemCode = StringUtils.EMPTY;
 
-        String replyText = replyTextIfNecessary(defaultMsg, remark, redeemCode, externalUserId, userId, corpId);
+        String replyText = replyTextIfNecessary(defaultMsg, remark, redeemCode, customerId);
         Optional.ofNullable(replyText).ifPresent(text -> weWelcomeMsgBuilder.text(Text.builder().content(text).build()));
         // 处理素材
         List<Attachment> attachmentList = new ArrayList<>();
@@ -330,8 +329,8 @@ public class WeMsgTlpMaterialServiceImpl extends ServiceImpl<WeMsgTlpMaterialMap
                 log.error("type is error !!, type: {}", weMsgTlpMaterial.getType());
                 continue;
             }
-            AttachmentParam param = AttachmentParam.costFromWeMsgTlpMaterial(weMsgTlpMaterial.getExtraId(), userId, corpId, weMsgTlpMaterial, type);
-            attachments = attachmentService.buildAttachment(param, corpId);
+            AttachmentParam param = AttachmentParam.costFromWeMsgTlpMaterial(weMsgTlpMaterial.getExtraId(), customerId.getUserId(), customerId.getCorpId(), weMsgTlpMaterial, type);
+            attachments = attachmentService.buildAttachment(param, customerId.getCorpId());
 //            attachments = this.buildByWelcomeMsgType(param.getContent(), param.getPicUrl(), param.getDescription(), param.getUrl(), param.getTypeEnum(), corpId);
             if (attachments != null) {
                 attachmentList.add(attachments);
@@ -409,13 +408,11 @@ public class WeMsgTlpMaterialServiceImpl extends ServiceImpl<WeMsgTlpMaterialMap
      *
      * @param welcomeMsg     文本消息
      * @param remark         给客户的备注
-     * @param externalUserId 外部联系人id
-     * @param userId         员工id
-     * @param corpId         企业id
+     * @param customerId  客户id
      * @return 替换后的文本，为null返回null
      */
     @Override
-    public String replyTextIfNecessary(final String welcomeMsg, final String remark, final String redeemCode, String externalUserId, String userId, String corpId) {
+    public String replyTextIfNecessary(final String welcomeMsg, final String remark, final String redeemCode, CustomerId customerId) {
         String customerNickName = WeConstans.CUSTOMER_NICKNAME;
         String employeeName = WeConstans.EMPLOYEE_NAME;
 
@@ -427,15 +424,15 @@ public class WeMsgTlpMaterialServiceImpl extends ServiceImpl<WeMsgTlpMaterialMap
 
                     replyText = replyText.replaceAll(customerNickName, remark);
                 } else {
-                    WeCustomer weCustomer = weCustomerService.selectWeCustomerById(externalUserId, corpId);
+                    WeCustomer weCustomer = weCustomerService.selectWeCustomerById(customerId.getExternalUserid(), customerId.getCorpId());
                     replyText = replyText.replaceAll(customerNickName, weCustomer == null ? StringUtils.EMPTY : StringUtils.defaultString(weCustomer.getName()));
                 }
             }
             //替换#员工姓名#
             if (replyText.contains(employeeName)) {
-                WeUserVO user = weUserService.getUser(corpId, userId);
+                WeUserVO user = weUserService.getUser(customerId.getCorpId(), customerId.getUserId());
                 if (user == null) {
-                    log.error("sendMessageToNewExternalUserId user is null!! corpId={},userId={}", corpId, userId);
+                    log.error("sendMessageToNewExternalUserId user is null!! corpId={},userId={}", customerId.getCorpId(), customerId.getUserId());
                 } else {
                     replyText = replyText.replaceAll(employeeName, user.getUserName());
                 }

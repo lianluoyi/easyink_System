@@ -4,8 +4,11 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.easyink.common.core.domain.wecom.BaseExtendPropertyRel;
 import com.easyink.wecom.domain.dto.BatchSaveCustomerExtendPropertyDTO;
 import com.easyink.wecom.domain.dto.SaveCustomerExtendPropertyDTO;
+import com.easyink.wecom.domain.dto.form.push.ThirdPartyPushSysData;
 import com.easyink.wecom.domain.entity.customer.ExtendPropertyMultipleOption;
 import com.easyink.wecom.domain.entity.customer.WeCustomerExtendProperty;
+import com.easyink.wecom.domain.model.customer.CustomerExtendTypeValueModel;
+import com.easyink.wecom.domain.model.customer.CustomerId;
 import com.easyink.wecom.domain.vo.WeCustomerExportVO;
 import com.easyink.wecom.domain.vo.customer.WeCustomerVO;
 import com.easyink.wecom.handler.ExtendPropHolder;
@@ -137,7 +140,7 @@ public interface WeCustomerExtendPropertyService extends IService<WeCustomerExte
      * @param optionMap        多选值id->值的映射
      * @return 自定义字段名称->所有值用,隔开 的映射
      */
-    Map<String, String> mapPropertyName2Value(List<BaseExtendPropertyRel> extendProperties, Map<Long, WeCustomerExtendProperty> extendPropMap, Map<Long, ExtendPropertyMultipleOption> optionMap);
+    Map<String, CustomerExtendTypeValueModel> mapPropertyName2Value(List<BaseExtendPropertyRel> extendProperties, Map<Long, WeCustomerExtendProperty> extendPropMap, Map<Long, ExtendPropertyMultipleOption> optionMap);
 
     /**
      * 根据extendProperties 和 已有的自定义属性和多选值映射,获取客户的 自定义字段属性->所有值用,隔开 的映射
@@ -166,4 +169,13 @@ public interface WeCustomerExtendPropertyService extends IService<WeCustomerExte
      * @param list   客户列表
      */
     void setExtendPropertyForCustomers(String corpId, List<WeCustomerVO> list);
+
+    /**
+     * 根据客户自定义属性id查询客户自定义属性映射
+     * @param propIdList 客户自定义字段id列表
+     * @param customerId 客户id
+     * @param fromId 表单id
+     * @return
+     */
+    List<ThirdPartyPushSysData.CustomerExtendPropertyInfo> selectCustomerExternalPropertyMappingById(List<Integer> propIdList, CustomerId customerId, Long fromId);
 }

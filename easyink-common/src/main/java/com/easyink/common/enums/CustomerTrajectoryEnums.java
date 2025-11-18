@@ -165,6 +165,7 @@ public class CustomerTrajectoryEnums {
          * 编辑单选框
          */
         EDIT_CHOICE("edit_choice", "${operator}修改了${propertyName}为："),
+        EDIT_LOCATION("edit_location", "${operator}修改了${propertyName}为："),
         /***
          * 编辑图片
          */

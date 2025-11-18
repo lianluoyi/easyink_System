@@ -7,20 +7,19 @@ import com.easyink.common.exception.CustomException;
 import com.easyink.common.utils.Threads;
 import com.easyink.common.utils.WXBizMsgCrypt;
 import com.easyink.wecom.domain.vo.WeOpenXmlMessageVO;
-import com.easyink.wecom.domain.vo.WxCpXmlMessageVO;
 import com.easyink.wecom.factory.WeOpenCallBackEventFactory;
 import com.easyink.wecom.factory.WeOpenEventHandle;
-import com.thoughtworks.xstream.XStream;
-import com.thoughtworks.xstream.security.AnyTypePermission;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import me.chanjar.weixin.common.util.xml.XStreamInitializer;
 import me.chanjar.weixin.cp.bean.WxCpXmlMessage;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 微信开放平台回调接口
@@ -66,12 +65,22 @@ public class WeOpenCallBackController {
         return "success";
     }
 
+    /**
+     * 安全的XML反序列化方法
+     * 使用严格的白名单机制控制反序列化范围，防止XXE攻击和反序列化攻击
+     *
+     * @param xmlStr XML字符串
+     * @return 反序列化后的WeOpenXmlMessageVO对象
+     * @throws CustomException 当XML解析失败或包含非法内容时抛出
+     */
     private WeOpenXmlMessageVO strXmlToBean(String xmlStr) {
-        XStream xstream = XStreamInitializer.getInstance();
-        xstream.addPermission(AnyTypePermission.ANY);
-        xstream.processAnnotations(WxCpXmlMessage.class);
-        xstream.processAnnotations(WeOpenXmlMessageVO.class);
-        return (WeOpenXmlMessageVO) xstream.fromXML(xmlStr);
+
+            List<Class<?>> objects = new ArrayList<>();
+            objects.add(WxCpXmlMessage.class);
+            objects.add(WeOpenXmlMessageVO.class);
+            WeOpenXmlMessageVO messageVO = com.xmlly.util.XmlUtil.strXmlToBean(xmlStr, objects, WeOpenXmlMessageVO.class);
+            return messageVO;
+
     }
 
 }

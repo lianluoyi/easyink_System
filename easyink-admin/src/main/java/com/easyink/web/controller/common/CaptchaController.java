@@ -54,7 +54,7 @@ public class CaptchaController {
     @GetMapping("/captchaImage")
     public AjaxResult getCode(HttpServletResponse response) {
         // 保存验证码信息
-        String uuid = IdUtils.simpleUUID();
+        String uuid = IdUtils.fastSimpleUUID();
         String verifyKey = Constants.CAPTCHA_CODE_KEY + uuid;
 
         String capStr;

@@ -9,7 +9,6 @@ import com.easyink.common.constant.WeConstans;
 import com.easyink.common.core.domain.entity.WeCorpAccount;
 import com.easyink.common.core.domain.model.LoginUser;
 import com.easyink.common.core.domain.wecom.WeDepartment;
-import com.easyink.common.core.domain.wecom.WeUser;
 import com.easyink.common.enums.GroupMessageType;
 import com.easyink.common.enums.MessageType;
 import com.easyink.common.enums.ResultTip;
@@ -27,7 +26,6 @@ import com.easyink.wecom.domain.dto.WeCustomerPushMessageDTO;
 import com.easyink.wecom.domain.dto.WeMessagePushDTO;
 import com.easyink.wecom.domain.dto.message.*;
 import com.easyink.wecom.domain.vo.CustomerMessagePushVO;
-import com.easyink.wecom.domain.vo.UserVO;
 import com.easyink.wecom.domain.vo.sop.DepartmentVO;
 import com.easyink.wecom.mapper.WeCustomerMessageTimeTaskMapper;
 import com.easyink.wecom.service.*;
@@ -109,31 +107,74 @@ public class WeCustomerMessagePushServiceImpl implements WeCustomerMessagePushSe
         if (customerMessagePushDTO.getTextMessage() == null && CollectionUtils.isEmpty(customerMessagePushDTO.getAttachments())) {
             throw new CustomException(ResultTip.TIP_SEND_MESSAGE_ERROR);
         }
-        List<WeCustomer> customers = Lists.newArrayList();
-        List<WeGroup> groups = new ArrayList<>();
+        List<WeCustomer> allCustomers = Lists.newArrayList();
+        List<WeGroup> allGroups = new ArrayList<>();
         //临时保存staffId
         final String tmpStaffId = customerMessagePushDTO.getStaffId();
         //构造客户/客户群
-        buildCustomerGroups(customerMessagePushDTO, loginUser, customers, groups);
-        //保存原始数据信息表
+        buildCustomerGroups(customerMessagePushDTO, loginUser, allCustomers, allGroups);
+        
+        // 保存原始数据信息表（只保存一次，所有批次共享）
         long messageOriginalId = weCustomerMessageOriginalService.saveWeCustomerMessageOriginal(customerMessagePushDTO, tmpStaffId);
 
-        long messageId = SnowFlakeUtil.nextId();
-        customerMessagePushDTO.setMessageId(messageId);
-        //保存映射信息
-        int size = weCustomerMessgaeResultService.workerMappingCustomer(customerMessagePushDTO, messageId, customers, groups);
-        //保存微信消息
-        weCustomerMessageService.saveWeCustomerMessage(loginUser, messageId, messageOriginalId, customerMessagePushDTO, size);
-        //保存分类消息信息
-        weCustomerSeedMessageService.saveSeedMessage(customerMessagePushDTO, messageId);
-        //异步发送
-        CompletableFuture.runAsync(() -> {
-            try {
-                sendMessage(customerMessagePushDTO, messageId, customers);
-            } catch (ParseException | JsonProcessingException e) {
-                log.error("异步发送群发消息异常：ex:{}", ExceptionUtil.getExceptionMessage(e));
+        // 分批处理（先按员工分组，再按数量分片）
+        if (WeConstans.SEND_MESSAGE_CUSTOMER.equals(customerMessagePushDTO.getPushType())) {
+            // 客户群发：先按userId分组，每组内按10000分批
+            Map<String, List<WeCustomer>> customersByUser = allCustomers.stream()
+                .collect(Collectors.groupingBy(WeCustomer::getUserId));
+            
+            int totalBatches = 0;
+            // 先计算总批次数
+            for (List<WeCustomer> userCustomers : customersByUser.values()) {
+                totalBatches += (int) Math.ceil((double) userCustomers.size() / WeConstans.BATCH_CUSTOMER_SIZE);
             }
-        });
+            
+            log.info("客户群发分批处理，总客户数：{}，按员工分组数：{}，总批次数：{}", 
+                allCustomers.size(), customersByUser.size(), totalBatches);
+            
+            int batchIndex = 1;
+            for (Map.Entry<String, List<WeCustomer>> entry : customersByUser.entrySet()) {
+                String userId = entry.getKey();
+                List<WeCustomer> userCustomers = entry.getValue();
+                
+                // 在该员工的客户中按10000分批
+                List<List<WeCustomer>> customerBatches = splitCustomers(userCustomers, WeConstans.BATCH_CUSTOMER_SIZE);
+                log.info("员工 {} 的客户数：{}，分批数：{}", userId, userCustomers.size(), customerBatches.size());
+                
+                for (List<WeCustomer> batch : customerBatches) {
+                    createSingleBatchTask(customerMessagePushDTO, loginUser, messageOriginalId, batch, null, batchIndex, totalBatches);
+                    batchIndex++;
+                }
+            }
+        } else {
+            // 群聊群发：先按owner(群主)分组，每组内按2000分批
+            Map<String, List<WeGroup>> groupsByOwner = allGroups.stream()
+                .collect(Collectors.groupingBy(WeGroup::getOwner));
+            
+            int totalBatches = 0;
+            // 先计算总批次数
+            for (List<WeGroup> ownerGroups : groupsByOwner.values()) {
+                totalBatches += (int) Math.ceil((double) ownerGroups.size() / WeConstans.BATCH_GROUP_SIZE);
+            }
+            
+            log.info("群聊群发分批处理，总群数：{}，按群主分组数：{}，总批次数：{}", 
+                allGroups.size(), groupsByOwner.size(), totalBatches);
+            
+            int batchIndex = 1;
+            for (Map.Entry<String, List<WeGroup>> entry : groupsByOwner.entrySet()) {
+                String ownerId = entry.getKey();
+                List<WeGroup> ownerGroups = entry.getValue();
+                
+                // 在该群主的群中按2000分批
+                List<List<WeGroup>> groupBatches = splitGroups(ownerGroups, WeConstans.BATCH_GROUP_SIZE);
+                log.info("群主 {} 的群数：{}，分批数：{}", ownerId, ownerGroups.size(), groupBatches.size());
+                
+                for (List<WeGroup> batch : groupBatches) {
+                    createSingleBatchTask(customerMessagePushDTO, loginUser, messageOriginalId, null, batch, batchIndex, totalBatches);
+                    batchIndex++;
+                }
+            }
+        }
 
     }
 
@@ -164,9 +205,9 @@ public class WeCustomerMessagePushServiceImpl implements WeCustomerMessagePushSe
             if (CollectionUtils.isEmpty(customers)) {
                 throw new CustomException(ResultTip.TIP_NO_CUSTOMER);
             }
-            // 判断发送的客户是否超出最大限制
+            // 如果客户数量超过限制，将自动分批处理
             if (customers.size() >= WeConstans.MAX_SEND_CNT) {
-                throw new CustomException(ResultTip.TIP_MESSAGE_PUSH_EXTRA_NUM);
+                log.info("客户数量超过限制（{}个），将进行分批处理", customers.size());
             }
         } else {
             //发给客户群
@@ -268,61 +309,119 @@ public class WeCustomerMessagePushServiceImpl implements WeCustomerMessagePushSe
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void updateTimeTask(CustomerMessagePushDTO customerMessagePushDTO, LoginUser loginUser) throws ParseException {
+    public void updateTimeTask(CustomerMessagePushDTO customerMessagePushDTO, LoginUser loginUser) {
         if (customerMessagePushDTO == null) {
             return;
         }
         StringUtils.checkCorpId(loginUser.getCorpId());
         customerMessagePushDTO.setCorpId(loginUser.getCorpId());
-        //查询定时任务
-        WeCustomerMessageTimeTask timeTask = getTimeTask(customerMessagePushDTO.getMessageId());
-        //只能修改未发送的定时任务
-        if (timeTask == null || Integer.valueOf(WeConstans.SEND).equals(timeTask.getSolved())) {
+        
+        Long messageId = customerMessagePushDTO.getMessageId();
+        // 查询当前消息所属的原始配置ID
+        WeCustomerMessage customerMessage = weCustomerMessageService.getById(messageId);
+        if (customerMessage == null) {
             throw new CustomException(ResultTip.TIP_MESSAGE_TASK_UPDATE_ERROR);
         }
-        //设置修改后的值
-        List<WeCustomer> customers = new ArrayList<>();
-        List<WeGroup> groups = new ArrayList<>();
-        //临时保存staffId 保存原始数据信息表时写入前端传进来的staffId
-        final String tmpStaffId = customerMessagePushDTO.getStaffId();
-        buildCustomerGroups(customerMessagePushDTO, loginUser, customers, groups);
-        timeTask.setMessageInfo(customerMessagePushDTO);
-        timeTask.setCustomersInfo(customers);
-        if (StringUtils.isNotBlank(customerMessagePushDTO.getSettingTime())) {
-            timeTask.setSettingTime(DateUtils.getMillionSceondsBydate(customerMessagePushDTO.getSettingTime()));
+        Long messageOriginalId = customerMessage.getOriginalId();
+        
+        // 查询该原始配置ID下的所有消息任务（可能有多个批次）
+        List<WeCustomerMessage> batchMessages = weCustomerMessageService.list(
+            new LambdaQueryWrapper<WeCustomerMessage>()
+                .eq(WeCustomerMessage::getOriginalId, messageOriginalId)
+                .eq(WeCustomerMessage::getDelFlag, WeConstans.WE_CUSTOMER_MSG_RESULT_NO_DEFALE)
+        );
+        
+        // 验证所有批次都是未发送的定时任务
+        for (WeCustomerMessage msg : batchMessages) {
+            if (!Integer.valueOf(WeConstans.TIME_TASK).equals(msg.getTimedTask()) 
+                || !WeConstans.NOT_SEND.equals(msg.getCheckStatus())) {
+                throw new CustomException(ResultTip.TIP_MESSAGE_TASK_UPDATE_ERROR);
+            }
         }
-        Long messageId = customerMessagePushDTO.getMessageId();
-        //保存原始数据信息表
-        WeCustomerMessage customerMessage = weCustomerMessageService.getById(messageId);
-        WeCustomerMessageOriginal original = weCustomerMessageOriginalService.getById(customerMessage.getOriginalId());
+        
+        // 删除所有旧批次的相关数据
+        for (WeCustomerMessage msg : batchMessages) {
+            Long batchMessageId = msg.getMessageId();
+            // 删除映射信息
+            weCustomerMessgaeResultService.delete(batchMessageId, loginUser.getCorpId());
+            // 删除微信消息
+            weCustomerMessageService.deleteByMessageId(batchMessageId, loginUser.getCorpId());
+            // 删除分类消息信息
+            weCustomerSeedMessageService.deleteByMessageId(batchMessageId, loginUser.getCorpId());
+            // 删除定时任务
+            customerMessageTimeTaskMapper.delete(new LambdaQueryWrapper<WeCustomerMessageTimeTask>()
+                .eq(WeCustomerMessageTimeTask::getMessageId, batchMessageId));
+        }
+        
+        // 更新原始数据信息表
+        WeCustomerMessageOriginal original = weCustomerMessageOriginalService.getById(messageOriginalId);
+        final String tmpStaffId = customerMessagePushDTO.getStaffId();
         BeanUtils.copyProperties(customerMessagePushDTO, original);
         original.setStaffId(tmpStaffId);
         weCustomerMessageOriginalService.updateById(original);
-        long messageOriginalId = original.getMessageOriginalId();
-
-        //保存映射信息
-        weCustomerMessgaeResultService.delete(messageId, loginUser.getCorpId());
-        int size = weCustomerMessgaeResultService.workerMappingCustomer(customerMessagePushDTO, messageId, customers, groups);
-        //保存微信消息
-        weCustomerMessageService.deleteByMessageId(messageId, loginUser.getCorpId());
-        weCustomerMessageService.saveWeCustomerMessage(loginUser, messageId, messageOriginalId, customerMessagePushDTO, size);
-        //保存分类消息信息
-        weCustomerSeedMessageService.deleteByMessageId(messageId, loginUser.getCorpId());
-        weCustomerSeedMessageService.saveSeedMessage(customerMessagePushDTO, messageId);
-        //判断是否定时
-        if (StringUtils.isEmpty(customerMessagePushDTO.getSettingTime())) {
-            customerMessageTimeTaskMapper.deleteById(timeTask.getTaskId());
-            //异步发送
-            CompletableFuture.runAsync(() -> {
-                try {
-                    weCustomerMessageService.sendMessage(customerMessagePushDTO, messageId, customers);
-                } catch (Exception e) {
-                    log.error("异步发送群发消息异常：messageId:{},ex:{}", messageId, ExceptionUtil.getExceptionMessage(e));
+        
+        // 重新构造客户/群列表并分批创建
+        List<WeCustomer> allCustomers = new ArrayList<>();
+        List<WeGroup> allGroups = new ArrayList<>();
+        buildCustomerGroups(customerMessagePushDTO, loginUser, allCustomers, allGroups);
+        
+        // 分批创建新的任务（先按员工分组，再按数量分片）
+        if (WeConstans.SEND_MESSAGE_CUSTOMER.equals(customerMessagePushDTO.getPushType())) {
+            // 客户群发：先按userId分组，每组内按10000分批
+            Map<String, List<WeCustomer>> customersByUser = allCustomers.stream()
+                .collect(Collectors.groupingBy(WeCustomer::getUserId));
+            
+            int totalBatches = 0;
+            // 先计算总批次数
+            for (List<WeCustomer> userCustomers : customersByUser.values()) {
+                totalBatches += (int) Math.ceil((double) userCustomers.size() / WeConstans.BATCH_CUSTOMER_SIZE);
+            }
+            
+            log.info("修改群发任务-客户群发分批处理，总客户数：{}，按员工分组数：{}，总批次数：{}", 
+                allCustomers.size(), customersByUser.size(), totalBatches);
+            
+            int batchIndex = 1;
+            for (Map.Entry<String, List<WeCustomer>> entry : customersByUser.entrySet()) {
+                String userId = entry.getKey();
+                List<WeCustomer> userCustomers = entry.getValue();
+                
+                // 在该员工的客户中按10000分批
+                List<List<WeCustomer>> customerBatches = splitCustomers(userCustomers, WeConstans.BATCH_CUSTOMER_SIZE);
+                log.info("修改群发任务-员工 {} 的客户数：{}，分批数：{}", userId, userCustomers.size(), customerBatches.size());
+                
+                for (List<WeCustomer> batch : customerBatches) {
+                    createSingleBatchTask(customerMessagePushDTO, loginUser, messageOriginalId, batch, null, batchIndex, totalBatches);
+                    batchIndex++;
                 }
-            });
+            }
         } else {
-            //修改
-            customerMessageTimeTaskMapper.updateById(timeTask);
+            // 群聊群发：先按owner(群主)分组，每组内按2000分批
+            Map<String, List<WeGroup>> groupsByOwner = allGroups.stream()
+                .collect(Collectors.groupingBy(WeGroup::getOwner));
+            
+            int totalBatches = 0;
+            // 先计算总批次数
+            for (List<WeGroup> ownerGroups : groupsByOwner.values()) {
+                totalBatches += (int) Math.ceil((double) ownerGroups.size() / WeConstans.BATCH_GROUP_SIZE);
+            }
+            
+            log.info("修改群发任务-群聊群发分批处理，总群数：{}，按群主分组数：{}，总批次数：{}", 
+                allGroups.size(), groupsByOwner.size(), totalBatches);
+            
+            int batchIndex = 1;
+            for (Map.Entry<String, List<WeGroup>> entry : groupsByOwner.entrySet()) {
+                String ownerId = entry.getKey();
+                List<WeGroup> ownerGroups = entry.getValue();
+                
+                // 在该群主的群中按2000分批
+                List<List<WeGroup>> groupBatches = splitGroups(ownerGroups, WeConstans.BATCH_GROUP_SIZE);
+                log.info("修改群发任务-群主 {} 的群数：{}，分批数：{}", ownerId, ownerGroups.size(), groupBatches.size());
+                
+                for (List<WeGroup> batch : groupBatches) {
+                    createSingleBatchTask(customerMessagePushDTO, loginUser, messageOriginalId, null, batch, batchIndex, totalBatches);
+                    batchIndex++;
+                }
+            }
         }
     }
 
@@ -424,22 +523,51 @@ public class WeCustomerMessagePushServiceImpl implements WeCustomerMessagePushSe
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void delete(Long messageId, String corpId) {
-        //删除原始数据信息表
         WeCustomerMessage customerMessage = weCustomerMessageService.getById(messageId);
-        if (Integer.valueOf(WeConstans.TIME_TASK).equals(customerMessage.getTimedTask()) && WeConstans.NOT_SEND.equals(customerMessage.getCheckStatus())) {
-            WeCustomerMessageOriginal original = weCustomerMessageOriginalService.getById(customerMessage.getOriginalId());
-            weCustomerMessageOriginalService.removeById(original);
-            //删除消息结果
-            weCustomerMessgaeResultService.delete(messageId, corpId);
-            //删除微信消息
-            weCustomerMessageService.removeById(messageId);
-            //删除分类消息信息
-            weCustomerSeedMessageService.remove(new LambdaQueryWrapper<WeCustomerSeedMessage>().eq(WeCustomerSeedMessage::getMessageId, messageId));
-            //删除定时任务
-            customerMessageTimeTaskMapper.delete(new LambdaQueryWrapper<WeCustomerMessageTimeTask>().eq(WeCustomerMessageTimeTask::getMessageId, messageId));
-        } else {
+        if (customerMessage == null) {
             throw new CustomException(ResultTip.TIP_MESSAGE_TASK_DELETE_ERROR);
         }
+        
+        Long messageOriginalId = customerMessage.getOriginalId();
+        
+        // 查询该原始配置ID下的所有消息任务（可能有多个批次）
+        List<WeCustomerMessage> batchMessages = weCustomerMessageService.list(
+            new LambdaQueryWrapper<WeCustomerMessage>()
+                .eq(WeCustomerMessage::getOriginalId, messageOriginalId)
+                .eq(WeCustomerMessage::getDelFlag, WeConstans.WE_CUSTOMER_MSG_RESULT_NO_DEFALE)
+        );
+        
+        // 验证所有批次都是未发送的定时任务
+        boolean canDelete = true;
+        for (WeCustomerMessage msg : batchMessages) {
+            if (!Integer.valueOf(WeConstans.TIME_TASK).equals(msg.getTimedTask()) 
+                || !WeConstans.NOT_SEND.equals(msg.getCheckStatus())) {
+                canDelete = false;
+                break;
+            }
+        }
+        
+        if (!canDelete) {
+            throw new CustomException(ResultTip.TIP_MESSAGE_TASK_DELETE_ERROR);
+        }
+        
+        // 删除所有批次的相关数据
+        for (WeCustomerMessage msg : batchMessages) {
+            Long batchMessageId = msg.getMessageId();
+            // 删除消息结果
+            weCustomerMessgaeResultService.delete(batchMessageId, corpId);
+            // 删除微信消息
+            weCustomerMessageService.removeById(batchMessageId);
+            // 删除分类消息信息
+            weCustomerSeedMessageService.remove(new LambdaQueryWrapper<WeCustomerSeedMessage>()
+                .eq(WeCustomerSeedMessage::getMessageId, batchMessageId));
+            // 删除定时任务
+            customerMessageTimeTaskMapper.delete(new LambdaQueryWrapper<WeCustomerMessageTimeTask>()
+                .eq(WeCustomerMessageTimeTask::getMessageId, batchMessageId));
+        }
+        
+        // 删除原始数据信息表
+        weCustomerMessageOriginalService.removeById(messageOriginalId);
     }
 
     /**
@@ -629,5 +757,87 @@ public class WeCustomerMessagePushServiceImpl implements WeCustomerMessagePushSe
             }
             attachments.add(attachment);
         }
+    }
+
+    /**
+     * 分批客户列表
+     *
+     * @param customers 客户列表
+     * @param batchSize 每批数量
+     * @return 分批后的列表
+     */
+    private List<List<WeCustomer>> splitCustomers(List<WeCustomer> customers, int batchSize) {
+        if (CollectionUtils.isEmpty(customers)) {
+            return Collections.emptyList();
+        }
+        List<List<WeCustomer>> batches = new ArrayList<>();
+        int totalSize = customers.size();
+        for (int i = 0; i < totalSize; i += batchSize) {
+            int end = Math.min(i + batchSize, totalSize);
+            batches.add(new ArrayList<>(customers.subList(i, end)));
+        }
+        return batches;
+    }
+
+    /**
+     * 分批群列表
+     *
+     * @param groups 群列表
+     * @param batchSize 每批数量
+     * @return 分批后的列表
+     */
+    private List<List<WeGroup>> splitGroups(List<WeGroup> groups, int batchSize) {
+        if (CollectionUtils.isEmpty(groups)) {
+            return Collections.emptyList();
+        }
+        List<List<WeGroup>> batches = new ArrayList<>();
+        int totalSize = groups.size();
+        for (int i = 0; i < totalSize; i += batchSize) {
+            int end = Math.min(i + batchSize, totalSize);
+            batches.add(new ArrayList<>(groups.subList(i, end)));
+        }
+        return batches;
+    }
+
+    /**
+     * 创建单个批次的群发任务
+     *
+     * @param customerMessagePushDTO 群发消息DTO
+     * @param loginUser 登录用户
+     * @param messageOriginalId 原始消息ID
+     * @param customers 客户列表
+     * @param groups 群列表
+     * @param batchIndex 批次索引（从1开始）
+     * @param totalBatches 总批次数
+     */
+    private void createSingleBatchTask(CustomerMessagePushDTO customerMessagePushDTO, LoginUser loginUser,
+                                       long messageOriginalId, List<WeCustomer> customers, List<WeGroup> groups,
+                                       int batchIndex, int totalBatches) {
+        // 复制DTO，避免修改原对象
+        CustomerMessagePushDTO batchDTO = new CustomerMessagePushDTO();
+        BeanUtils.copyProperties(customerMessagePushDTO, batchDTO);
+
+
+        // 生成消息ID
+        long messageId = SnowFlakeUtil.nextId();
+        batchDTO.setMessageId(messageId);
+
+        // 保存映射关系
+        int size = weCustomerMessgaeResultService.workerMappingCustomer(batchDTO, messageId, customers, groups);
+
+        // 保存微信消息（关联到同一个 messageOriginalId）
+        weCustomerMessageService.saveWeCustomerMessage(loginUser, messageId, messageOriginalId, batchDTO, size);
+
+        // 保存子消息
+        weCustomerSeedMessageService.saveSeedMessage(batchDTO, messageId);
+
+        // 异步发送
+        CompletableFuture.runAsync(() -> {
+            try {
+                sendMessage(batchDTO, messageId, customers);
+            } catch (ParseException | JsonProcessingException e) {
+                log.error("异步发送群发消息异常（批次{}/{}）：ex:{}", batchIndex, totalBatches, ExceptionUtil.getExceptionMessage(e));
+            }
+        });
     }
 }

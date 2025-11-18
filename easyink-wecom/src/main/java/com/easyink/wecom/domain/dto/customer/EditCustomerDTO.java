@@ -4,13 +4,14 @@ import cn.hutool.core.date.DateUtil;
 import com.easyink.common.annotation.SysProperty;
 import com.easyink.common.core.domain.wecom.BaseExtendPropertyRel;
 import com.easyink.common.utils.DateUtils;
-import com.easyink.common.utils.StringUtils;
 import com.easyink.wecom.annotation.Cipher;
 import com.easyink.wecom.domain.WeCustomer;
 import com.easyink.wecom.domain.WeFlowerCustomerRel;
 import com.easyink.wecom.domain.WeTag;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.validation.constraints.NotBlank;
 import java.util.List;
@@ -21,6 +22,7 @@ import java.util.List;
  * @author : silver_chariot
  * @date : 2021/11/18 14:10
  */
+@Slf4j
 @Data
 public class EditCustomerDTO {
 

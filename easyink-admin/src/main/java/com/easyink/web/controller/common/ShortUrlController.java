@@ -49,19 +49,19 @@ public class ShortUrlController {
     public AjaxResult getUrlAndHandle(@ApiParam("短链后缀的code")@PathVariable String shortCode) {
         // 校验短链code
         validateCode(shortCode);
-        // 校验访问Ip
-        String serverIp = "";
-        try {
-            serverIp = IpUtils.getOutIp();
-        } catch (Exception e) {
-            log.error("[短链]获取服务器ip异常.e:{}", ExceptionUtils.getStackTrace(e));
-        }
-        String ip = IpUtils.getIpAddr(ServletUtils.getRequest());
-        log.info("[短链]有人点击了短链,shortCode:{},ip:{},serverIp:{}", shortCode, ip, serverIp);
-        if (serverIp.equals(ip)) {
-            log.info("[短链]ip与服务器ip一样,不处理,ip:{}", ip);
-            return AjaxResult.success();
-        }
+//        // 校验访问Ip
+//        String serverIp = "";
+//        try {
+//            serverIp = IpUtils.getOutIp();
+//        } catch (Exception e) {
+//            log.error("[短链]获取服务器ip异常.e:{}", ExceptionUtils.getStackTrace(e));
+//        }
+//        String ip = IpUtils.getIpAddr(ServletUtils.getRequest());
+//        log.info("[短链]有人点击了短链,shortCode:{},ip:{},serverIp:{}", shortCode, ip, serverIp);
+//        if (serverIp.equals(ip)) {
+//            log.info("[短链]ip与服务器ip一样,不处理,ip:{}", ip);
+//            return AjaxResult.success();
+//        }
         // 获取短链接到原链接的映射
         SysShortUrlMapping urlMapping = shortUrlService.getUrlByMapping(shortCode);
         AbstractShortUrlHandler handler = shortUrlHandlerFactory.getByType(urlMapping.getType());

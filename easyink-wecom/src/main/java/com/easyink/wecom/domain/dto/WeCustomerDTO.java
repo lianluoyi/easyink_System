@@ -3,6 +3,7 @@ package com.easyink.wecom.domain.dto;
 import com.easyink.wecom.domain.WeCustomer;
 import com.easyink.wecom.domain.WeFlowerCustomerRel;
 import lombok.Data;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * @description: 客户实体
@@ -91,7 +92,12 @@ public class WeCustomerDTO extends WeResultDTO {
                 this.description = weCustomer.getDesc();
             }
             if (weCustomer.getPhone() != null) {
-                this.remark_mobiles = new String[]{weCustomer.getPhone()};
+                // 多个手机号
+                if (StringUtils.contains(weCustomer.getPhone(), ",")) {
+                    this.remark_mobiles = StringUtils.split(weCustomer.getPhone(), ",");
+                } else {
+                    this.remark_mobiles = new String[]{weCustomer.getPhone()};
+                }
             }
         }
 
@@ -110,7 +116,12 @@ public class WeCustomerDTO extends WeResultDTO {
                 this.description = rel.getDescription();
             }
             if (rel.getRemarkMobiles() != null) {
-                this.remark_mobiles = new String[]{rel.getRemarkMobiles()};
+                // 多个手机号
+                if (StringUtils.contains(rel.getRemarkMobiles(), ",")) {
+                    this.remark_mobiles = StringUtils.split(rel.getRemarkMobiles(), ",");
+                } else {
+                    this.remark_mobiles = new String[]{rel.getRemarkMobiles()};
+                }
             }
         }
     }

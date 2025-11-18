@@ -1,6 +1,6 @@
 package com.easyink.wecom.domain.vo;
 
-import com.baomidou.mybatisplus.annotation.TableField;
+import com.easyink.common.annotation.EncryptField;
 import com.easyink.common.core.domain.BaseEntity;
 import com.easyink.common.utils.bean.BeanUtils;
 import com.easyink.wecom.domain.entity.wechatopen.WeOpenConfig;
@@ -24,7 +24,9 @@ public class WeOpenConfigVO extends BaseEntity {
     private String officialAccountAppId;
 
     @ApiModelProperty(value = "公众号secret ")
+    @EncryptField(EncryptField.FieldType.COMMON)
     private String officialAccountAppSecret;
+    private String officialAccountAppSecretEncrypt;
 
     @ApiModelProperty(value = "公众号域名 ")
     private String officialAccountDomain;

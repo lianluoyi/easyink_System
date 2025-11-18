@@ -49,6 +49,7 @@ public class WeCustomerExtendProperty implements Serializable {
     private String name;
     /**
      * 字段类型（1系统默认字段,2单行文本，3多行文本，4单选框，5多选框，6下拉框，7日期，8图片，9文件）
+     * {@link com.easyink.common.enums.CustomerExtendPropertyEnum}
      */
     @TableField("type")
     @ApiModelProperty(value = "类型,1系统默认字段,2单行文本，3多行文本，4单选框，5多选框，6下拉框，7日期，8图片，9文件")
@@ -59,6 +60,15 @@ public class WeCustomerExtendProperty implements Serializable {
     @TableField("required")
     @ApiModelProperty(value = "1必填0非必填")
     private Boolean required;
+
+    @ApiModelProperty(value = "1必填0非必填")
+    @TableField("live_code_required")
+    private Boolean liveCodeRequired;
+
+    @TableField("extra")
+    @ApiModelProperty(value = "扩展配置")
+    private String extra;
+
     /**
      * 字段排序
      */
@@ -71,6 +81,8 @@ public class WeCustomerExtendProperty implements Serializable {
     @TableField("status")
     @ApiModelProperty(value = "状态（0停用1启用）")
     private Boolean status;
+
+
     /**
      * 创建时间
      */

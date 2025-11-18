@@ -335,4 +335,12 @@ public interface WeUserService extends IService<WeUser> {
      * @param corpId 企业id
      */
     void setUserInfoByList(List<WeCustomerVO> list, String corpId);
+
+    /**
+     * 数据迁移：为历史数据补充部门快照信息
+     *
+     * @param corpId 企业id
+     * @return 迁移结果信息
+     */
+    String migrateDepartmentSnapshot(String corpId);
 }

@@ -1,0 +1,2 @@
+-- tigger 2025-08-27 专属活码逻辑删除 Tower 任务: 渠道统计数据的流失客户数不准确 ( https://tower.im/teams/636204/todos/116179 )
+alter TABLE we_customer_temp_emple_code_setting ADD COLUMN `del_flag` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否逻辑删除 0:未删除1:删除' after `expire_time`;

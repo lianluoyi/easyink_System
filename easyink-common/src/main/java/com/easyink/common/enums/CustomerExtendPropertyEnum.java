@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
  * @author : silver_chariot
  * @date : 2021/11/10 17:49
  */
+@Getter
 @AllArgsConstructor
 public enum CustomerExtendPropertyEnum {
 
@@ -32,21 +33,21 @@ public enum CustomerExtendPropertyEnum {
 
     PIC(8, "图片", CustomerTrajectoryEnums.SubType.EDIT_PIC),
 
-    FILE(9, "文件", CustomerTrajectoryEnums.SubType.EDIT_FILE);
+    FILE(9, "文件", CustomerTrajectoryEnums.SubType.EDIT_FILE),
+
+    LOCATION(10, "位置", CustomerTrajectoryEnums.SubType.EDIT_LOCATION),
+    ;
     /**
      * 类型
      */
-    @Getter
     private final Integer type;
     /**
      * 描述
      */
-    @Getter
     private final String desc;
     /**
      * 编辑该类型属性对应的操作子类型枚举
      */
-    @Getter
     private final CustomerTrajectoryEnums.SubType oprSubType;
 
     /**

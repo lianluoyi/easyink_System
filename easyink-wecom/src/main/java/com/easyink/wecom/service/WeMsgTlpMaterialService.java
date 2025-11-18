@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.easyink.wecom.domain.WeMsgTlpMaterial;
 import com.easyink.wecom.domain.WeMsgTlpSpecialRule;
 import com.easyink.wecom.domain.dto.WeWelcomeMsg;
+import com.easyink.wecom.domain.model.customer.CustomerId;
 
 import java.util.List;
 
@@ -77,13 +78,11 @@ public interface WeMsgTlpMaterialService extends IService<WeMsgTlpMaterial> {
      * @param defaultMsg          默认欢迎语
      * @param materialList        欢迎语素材
      * @param weWelcomeMsgBuilder 发送欢迎语DTO
-     * @param userId              员工id
-     * @param externalUserId      客户id
-     * @param corpId              企业id
+     * @param customerId          客户id
      * @param remark              备注
      * @return 欢迎语实体DTO
      */
-    WeWelcomeMsg buildWeWelcomeMsg(String defaultMsg, List<WeMsgTlpMaterial> materialList, WeWelcomeMsg.WeWelcomeMsgBuilder weWelcomeMsgBuilder, String userId, String externalUserId, String corpId, String remark);
+    WeWelcomeMsg buildWeWelcomeMsg(String defaultMsg, List<WeMsgTlpMaterial> materialList, WeWelcomeMsg.WeWelcomeMsgBuilder weWelcomeMsgBuilder, CustomerId customerId, String remark);
 
     /**
      * 同步企业微信接口删除所有素材
@@ -110,12 +109,10 @@ public interface WeMsgTlpMaterialService extends IService<WeMsgTlpMaterial> {
      * @param welcomeMsg     文本消息
      * @param remark         给客户的备注
      * @param redeemCode     给客户的兑换码
-     * @param externalUserId 外部联系人id
-     * @param userId         员工id
-     * @param corpId         企业id
+     * @param customerId     客户id
      * @return 替换后的文本，为null返回null
      */
-    String replyTextIfNecessary(String welcomeMsg, String remark, String redeemCode, String externalUserId, String userId, String corpId);
+    String replyTextIfNecessary(String welcomeMsg, String remark, String redeemCode, CustomerId customerId);
 
 //    /**
 //     * 构建欢迎语数据

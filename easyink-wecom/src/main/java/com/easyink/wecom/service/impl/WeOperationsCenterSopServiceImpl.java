@@ -248,7 +248,7 @@ public class WeOperationsCenterSopServiceImpl extends ServiceImpl<WeOperationsCe
             List<WeUserVO> weUsers = weUserService.listOfUser(corpId, Arrays.asList(customerSopFilterVO.getUsers().split(StrUtil.COMMA)));
             setSopUserVO(weUsers, userInfoList);
             customerSopFilterVO.setUserInfoList(userInfoList);
-            final List<String> departmentIdList = Arrays.asList(StrUtil.split(customerSopFilter.getDepartments(), StrUtil.COMMA));
+            final List<String> departmentIdList = StrUtil.split(customerSopFilter.getDepartments(), StrUtil.COMMA);
             if (CollectionUtils.isNotEmpty(departmentIdList)) {
                 List<DepartmentVO> weDepartmentVO = weDepartmentService.getDeparmentDetailByIds(corpId, departmentIdList);
                 if (CollectionUtils.isNotEmpty(weDepartmentVO)) {

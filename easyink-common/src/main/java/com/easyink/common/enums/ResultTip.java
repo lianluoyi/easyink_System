@@ -190,6 +190,10 @@ public enum ResultTip {
     TIP_BIND_USER_MAPPING_ERROR(3008, "所在企业未绑定三方员工映射关系"),
     TIP_NOT_HAVE_FOLLOW_USER(3009, "该客户没有添加任何员工"),
 
+    // 专属活码
+    TIP_MAP_API_KEY_ERROR(3101, "地址数据获取失败"),
+
+
     //客户中心返回码
     TIP_EXTENDS_CUSTOMER_FALSE(4000, "分配失败，请联系客服或技术人员"),
     TIP_SELECT_ALLOCATE_CUSTOMER(4001, "获取待分配列表失败，请联系客服或技术人员"),
@@ -284,6 +288,9 @@ public enum ResultTip {
     // selfbuild 11000 开始
     SELF_BUILD_ACCESS_DENIED_URL(11000,"配置的服务地址不可用"),
     SELF_BUILD_REQ_FAILED(11001,"请求失败"),
+
+    // 表单推送
+    FORM_PUSH_URL_REQ_FAILED(12000,"当前推送地址无法访问，请确认后重新配置"),
 
     ;
     @Getter

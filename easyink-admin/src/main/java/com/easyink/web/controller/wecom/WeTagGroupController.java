@@ -92,7 +92,7 @@ public class WeTagGroupController extends BaseController {
             return AjaxResult.error("tagGroupName不能为空");
         }
         //查询是否存在标签名为tagGroupName且是正常状态的群组
-        int count = weTagGroupService.count(new LambdaQueryWrapper<WeTagGroup>()
+        int count = (int)weTagGroupService.count(new LambdaQueryWrapper<WeTagGroup>()
                 .eq(WeTagGroup::getGroupName, tagGroupName)
                 .eq(WeTagGroup::getCorpId, LoginTokenService.getLoginUser().getCorpId())
                 .eq(WeTagGroup::getStatus, Constants.NORMAL_CODE));

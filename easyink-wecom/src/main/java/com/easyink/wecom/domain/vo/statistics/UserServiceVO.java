@@ -3,11 +3,12 @@ package com.easyink.wecom.domain.vo.statistics;
 import cn.hutool.core.util.StrUtil;
 import com.easyink.common.annotation.Excel;
 import com.easyink.common.constant.WeConstans;
-import com.easyink.common.utils.StringUtils;
 import com.easyink.wecom.domain.vo.UserBaseVO;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import org.apache.commons.lang3.StringUtils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -18,39 +19,40 @@ import java.math.RoundingMode;
  * @author wx
  * 2023/2/14 14:37
  **/
+@EqualsAndHashCode(callSuper = true)
 @Data
 public class UserServiceVO extends UserBaseVO {
 
     @ApiModelProperty("聊天总数")
-    @Excel(name = "聊天总数", sort = 3)
+    @Excel(name = "聊天总数", sort = 4)
     private Integer chatTotal;
 
     @ApiModelProperty("发送聊天数")
-    @Excel(name = "发送聊天数", sort = 4)
+    @Excel(name = "发送聊天数", sort = 5)
     private Integer sendContactCnt;
 
     @ApiModelProperty("平均会话数")
-    @Excel(name = "平均会话数", sort = 5)
+    @Excel(name = "平均会话数", sort = 6)
     private String averageChatTotal;
 
     @ApiModelProperty("平均首次回复时长")
-    @Excel(name = "平均首次回复时长", sort = 6)
+    @Excel(name = "平均首次回复时长", sort = 7)
     private String averageFirstReplyDuration;
 
     @ApiModelProperty("回复率")
-    @Excel(name = "回复率", sort = 7)
+    @Excel(name = "回复率", sort = 8)
     private String replyRate;
 
     @ApiModelProperty("有效沟通客户数")
-    @Excel(name = "有效沟通客户数", sort = 8)
+    @Excel(name = "有效沟通客户数", sort = 9)
     private Integer effectiveCommunicationCustomerCnt;
 
     @ApiModelProperty("有效沟通率")
-    @Excel(name = "有效沟通率", sort = 9)
+    @Excel(name = "有效沟通率", sort = 10)
     private String effectiveCommunicationRate;
 
     @ApiModelProperty("客户好评率")
-    @Excel(name = "客户好评率", sort = 10)
+    @Excel(name = "客户好评率", sort = 11)
     private String customerPositiveCommentsRate;
 
     /**
@@ -216,6 +218,9 @@ public class UserServiceVO extends UserBaseVO {
         customerPositiveCommentsRate = getCustomerPositiveCommentsRate() + "%";
         averageChatTotal = getAverageChatTotal();
         averageFirstReplyDuration = getAverageFirstReplyDuration() + "分钟";
+        if(StringUtils.isBlank(this.getParentDepartmentName())){
+            this.setParentDepartmentName(StrUtil.DASHED);
+        }
     }
 
 }

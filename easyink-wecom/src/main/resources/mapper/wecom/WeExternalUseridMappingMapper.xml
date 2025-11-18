@@ -42,5 +42,15 @@
         `external_userid` = VALUES(`external_userid`),
         `open_external_userid` = VALUES(`open_external_userid`)
     </insert>
+    <select id="selectOriginMappingByOpenExternalUserIdBatch"
+            resultType="com.easyink.wecom.domain.model.externaluser.OpenExternalUserIdAndExternalUserIdModel">
+        SELECT open_external_userid as openExternalUserId, external_userid as externalUserId
+        FROM we_external_userid_mapping
+        WHERE corp_id = #{corpId}
+             AND open_external_userid IN
+             <foreach collection="batchQueryList" item="item" open="(" separator="," close=")">
+                 #{item}
+             </foreach>
+    </select>
 </mapper>
 

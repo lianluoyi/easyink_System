@@ -60,6 +60,14 @@ public interface WeUserCustomerMessageStatisticsService extends IService<WeUserC
     List<CustomerOverviewVO> getCustomerOverViewOfUser(CustomerOverviewDTO dto);
 
     /**
+     * 获取客户概况-部门情况
+     *
+     * @param dto {@link CustomerOverviewDTO}
+     * @return {@link CustomerOverviewDepartmentVO}
+     */
+    List<CustomerOverviewDepartmentVO> getCustomerOverViewOfDepartment(CustomerOverviewDTO dto);
+
+    /**
      * 获取客户概况-日期维度
      *
      * @param dto      {@link CustomerOverviewDTO}
@@ -144,6 +152,14 @@ public interface WeUserCustomerMessageStatisticsService extends IService<WeUserC
      * @return
      */
     AjaxResult exportCustomerOverViewOfUser(CustomerOverviewDTO dto);
+
+    /**
+     * 导出客户概况-数据总览-部门维度
+     *
+     * @param dto   {@link CustomerOverviewDTO}
+     * @return
+     */
+    AjaxResult exportCustomerOverViewOfDepartment(CustomerOverviewDTO dto);
 
     /**
      * 导出客户活跃度-日期维度

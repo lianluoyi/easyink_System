@@ -134,7 +134,7 @@ public class LoginTokenService {
         String currentUserKey = tokenService.getUserKey(ServletUtils.getRequest());
         RedisCache redisCache = SpringUtils.getBean("redisCache", RedisCache.class);
         // 获取缓存中所有登录用户
-        Collection<String> keys = redisCache.keys(Constants.LOGIN_TOKEN_KEY + "*");
+        Collection<String> keys = redisCache.scans(Constants.LOGIN_TOKEN_KEY + "*");
         for (String key : keys) {
             if (StringUtils.isBlank(key)) {
                 continue;

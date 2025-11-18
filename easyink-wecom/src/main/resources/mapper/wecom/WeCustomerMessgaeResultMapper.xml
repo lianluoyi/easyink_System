@@ -210,14 +210,18 @@
         LEFT JOIN we_customer_messageoriginal wcmo ON wcmo.message_original_Id = m.original_id
         LEFT JOIN we_user wu on (wcm.userid = wu.user_id or wg.owner = wu.user_id) AND wu.corp_id = wcmo.corp_id
         <where>
-            wcm.message_id=#{messageId}
+            m.original_id = (
+                SELECT original_id 
+                FROM we_customer_message 
+                WHERE message_id=#{messageId}
+            )
             AND wcmo.corp_id = #{corpId}
             AND wcm.`status`='0'
             <if test="userName !=null and userName !=''">
                 AND wcm.user_name LIKE concat('%', #{userName}, '%')
             </if>
         </where>
-        GROUP BY wcm.user_name
+        GROUP BY wcm.userid
     </select>
 
     <select id="listOfMessageResult" parameterType="com.easyink.wecom.domain.dto.WeCustomerMessagePushResultDTO"
@@ -238,7 +242,11 @@
         LEFT JOIN we_customer_messageoriginal wcmo ON wcmo.message_original_Id = m.original_id
         LEFT JOIN we_customer wc ON wcm.external_userid = wc.external_userid AND wc.corp_id = wcmo.corp_id
         <where>
-            wcm.message_id=#{messageId}
+            m.original_id = (
+                SELECT original_id 
+                FROM we_customer_message 
+                WHERE message_id=#{messageId}
+            )
             AND wcmo.corp_id = #{corpId}
             <choose>
                 <when test="sendStatus!=null and sendStatus == '1'.toString()">
@@ -266,16 +274,11 @@
     </select>
 
 
-    <resultMap id="AsyncResultMap" type="com.easyink.wecom.domain.dto.message.AsyncResultDTO">
-        <result column="message_id" property="messageId"/>
-        <result column="msgid" property="msgArray"
-                typeHandler="com.easyink.framework.handler.StringArrayJoinTypeHandler"/>
-    </resultMap>
 
-    <select id="listOfNotSend" resultMap="AsyncResultMap">
+    <select id="listOfNotSend" resultType="com.easyink.wecom.domain.dto.message.MessageIdDTO">
         SELECT
         wcm.message_id,
-        m.msgid
+        m.msgid as msg_id
         FROM
         we_customer_messgaeResult wcm
         LEFT JOIN we_customer_message m ON m.message_id = wcm.message_id
@@ -284,6 +287,23 @@
             wcmo.corp_id = #{corpId}
             AND wcm.`status`= 0
             AND wcm.create_time BETWEEN #{startTime} AND #{endTime}
+            AND m.timed_task = 0
+        </where>
+        GROUP BY wcm.message_id
+        UNION ALL
+        SELECT
+        wcm.message_id,
+        m.msgid as msg_id
+        FROM
+        we_customer_messgaeResult wcm
+        LEFT JOIN we_customer_messagetimetask wcmt ON wcmt.message_id = wcm.message_id
+        LEFT JOIN we_customer_message m ON m.message_id = wcm.message_id
+        LEFT JOIN we_customer_messageoriginal wcmo ON wcmo.message_original_Id = m.original_id
+        <where>
+            wcmo.corp_id = #{corpId}
+            AND wcm.`status`= 0
+            AND wcmt.setting_time >= #{startTimestamp} AND wcmt.setting_time <![CDATA[ <= ]]> #{endTimestamp}
+            AND m.timed_task = 1
         </where>
         GROUP BY wcm.message_id
     </select>
@@ -309,7 +329,11 @@
         LEFT JOIN we_customer_messageoriginal wcmo ON wcmo.message_original_Id = m.original_id
         LEFT JOIN we_user wu on (wcm.userid = wu.user_id or wg.owner = wu.user_id) AND wu.corp_id = wcmo.corp_id
         <where>
-            wcm.message_id=#{messageId}
+            m.original_id = (
+                SELECT original_id 
+                FROM we_customer_message 
+                WHERE message_id=#{messageId}
+            )
             AND wcmo.corp_id = #{corpId}
             AND wcm.`status`= '${@com.easyink.common.constant.WeConstans$sendMessageStatusEnum@NOT_SEND.status}'
             <if test="userName !=null and userName !=''">

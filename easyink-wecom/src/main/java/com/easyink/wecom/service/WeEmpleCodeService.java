@@ -1,14 +1,16 @@
 package com.easyink.wecom.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.easyink.common.core.domain.model.LoginUser;
 import com.easyink.wecom.domain.WeEmpleCode;
 import com.easyink.wecom.domain.WeEmpleCodeUseScop;
 import com.easyink.wecom.domain.dto.WeEmpleCodeDTO;
 import com.easyink.wecom.domain.dto.WeExternalContactDTO;
-import com.easyink.wecom.domain.dto.emplecode.AddWeEmpleCodeDTO;
-import com.easyink.wecom.domain.dto.emplecode.FindAssistantDTO;
-import com.easyink.wecom.domain.dto.emplecode.FindWeEmpleCodeDTO;
+import com.easyink.wecom.domain.dto.emplecode.*;
+import com.easyink.wecom.domain.model.customer.CustomerId;
+import com.easyink.wecom.domain.model.emplecode.State;
 import com.easyink.wecom.domain.vo.*;
+import com.easyink.wecom.domain.vo.emplecode.SelectTagVO;
 import com.easyink.wecom.domain.vo.statistics.emplecode.EmpleCodeByNameVO;
 
 import java.util.List;
@@ -65,17 +67,17 @@ public interface WeEmpleCodeService extends IService<WeEmpleCode> {
     /**
      * 处理活码统计表数据
      *
-     * @param userIdList 员工ID列表
-     * @param corpId 企业ID
+     * @param userIdList  员工ID列表
+     * @param corpId      企业ID
      * @param empleCodeId 活码ID
      */
-    void handleEmpleStatisticData(List<String > userIdList, String corpId, Long empleCodeId);
+    void handleEmpleStatisticData(List<String> userIdList, String corpId, Long empleCodeId);
 
     /**
      * 根据使用范围获取userId列表
      *
      * @param useScops 活码使用范围
-     * @param corpId 企业ID
+     * @param corpId   企业ID
      * @return userId列表
      */
     List<String> getUserIdByScope(List<WeEmpleCodeUseScop> useScops, String corpId);
@@ -120,16 +122,16 @@ public interface WeEmpleCodeService extends IService<WeEmpleCode> {
      * @param corpId
      * @return
      */
-    SelectWeEmplyCodeWelcomeMsgVO selectWelcomeMsgByState(String state, String corpId);
+    EmplyCodeWelcomeMsgInfo selectWelcomeMsgByState(String state, String corpId);
 
     /**
      * 通过id定位员工活码/获客链接
      *
      * @param id     员工活码ID/获客链接ID
      * @param corpId 企业ID
-     * @return {@link SelectWeEmplyCodeWelcomeMsgVO}
+     * @return {@link EmplyCodeWelcomeMsgInfo}
      */
-    SelectWeEmplyCodeWelcomeMsgVO selectWelcomeMsgById(String id, String corpId);
+    EmplyCodeWelcomeMsgInfo selectWelcomeMsgById(String id, String corpId);
 
     /**
      * 获取员工二维码
@@ -182,15 +184,15 @@ public interface WeEmpleCodeService extends IService<WeEmpleCode> {
      * @param corpId
      * @param externalUserId
      */
-    void buildCommonWelcomeMsg(SelectWeEmplyCodeWelcomeMsgVO messageMap, String corpId, String externalUserId);
+    void buildCommonWelcomeMsg(EmplyCodeWelcomeMsgInfo messageMap, String corpId, String externalUserId);
 
     /**
      * 构建获客链接普通欢迎语及附件
      *
-     * @param messageMap {@link SelectWeEmplyCodeWelcomeMsgVO}
+     * @param messageMap {@link EmplyCodeWelcomeMsgInfo}
      * @param corpId     企业ID
      */
-    void buildCustomerAssistantWelcomeMsg(SelectWeEmplyCodeWelcomeMsgVO messageMap, String corpId);
+    void buildCustomerAssistantWelcomeMsg(EmplyCodeWelcomeMsgInfo messageMap, String corpId);
 
     /**
      * 构建兑换码活动欢迎语及附件
@@ -199,7 +201,7 @@ public interface WeEmpleCodeService extends IService<WeEmpleCode> {
      * @param corpId
      * @param externalUserId
      */
-    void buildRedeemCodeActivityWelcomeMsg(SelectWeEmplyCodeWelcomeMsgVO messageMap, String corpId, String externalUserId);
+    void buildRedeemCodeActivityWelcomeMsg(EmplyCodeWelcomeMsgInfo messageMap, String corpId, String externalUserId);
 
     /**
      * 获取活码小程序短链接
@@ -221,10 +223,20 @@ public interface WeEmpleCodeService extends IService<WeEmpleCode> {
      * 获取有效的活码ID
      *
      * @param corpId 企业ID
-     * @param date 日期，格式为YYYY-MM-DD
+     * @param date   日期，格式为YYYY-MM-DD
      * @return 活码ID列表
      */
     List<Long> getEffectEmpleCodeId(String corpId, String date);
+
+    /**
+     * 单独更新员工活码的标签组配置
+     *
+     * @param empleCodeId   员工活码ID
+     * @param corpId        企业ID
+     * @param tagGroupValid 标签组配置值
+     * @return 更新结果
+     */
+    boolean updateTagGroupValid(Long empleCodeId, String corpId, Integer tagGroupValid);
 
     /**
      * 根据附件排序查找添加素材
@@ -238,4 +250,77 @@ public interface WeEmpleCodeService extends IService<WeEmpleCode> {
      * 刷新活码
      */
     void refreshCode(List<Long> ids);
+
+    /**
+     * 获取客户专属活码短链
+     *
+     * @param id 员工活码id
+     * @return 短链
+     */
+    String getCustomerLink(Long id);
+
+    /**
+     * 生成客户专属活码二维码
+     *
+     * @param genCustomerEmployQrcodeDTO 包含生成二维码所需信息的数据传输对象
+     * @return 生成的二维码链接
+     */
+    String genCustomerEmployQrCode(GenCustomerEmployQrcodeDTO genCustomerEmployQrcodeDTO);
+
+
+    /**
+     * 编辑专属活码的可选标签列表
+     *
+     * @param tagSelectScopeDTO 可选标签DTO
+     * @param loginUser
+     */
+    void editCustomerEmployCodeTagSelectScope(TagSelectScopeDTO tagSelectScopeDTO, LoginUser loginUser);
+
+    /**
+     * 获取客户专属活码可选标签列表
+     *
+     * @param empleCodeId 员工活码id
+     * @param loginUser   当前登录用户
+     * @return 可选标签列表
+     */
+    SelectTagVO customerEmployCodeTagSelectScopeDetail(String empleCodeId, LoginUser loginUser);
+
+    /**
+     * 发送员工活码欢迎语
+     * 包含:1:员工活码 2:客户专属活码
+     * @param state 添加好友state值
+     * @param welcomeCode 欢迎语code, 企微下发, 不下发则表示不能发送欢迎语,或者已经建立会话
+     * @param customerId 客户id
+     */
+    void sendUserEmpleCodeWelcomeMsg(State state, String welcomeCode, CustomerId customerId, State originState);
+
+    /**
+     * 发送客户专属活码欢迎语
+     * @param state 添加好友state值
+     * @param welcomeCode 欢迎语code, 企微下发, 不下发则表示不能发送欢迎语,或者已经建立会话
+     * @param customerId 客户id
+     */
+    void sendCustomerTempEmpleCodeWelcomeMsg(State state, String welcomeCode, CustomerId customerId);
+
+    /**
+     * 发送获客链接欢迎语
+     * @param state 添加好友state值
+     * @param welcomeCode 欢迎语code, 企微下发, 不下发则表示不能发送欢迎语,或者已经建立会话
+     * @param customerId 客户id
+     */
+    void sendCustomerAssistantWelcomeMsg(State state, String welcomeCode, CustomerId customerId);
+
+    /**
+     * 客户专属活码回调处理
+     * @param state 添加好友state值
+     * @param customerId 客户id
+     */
+    void customerTempEmpleCodeCallBackHandle(State state, CustomerId customerId);
+
+    /**
+     * 员工活码回调处理
+     * @param state 添加好友state值
+     * @param customerId 客户id
+     */
+    void empleCodeCallBackHandle(State state, CustomerId customerId);
 }

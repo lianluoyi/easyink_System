@@ -1,0 +1,53 @@
+#Redis配置
+# 支持三种模式：
+# 1. single: 单机模式，适用于开发和测试环境
+# 2. cluster: 集群模式，适用于高可用和高性能的生产环境
+# 3. sentinel: 哨兵模式，适用于需要主从切换的高可用环境
+spring:
+  redis:
+    # Redis模式配置: single(单机), cluster(集群), sentinel(哨兵)
+    mode: ${REDIS_MODE:single}
+    # 单机模式配置
+    prefix: ${REDIS_PREFIX:} #redis的key的统一前缀，不设置默认为_convergence
+    host: ${REDIS_SERVICE_HOST:}
+    port: ${REDIS_SERVICE_PORT:6379}
+    password: ${REDIS_SERVICE_PASSWORD:}
+    #Redis库
+    database: ${REDIS_SERVICE_DATABASE:0}
+    timeout: ${REDIS_SERVICE_TIMEOUT:15000}
+    flush-mode: on-save
+    lettuce:
+      pool:
+        enabled: ${REDIS_LETTUCE_POOL_ENABLE:true}
+        # 连接池中的最小空闲连接
+        min-idle: ${REDIS_LETTUCE_POOL_MIN_IDLE:40}
+        # 连接池中的最大空闲连接
+        max-idle: ${REDIS_LETTUCE_POOL_MAX_IDLE:40}
+        # 连接池的最大数据库连接数
+        max-active: ${REDIS_LETTUCE_POOL_MAX_ACTIVE:80}
+        # 连接池最大阻塞等待时间（使用负值表示没有限制）
+        max-wait: ${REDIS_LETTUCE_POOL_MAX_WAIT:30s}
+    # 集群模式配置
+    cluster:
+      # 集群节点地址列表，格式：host:port,host:port
+      nodes: ${REDIS_CLUSTER_NODES:}
+      # 集群密码
+      password: ${REDIS_CLUSTER_PASSWORD:}
+      # 集群超时时间
+      timeout: ${REDIS_CLUSTER_TIMEOUT:5000}
+      # 集群重定向次数
+      max-redirects: ${REDIS_CLUSTER_MAX_REDIRECTS:3}
+      # 集群刷新周期
+      refresh-period: ${REDIS_CLUSTER_REFRESH_PERIOD:30s}
+    # 哨兵模式配置
+    sentinel:
+      # 哨兵节点地址列表，格式：host:port,host:port
+      nodes: ${REDIS_SENTINEL_NODES:localhost:26379,localhost:26380,localhost:26381}
+      # 主节点名称
+      master: ${REDIS_SENTINEL_MASTER:mymaster}
+      # 哨兵密码
+      password: ${REDIS_SENTINEL_PASSWORD:}
+      # 哨兵超时时间
+      timeout: ${REDIS_SENTINEL_TIMEOUT:5000}
+      # 哨兵数据库
+      database: ${REDIS_SENTINEL_DATABASE:0}

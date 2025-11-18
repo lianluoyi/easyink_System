@@ -2,24 +2,20 @@ package com.easyink.wecom.domain.dto.form;
 
 import com.alibaba.fastjson.JSON;
 import com.easyink.common.enums.ResultTip;
-import com.easyink.common.enums.wecom.ServerTypeEnum;
 import com.easyink.common.exception.CustomException;
-import com.easyink.common.utils.spring.SpringUtils;
 import com.easyink.wecom.domain.entity.form.WeFormAdvanceSetting;
 import com.easyink.wecom.domain.enums.form.DeadLineType;
 import com.easyink.wecom.domain.enums.form.SubmitActionType;
 import com.easyink.wecom.domain.enums.form.SubmitCntType;
 import com.easyink.wecom.domain.model.form.CustomerLabelSettingModel;
-import com.easyink.wecom.domain.vo.WeServerTypeVO;
-import com.easyink.wecom.service.We3rdAppService;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.apache.commons.lang3.StringUtils;
 import org.hibernate.validator.constraints.Range;
 
 import java.util.Date;
+import java.util.List;
 
 /**
  * 添加表单DTO
@@ -76,6 +72,20 @@ public class FormSettingAddDTO {
      * 客户标签开关设置详情json
      */
     private CustomerLabelSettingModel labelSetting;
+    /**
+     * 推送内容开关
+     */
+    private Boolean pushContentFlag;
+
+    /**
+     * 客户自定义属性id列表
+     */
+    private List<String> customerPropertyIdList;
+
+    /**
+     * 超时配置
+     */
+    private Integer timeoutHours;
 
     /**
      * 校验
@@ -123,7 +133,9 @@ public class FormSettingAddDTO {
         setting.setTractRecordFlag(this.getTractRecordFlag());
         setting.setCustomerLabelFlag(this.getCustomerLabelFlag());
         setting.setLabelSettingJson(JSON.toJSONString(this.getLabelSetting()));
-
+        setting.setPushContentFlag(this.getPushContentFlag());
+        setting.setCustomerPropertyIdJson(JSON.toJSONString(this.getCustomerPropertyIdList()));
+        setting.setTimeoutHours(this.getTimeoutHours());
         return setting;
     }
 }

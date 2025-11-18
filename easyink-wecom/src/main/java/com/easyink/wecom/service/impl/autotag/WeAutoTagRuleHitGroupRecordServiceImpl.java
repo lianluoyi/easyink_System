@@ -100,7 +100,7 @@ public class WeAutoTagRuleHitGroupRecordServiceImpl extends ServiceImpl<WeAutoTa
         Iterator<String> iterator = newJoinCustomerIdList.iterator();
         if (iterator.hasNext()) {
             String customerId = iterator.next();
-            int count = weFlowerCustomerRelService.count(new LambdaQueryWrapper<WeFlowerCustomerRel>()
+            int count = (int)weFlowerCustomerRelService.count(new LambdaQueryWrapper<WeFlowerCustomerRel>()
                     .eq(WeFlowerCustomerRel::getExternalUserid, customerId)
                     .eq(WeFlowerCustomerRel::getStatus, CustomerStatusEnum.NORMAL.getCode())
                     .eq(WeFlowerCustomerRel::getCorpId, corpId));

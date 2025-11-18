@@ -19,6 +19,9 @@
             <if test="officialAccountAppSecret != null">
                 official_account_app_secret,
             </if>
+            <if test="officialAccountAppSecretEncrypt != null">
+                official_account_app_secret_encrypt,
+            </if>
             <if test="officialAccountDomain != null">
                 `official_account_domain`,
             </if>
@@ -62,6 +65,9 @@
             </if>
             <if test="officialAccountAppSecret != null">
                 #{officialAccountAppSecret},
+            </if>
+            <if test="officialAccountAppSecretEncrypt != null">
+                #{officialAccountAppSecretEncrypt},
             </if>
             <if test="officialAccountDomain != null">
                 #{officialAccountDomain},
@@ -142,6 +148,7 @@
         SELECT
             official_account_app_id,
             official_account_app_secret,
+            official_account_app_secret_encrypt,
             official_account_domain,
             service_type_info,
             nick_name,

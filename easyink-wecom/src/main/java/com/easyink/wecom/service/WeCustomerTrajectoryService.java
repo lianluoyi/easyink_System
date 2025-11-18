@@ -6,10 +6,8 @@ import com.easyink.common.core.domain.wecom.WeUser;
 import com.easyink.wecom.domain.WeCustomer;
 import com.easyink.wecom.domain.WeCustomerTrajectory;
 import com.easyink.wecom.domain.WeGroupMember;
-import com.easyink.wecom.domain.WeTag;
 import com.easyink.wecom.domain.dto.customer.EditCustomerDTO;
 import com.easyink.wecom.domain.entity.autotag.WeAutoTagRule;
-import com.easyink.wecom.domain.entity.autotag.WeAutoTagRuleHitKeywordRecordTagRel;
 import com.easyink.wecom.domain.entity.form.WeForm;
 import com.easyink.wecom.domain.entity.form.WeFormOperRecord;
 import com.easyink.wecom.domain.entity.radar.WeRadar;
@@ -17,7 +15,6 @@ import com.easyink.wecom.domain.vo.autotag.TagRuleListVO;
 import io.swagger.annotations.ApiModel;
 
 import java.util.List;
-import java.util.Map;
 
 @ApiModel("活动轨迹相关Service")
 public interface WeCustomerTrajectoryService extends IService<WeCustomerTrajectory> {

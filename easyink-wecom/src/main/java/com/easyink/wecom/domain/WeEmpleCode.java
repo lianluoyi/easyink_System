@@ -199,6 +199,13 @@ public class WeEmpleCode extends BaseEntity {
     @TableField("app_link")
     private String appLink;
 
+    @ApiModelProperty(value = "客户专属活码短链url")
+    @TableField("customer_link")
+    private String customerLink;
+
+    @ApiModelProperty(value = "标签组范围配置:0:使用全部标签组,1:使用指定标签组")
+    @TableField("tag_group_valid")
+    private Integer tagGroupValid;
 
     public void buildCodeMsg() {
         this.codeSuccessMsg = Optional.ofNullable(this.codeSuccessMsg).orElseGet(() -> StringUtils.EMPTY);

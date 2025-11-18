@@ -97,6 +97,9 @@ public class WeCustomerTrajectory {
     @ApiModelProperty(value = "操作细节（如果是文件图片则是url,如果多个选项则,隔开)")
     private String detail;
 
+    @TableField("detail_encrypt")
+    private String detailEncrypt;
+
     @TableField("sub_type")
     @ApiModelProperty(value = "子类型（修改备注：edit_remark;修改标签：edit_tag;编辑多选框：edit_multi;编辑单选：edit_choice;编辑图片：edit_pic;编辑文件：edit_file;加入群聊:join_group;退出群聊：quit_group;加好友：add_user；删除好友：del_user")
     private String subType;

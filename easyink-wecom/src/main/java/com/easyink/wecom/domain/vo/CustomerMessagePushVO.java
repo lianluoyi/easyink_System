@@ -1,5 +1,6 @@
 package com.easyink.wecom.domain.vo;
 
+import com.easyink.wecom.domain.dto.message.MessageIdDTO;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -18,11 +19,19 @@ import java.util.List;
 @ApiModel("群发消息任务VO CustomerMessagePushVO")
 public class CustomerMessagePushVO {
 
+    private List<MessageIdDTO> messageIdDTOList;
+    
     /**
-     * 消息id
+     * 原始消息配置ID（多个批次共享同一个原始配置）
+     */
+    @ApiModelProperty("原始消息配置ID")
+    private Long messageOriginalId;
+    
+    /**
+     * 消息id（多个批次时为逗号分隔的多个ID）
      */
     @ApiModelProperty("消息id")
-    private Long messageId;
+    private String messageId;
 
     @ApiModelProperty("任务名称")
     private String taskName;

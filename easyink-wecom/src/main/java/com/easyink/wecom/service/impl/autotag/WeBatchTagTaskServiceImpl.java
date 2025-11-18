@@ -1,4 +1,7 @@
 package com.easyink.wecom.service.impl.autotag;
+import com.easyink.common.encrypt.SensitiveFieldProcessor;
+import com.easyink.common.encrypt.StrategyCryptoUtil;
+import com.google.common.collect.Sets;
 
 import cn.hutool.core.thread.ThreadUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -161,7 +164,27 @@ public class WeBatchTagTaskServiceImpl extends ServiceImpl<WeBatchTagTaskMapper,
             throw new CustomException(ResultTip.TIP_REDEEM_CODE_FILE_DATA_IS_EMPTY);
         }
         // 分批插入详情数据
-        BatchInsertUtil.doInsert(weBatchTagTaskDetails, list -> weBatchTagTaskDetailMapper.batchInsert(list));
+
+        // 插入的数据要脱敏+密文
+        List<WeBatchTagTaskDetail> saveList = weBatchTagTaskDetails.stream().map(it -> {
+            WeBatchTagTaskDetail weBatchTagTaskDetail = new WeBatchTagTaskDetail();
+            weBatchTagTaskDetail.setId(it.getId());
+            weBatchTagTaskDetail.setTaskId(it.getTaskId());
+            weBatchTagTaskDetail.setImportExternalUserid(it.getImportExternalUserid());
+            weBatchTagTaskDetail.setImportUnionId(it.getImportUnionId());
+            String importMobile = it.getImportMobile();
+            weBatchTagTaskDetail.setImportMobile(StrategyCryptoUtil.esensitization(importMobile));
+            weBatchTagTaskDetail.setImportMobileEncrypt(StrategyCryptoUtil.encrypt(importMobile));
+            weBatchTagTaskDetail.setStatus(it.getStatus());
+            weBatchTagTaskDetail.setTagUserId(it.getTagUserId());
+            weBatchTagTaskDetail.setTagExternalUserid(it.getTagExternalUserid());
+            weBatchTagTaskDetail.setRemark(it.getRemark());
+            weBatchTagTaskDetail.setTagUserIds(it.getTagUserIds());
+            weBatchTagTaskDetail.setRelSet(it.getRelSet());
+            return weBatchTagTaskDetail;
+        }).collect(Collectors.toList());
+        SensitiveFieldProcessor.processForSave(saveList);
+        BatchInsertUtil.doInsert(saveList, weBatchTagTaskDetailMapper::batchInsert);
         weBatchTagTaskRelMapper.saveBatch(weBatchTagTask.getId(), tagIds);
         // 异步执行批量打标签的任务
         threadPoolTaskExecutor.execute(
@@ -562,6 +585,7 @@ public class WeBatchTagTaskServiceImpl extends ServiceImpl<WeBatchTagTaskMapper,
             }
         }
         // 批量更新任务详情(每批更新一次)
+        SensitiveFieldProcessor.processForSave(details);
         weBatchTagTaskDetailMapper.batchInsertOrUpdate(details);
         // 记录信息动态
         recordTrajectory(corpId, createByUserId, relList, createUserName, tagIdList);
@@ -750,11 +774,12 @@ public class WeBatchTagTaskServiceImpl extends ServiceImpl<WeBatchTagTaskMapper,
             return;
         }
         // 根据手机号获取客户信息
-        List<WeFlowerCustomerRel> relList = weFlowerCustomerRelMapper.getByMobiles(corpId, mobiles);
+        List<String> encryptMobiles = mobiles.stream().map(StrategyCryptoUtil::encrypt).collect(Collectors.toList());
+        List<WeFlowerCustomerRel> relList = weFlowerCustomerRelMapper.getByMobiles(corpId, encryptMobiles);
         if (CollectionUtils.isEmpty(relList)) {
             return;
         }
-        log.info("[批量打标签]根据手机号mobile匹配,导入{}个手机号,匹配到{}个客户,corpId:{}", mobiles.size(), relList.size(), corpId);
+        log.info("[批量打标签]根据手机号mobile匹配,导入{}个手机号,匹配到{}个客户,corpId:{}", encryptMobiles.size(), relList.size(), corpId);
         //根据手机号,  匹配查出的客户
         for (WeBatchTagTaskDetail detail : detailList) {
             if (StringUtils.isNotBlank(detail.getTagExternalUserid())) {

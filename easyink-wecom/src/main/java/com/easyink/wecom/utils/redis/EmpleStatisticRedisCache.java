@@ -6,8 +6,6 @@ import com.easyink.wecom.domain.WeEmpleCodeStatistic;
 import com.easyink.wecom.domain.redis.RedisEmpleStatisticBaseModel;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.data.redis.core.RedisCallback;
-import org.springframework.data.redis.serializer.JdkSerializationRedisSerializer;
-import org.springframework.data.redis.serializer.StringRedisSerializer;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -114,9 +112,9 @@ public class EmpleStatisticRedisCache extends RedisCache {
         // 管道操作，批量保存
         empleRedisTemplate.executePipelined((RedisCallback) callback -> {
                 // 活码维度-新增客户数 + 1
-                increment(empleScopeAddKey, userId, 1);
+                hIncrement(empleScopeAddKey, userId, 1);
                 // 员工维度-新增客户数 + 1
-                increment(userScopeAddKey, empleCodeId, 1);
+                hIncrement(userScopeAddKey, empleCodeId, 1);
             // 结束管道操作
             return null;
         });
@@ -141,9 +139,9 @@ public class EmpleStatisticRedisCache extends RedisCache {
         // 管道操作，批量添加
         empleRedisTemplate.executePipelined((RedisCallback) callback -> {
                 // 活码维度-流失客户数 + 1
-                increment(empleScopeLossKey, userId, 1);
+                hIncrement(empleScopeLossKey, userId, 1);
                 // 员工维度-流失客户数 + 1
-                increment(userScopeLossKey, empleCodeId, 1);
+                hIncrement(userScopeLossKey, empleCodeId, 1);
             // 结束管道操作
             return null;
         });

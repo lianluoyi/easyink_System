@@ -28,10 +28,14 @@ public class GoodCommitDTO extends RootEntity {
     @ApiModelProperty("结束时间/添加时间的结束时间")
     private String endTime;
 
+    @ApiModelProperty("职务")
+    private String position;
+
     public GoodCommitDTO(StatisticsDTO dto) {
         BeanUtils.copyProperties(dto, this);
         this.setBeginTime(DateUtils.time2Date(dto.getBeginTime()));
         this.setEndTime(DateUtils.time2Date(dto.getEndTime()));
+
     }
 
     public String getBeginTime() {

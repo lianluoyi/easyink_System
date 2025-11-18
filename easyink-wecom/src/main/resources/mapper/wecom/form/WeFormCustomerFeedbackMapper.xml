@@ -58,6 +58,10 @@
         <if test="endTime !=null">
             AND wfcf.create_time &lt;= #{endTime}
         </if>
+        <if test="position != null and position != ''">
+            <bind name="likePosition" value="'%' + position + '%'"/>
+            AND wu.position LIKE #{likePosition}
+        </if>
     </select>
     <!-- 获取员工服务-时间维度所需好评记录   -->
     <select id="selectGoodReviewsForTime"
@@ -82,6 +86,10 @@
         <if test="endTime !=null">
             AND wfcf.create_time &lt;= #{endTime}
         </if>
+        <if test="position != null and position != ''">
+            <bind name="likePosition" value="'%' + position + '%'"/>
+            AND wu.position LIKE #{likePosition}
+        </if>
     </select>
     <!-- 获取所有人的好评数据   -->
     <select id="selsectGoodReviewsForPerson"
@@ -105,6 +113,10 @@
         </if>
         <if test="endTime !=null">
             AND wfcf.create_time &lt;= #{endTime}
+        </if>
+        <if test="position != null and position != ''">
+            <bind name="likePosition" value="'%' + position + '%'"/>
+            AND wu.position LIKE #{likePosition}
         </if>
     </select>
 

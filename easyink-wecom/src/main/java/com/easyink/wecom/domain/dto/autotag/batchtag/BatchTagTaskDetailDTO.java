@@ -28,6 +28,7 @@ public class BatchTagTaskDetailDTO extends BaseEntity {
 
     @ApiModelProperty(value = "客户信息 可以是external_userid、unionid、手机号")
     private String customerInfo;
+    private String customerInfoEncrypt;
 
     @ApiModelProperty(value = "打标签状态（0 待执行， 1 成功 ， 2 失败）")
     private Integer status;

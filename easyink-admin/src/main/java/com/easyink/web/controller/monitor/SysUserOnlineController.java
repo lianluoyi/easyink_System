@@ -49,7 +49,7 @@ public class SysUserOnlineController extends BaseController {
     @ApiOperation("在线用户列表")
     public TableDataInfo<SysUserOnline> list(@ApiParam("Ip地址") String ipaddr, @ApiParam("用户昵称") String userName) {
         String currentCorpId = LoginTokenService.getLoginUser().getCorpId();
-        Collection<String> keys = redisCache.keys(Constants.LOGIN_TOKEN_KEY + "*");
+        Set<String> keys = redisCache.scans(Constants.LOGIN_TOKEN_KEY + "*");
         List<SysUserOnline> userOnlineList = new ArrayList<>();
         for (String key : keys) {
             LoginUser user = redisCache.getCacheObject(key);

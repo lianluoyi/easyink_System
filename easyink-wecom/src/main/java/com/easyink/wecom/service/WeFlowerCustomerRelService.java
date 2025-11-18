@@ -45,14 +45,6 @@ public interface WeFlowerCustomerRelService extends IService<WeFlowerCustomerRel
     Map<String, Object> getUserAddCustomerStat(WeFlowerCustomerRel weFlowerCustomerRel);
 
     /**
-     * 批量添加或修改客户数据
-     *
-     * @param weFlowerCustomerRels
-     * @return
-     */
-    int batchUpdateOrInsert(List<WeFlowerCustomerRel> weFlowerCustomerRels);
-
-    /**
      * 获取客户关系
      *
      * @param userId         员工ID

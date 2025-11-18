@@ -2,6 +2,7 @@ package com.easyink.wecom.domain.autotag;
 
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.easyink.common.annotation.EncryptField;
 import com.easyink.common.annotation.Excel;
 import com.easyink.common.enums.batchtag.BatchTagDetailStatusEnum;
 import com.easyink.common.utils.SnowFlakeUtil;
@@ -51,7 +52,10 @@ public class WeBatchTagTaskDetail implements Serializable {
   @ApiModelProperty(value = "导入的手机号")
   @TableField("import_mobile")
   @Excel(name = "手机号", sort = 3)
+  @EncryptField(EncryptField.FieldType.MOBILE)
   private String importMobile;
+  @ApiModelProperty(value = "导入的手机号加密")
+  private String importMobileEncrypt;
 
   @ApiModelProperty(value = "打标签状态（0 待执行， 1 成功 ， 2 失败）")
   @TableField("status")

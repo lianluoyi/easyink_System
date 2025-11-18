@@ -1,5 +1,6 @@
 package com.easyink.wecom.domain.vo;
 
+import com.easyink.common.annotation.EncryptField;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
@@ -36,7 +37,9 @@ public class WeUserVO {
 
 
     @ApiModelProperty(value = "手机号")
+    @EncryptField(EncryptField.FieldType.MOBILE)
     private String mobile;
+    private String mobileEncrypt;
 
 
     @ApiModelProperty(value = "邮箱")
@@ -62,7 +65,9 @@ public class WeUserVO {
     private String qqAccount;
 
     @ApiModelProperty(value = "地址")
+    @EncryptField(EncryptField.FieldType.ADDRESS)
     private String address;
+    private String addressEncrypt;
 
 
     @ApiModelProperty(value = "生日")

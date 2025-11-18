@@ -3,6 +3,7 @@ package com.easyink.wecom.domain.dto.statistics;
 import com.easyink.common.core.domain.BaseEntity;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.util.List;
 
@@ -12,6 +13,7 @@ import java.util.List;
  * @author lichaoyu
  * @date 2023/7/4 10:01
  */
+@EqualsAndHashCode(callSuper = true)
 @Data
 public class EmpleCodeStatisticDTO extends BaseEntity {
 
@@ -23,6 +25,9 @@ public class EmpleCodeStatisticDTO extends BaseEntity {
 
     @ApiModelProperty("部门idList")
     private List<String> departmentIds;
+
+    @ApiModelProperty("职务")
+    private String position;
 
     @ApiModelProperty("员工idList")
     private List<String> userIds;

@@ -111,7 +111,6 @@ public class WXBizMsgCrypt {
             // 解密
             original = cipher.doFinal(encrypted);
         } catch (Exception e) {
-            e.printStackTrace();
             throw new AesException(AesException.DecryptAESError);
         }
 
@@ -129,7 +128,6 @@ public class WXBizMsgCrypt {
             from_appid =
                     new String(Arrays.copyOfRange(bytes, 20 + xmlLength, bytes.length), CHARSET);
         } catch (Exception e) {
-            e.printStackTrace();
             throw new AesException(AesException.IllegalBuffer);
         }
 
@@ -190,7 +188,6 @@ public class WXBizMsgCrypt {
             Element root = document.getDocumentElement();
             return root.getElementsByTagName("Encrypt").item(0).getTextContent();
         } catch (Exception e) {
-            e.printStackTrace();
             throw new AesException(AesException.ParseXmlError);
         }
     }

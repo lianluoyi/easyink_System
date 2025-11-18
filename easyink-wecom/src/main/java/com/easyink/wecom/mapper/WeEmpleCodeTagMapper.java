@@ -2,6 +2,7 @@ package com.easyink.wecom.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.easyink.wecom.domain.WeEmpleCodeTag;
+import com.easyink.wecom.domain.vo.h5.EmpleCodeTagVO;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 
@@ -90,4 +91,10 @@ public interface WeEmpleCodeTagMapper extends BaseMapper<WeEmpleCodeTag> {
     int batchRemoveWeEmpleCodeTagIds(@Param("ids") List<Long> ids);
 
 
+    /**
+     * 根据员工活码id查询标签列表
+     * @param originEmpleId 原活码id
+     * @return 标签列表
+     */
+    List<EmpleCodeTagVO> selectTagListByEmpleCodeId(@Param("originEmpleId") String originEmpleId);
 }

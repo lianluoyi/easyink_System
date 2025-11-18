@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.easyink.common.annotation.EncryptField;
 import com.easyink.common.config.RuoYiConfig;
 import com.easyink.common.constant.Constants;
 import com.easyink.common.core.domain.BaseEntity;
@@ -58,7 +59,12 @@ public class WeCorpAccount extends BaseEntity {
 
     @ApiModelProperty("企业为corpSecret")
     @TableField("corp_secret")
+    @EncryptField(EncryptField.FieldType.COMMON)
     private String corpSecret;
+
+    @ApiModelProperty("企业corpSecret加密")
+    @TableField("corp_secret_encrypt")
+    private String corpSecretEncrypt;
 
     @ApiModelProperty("帐号状态（0正常 1停用 2已授权未启用)")
     @TableField("status")
@@ -71,7 +77,12 @@ public class WeCorpAccount extends BaseEntity {
 
     @ApiModelProperty("通讯录密钥")
     @TableField("contact_secret")
+    @EncryptField(EncryptField.FieldType.COMMON)
     private String contactSecret;
+
+    @ApiModelProperty("通讯录密钥加密")
+    @TableField("contact_secret_encrypt")
+    private String contactSecretEncrypt;
 
     @ApiModelProperty("应用id")
     @TableField("agent_id")
@@ -87,16 +98,30 @@ public class WeCorpAccount extends BaseEntity {
 
     @ApiModelProperty("应用密钥")
     @TableField("agent_secret")
+    @EncryptField(EncryptField.FieldType.COMMON)
     private String agentSecret;
+
+    @ApiModelProperty("应用密钥加密")
+    @TableField("agent_secret_encrypt")
+    private String agentSecretEncrypt;
 
     @ApiModelProperty("服务商密钥")
     @TableField("provider_secret")
+    @EncryptField(EncryptField.FieldType.COMMON)
     private String providerSecret;
+
+    @ApiModelProperty("服务商密钥加密")
+    @TableField("provider_secret_encrypt")
+    private String providerSecretEncrypt;
 
     @ApiModelProperty("会话存档密钥")
     @TableField("chat_secret")
+    @EncryptField(EncryptField.FieldType.COMMON)
     private String chatSecret;
 
+    @ApiModelProperty("会话存档密钥加密")
+    @TableField("chat_secret_encrypt")
+    private String chatSecretEncrypt;
 
     @ApiModelProperty("企业微信扫码登陆回调地址")
     @TableField("wx_qr_login_redirect_uri")
@@ -117,7 +142,12 @@ public class WeCorpAccount extends BaseEntity {
 
     @ApiModelProperty("应用回调aesKey")
     @TableField("encoding_aes_key")
+    @EncryptField(EncryptField.FieldType.COMMON)
     private String encodingAesKey;
+
+    @ApiModelProperty("应用回调aesKey加密")
+    @TableField("encoding_aes_key_encrypt")
+    private String encodingAesKeyEncrypt;
 
     @ApiModelProperty("H5域名链接")
     @TableField("h5_do_main_name")

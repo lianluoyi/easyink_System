@@ -1,6 +1,7 @@
 package com.easyink.web.controller.wecom;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.easyink.common.annotation.Encrypt;
 import com.easyink.common.core.controller.BaseController;
 import com.easyink.common.core.domain.AjaxResult;
 import com.easyink.common.core.domain.model.LoginUser;
@@ -8,18 +9,14 @@ import com.easyink.common.core.page.TableDataInfo;
 import com.easyink.common.enums.CustomerTrajectoryEnums;
 import com.easyink.common.enums.MethodParamType;
 import com.easyink.wecom.annotation.Convert2Cipher;
-import com.easyink.wecom.domain.WeCustomerPortrait;
 import com.easyink.wecom.domain.WeCustomerTrajectory;
 import com.easyink.wecom.domain.WeTagGroup;
-import com.easyink.wecom.domain.vo.WeMakeCustomerTagVO;
 import com.easyink.wecom.login.util.LoginTokenService;
 import com.easyink.wecom.service.*;
-import com.github.pagehelper.PageInfo;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.constraints.NotBlank;
@@ -61,6 +58,7 @@ public class WeCustomerPortraitController extends BaseController {
      */
     @ApiOperation("获取客户详细信息")
     @GetMapping(value = "/findWeCustomerInfo")
+    @Encrypt
     public AjaxResult findWeCustomerInfo(@NotBlank(message = "外部联系人ID不能为空") String externalUserid, @NotBlank(message = "员工ID不能为空") String userId) {
         return AjaxResult.success(weCustomerService.findCustomerByOperUseridAndCustomerId(externalUserid, userId, LoginTokenService.getLoginUser().getCorpId()));
     }

@@ -1,10 +1,12 @@
 package com.easyink.wecom.domain.vo.statistics.emplecode;
 
+import cn.hutool.core.util.StrUtil;
 import com.easyink.common.annotation.Excel;
 import com.easyink.common.constant.GenConstants;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -27,30 +29,40 @@ public class EmpleCodeUserVO {
     @ApiModelProperty("部门名称")
     @Excel(name = "所属部门", sort = 2)
     private String departmentName;
+
+    @ApiModelProperty("员工职务")
+    @Excel(name = "员工职务", sort = 3)
+    private String position;
+
+    @Excel(name = "所属上级部门", sort = 4)
+    @ApiModelProperty("所属上级部门")
+    private String parentDepartmentName;
+
+
     @ApiModelProperty("员工头像Url")
     private String userHeadImage;
 
     @ApiModelProperty("累计添加客户")
-    @Excel(name = "累计添加客户", sort = 3)
+    @Excel(name = "累计添加客户", sort = 5)
     private Integer accumulateCustomerCnt = 0;
 
     @ApiModelProperty("留存客户总数")
-    @Excel(name = "留存客户总数", sort = 4)
+    @Excel(name = "留存客户总数", sort = 6)
     private Integer retainCustomerCnt = 0;
 
     @ApiModelProperty("新增客户数")
-    @Excel(name = "新增客户数", sort = 5)
+    @Excel(name = "新增客户数", sort = 7)
     private Integer newCustomerCnt = 0;
 
     @ApiModelProperty("流失客户数")
-    @Excel(name = "流失客户数", sort = 6)
+    @Excel(name = "流失客户数", sort = 8)
     private Integer lossCustomerCnt = 0;
 
     @ApiModelProperty("截止当前时间，新增客户数")
     private Integer currentNewCustomerCnt = 0;
 
     @ApiModelProperty("新客留存率")
-    @Excel(name = "新客留存率", sort = 7)
+    @Excel(name = "新客留存率", sort = 9)
     private String retainNewCustomerRate;
 
     /**
@@ -89,6 +101,9 @@ public class EmpleCodeUserVO {
             retainNewCustomerRate = NULL_VALUE;
         } else {
             retainNewCustomerRate = getRetainNewCustomerRate() + GenConstants.PERCENT;
+        }
+        if(StringUtils.isBlank(this.getParentDepartmentName())){
+            this.setParentDepartmentName(StrUtil.DASHED);
         }
     }
 

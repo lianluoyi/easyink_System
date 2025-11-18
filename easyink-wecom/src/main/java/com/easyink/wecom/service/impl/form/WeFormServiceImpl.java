@@ -32,9 +32,9 @@ import com.easyink.wecom.domain.query.form.FormQuery;
 import com.easyink.wecom.domain.vo.autotag.TagInfoVO;
 import com.easyink.wecom.domain.vo.form.*;
 import com.easyink.wecom.handler.shorturl.FormShortUrlHandler;
-import com.easyink.wecom.handler.shorturl.RadarShortUrlHandler;
 import com.easyink.wecom.login.util.LoginTokenService;
 import com.easyink.wecom.mapper.form.WeFormMapper;
+import com.easyink.wecom.service.WeCustomerExtendPropertyService;
 import com.easyink.wecom.service.WeTagService;
 import com.easyink.wecom.service.form.*;
 import com.easyink.wecom.service.wechatopen.WechatOpenService;
@@ -78,12 +78,13 @@ public class WeFormServiceImpl extends ServiceImpl<WeFormMapper, WeForm> impleme
     private final WechatOpenService wechatOpenService;
     private final WeFormShortCodeRelService weFormShortCodeRelService;
     private final QRCodeHandler qrCodeHandler;
+    private final WeCustomerExtendPropertyService weCustomerExtendPropertyService;
 
     @Resource(name = "formTaskExecutor")
     private ThreadPoolTaskExecutor formTaskExecutor;
 
     @Lazy
-    public WeFormServiceImpl(WeFormAdvanceSettingService settingService, WeFormGroupService weFormGroupService, WeTagService tagService, WeFormOperRecordService weFormOperRecordService, WeFormMapper weFormMapper, FormShortUrlHandler formShortUrlHandler, WechatOpenService wechatOpenService, WeFormShortCodeRelService weFormShortCodeRelService, QRCodeHandler qrCodeHandler) {
+    public WeFormServiceImpl(WeFormAdvanceSettingService settingService, WeFormGroupService weFormGroupService, WeTagService tagService, WeFormOperRecordService weFormOperRecordService, WeFormMapper weFormMapper, FormShortUrlHandler formShortUrlHandler, WechatOpenService wechatOpenService, WeFormShortCodeRelService weFormShortCodeRelService, QRCodeHandler qrCodeHandler, WeCustomerExtendPropertyService weCustomerExtendPropertyService) {
         this.settingService = settingService;
         this.weFormGroupService = weFormGroupService;
         this.tagService = tagService;
@@ -93,6 +94,7 @@ public class WeFormServiceImpl extends ServiceImpl<WeFormMapper, WeForm> impleme
         this.wechatOpenService = wechatOpenService;
         this.weFormShortCodeRelService = weFormShortCodeRelService;
         this.qrCodeHandler = qrCodeHandler;
+        this.weCustomerExtendPropertyService = weCustomerExtendPropertyService;
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -303,6 +305,7 @@ public class WeFormServiceImpl extends ServiceImpl<WeFormMapper, WeForm> impleme
                     .thenApply(detailViewVO -> {
                         // 查询客户标签设置根据id查询名称
                         detailViewVO.setLabelSetting(parseAndBuildTagVOList(detailViewVO.getLabelSettingJson()));
+                        detailViewVO.setCustomerPropertyIdVOList(parseAndBuildPropertyIdSetting(detailViewVO.getCustomerPropertyIdJson()));
                         return detailViewVO;
                     })
                     .exceptionally(e -> {
@@ -407,9 +410,26 @@ public class WeFormServiceImpl extends ServiceImpl<WeFormMapper, WeForm> impleme
         }
         // 查询客户标签设置根据id查询名称
         CustomerLabelSettingDetailVO labelSettingDetailVO = parseAndBuildTagVOList(formSetting.getLabelSettingJson());
+        List<CustomerPropertySettingVO> customerPropertySettingVOList = parseAndBuildPropertyIdSetting(formSetting.getCustomerPropertyIdJson());
 
-        return new WeFormEditDetailVO(new WeFormVO(form), new WeFormSettingVO(formSetting, labelSettingDetailVO));
+        return new WeFormEditDetailVO(new WeFormVO(form), new WeFormSettingVO(formSetting, labelSettingDetailVO, customerPropertySettingVOList));
 
+    }
+
+    /**
+     * 解析构建客户自定义属性VO列表
+     * @param customerPropertyIdJson
+     * @return
+     */
+    private List<CustomerPropertySettingVO> parseAndBuildPropertyIdSetting(String customerPropertyIdJson) {
+        if (StringUtils.isBlank(customerPropertyIdJson)) {
+            return new ArrayList<>();
+        }
+        List<String> idList = JSON.parseArray(customerPropertyIdJson, String.class);
+        if(CollectionUtils.isEmpty(idList)){
+            return new ArrayList<>();
+        }
+        return weCustomerExtendPropertyService.listByIds(idList).stream().map(it -> new CustomerPropertySettingVO(String.valueOf(it.getId()), it.getName())).collect(Collectors.toList());
     }
 
     /**

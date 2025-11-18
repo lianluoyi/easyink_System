@@ -154,7 +154,7 @@ public class WeCustomerMessagePushController extends BaseController {
             {@ApiResponse(code = 2041, message = "正在派送群发任务，请稍后再试")}
     )
     public <T> AjaxResult<T> asyncResult(@RequestBody AsyncResultDTO asyncResultDTO) throws JsonProcessingException {
-        weCustomerMessageOriginalService.asyncResult(asyncResultDTO, LoginTokenService.getLoginUser().getCorpId());
+        weCustomerMessageOriginalService.asyncResult(asyncResultDTO.getMessageIdDTOList(), LoginTokenService.getLoginUser().getCorpId());
         return AjaxResult.success();
     }
 

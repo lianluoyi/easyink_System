@@ -11,6 +11,7 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.dtflys.forest.exceptions.ForestRuntimeException;
 import com.easyink.common.annotation.DataScope;
+import com.easyink.common.annotation.Decrypt;
 import com.easyink.common.config.RuoYiConfig;
 import com.easyink.common.constant.*;
 import com.easyink.common.core.domain.entity.SysRole;
@@ -19,11 +20,14 @@ import com.easyink.common.core.domain.model.LoginUser;
 import com.easyink.common.core.domain.wecom.WeDepartment;
 import com.easyink.common.core.domain.wecom.WeUser;
 import com.easyink.common.core.redis.RedisCache;
+import com.easyink.common.encrypt.SensitiveFieldProcessor;
+import com.easyink.common.encrypt.StrategyCryptoUtil;
 import com.easyink.common.enums.*;
 import com.easyink.common.exception.CustomException;
 import com.easyink.common.utils.DateUtils;
 import com.easyink.common.utils.bean.BeanUtils;
 import com.easyink.common.utils.file.FileUploadUtils;
+
 import com.easyink.wecom.annotation.Convert2Cipher;
 import com.easyink.wecom.client.WeAgentClient;
 import com.easyink.wecom.client.WeCustomerClient;
@@ -154,6 +158,7 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
      */
     @Override
     @DataScope
+    @Decrypt
     public List<WeUserVO> listOfUser(QueryUserDTO queryUserDTO) {
         return weUserMapper.listOfUser(queryUserDTO);
     }
@@ -166,6 +171,7 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
      * @return {@link List < WeUserVO >}
      */
     @Override
+    @Decrypt
     public List<WeUserVO> listOfUser(String corpId, List<String> queryUserIdList) {
         if (StringUtils.isBlank(corpId)) {
             return new ArrayList<>();
@@ -185,6 +191,7 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
      * @return vo
      */
     @Override
+    @Decrypt
     public WeUserVO getUser(String corpId, String userId) {
         return weUserMapper.getUser(corpId, userId);
     }
@@ -246,11 +253,13 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
      * @return 通讯录相关客户
      */
     @Override
+    @Decrypt
     public WeUser selectWeUserById(String corpId, String userId) {
         return weUserMapper.selectWeUserById(corpId, userId);
     }
 
     @Override
+    @Decrypt
     public WeUser getUserDetail(String corpId, String userId) {
         return weUserMapper.getUserDetail(corpId, userId);
     }
@@ -263,6 +272,7 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
      */
     @Override
     @DataScope
+    @Decrypt
     public List<WeUser> selectWeUserList(WeUser weUser) {
         return this.selectBaseList(weUser);
 
@@ -367,8 +377,12 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
             if (StringUtils.isNotBlank(weUser.getName()) && weUser.getName().startsWith(USER_ID_PREFIX)) {
                 weUser.setName(null);
             }
+            // 保存前处理敏感字段：加密和脱敏
+            SensitiveFieldProcessor.processForSave(weUser);
             return weUserMapper.updateWeUser(weUser);
         }
+        // 保存前处理敏感字段：加密和脱敏
+        SensitiveFieldProcessor.processForSave(weUser);
         return weUserMapper.insertWeUser(weUser);
 
     }
@@ -407,6 +421,9 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
             //如果是私有云服务器(自建应用)才能修改企业微信的员工信息
             CheckCorpIdVO checkCorpIdVO = weAuthCorpInfoService.isDkCorp(weUser.getCorpId());
             if (checkCorpIdVO != null && !checkCorpIdVO.isDkCorp()) {
+                if(StringUtils.isNotBlank(weUser.getMobileEncrypt())){
+                    weUser.setMobile(StrategyCryptoUtil.decrypt(weUser.getMobileEncrypt()));
+                }
                 weUserClient.updateUser(new WeUserDTO(weUser), weUser.getCorpId());
             }
         }
@@ -417,11 +434,15 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
     public int updateWeUserNoToWeCom(WeUser weUser) {
         WeUser weUserInfo = weUserMapper.selectWeUserById(weUser.getCorpId(), weUser.getUserId());
         if (weUserInfo == null) {
+            // 保存前处理敏感字段：加密和脱敏
+            SensitiveFieldProcessor.processForSave(weUser);
             return weUserMapper.insertWeUser(weUser);
         } else {
             if (StringUtils.isNotBlank(weUser.getName()) && weUser.getName().startsWith(USER_ID_PREFIX)) {
                 weUser.setName(null);
             }
+            // 保存前处理敏感字段：加密和脱敏
+            SensitiveFieldProcessor.processForSave(weUser);
             return weUserMapper.updateWeUser(weUser);
         }
     }
@@ -439,6 +460,8 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
         WeUserDTO weUserDTO = weUserClient.getUserByUserId(userId, corpId);
         WeUser weUser = weUserDTO.transferToWeUser();
         weUser.setCorpId(corpId);
+        // 保存前处理敏感字段：加密和脱敏
+        SensitiveFieldProcessor.processForSave(weUser);
         return this.updateWeUserNoToWeCom(weUser);
     }
 
@@ -604,6 +627,9 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
         // 4.更新离职员工状态和离职时间
         List<WeUser> updateUserList = resp.getUpdateUserList();
         if (CollectionUtils.isNotEmpty(updateUserList)) {
+            for (WeUser weUser : updateUserList) {
+                SensitiveFieldProcessor.processForSave(weUser);
+            }
             weUserMapper.batchUpdateWeUser(updateUserList);
         }
         // 5. 更新离职员工的客户关系状态
@@ -630,6 +656,9 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
         List<WeUser> weUsers = new ArrayList<>();
         CollUtil.newArrayList(ids).forEach(id -> weUsers.add(WeUser.builder().corpId(corpId).userId(id).isActivate(WeConstans.WE_USER_IS_LEAVE).dimissionTime(new Date()).build()));
 
+        for (WeUser weUser : weUsers) {
+            SensitiveFieldProcessor.processForSave(weUser);
+        }
         if (this.baseMapper.batchUpdateWeUser(weUsers) > 0) {
             weUsers.forEach(weUser -> weUserClient.deleteUserByUserId(weUser.getUserId(), corpId));
         }
@@ -648,22 +677,6 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
         return weUserMapper.update(weUser, new LambdaQueryWrapper<WeUser>().eq(WeUser::getUserId, userId).eq(WeUser::getCorpId, corpId));
     }
 
-    private Map<String, WeFlowerCustomerRel> getWeCustomerMap(String corpId, WeUser weUser) {
-        if (StringUtils.isBlank(corpId) || weUser == null) {
-            return new HashMap<>(1);
-        }
-        //获取所有数据不管是否流失
-        List<WeFlowerCustomerRel> weFlowerCustomers = weFlowerCustomerRelService.list(new LambdaQueryWrapper<WeFlowerCustomerRel>().eq(WeFlowerCustomerRel::getCorpId, corpId).eq(WeFlowerCustomerRel::getUserId, weUser.getUserId()));
-
-        Map<String, WeFlowerCustomerRel> map = new HashMap<>(weFlowerCustomers.size());
-        for (WeFlowerCustomerRel weFlowerCustomerRel : weFlowerCustomers) {
-            if (map.containsKey(weFlowerCustomerRel.getExternalUserid())) {
-                continue;
-            }
-            map.put(weFlowerCustomerRel.getExternalUserid(), weFlowerCustomerRel);
-        }
-        return map;
-    }
 
 
     @Override
@@ -671,6 +684,7 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
         List<WeUser> weUsers = new ArrayList<>();
         ids.forEach(id -> weUsers.add(WeUser.builder().corpId(corpId).userId(id).isActivate(WeConstans.WE_USER_IS_LEAVE).dimissionTime(new Date()).build()));
         if (CollUtil.isNotEmpty(weUsers)) {
+            weUsers.forEach(SensitiveFieldProcessor::processForSave);
             weUserMapper.batchUpdateWeUser(weUsers);
         }
     }
@@ -1081,6 +1095,10 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
             log.info("[UserBehaviorDataTak] 该企业不存在可见的部门和员工,停止执行,corpId:{}", corpId);
             return;
         }
+        
+        // 批量预加载部门信息，避免在循环中重复查询
+        Map<Long, WeDepartment> departmentMap = preloadDepartments(visibleUser, corpId);
+        
         //删除存在的数据
         Date beginDate = DateUtils.dateTime(DateUtils.YYYY_MM_DD_HH_MM_SS, time + DateUtils.BEGIN_TIME_SUFFIX);
         Date endDate = DateUtils.dateTime(DateUtils.YYYY_MM_DD_HH_MM_SS, time + DateUtils.END_TIME_SUFFIX);
@@ -1089,7 +1107,7 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
         LambdaQueryWrapper<WeUserBehaviorData> wrapper1 = new LambdaQueryWrapper<>();
         wrapper1.eq(WeUserBehaviorData::getCorpId, corpId);
         wrapper1.between(WeUserBehaviorData::getStatTime, DateUtil.date(startTime * 1000), DateUtil.date(endTime * 1000));
-        int count = weUserBehaviorDataService.count(wrapper1);
+        int count = (int)weUserBehaviorDataService.count(wrapper1);
         if (count > 0) {
             weUserBehaviorDataService.remove(wrapper1);
         }
@@ -1112,6 +1130,8 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
                     BeanUtils.copyPropertiesignoreOther(data, weUserBehaviorData);
                     weUserBehaviorData.setUserId(weUser.getUserId());
                     weUserBehaviorData.setCorpId(corpId);
+                    // 设置部门快照信息（使用预加载的部门信息）
+                    setDepartmentSnapshotBatch(weUserBehaviorData, weUser, departmentMap);
                     dataList.add(weUserBehaviorData);
                 }
             } catch (ForestRuntimeException e) {
@@ -1119,10 +1139,152 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
             }
         });
         weUserBehaviorDataService.saveBatch(dataList);
-
-
     }
 
+
+    /**
+     * 批量预加载部门信息，避免循环中重复查询数据库
+     * 需要加载完整的部门层级结构以构建部门路径
+     *
+     * @param visibleUser 可见员工列表（实际未使用，保留参数为了保持接口一致性）
+     * @param corpId      企业id
+     * @return 部门ID -> 部门信息的映射
+     */
+    private Map<Long, WeDepartment> preloadDepartments(List<WeUser> visibleUser, String corpId) {
+        // 为了构建完整的部门路径，需要查询该企业的所有部门
+        // 因为需要向上追溯到根部门
+        List<WeDepartment> allDepartments = weDepartmentService.list(
+            new LambdaQueryWrapper<WeDepartment>()
+                .eq(WeDepartment::getCorpId, corpId)
+        );
+        
+        // 创建部门ID -> 部门信息的映射
+        return allDepartments.stream()
+            .collect(Collectors.toMap(WeDepartment::getId, dept -> dept));
+    }
+
+    /**
+     * 设置部门快照信息（批量查询版本）
+     * 构建完整的部门路径，如：员工在部门3，层级为1/2/3，则存储完整路径
+     *
+     * @param weUserBehaviorData 员工行为数据
+     * @param weUser             员工信息
+     * @param departmentMap      预加载的部门信息映射
+     */
+    private void setDepartmentSnapshotBatch(WeUserBehaviorData weUserBehaviorData, WeUser weUser, Map<Long, WeDepartment> departmentMap) {
+        if (weUser.getDepartment() != null && weUser.getDepartment().length > 0) {
+            // 取员工部门数组的最后一个部门ID作为当前部门
+            String currentDepartmentId = weUser.getDepartment()[weUser.getDepartment().length - 1];
+            
+            try {
+                Long currentDeptId = Long.valueOf(currentDepartmentId);
+                WeDepartment currentDepartment = departmentMap.get(currentDeptId);
+                
+                if (currentDepartment != null) {
+                    // 设置当前部门信息
+                    weUserBehaviorData.setCurrentDepartmentId(String.valueOf(currentDepartment.getId()));
+                    weUserBehaviorData.setCurrentDepartmentName(currentDepartment.getName());
+                    
+                    // 构建完整的部门路径（从根部门到当前部门）
+                    List<Long> departmentPath = buildDepartmentPath(currentDeptId, departmentMap);
+                    List<String> departmentNamePath = buildDepartmentNamePath(departmentPath, departmentMap);
+                    // 存储完整的部门路径（逗号分隔的ID和斜杠分隔的名称）
+                    // 需要过滤掉当前部门id和名称
+                    weUserBehaviorData.setParentDepartmentId(String.join(",", departmentPath.stream().filter(it -> !it.equals(currentDeptId)).map(String::valueOf).collect(Collectors.toList())));
+                    weUserBehaviorData.setParentDepartmentName(String.join("/", departmentNamePath.stream().filter(it -> !it.equals(currentDepartment.getName())).collect(Collectors.toList())));
+                }
+            } catch (NumberFormatException e) {
+                log.warn("部门ID格式错误: userId={}, departmentId={}", weUser.getUserId(), currentDepartmentId);
+            }
+        }
+    }
+    
+    /**
+     * 构建部门路径ID列表（从根部门到当前部门）
+     *
+     * @param currentDeptId 当前部门ID
+     * @param departmentMap 部门信息映射
+     * @return 部门路径ID列表
+     */
+    private List<Long> buildDepartmentPath(Long currentDeptId, Map<Long, WeDepartment> departmentMap) {
+        List<Long> path = new ArrayList<>();
+        Long deptId = currentDeptId;
+        
+        // 向上追溯到根部门
+        while (deptId != null) {
+            WeDepartment dept = departmentMap.get(deptId);
+            if (dept == null) {
+                break;
+            }
+            path.add(0, deptId); // 添加到列表开头，保证顺序是从根到当前
+            deptId = dept.getParentId();
+        }
+        
+        return path;
+    }
+    
+    /**
+     * 构建部门名称路径列表（从根部门到当前部门）
+     *
+     * @param departmentPath 部门ID路径
+     * @param departmentMap  部门信息映射
+     * @return 部门名称路径列表
+     */
+    private List<String> buildDepartmentNamePath(List<Long> departmentPath, Map<Long, WeDepartment> departmentMap) {
+        return departmentPath.stream()
+                .map(deptId -> {
+                    WeDepartment dept = departmentMap.get(deptId);
+                    return dept != null ? dept.getName() : String.valueOf(deptId);
+                })
+                .collect(Collectors.toList());
+    }
+    
+    /**
+     * 设置部门快照信息（原始单查询版本，保留用于兼容）
+     * 构建完整的部门路径，如：员工在部门3，层级为1/2/3，则存储完整路径
+     *
+     * @param weUserBehaviorData 员工行为数据
+     * @param weUser 员工信息
+     * @param corpId 企业id
+     */
+    private void setDepartmentSnapshot(WeUserBehaviorData weUserBehaviorData, WeUser weUser, String corpId) {
+        if (weUser.getDepartment() != null && weUser.getDepartment().length > 0) {
+            // 取员工部门数组的最后一个部门ID作为当前部门
+            String currentDepartmentId = weUser.getDepartment()[weUser.getDepartment().length - 1];
+            
+            try {
+                Long currentDeptId = Long.valueOf(currentDepartmentId);
+                
+                // 获取当前部门信息
+                WeDepartment currentDepartment = weDepartmentService.getOne(
+                    new LambdaQueryWrapper<WeDepartment>()
+                        .eq(WeDepartment::getCorpId, corpId)
+                        .eq(WeDepartment::getId, currentDeptId)
+                );
+                
+                if (currentDepartment != null) {
+                    // 设置当前部门信息
+                    weUserBehaviorData.setCurrentDepartmentId(String.valueOf(currentDepartment.getId()));
+                    weUserBehaviorData.setCurrentDepartmentName(currentDepartment.getName());
+                    
+                    // 构建完整的部门路径（需要查询所有相关部门）
+                    Map<Long, WeDepartment> departmentMap = weDepartmentService.list(
+                        new LambdaQueryWrapper<WeDepartment>().eq(WeDepartment::getCorpId, corpId)
+                    ).stream().collect(Collectors.toMap(WeDepartment::getId, dept -> dept));
+                    
+                    // 构建完整的部门路径（从根部门到当前部门）
+                    List<Long> departmentPath = buildDepartmentPath(currentDeptId, departmentMap);
+                    List<String> departmentNamePath = buildDepartmentNamePath(departmentPath, departmentMap);
+                    
+                    // 存储完整的部门路径（逗号分隔的ID和斜杠分隔的名称）
+                    weUserBehaviorData.setParentDepartmentId(String.join(",", departmentPath.stream().map(String::valueOf).collect(Collectors.toList())));
+                    weUserBehaviorData.setParentDepartmentName(String.join("/", departmentNamePath));
+                }
+            } catch (NumberFormatException e) {
+                log.warn("部门ID格式错误: userId={}, departmentId={}", weUser.getUserId(), currentDepartmentId);
+            }
+        }
+    }
 
     /**
      * 为客户设置员工和部门信息
@@ -1177,6 +1339,106 @@ public class WeUserServiceImpl extends ServiceImpl<WeUserMapper, WeUser> impleme
             userVOList.add(userVO);
         }
         return userVOList;
+    }
+
+    /**
+     * 数据迁移：为历史数据补充部门快照信息
+     *
+     * @param corpId 企业id
+     * @return 迁移结果信息
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public String migrateDepartmentSnapshot(String corpId) {
+        if (StringUtils.isBlank(corpId)) {
+            return "企业ID不能为空";
+        }
+        
+        log.info("开始为企业 {} 的历史数据补充部门快照信息", corpId);
+        long startTime = System.currentTimeMillis();
+        
+        try {
+            // 1. 查询所有需要补充部门快照信息的数据
+            List<WeUserBehaviorData> needMigrateData = weUserBehaviorDataService.list(
+                new LambdaQueryWrapper<WeUserBehaviorData>()
+                    .eq(WeUserBehaviorData::getCorpId, corpId)
+            );
+            
+            if (CollectionUtils.isEmpty(needMigrateData)) {
+                log.info("企业 {} 没有需要迁移的历史数据", corpId);
+                return "没有需要迁移的历史数据";
+            }
+            
+            log.info("企业 {} 共有 {} 条历史数据需要补充部门快照信息", corpId, needMigrateData.size());
+            
+            // 2. 预加载部门信息
+            Map<Long, WeDepartment> departmentMap = weDepartmentService.list(
+                new LambdaQueryWrapper<WeDepartment>()
+                    .eq(WeDepartment::getCorpId, corpId)
+            ).stream().collect(Collectors.toMap(WeDepartment::getId, dept -> dept));
+            
+            if (departmentMap.isEmpty()) {
+                log.warn("企业 {} 没有部门信息，无法进行数据迁移", corpId);
+                return "企业没有部门信息，无法进行数据迁移";
+            }
+            
+            // 3. 批量处理数据
+            int batchSize = 1000;
+            int totalCount = needMigrateData.size();
+            int processedCount = 0;
+            int successCount = 0;
+            int failCount = 0;
+            
+            for (int i = 0; i < totalCount; i += batchSize) {
+                int endIndex = Math.min(i + batchSize, totalCount);
+                List<WeUserBehaviorData> batchData = needMigrateData.subList(i, endIndex);
+                
+                List<WeUserBehaviorData> updateList = new ArrayList<>();
+                
+                for (WeUserBehaviorData data : batchData) {
+                    try {
+                        // 获取员工信息
+                        WeUser weUser = this.selectWeUserById(corpId, data.getUserId());
+                        if (weUser != null) {
+                            // 设置部门快照信息
+                            setDepartmentSnapshotBatch(data, weUser, departmentMap);
+                            updateList.add(data);
+                            successCount++;
+                        } else {
+                            log.warn("员工 {} 不存在，跳过数据迁移", data.getUserId());
+                            failCount++;
+                        }
+                    } catch (Exception e) {
+                        log.error("处理员工 {} 的数据时发生异常: {}", data.getUserId(), e.getMessage());
+                        failCount++;
+                    }
+                    processedCount++;
+                }
+                
+                // 批量更新
+                if (!updateList.isEmpty()) {
+                    weUserBehaviorDataService.updateBatchById(updateList);
+                }
+                
+                log.info("企业 {} 数据迁移进度: {}/{} ({:.2f}%)", 
+                    corpId, processedCount, totalCount, (double) processedCount / totalCount * 100);
+            }
+            
+            long endTime = System.currentTimeMillis();
+            long duration = endTime - startTime;
+            
+            String result = String.format(
+                "数据迁移完成！企业: %s, 总数据: %d, 成功: %d, 失败: %d, 耗时: %d ms",
+                corpId, totalCount, successCount, failCount, duration
+            );
+            
+            log.info(result);
+            return result;
+            
+        } catch (Exception e) {
+            log.error("企业 {} 数据迁移失败: {}", corpId, ExceptionUtils.getStackTrace(e));
+            return "数据迁移失败: " + e.getMessage();
+        }
     }
 
     @Override

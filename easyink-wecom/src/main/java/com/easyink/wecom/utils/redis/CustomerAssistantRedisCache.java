@@ -226,7 +226,7 @@ public class CustomerAssistantRedisCache extends RedisCache {
         if (StringUtils.isAnyBlank(corpId, date)) {
             return;
         }
-        increment(getWeEmpleCodeSituationKey(corpId, date), date, 1);
+        hIncrement(getWeEmpleCodeSituationKey(corpId, date), date, 1);
     }
 
     /**

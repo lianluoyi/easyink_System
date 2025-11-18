@@ -21,6 +21,12 @@
             <if test="required != null">
                 required,
             </if>
+            <if test="liveCodeRequired != null">
+                live_code_required,
+            </if>
+            <if test="extra != null">
+                extra,
+            </if>
             <if test="propertySort != null">
                 property_sort,
             </if>
@@ -47,6 +53,12 @@
             <if test="required != null">
                 #{required},
             </if>
+            <if test="liveCodeRequired != null">
+                #{liveCodeRequired},
+            </if>
+            <if test="extra != null">
+                #{extra},
+            </if>
             <if test="propertySort != null">
                 #{propertySort},
             </if>
@@ -69,8 +81,14 @@
             <if test="type != null">
                 type = VALUES(type),
             </if>
+            <if test="extra != null">
+                extra = VALUES(extra),
+            </if>
             <if test="required != null">
                 required = VALUES(required),
+            </if>
+           <if test="liveCodeRequired != null">
+               live_code_required = VALUES(live_code_required),
             </if>
             <if test="propertySort != null">
                 property_sort = VALUES(property_sort),
@@ -144,6 +162,8 @@
         <result column="name" property="name"/>
         <result column="type" property="type"/>
         <result column="required" property="required"/>
+        <result column="live_code_required" property="liveCodeRequired"/>
+        <result column="extra" property="extra"/>
         <result column="property_sort" property="propertySort"/>
         <result column="status" property="status"/>
         <result column="create_time" property="createTime"/>
@@ -159,28 +179,31 @@
     </resultMap>
     <!--    客户扩展属性列表-->
     <select id="getList" resultMap="propListMap">
-        SELECT wcep.id, wcep.name, wcep.type, wcep.required, wcep.property_sort,
+        SELECT wcep.id, wcep.name, wcep.type, wcep.required, wcep.live_code_required, wcep.property_sort,wcep.extra,
         wcep.status,wcep.create_time,wcep.create_by,wcep.update_time,
         epmo.id as optionId,epmo.extend_property_id,epmo.multiple_value,epmo.option_sort
-        FROM we_customer_extend_property wcep LEFT JOIN extend_property_multiple_option epmo ON wcep.id =
+        FROM we_customer_extend_property wcep
+        LEFT JOIN extend_property_multiple_option epmo ON wcep.id =
         epmo.extend_property_id
         WHERE wcep.corp_id = #{corpId}
         <if test="name != null and name != ''">AND wcep.name LIKE CONCAT('%',#{name},'%')</if>
         <if test="status != null">AND wcep.status = #{status}</if>
         <if test="required != null">AND wcep.required = #{required}</if>
+        <if test="liveCodeRequired != null">AND wcep.live_code_required = #{liveCodeRequired}</if>
         ORDER BY wcep.property_sort, epmo.option_sort
     </select>
     <!--    根据客户id获取扩展属性-->
     <select id="getPropByCustomer" resultType="com.easyink.common.core.domain.wecom.BaseExtendPropertyRel">
-        select extend_property_id, property_value,user_id, external_userid
-        from we_customer_extend_property_rel
+        select wcepr.extend_property_id, wcepr.property_value,wcepr.user_id, wcepr.external_userid,wcep.type as property_type
+        from we_customer_extend_property_rel wcepr
+        left join we_customer_extend_property wcep on wcep.id = wcepr.extend_property_id
         where
-        corp_id = #{corpId}
+        wcepr.corp_id = #{corpId}
         <if test="list != null and list.size()>0" >
             AND
             (
             <foreach collection="list" item="rel" separator=" OR ">
-                (user_id = #{rel.userId} AND external_userid = #{rel.externalUserid} )
+                (wcepr.user_id = #{rel.userId} AND wcepr.external_userid = #{rel.externalUserid} )
             </foreach>
             )
         </if>

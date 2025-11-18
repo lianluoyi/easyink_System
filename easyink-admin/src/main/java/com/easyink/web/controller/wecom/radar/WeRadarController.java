@@ -103,18 +103,18 @@ public class WeRadarController extends BaseController {
     @GetMapping("/clickRadar")
     @ApiOperation("根据短链记录雷达点击记录")
     public AjaxResult radar(@ApiParam("短链后缀的code") String shortCode, @ApiParam("用户的公众号openid") String openId) {
-        String serverIp = "";
-        try {
-            serverIp = IpUtils.getOutIp();
-        } catch (Exception e) {
-            log.error("[雷达]获取服务器ip异常.e:{}", ExceptionUtils.getStackTrace(e));
-        }
-        String ip = IpUtils.getIpAddr(ServletUtils.getRequest());
-        log.info("[雷达]有人点击了短链,shortCode:{},openId:{},ip:{},serverIp:{}", shortCode, openId, ip, serverIp);
-        if (serverIp.equals(ip)) {
-            log.info("[雷达]ip与服务器ip一样,不处理,ip:{}", ip);
-            return AjaxResult.success();
-        }
+//        String serverIp = "";
+//        try {
+//            serverIp = IpUtils.getOutIp();
+//        } catch (Exception e) {
+//            log.error("[雷达]获取服务器ip异常.e:{}", ExceptionUtils.getStackTrace(e));
+//        }
+//        String ip = IpUtils.getIpAddr(ServletUtils.getRequest());
+//        log.info("[雷达]有人点击了短链,shortCode:{},openId:{},ip:{},serverIp:{}", shortCode, openId, ip, serverIp);
+//        if (serverIp.equals(ip)) {
+//            log.info("[雷达]ip与服务器ip一样,不处理,ip:{}", ip);
+//            return AjaxResult.success();
+//        }
         return AjaxResult.success("success", weRadarService.recordRadar(shortCode, openId));
     }
 

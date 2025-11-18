@@ -47,7 +47,7 @@ public class WeGroupTagCategoryServiceImpl extends ServiceImpl<WeGroupTagCategor
             throw new CustomException(ResultTip.TIP_GENERAL_BAD_REQUEST);
         }
         //默认标签组最多可设置3000个
-        Integer count = baseMapper.selectCount(new LambdaQueryWrapper<WeGroupTagCategory>().eq(WeGroupTagCategory::getCorpId, weGroupTagCategory.getCorpId()));
+        Integer count = baseMapper.selectCount(new LambdaQueryWrapper<WeGroupTagCategory>().eq(WeGroupTagCategory::getCorpId, weGroupTagCategory.getCorpId())).intValue();
         if (count > WeConstans.DEFAULT_WE_GROUP_TAG_CATEGORY_SIZE) {
             throw new CustomException(ResultTip.TIP_GROUP_TAG_CATEGORY_OVER_MAX_SIZE);
         }

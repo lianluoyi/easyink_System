@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.easyink.wecom.mapper.WeCustomerTempEmpleCodeSelectTagScopeMapper">
+
+    <resultMap type="com.easyink.wecom.entity.WeCustomerTempEmpleCodeSelectTagScope"
+               id="WeCustomerTempEmpleCodeSelectTagScopeMap">
+        <result property="id" column="id" jdbcType="INTEGER"/>
+        <result property="corpId" column="corp_id" jdbcType="VARCHAR"/>
+        <result property="originEmpleCodeId" column="origin_emple_code_id" jdbcType="INTEGER"/>
+        <result property="type" column="type" jdbcType="INTEGER"/>
+        <result property="value" column="value" jdbcType="VARCHAR"/>
+        <result property="createBy" column="create_by" jdbcType="VARCHAR"/>
+        <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+    </resultMap>
+    <select id="selectTagSelectScopeList"
+            resultType="com.easyink.wecom.entity.WeCustomerTempEmpleCodeSelectTagScope">
+    SELECT * FROM we_customer_temp_emple_code_select_tag_scope
+    WHERE corp_id = #{corpId} AND origin_emple_code_id = #{originEmpleId}
+    </select>
+
+
+</mapper>
+

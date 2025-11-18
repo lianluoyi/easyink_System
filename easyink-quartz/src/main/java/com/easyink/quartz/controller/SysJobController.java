@@ -10,8 +10,11 @@ import com.easyink.common.utils.poi.ExcelUtil;
 import com.easyink.quartz.domain.SysJob;
 import com.easyink.quartz.service.ISysJobService;
 import com.easyink.quartz.util.CronUtils;
+import com.easyink.quartz.util.JobInvokeUtil;
 import com.easyink.wecom.login.util.LoginTokenService;
 import org.quartz.SchedulerException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -26,6 +29,8 @@ import java.util.List;
 @RestController
 @RequestMapping("/monitor/job")
 public class SysJobController extends BaseController {
+    private static final Logger log = LoggerFactory.getLogger(SysJobController.class);
+    
     @Autowired
     private ISysJobService jobService;
 
@@ -71,6 +76,19 @@ public class SysJobController extends BaseController {
         if (!CronUtils.isValid(sysJob.getCronExpression())) {
             return AjaxResult.error("cron表达式不正确");
         }
+        
+        // 安全检查：验证任务调用目标是否安全
+        try {
+            JobInvokeUtil.validateTaskSecurity(sysJob.getInvokeTarget());
+        } catch (SecurityException e) {
+            return AjaxResult.error("任务安全检查失败: " + e.getMessage());
+        }
+        
+        // 安全保护：新增任务时，invokeTarget必须由开发人员预先配置
+        if (sysJob.getInvokeTarget() == null || sysJob.getInvokeTarget().trim().isEmpty()) {
+            return AjaxResult.error("调用目标不能为空，请联系开发人员配置");
+        }
+        
         sysJob.setCreateBy(LoginTokenService.getUsername());
         return toAjax(jobService.insertJob(sysJob));
     }
@@ -85,6 +103,15 @@ public class SysJobController extends BaseController {
         if (!CronUtils.isValid(sysJob.getCronExpression())) {
             return AjaxResult.error("cron表达式不正确");
         }
+        
+        // 安全保护：修改任务时，不允许修改invokeTarget字段
+        // 获取原始任务信息，保持invokeTarget不变
+        SysJob originalJob = jobService.selectJobById(sysJob.getJobId());
+        if (originalJob != null) {
+            sysJob.setInvokeTarget(originalJob.getInvokeTarget());
+            log.info("修改任务时保持原始invokeTarget不变: {}", originalJob.getInvokeTarget());
+        }
+        
         sysJob.setUpdateBy(LoginTokenService.getUsername());
         return toAjax(jobService.updateJob(sysJob));
     }
@@ -122,4 +149,9 @@ public class SysJobController extends BaseController {
         jobService.deleteJobByIds(jobIds);
         return AjaxResult.success();
     }
+
+
+
+    
+
 }

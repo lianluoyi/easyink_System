@@ -3,8 +3,8 @@ package com.easyink.wecom.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.easyink.wecom.domain.WeCustomerMessageOriginal;
 import com.easyink.wecom.domain.dto.WeCustomerMessageDTO;
-import com.easyink.wecom.domain.dto.message.AsyncResultDTO;
 import com.easyink.wecom.domain.dto.message.CustomerMessagePushDTO;
+import com.easyink.wecom.domain.dto.message.MessageIdDTO;
 import com.easyink.wecom.domain.vo.CustomerMessagePushVO;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
@@ -44,7 +44,7 @@ public interface WeCustomerMessageOriginalService extends IService<WeCustomerMes
      * @param corpId 企业id
      * @throws JsonProcessingException JsonProcessingException
      */
-    void asyncResult(AsyncResultDTO asyncResultDTO, String corpId) throws JsonProcessingException;
+    void asyncResult(List<MessageIdDTO> messageIdDTOList, String corpId) throws JsonProcessingException;
 
     /**
      * 保存原始数据信息表 WeCustomerMessageOriginal 主键id

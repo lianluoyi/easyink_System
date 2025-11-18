@@ -20,10 +20,12 @@ import com.easyink.wecom.domain.WeCustomer;
 import com.easyink.wecom.domain.WeFlowerCustomerRel;
 import com.easyink.wecom.domain.dto.WeMessagePushDTO;
 import com.easyink.wecom.domain.dto.message.TextMessageDTO;
+import com.easyink.wecom.domain.model.emplecode.State;
 import com.easyink.wecom.domain.vo.WeUserVO;
 import com.easyink.wecom.domain.vo.WxCpXmlMessageVO;
 import com.easyink.wecom.domain.vo.customerloss.CustomerLossTagVO;
 import com.easyink.wecom.factory.WeEventStrategy;
+import com.easyink.wecom.mapper.WeCustomerTempEmpleCodeSettingMapper;
 import com.easyink.wecom.mapper.WeUserMapper;
 import com.easyink.wecom.service.*;
 import com.easyink.wecom.utils.redis.CustomerRedisCache;
@@ -71,10 +73,15 @@ public class WeCallBackDelFollowUserImpl extends WeEventStrategy {
 
     private final EmpleStatisticRedisCache empleStatisticRedisCache;
     private final CustomerAssistantService customerAssistantService;
+    private final WeCustomerTempEmpleCodeSettingMapper weCustomerTempEmpleCodeSettingMapper;
 
-    public WeCallBackDelFollowUserImpl(EmpleStatisticRedisCache empleStatisticRedisCache, CustomerAssistantService customerAssistantService) {
+    public WeCallBackDelFollowUserImpl(EmpleStatisticRedisCache empleStatisticRedisCache,
+                                       CustomerAssistantService customerAssistantService,
+                                       WeCustomerTempEmpleCodeSettingMapper weCustomerTempEmpleCodeSettingMapper
+                                       ) {
         this.empleStatisticRedisCache = empleStatisticRedisCache;
         this.customerAssistantService = customerAssistantService;
+        this.weCustomerTempEmpleCodeSettingMapper = weCustomerTempEmpleCodeSettingMapper;
     }
 
     @Override
@@ -139,14 +146,28 @@ public class WeCallBackDelFollowUserImpl extends WeEventStrategy {
             );
             // state 为空，表示不是从活码/获客链接加的外部联系人
             if (weFlowerCustomerRel != null && StringUtils.isNotBlank(weFlowerCustomerRel.getState())) {
-                if (isAssistantState(weFlowerCustomerRel.getState())) {
+                State state = State.valueOf(weFlowerCustomerRel.getState());
+                if (state.isAssistantState()) {
                     // 获客链接添加的外部联系人删除处理
                     customerAssistantService.callBackDelAssistantHandle(weFlowerCustomerRel.getState(), corpId, message.getExternalUserId(), message.getUserId());
                 } else {
+                    State stateObj = State.valueOf(weFlowerCustomerRel.getState());
+                    Long originEmplyId = null;
+                    if (stateObj.isCustomerEmploy()) {
+                        Long customerEmployCodeId = stateObj.unWrapCustomerEmployCodeId();
+                        originEmplyId = weCustomerTempEmpleCodeSettingMapper.selectOriginalEmpleCodeIdByCustomerEmployCodeIdIncludeDeleteFlag(customerEmployCodeId);
+                        //　兜底
+                        if (originEmplyId == null) {
+                            log.info("专属活码获取原活码失败, customerEmployCodeId: {}", customerEmployCodeId);
+                            originEmplyId = customerEmployCodeId;
+                        }
+                    } else {
+                        originEmplyId = Long.valueOf(stateObj.getState());
+                    }
                     // 员工活码添加的外部联系人处理
-                    weEmpleCodeAnalyseService.saveWeEmpleCodeAnalyse(corpId, message.getUserId(), message.getExternalUserId(), weFlowerCustomerRel.getState(), false);
+                    weEmpleCodeAnalyseService.saveWeEmpleCodeAnalyse(corpId, message.getUserId(), message.getExternalUserId(), String.valueOf(originEmplyId), false);
                     // 更新Redis中的数据
-                    empleStatisticRedisCache.addLossCustomerCnt(corpId, DateUtils.dateTime(new Date()), Long.valueOf(weFlowerCustomerRel.getState()), message.getUserId());
+                    empleStatisticRedisCache.addLossCustomerCnt(corpId, DateUtils.dateTime(new Date()), originEmplyId, message.getUserId());
                 }
             }
             // 客户轨迹:记录删除跟进成员事件

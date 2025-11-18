@@ -3,8 +3,8 @@ package com.easyink.wecom.domain;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.easyink.common.annotation.EncryptField;
 import com.easyink.common.annotation.Excel;
-import com.easyink.common.constant.Constants;
 import com.easyink.common.utils.DateUtils;
 import com.easyink.common.utils.SnowFlakeUtil;
 import com.easyink.common.utils.bean.BeanUtils;
@@ -96,7 +96,9 @@ public class WeFlowerCustomerRel {
     @ApiModelProperty(value = "该成员对此客户备注的手机号码")
     @TableField("remark_mobiles")
     @Excel(name = "电话",sort = 6)
+    @EncryptField(EncryptField.FieldType.MOBILE)
     private String remarkMobiles;
+    private String remarkMobilesEncrypt;
 
     @ApiModelProperty(value = "发起添加的userid，如果成员主动添加，为成员的userid；如果是客户主动添加，则为客户的外部联系人userid；如果是内部成员共享/管理员分配，则为对应的成员/管理员userid")
     @TableField("oper_userid")
@@ -108,7 +110,9 @@ public class WeFlowerCustomerRel {
 
     @ApiModelProperty(value = "客户地址")
     @TableField("address")
+    @EncryptField(EncryptField.FieldType.ADDRESS)
     private String address;
+    private String addressEncrypt;
 
     @ApiModelProperty(value = "邮件")
     @TableField("email")

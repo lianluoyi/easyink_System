@@ -1,10 +1,10 @@
 package com.easyink.web.controller.wecom;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.easyink.common.annotation.Encrypt;
 import com.easyink.common.annotation.Log;
 import com.easyink.common.config.ChatRsaKeyConfig;
 import com.easyink.common.config.RuoYiConfig;
-import com.easyink.common.config.WeCrypt;
 import com.easyink.common.constant.Constants;
 import com.easyink.common.core.controller.BaseController;
 import com.easyink.common.core.domain.AjaxResult;
@@ -18,7 +18,6 @@ import com.easyink.common.exception.user.UserNoCorpException;
 import com.easyink.wecom.domain.vo.customerloss.CustomerLossSwitchVO;
 import com.easyink.wecom.login.util.LoginTokenService;
 import com.easyink.wecom.openapi.dao.LockSelfBuildConfigMapper;
-import com.easyink.wecom.openapi.domain.entity.LockSelfBuildConfig;
 import com.easyink.wecom.service.WeAuthCorpInfoExtendService;
 import com.easyink.wecom.service.WeCorpAccountService;
 import io.swagger.annotations.Api;
@@ -62,6 +61,7 @@ public class WeCorpAccountController extends BaseController {
     @GetMapping("/list")
     @Deprecated
     @ApiOperation("查询企业id相关配置列表")
+    @Encrypt
     public TableDataInfo<WeCorpAccount> list(WeCorpAccount weCorpAccount) {
         startPage();
         List<WeCorpAccount> list = weCorpAccountService.list(new LambdaQueryWrapper<WeCorpAccount>()

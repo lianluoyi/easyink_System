@@ -2,6 +2,7 @@ package com.easyink.wecom.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
+import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.easyink.common.annotation.SysProperty;
@@ -9,6 +10,7 @@ import com.easyink.common.constant.Constants;
 import com.easyink.common.constant.GenConstants;
 import com.easyink.common.core.domain.wecom.BaseExtendPropertyRel;
 import com.easyink.common.core.domain.wecom.WeUser;
+import com.easyink.common.encrypt.StrategyCryptoUtil;
 import com.easyink.common.enums.*;
 import com.easyink.common.utils.DictUtils;
 import com.easyink.common.utils.TagRecordUtil;
@@ -18,18 +20,25 @@ import com.easyink.wecom.domain.*;
 import com.easyink.wecom.domain.dto.WeMessagePushDTO;
 import com.easyink.wecom.domain.dto.customer.EditCustomerDTO;
 import com.easyink.wecom.domain.dto.message.TextMessageDTO;
-import com.easyink.wecom.domain.entity.autotag.*;
+import com.easyink.wecom.domain.entity.autotag.WeAutoTagKeywordTagRel;
+import com.easyink.wecom.domain.entity.autotag.WeAutoTagRule;
+import com.easyink.wecom.domain.entity.autotag.WeAutoTagRuleHitCustomerRecordTagRel;
+import com.easyink.wecom.domain.entity.autotag.WeAutoTagRuleHitGroupRecordTagRel;
 import com.easyink.wecom.domain.entity.customer.WeCustomerExtendProperty;
 import com.easyink.wecom.domain.entity.form.WeForm;
 import com.easyink.wecom.domain.entity.form.WeFormOperRecord;
 import com.easyink.wecom.domain.entity.radar.WeRadar;
+import com.easyink.wecom.domain.model.customer.AddressModel;
 import com.easyink.wecom.domain.vo.autotag.TagRuleListVO;
 import com.easyink.wecom.domain.vo.sop.SopAttachmentVO;
 import com.easyink.wecom.mapper.WeCustomerMapper;
 import com.easyink.wecom.mapper.WeCustomerTrajectoryMapper;
 import com.easyink.wecom.mapper.WeUserMapper;
 import com.easyink.wecom.service.*;
-import com.easyink.wecom.service.autotag.*;
+import com.easyink.wecom.service.autotag.WeAutoTagKeywordTagRelService;
+import com.easyink.wecom.service.autotag.WeAutoTagRuleHitCustomerRecordTagRelService;
+import com.easyink.wecom.service.autotag.WeAutoTagRuleHitGroupRecordTagRelService;
+import com.easyink.wecom.service.autotag.WeAutoTagRuleService;
 import io.swagger.annotations.ApiModel;
 import joptsimple.internal.Strings;
 import lombok.extern.slf4j.Slf4j;
@@ -53,6 +62,8 @@ import java.util.stream.Collectors;
 public class WeCustomerTrajectoryServiceImpl extends ServiceImpl<WeCustomerTrajectoryMapper, WeCustomerTrajectory> implements WeCustomerTrajectoryService {
 
 
+    private static final String MOBILE = "电话";
+    private static final String ADDRESS = "地址";
     private final WeMessagePushClient weMessagePushClient;
     private final WeCustomerMapper weCustomerMapper;
     private final WeUserMapper weUserMapper;
@@ -154,7 +165,8 @@ public class WeCustomerTrajectoryServiceImpl extends ServiceImpl<WeCustomerTraje
                             .externalUserid(externalUserId)
                             .trajectoryType(CustomerTrajectoryEnums.Type.INFO.getDesc())
                             .createDate(new Date())
-                            .detail(value)
+                            .detail(isSensitiveFiled(name) ? isAddressSensitiveFiled(name)? StrategyCryptoUtil.esensitizationAllAddress(value) :StrategyCryptoUtil.esensitization(value): value)
+                            .detailEncrypt(isSensitiveFiled(name) ? StrategyCryptoUtil.encrypt(value): value)
                             .content(content)
                             .subType(CustomerTrajectoryEnums.SubType.EDIT_REMARK.getType())
                             .startTime(now)
@@ -171,6 +183,24 @@ public class WeCustomerTrajectoryServiceImpl extends ServiceImpl<WeCustomerTraje
             log.error("[记录客户信息动态]记录修改客户资料和跟进人备注异常,corpId:{},userId{},customer:{},dto:{}, e:{}", corpId, userId, externalUserId, dto, ExceptionUtils.getStackTrace(e));
         }
 
+    }
+
+    /**
+     * 是否敏感名字段
+     * @param name 传入的字段名称值
+     * @return 是否敏感字段, true: 是, false: 不是
+     */
+    private static boolean isSensitiveFiled(String name) {
+        return name.equals(MOBILE) || name.equals(ADDRESS);
+    }
+
+    /**
+     * 是否地址敏感名字段
+     * @param name 传入的字段名称值
+     * @return 是否敏感字段, true: 是, false: 不是
+     */
+    private static boolean isAddressSensitiveFiled(String name) {
+        return name.equals(ADDRESS);
     }
 
 
@@ -190,6 +220,7 @@ public class WeCustomerTrajectoryServiceImpl extends ServiceImpl<WeCustomerTraje
                     continue;
                 }
                 // 构建记录实体
+                String detail = JSON.parseObject(prop.getValue(), AddressModel.class).transferToTrajectoryString();
                 list.add(WeCustomerTrajectory.builder()
                         .corpId(corpId)
                         .userId(userId)
@@ -198,7 +229,8 @@ public class WeCustomerTrajectoryServiceImpl extends ServiceImpl<WeCustomerTraje
                         .trajectoryType(CustomerTrajectoryEnums.Type.INFO.getDesc())
                         .content(buildContent(updateBy, prop.getKey().getName()))
                         .subType(CustomerExtendPropertyEnum.getByType(prop.getKey().getType()).getOprSubType().getType())
-                        .detail(prop.getValue())
+                        .detail(isLocationType(prop) ? StrategyCryptoUtil.esensitizationAllAddress(detail) : prop.getValue())
+                        .detailEncrypt(isLocationType(prop)? StrategyCryptoUtil.encrypt(detail) : prop.getValue())
                         .startTime(now)
                         .detailId(Constants.DEFAULT_ID)
                         .build()
@@ -211,6 +243,15 @@ public class WeCustomerTrajectoryServiceImpl extends ServiceImpl<WeCustomerTraje
             // 不让记录操作异常 导致编辑资料失败
             log.error("[记录客户信息动态]修改客户扩展字段异常,corpId:{},userId{},customer:{},list:{}, e:{}", corpId, userId, externalUserId, extendProperties, ExceptionUtils.getStackTrace(e));
         }
+    }
+
+    /**
+     * 是否位置自定义类型
+     * @param prop
+     * @return
+     */
+    private static boolean isLocationType(Map.Entry<WeCustomerExtendProperty, String> prop) {
+        return CustomerExtendPropertyEnum.LOCATION.getType().equals(prop.getKey().getType());
     }
 
     @Override

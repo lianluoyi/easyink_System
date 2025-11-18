@@ -55,6 +55,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -213,7 +214,8 @@ public class WeRedeemCodeServiceImpl extends ServiceImpl<WeRedeemCodeMapper, WeR
         importRedeemCodeVO.setFailNum(lastRowNum - redeemCodeImport.size());
         if (importRedeemCodeVO.getFailNum() > 0) {
             String suffix = "txt";
-            String fileName = System.currentTimeMillis() + new Random().nextInt(codesSize) + ".txt";
+            // 使用SecureRandom替代不安全的Random，保持原有逻辑
+            String fileName = System.currentTimeMillis() + new SecureRandom().nextInt(codesSize) + ".txt";
             RuoYiConfig ruoyiConfig = SpringUtils.getBean(RuoYiConfig.class);
             CosConfig cosConfig = ruoyiConfig.getFile().getCos();
             try {

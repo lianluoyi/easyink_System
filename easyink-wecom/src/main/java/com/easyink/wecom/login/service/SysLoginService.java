@@ -2,6 +2,7 @@ package com.easyink.wecom.login.service;
 
 import cn.hutool.core.util.ObjectUtil;
 import com.easyink.common.config.RuoYiConfig;
+import com.easyink.common.config.WeComeConfig;
 import com.easyink.common.constant.Constants;
 import com.easyink.common.core.domain.entity.WeCorpAccount;
 import com.easyink.common.core.domain.model.LoginResult;
@@ -29,6 +30,7 @@ import com.easyink.wecom.domain.WeExternalUserMappingUser;
 import com.easyink.wecom.domain.dto.*;
 import com.easyink.wecom.mapper.WeDepartmentMapper;
 import com.easyink.wecom.service.*;
+import com.xmlly.util.HttpUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,12 +42,9 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletResponse;
 import javax.validation.constraints.NotNull;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import static com.easyink.common.utils.wecom.LoginRsaUtil.decryptByPrivateKey;
 
@@ -74,14 +73,14 @@ public class SysLoginService {
     private final RedisCache redisCache;
     private final RuoYiConfig ruoYiConfig;
     private final We3rdAppService we3rdAppService;
-
+    private final WeComeConfig weComeConfig;
     @Autowired
     private WeExternalUserMappingUserService weExternalUserMappingUserService;
 
     @Autowired
     public SysLoginService(@NotNull WeUserClient weUserClient, WeUpdateIDClient weUpdateIDClient, @NotNull WeUserService weUserService,
                            @NotNull SysPermissionService permissionService, @NotNull TokenService tokenService,
-                           @NotNull WeDepartmentMapper weDepartmentMapper, WeAccessTokenClient weAccessTokenClient, WeAuthCorpInfoService weAuthCorpInfoService, WeCorpAccountService weCorpAccountService, We3rdUserClient we3rdUserClient, RedisCache redisCache, RuoYiConfig ruoYiConfig, We3rdAppService we3rdAppService) {
+                           @NotNull WeDepartmentMapper weDepartmentMapper, WeAccessTokenClient weAccessTokenClient, WeAuthCorpInfoService weAuthCorpInfoService, WeCorpAccountService weCorpAccountService, We3rdUserClient we3rdUserClient, RedisCache redisCache, RuoYiConfig ruoYiConfig, We3rdAppService we3rdAppService, WeComeConfig weComeConfig) {
         this.weUserClient = weUserClient;
         this.weUpdateIDClient = weUpdateIDClient;
         this.weUserService = weUserService;
@@ -95,6 +94,7 @@ public class SysLoginService {
         this.redisCache = redisCache;
         this.ruoYiConfig = ruoYiConfig;
         this.we3rdAppService = we3rdAppService;
+        this.weComeConfig = weComeConfig;
     }
 
     /**
@@ -179,9 +179,8 @@ public class SysLoginService {
         loginUser.setIsOtherSysUse(true);
         // 缓存登录信息 生成token
         String token = tokenService.createToken(loginUser);
-        Cookie cookie = new Cookie("Admin-Token", token);
-        cookie.setHttpOnly(true);
-        ServletUtils.getResponse().addCookie(cookie);
+        HttpServletResponse response = ServletUtils.getResponse();
+        HttpUtil.buildResponseCookieNotPath(response, "Admin-Token", token);
         return new LoginResult(token, null);
     }
 

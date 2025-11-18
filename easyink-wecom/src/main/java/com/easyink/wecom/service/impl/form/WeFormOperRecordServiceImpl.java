@@ -30,14 +30,15 @@ import com.easyink.wecom.domain.entity.form.WeForm;
 import com.easyink.wecom.domain.entity.form.WeFormAdvanceSetting;
 import com.easyink.wecom.domain.entity.form.WeFormOperRecord;
 import com.easyink.wecom.domain.enums.form.FormOperEnum;
+import com.easyink.wecom.domain.model.customer.CustomerId;
 import com.easyink.wecom.domain.model.form.CustomerLabelSettingModel;
 import com.easyink.wecom.domain.model.form.FormResultModel;
 import com.easyink.wecom.domain.vo.form.FormCustomerOperRecordExportVO;
 import com.easyink.wecom.domain.vo.form.FormCustomerOperRecordVO;
 import com.easyink.wecom.domain.vo.form.FormOperRecordDetailVO;
 import com.easyink.wecom.domain.vo.form.FormUserSendRecordVO;
+import com.easyink.wecom.handler.FormSubmitPushHandler;
 import com.easyink.wecom.login.util.LoginTokenService;
-import com.easyink.wecom.mapper.WeCustomerTrajectoryMapper;
 import com.easyink.wecom.mapper.form.WeFormMapper;
 import com.easyink.wecom.mapper.form.WeFormOperRecordMapper;
 import com.easyink.wecom.service.*;
@@ -82,9 +83,8 @@ public class WeFormOperRecordServiceImpl extends ServiceImpl<WeFormOperRecordMap
     private final ISysUserService iSysUserService;
     private final WeFlowerCustomerRelService weFlowerCustomerRelService;
     private final WechatOpenService wechatOpenService;
+    private final FormSubmitPushHandler formSubmitPushHandler;
 
-    @Autowired
-    private WeCustomerTrajectoryMapper weCustomerTrajectoryMapper;
 
     @Autowired
     private WeTagService weTagService;
@@ -170,6 +170,8 @@ public class WeFormOperRecordServiceImpl extends ServiceImpl<WeFormOperRecordMap
                 .set(WeFormOperRecord::getCommitTime, commitDate)
                 .set(WeFormOperRecord::getCommitFlag, true));
         weFormOperRecord.setCommitTime(commitDate);
+        weFormOperRecord.setFormResult(formCommitDTO.getFormResult());
+        weFormOperRecord.setCommitFlag(true);
         // 2. 客服好评表插入
         weFormCustomerFeedbackService.batchAddFeedback(weForm.getId(), weFormOperRecord.getExternalUserId(), weFormOperRecord.getUserId(),
                 formCommitDTO.getScoreValueList(), formCommitDTO.getNpsValueList(), weForm.getCorpId());
@@ -235,6 +237,10 @@ public class WeFormOperRecordServiceImpl extends ServiceImpl<WeFormOperRecordMap
                     weFormOperRecord.getUserName(),
                     weFormOperRecord.getExternalUserId());
             recordFormTag(weForm,corpId,weUser,customer,CustomerTrajectoryEnums.TagType.SUBMIT_FORM.getType(),customerLabelSettingModel.getSubmitLabelIdList());
+        }
+        // 推送内容服务
+        if (Boolean.TRUE.equals(weFormAdvanceSetting.getPushContentFlag())) {
+            formSubmitPushHandler.handleFormSubmit(CustomerId.valueOf(weFormOperRecord.getUserId(), weFormOperRecord.getExternalUserId(), weForm.getCorpId()), weForm.getId(), weFormOperRecord.getFormResult());
         }
     }
 

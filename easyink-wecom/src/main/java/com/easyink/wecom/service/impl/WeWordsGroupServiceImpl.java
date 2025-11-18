@@ -51,10 +51,10 @@ import javax.annotation.Resource;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
@@ -343,7 +343,7 @@ public class WeWordsGroupServiceImpl extends ServiceImpl<WeWordsGroupMapper, WeW
         wordsImportVO.setFailNum(words.size() - wordsImport.size() - emptyCount);
         if (wordsImportVO.getFailNum() > 0) {
             String suffix = "txt";
-            String fileName = System.currentTimeMillis() + new Random().nextInt(wordsSize) + ".txt";
+            String fileName = System.currentTimeMillis() + new SecureRandom().nextInt(wordsSize) + ".txt";
             RuoYiConfig ruoyiConfig = SpringUtils.getBean(RuoYiConfig.class);
             CosConfig cosConfig = ruoyiConfig.getFile().getCos();
             try {

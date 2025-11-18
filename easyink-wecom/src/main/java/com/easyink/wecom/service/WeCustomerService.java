@@ -2,7 +2,6 @@ package com.easyink.wecom.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.easyink.common.annotation.DataScope;
-import com.easyink.common.core.domain.AjaxResult;
 import com.easyink.common.core.page.TableDataInfo;
 import com.easyink.wecom.domain.WeCustomer;
 import com.easyink.wecom.domain.WeCustomerPortrait;
@@ -17,6 +16,7 @@ import com.easyink.wecom.domain.dto.pro.EditCustomerFromPlusDTO;
 import com.easyink.wecom.domain.dto.tag.RemoveWeCustomerTagDTO;
 import com.easyink.wecom.domain.dto.unionid.GetUnionIdDTO;
 import com.easyink.wecom.domain.entity.WeCustomerExportDTO;
+import com.easyink.wecom.domain.model.customer.PhoneAndAddressPermissionModel;
 import com.easyink.wecom.domain.model.customer.UserIdAndExternalUserIdModel;
 import com.easyink.wecom.domain.vo.QueryCustomerFromPlusVO;
 import com.easyink.wecom.domain.vo.WeMakeCustomerTagVO;
@@ -32,7 +32,6 @@ import org.springframework.validation.annotation.Validated;
 import javax.validation.constraints.NotBlank;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * 企业微信客户Service接口
@@ -57,7 +56,7 @@ public interface WeCustomerService extends IService<WeCustomer> {
      *
      * @param weCustomer
      */
-    void updateWeCustomerRemark(WeCustomer weCustomer);
+    void updateWeCustomerInfo(WeCustomer weCustomer);
 
     /**
      * 新增/修改企业微信客户
@@ -324,15 +323,6 @@ public interface WeCustomerService extends IService<WeCustomer> {
      */
     List<WeCustomer> listOfUseCustomer(String corpId, WeOperationsCenterCustomerSopFilterEntity sopFilter);
 
-    /**
-     * 查询去重客户去重后企业微信客户列表
-     *
-     * @param weCustomer {@link WeCustomer}
-     * @return 客户列表
-     * @update V1.34.0 由于慢查询废弃,使用V2接口
-     */
-    @Deprecated
-    List<WeCustomerVO> selectWeCustomerListDistinct(WeCustomer weCustomer);
 
     /**
      * 查询去重客户去重后企业微信客户列表
@@ -425,12 +415,13 @@ public interface WeCustomerService extends IService<WeCustomer> {
     /**
      * 生活需要导出的客户信息
      *
-     * @param dto      导出客户请求
-     * @param oprId    操作id
-     * @param fileName 导出的文件名
+     * @param dto                            导出客户请求
+     * @param oprId                          操作id
+     * @param fileName                       导出的文件名
+     * @param phoneAndAddressPermissionModel
      * @return fileName 导出的文件名
      */
-    void genExportData(WeCustomerExportDTO dto, String oprId, String fileName);
+    void genExportData(WeCustomerExportDTO dto, String oprId, String fileName, PhoneAndAddressPermissionModel phoneAndAddressPermissionModel);
 
     /**
      *   获取导出客户的结果

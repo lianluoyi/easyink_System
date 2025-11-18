@@ -1,0 +1,494 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.easyink.wecom.mapper.SensitiveDataMigrationMapper">
+
+    <!-- ==================== WeUser 表迁移 ==================== -->
+    
+    <select id="selectWeUserByPage" resultType="com.easyink.common.core.domain.wecom.WeUser">
+        SELECT corp_id, user_id, mobile, address, mobile_encrypt, address_encrypt
+        FROM we_user
+        WHERE (mobile IS NOT NULL AND mobile != '' AND (mobile_encrypt IS NULL OR mobile_encrypt = ''))
+           OR (address IS NOT NULL AND address != '' AND (address_encrypt IS NULL OR address_encrypt = ''))
+        ORDER BY user_id
+        LIMIT #{offset}, #{limit}
+    </select>
+    
+    <update id="batchUpdateWeUser">
+        <foreach collection="list" item="item" separator=";">
+            UPDATE we_user 
+            <set>
+                <if test="item.mobileEncrypt != null and item.mobileEncrypt != ''">
+                    mobile_encrypt = #{item.mobileEncrypt},
+                </if>
+                <if test="item.addressEncrypt != null and item.addressEncrypt != ''">
+                    address_encrypt = #{item.addressEncrypt},
+                </if>
+                <if test="item.mobile != null and item.mobile != ''">
+                    mobile = #{item.mobile},
+                </if>
+                <if test="item.address != null and item.address != ''">
+                    address = #{item.address},
+                </if>
+            </set>
+            WHERE user_id = #{item.userId} AND corp_id = #{item.corpId}
+        </foreach>
+    </update>
+    
+    <select id="countWeUser" resultType="int">
+        SELECT COUNT(*) FROM we_user
+        WHERE (mobile IS NOT NULL AND mobile != '') 
+           OR (address IS NOT NULL AND address != '')
+    </select>
+    
+    <select id="countWeUserMigrated" resultType="int">
+        SELECT COUNT(*) FROM we_user
+        WHERE (mobile IS NOT NULL AND mobile != '' AND mobile_encrypt IS NOT NULL AND mobile_encrypt != '')
+           OR (address IS NOT NULL AND address != '' AND address_encrypt IS NOT NULL AND address_encrypt != '')
+    </select>
+
+    <!-- ==================== WeFlowerCustomerRel 表迁移 ==================== -->
+    
+    <select id="selectWeFlowerCustomerRelByPage" resultType="com.easyink.wecom.domain.WeFlowerCustomerRel">
+        SELECT id, remark_mobiles, address, remark_mobiles_encrypt, address_encrypt
+        FROM we_flower_customer_rel
+        WHERE id > #{lastId}
+          AND ((remark_mobiles IS NOT NULL AND remark_mobiles != '' AND (remark_mobiles_encrypt IS NULL OR remark_mobiles_encrypt = ''))
+           OR (address IS NOT NULL AND address != '' AND (address_encrypt IS NULL OR address_encrypt = '')))
+        ORDER BY id
+        LIMIT #{limit}
+    </select>
+    
+    <update id="batchUpdateWeFlowerCustomerRel">
+        <foreach collection="list" item="item" separator=";">
+            UPDATE we_flower_customer_rel 
+            <set>
+                <if test="item.remarkMobilesEncrypt != null and item.remarkMobilesEncrypt != ''">
+                    remark_mobiles_encrypt = #{item.remarkMobilesEncrypt},
+                </if>
+                <if test="item.addressEncrypt != null and item.addressEncrypt != ''">
+                    address_encrypt = #{item.addressEncrypt},
+                </if>
+                <if test="item.remarkMobiles != null and item.remarkMobiles != ''">
+                    remark_mobiles = #{item.remarkMobiles},
+                </if>
+                <if test="item.address != null and item.address != ''">
+                    address = #{item.address},
+                </if>
+            </set>
+            WHERE id = #{item.id}
+        </foreach>
+    </update>
+    
+    <select id="countWeFlowerCustomerRel" resultType="int">
+        SELECT COUNT(*) FROM we_flower_customer_rel
+        WHERE (remark_mobiles IS NOT NULL AND remark_mobiles != '') 
+           OR (address IS NOT NULL AND address != '')
+    </select>
+    
+    <select id="countWeFlowerCustomerRelMigrated" resultType="int">
+        SELECT COUNT(*) FROM we_flower_customer_rel
+        WHERE (remark_mobiles IS NOT NULL AND remark_mobiles != '' AND remark_mobiles_encrypt IS NOT NULL AND remark_mobiles_encrypt != '')
+           OR (address IS NOT NULL AND address != '' AND address_encrypt IS NOT NULL AND address_encrypt != '')
+    </select>
+
+    <!-- ==================== WeCustomerExtendPropertyRel 表迁移 ==================== -->
+    
+    <select id="selectWeCustomerExtendPropertyRelByPage" resultType="com.easyink.wecom.domain.entity.customer.WeCustomerExtendPropertyRel">
+        SELECT wcept.corp_id, wcept.user_id, wcept.external_userid, wcept.extend_property_id, wcept.property_value, wcept.detail_address, wcept.detail_address_encrypt
+        FROM we_customer_extend_property_rel wcept
+        left join we_customer_extend_property wcep ON wcep.id = wcept.extend_property_id
+        WHERE wcep.type = ${@com.easyink.common.enums.CustomerExtendPropertyEnum@LOCATION.type}
+            and wcept.detail_address IS NOT NULL AND wcept.detail_address != ''
+          AND (wcept.detail_address_encrypt IS NULL OR wcept.detail_address_encrypt = '')
+        ORDER BY wcept.corp_id, wcept.user_id, wcept.external_userid, wcept.extend_property_id, wcept.property_value
+        LIMIT #{offset}, #{limit}
+    </select>
+    
+    <update id="batchUpdateWeCustomerExtendPropertyRel">
+        <foreach collection="list" item="item" separator=";">
+            UPDATE we_customer_extend_property_rel 
+            <set>
+                <if test="item.detailAddressEncrypt != null and item.detailAddressEncrypt != ''">
+                    detail_address_encrypt = #{item.detailAddressEncrypt},
+                </if>
+                <if test="item.detailAddress != null and item.detailAddress != ''">
+                    detail_address = #{item.detailAddress},
+                </if>
+                <if test="item.propertyValue != null and item.propertyValue != ''">
+                    property_value = #{item.propertyValue},
+                </if>
+            </set>
+            WHERE corp_id = #{item.corpId} 
+              AND user_id = #{item.userId} 
+              AND external_userid = #{item.externalUserid} 
+              AND extend_property_id = #{item.extendPropertyId} 
+              AND property_value = #{item.originalPropertyValue}
+        </foreach>
+    </update>
+    
+    <select id="countWeCustomerExtendPropertyRel" resultType="int">
+        SELECT COUNT(*) FROM we_customer_extend_property_rel
+        WHERE detail_address IS NOT NULL AND detail_address != ''
+    </select>
+    
+    <select id="countWeCustomerExtendPropertyRelMigrated" resultType="int">
+        SELECT COUNT(*) FROM we_customer_extend_property_rel
+        WHERE detail_address IS NOT NULL AND detail_address != '' 
+          AND detail_address_encrypt IS NOT NULL AND detail_address_encrypt != ''
+    </select>
+
+    <!-- ==================== WeBatchTagTaskDetail 表迁移 ==================== -->
+    
+    <select id="selectWeBatchTagTaskDetailByPage" resultType="com.easyink.wecom.domain.autotag.WeBatchTagTaskDetail">
+        SELECT id, import_mobile, import_mobile_encrypt
+        FROM we_batch_tag_task_detail
+        WHERE id > #{lastId}
+          AND import_mobile IS NOT NULL AND import_mobile != '' 
+          AND (import_mobile_encrypt IS NULL OR import_mobile_encrypt = '')
+        ORDER BY id
+        LIMIT #{limit}
+    </select>
+    
+    <update id="batchUpdateWeBatchTagTaskDetail">
+        <foreach collection="list" item="item" separator=";">
+            UPDATE we_batch_tag_task_detail 
+            <set>
+                <if test="item.importMobileEncrypt != null and item.importMobileEncrypt != ''">
+                    import_mobile_encrypt = #{item.importMobileEncrypt},
+                </if>
+                <if test="item.importMobile != null and item.importMobile != ''">
+                    import_mobile = #{item.importMobile},
+                </if>
+            </set>
+            WHERE id = #{item.id}
+        </foreach>
+    </update>
+    
+    <select id="countWeBatchTagTaskDetail" resultType="int">
+        SELECT COUNT(*) FROM we_batch_tag_task_detail
+        WHERE import_mobile IS NOT NULL AND import_mobile != ''
+    </select>
+    
+    <select id="countWeBatchTagTaskDetailMigrated" resultType="int">
+        SELECT COUNT(*) FROM we_batch_tag_task_detail
+        WHERE import_mobile IS NOT NULL AND import_mobile != '' 
+          AND import_mobile_encrypt IS NOT NULL AND import_mobile_encrypt != ''
+    </select>
+
+    <!-- ==================== WeCorpAccount 表迁移 ==================== -->
+    
+    <select id="selectWeCorpAccountByPage" resultType="com.easyink.common.core.domain.entity.WeCorpAccount">
+        SELECT id, corp_secret, contact_secret, agent_secret, provider_secret, chat_secret, encoding_aes_key,
+               corp_secret_encrypt, contact_secret_encrypt, agent_secret_encrypt, 
+               provider_secret_encrypt, chat_secret_encrypt, encoding_aes_key_encrypt
+        FROM we_corp_account
+        WHERE id > #{lastId}
+          AND ((corp_secret IS NOT NULL AND corp_secret != '' AND (corp_secret_encrypt IS NULL OR corp_secret_encrypt = ''))
+           OR (contact_secret IS NOT NULL AND contact_secret != '' AND (contact_secret_encrypt IS NULL OR contact_secret_encrypt = ''))
+           OR (agent_secret IS NOT NULL AND agent_secret != '' AND (agent_secret_encrypt IS NULL OR agent_secret_encrypt = ''))
+           OR (provider_secret IS NOT NULL AND provider_secret != '' AND (provider_secret_encrypt IS NULL OR provider_secret_encrypt = ''))
+           OR (chat_secret IS NOT NULL AND chat_secret != '' AND (chat_secret_encrypt IS NULL OR chat_secret_encrypt = ''))
+           OR (encoding_aes_key IS NOT NULL AND encoding_aes_key != '' AND (encoding_aes_key_encrypt IS NULL OR encoding_aes_key_encrypt = '')))
+        ORDER BY id
+        LIMIT #{limit}
+    </select>
+    
+    <update id="batchUpdateWeCorpAccount">
+        <foreach collection="list" item="item" separator=";">
+            UPDATE we_corp_account 
+            <set>
+                <if test="item.corpSecretEncrypt != null and item.corpSecretEncrypt != ''">
+                    corp_secret_encrypt = #{item.corpSecretEncrypt},
+                </if>
+                <if test="item.contactSecretEncrypt != null and item.contactSecretEncrypt != ''">
+                    contact_secret_encrypt = #{item.contactSecretEncrypt},
+                </if>
+                <if test="item.agentSecretEncrypt != null and item.agentSecretEncrypt != ''">
+                    agent_secret_encrypt = #{item.agentSecretEncrypt},
+                </if>
+                <if test="item.providerSecretEncrypt != null and item.providerSecretEncrypt != ''">
+                    provider_secret_encrypt = #{item.providerSecretEncrypt},
+                </if>
+                <if test="item.chatSecretEncrypt != null and item.chatSecretEncrypt != ''">
+                    chat_secret_encrypt = #{item.chatSecretEncrypt},
+                </if>
+                <if test="item.encodingAesKeyEncrypt != null and item.encodingAesKeyEncrypt != ''">
+                    encoding_aes_key_encrypt = #{item.encodingAesKeyEncrypt},
+                </if>
+                <if test="item.corpSecret != null and item.corpSecret != ''">
+                    corp_secret = #{item.corpSecret},
+                </if>
+                <if test="item.contactSecret != null and item.contactSecret != ''">
+                    contact_secret = #{item.contactSecret},
+                </if>
+                <if test="item.agentSecret != null and item.agentSecret != ''">
+                    agent_secret = #{item.agentSecret},
+                </if>
+                <if test="item.providerSecret != null and item.providerSecret != ''">
+                    provider_secret = #{item.providerSecret},
+                </if>
+                <if test="item.chatSecret != null and item.chatSecret != ''">
+                    chat_secret = #{item.chatSecret},
+                </if>
+                <if test="item.encodingAesKey != null and item.encodingAesKey != ''">
+                    encoding_aes_key = #{item.encodingAesKey},
+                </if>
+            </set>
+            WHERE id = #{item.id}
+        </foreach>
+    </update>
+    
+    <select id="countWeCorpAccount" resultType="int">
+        SELECT COUNT(*) FROM we_corp_account
+        WHERE (corp_secret IS NOT NULL AND corp_secret != '') 
+           OR (contact_secret IS NOT NULL AND contact_secret != '')
+           OR (agent_secret IS NOT NULL AND agent_secret != '')
+           OR (provider_secret IS NOT NULL AND provider_secret != '')
+           OR (chat_secret IS NOT NULL AND chat_secret != '')
+           OR (encoding_aes_key IS NOT NULL AND encoding_aes_key != '')
+    </select>
+    
+    <select id="countWeCorpAccountMigrated" resultType="int">
+        SELECT COUNT(*) FROM we_corp_account
+        WHERE (corp_secret IS NOT NULL AND corp_secret != '' AND corp_secret_encrypt IS NOT NULL AND corp_secret_encrypt != '')
+           OR (contact_secret IS NOT NULL AND contact_secret != '' AND contact_secret_encrypt IS NOT NULL AND contact_secret_encrypt != '')
+           OR (agent_secret IS NOT NULL AND agent_secret != '' AND agent_secret_encrypt IS NOT NULL AND agent_secret_encrypt != '')
+           OR (provider_secret IS NOT NULL AND provider_secret != '' AND provider_secret_encrypt IS NOT NULL AND provider_secret_encrypt != '')
+           OR (chat_secret IS NOT NULL AND chat_secret != '' AND chat_secret_encrypt IS NOT NULL AND chat_secret_encrypt != '')
+           OR (encoding_aes_key IS NOT NULL AND encoding_aes_key != '' AND encoding_aes_key_encrypt IS NOT NULL AND encoding_aes_key_encrypt != '')
+    </select>
+
+    <!-- ==================== WeMapConfig 表迁移 ==================== -->
+    
+    <select id="selectWeMapConfigByPage" resultType="com.easyink.wecom.domain.entity.WeMapConfig">
+        SELECT id, api_key, iframe_api_key, api_key_encrypt, iframe_api_key_encrypt
+        FROM we_map_config
+        WHERE id > #{lastId}
+          AND ((api_key IS NOT NULL AND api_key != '' AND (api_key_encrypt IS NULL OR api_key_encrypt = ''))
+           OR (iframe_api_key IS NOT NULL AND iframe_api_key != '' AND (iframe_api_key_encrypt IS NULL OR iframe_api_key_encrypt = '')))
+        ORDER BY id
+        LIMIT #{limit}
+    </select>
+    
+    <update id="batchUpdateWeMapConfig">
+        <foreach collection="list" item="item" separator=";">
+            UPDATE we_map_config 
+            <set>
+                <if test="item.apiKeyEncrypt != null and item.apiKeyEncrypt != ''">
+                    api_key_encrypt = #{item.apiKeyEncrypt},
+                </if>
+                <if test="item.iframeApiKeyEncrypt != null and item.iframeApiKeyEncrypt != ''">
+                    iframe_api_key_encrypt = #{item.iframeApiKeyEncrypt},
+                </if>
+                <if test="item.apiKey != null and item.apiKey != ''">
+                    api_key = #{item.apiKey},
+                </if>
+                <if test="item.iframeApiKey != null and item.iframeApiKey != ''">
+                    iframe_api_key = #{item.iframeApiKey},
+                </if>
+            </set>
+            WHERE id = #{item.id}
+        </foreach>
+    </update>
+    
+    <select id="countWeMapConfig" resultType="int">
+        SELECT COUNT(*) FROM we_map_config
+        WHERE (api_key IS NOT NULL AND api_key != '') 
+           OR (iframe_api_key IS NOT NULL AND iframe_api_key != '')
+    </select>
+    
+    <select id="countWeMapConfigMigrated" resultType="int">
+        SELECT COUNT(*) FROM we_map_config
+        WHERE (api_key IS NOT NULL AND api_key != '' AND api_key_encrypt IS NOT NULL AND api_key_encrypt != '')
+           OR (iframe_api_key IS NOT NULL AND iframe_api_key != '' AND iframe_api_key_encrypt IS NOT NULL AND iframe_api_key_encrypt != '')
+    </select>
+
+    <!-- ==================== WeOpenConfig 表迁移 ==================== -->
+    
+    <select id="selectWeOpenConfigByPage" resultType="com.easyink.wecom.domain.entity.wechatopen.WeOpenConfig">
+        SELECT corp_id, official_account_app_id, official_account_app_secret, official_account_app_secret_encrypt
+        FROM we_open_config
+        WHERE official_account_app_secret IS NOT NULL AND official_account_app_secret != '' 
+          AND (official_account_app_secret_encrypt IS NULL OR official_account_app_secret_encrypt = '')
+        ORDER BY corp_id
+        LIMIT #{offset}, #{limit}
+    </select>
+    
+    <update id="batchUpdateWeOpenConfig">
+        <foreach collection="list" item="item" separator=";">
+            UPDATE we_open_config 
+            <set>
+                <if test="item.officialAccountAppSecretEncrypt != null and item.officialAccountAppSecretEncrypt != ''">
+                    official_account_app_secret_encrypt = #{item.officialAccountAppSecretEncrypt},
+                </if>
+                <if test="item.officialAccountAppSecret != null and item.officialAccountAppSecret != ''">
+                    official_account_app_secret = #{item.officialAccountAppSecret},
+                </if>
+            </set>
+            WHERE corp_id = #{item.corpId} AND official_account_app_id = #{item.officialAccountAppId}
+        </foreach>
+    </update>
+    <update id="batchUpdateWeUserAddress">
+        <foreach collection="list" item="item" separator=";">
+            UPDATE we_user
+            <set>
+                <if test="item.address != null and item.address != ''">
+                    address = #{item.address},
+                </if>
+            </set>
+            WHERE user_id = #{item.userId} AND corp_id = #{item.corpId}
+        </foreach>
+    </update>
+    <update id="batchUpdateWeFlowerCustomerRelAddress">
+        <foreach collection="list" item="item" separator=";">
+            UPDATE we_flower_customer_rel
+            <set>
+                <if test="item.address != null and item.address != ''">
+                    address = #{item.address},
+                </if>
+            </set>
+            WHERE id = #{item.id}
+        </foreach>
+    </update>
+    <update id="batchUpdateWeCustomerExtendPropertyRelAddress">
+        <foreach collection="list" item="item" separator=";">
+            UPDATE we_customer_extend_property_rel
+            <set>
+                <if test="item.detailAddress != null and item.detailAddress != ''">
+                    detail_address = #{item.detailAddress},
+                </if>
+                <if test="item.propertyValue != null and item.propertyValue != ''">
+                    property_value = #{item.propertyValue},
+                </if>
+            </set>
+            WHERE corp_id = #{item.corpId}
+            AND user_id = #{item.userId}
+            AND external_userid = #{item.externalUserid}
+            AND extend_property_id = #{item.extendPropertyId}
+            AND property_value = #{item.originalPropertyValue}
+        </foreach>
+    </update>
+
+    <select id="countWeOpenConfig" resultType="int">
+        SELECT COUNT(*) FROM we_open_config
+        WHERE official_account_app_secret IS NOT NULL AND official_account_app_secret != ''
+    </select>
+    
+    <select id="countWeOpenConfigMigrated" resultType="int">
+        SELECT COUNT(*) FROM we_open_config
+        WHERE official_account_app_secret IS NOT NULL AND official_account_app_secret != '' 
+          AND official_account_app_secret_encrypt IS NOT NULL AND official_account_app_secret_encrypt != ''
+    </select>
+
+    <!-- ==================== 通用方法 ==================== -->
+    
+    <select id="getTableMigrationStats" resultType="map">
+        <choose>
+            <when test="tableName == 'we_user'">
+                SELECT 
+                    'we_user' as table_name,
+                    COUNT(*) as total_records,
+                    SUM(CASE WHEN (mobile IS NOT NULL AND mobile != '' AND mobile_encrypt IS NOT NULL AND mobile_encrypt != '')
+                             OR (address IS NOT NULL AND address != '' AND address_encrypt IS NOT NULL AND address_encrypt != '')
+                        THEN 1 ELSE 0 END) as migrated_records
+                FROM we_user
+                WHERE (mobile IS NOT NULL AND mobile != '') OR (address IS NOT NULL AND address != '')
+            </when>
+            <when test="tableName == 'we_flower_customer_rel'">
+                SELECT 
+                    'we_flower_customer_rel' as table_name,
+                    COUNT(*) as total_records,
+                    SUM(CASE WHEN (remark_mobiles IS NOT NULL AND remark_mobiles != '' AND remark_mobiles_encrypt IS NOT NULL AND remark_mobiles_encrypt != '')
+                             OR (address IS NOT NULL AND address != '' AND address_encrypt IS NOT NULL AND address_encrypt != '')
+                        THEN 1 ELSE 0 END) as migrated_records
+                FROM we_flower_customer_rel
+                WHERE (remark_mobiles IS NOT NULL AND remark_mobiles != '') OR (address IS NOT NULL AND address != '')
+            </when>
+            <when test="tableName == 'we_customer_extend_property_rel'">
+                SELECT 
+                    'we_customer_extend_property_rel' as table_name,
+                    COUNT(*) as total_records,
+                    SUM(CASE WHEN detail_address IS NOT NULL AND detail_address != '' AND detail_address_encrypt IS NOT NULL AND detail_address_encrypt != ''
+                        THEN 1 ELSE 0 END) as migrated_records
+                FROM we_customer_extend_property_rel
+                WHERE detail_address IS NOT NULL AND detail_address != ''
+            </when>
+            <when test="tableName == 'we_batch_tag_task_detail'">
+                SELECT 
+                    'we_batch_tag_task_detail' as table_name,
+                    COUNT(*) as total_records,
+                    SUM(CASE WHEN import_mobile IS NOT NULL AND import_mobile != '' AND import_mobile_encrypt IS NOT NULL AND import_mobile_encrypt != ''
+                        THEN 1 ELSE 0 END) as migrated_records
+                FROM we_batch_tag_task_detail
+                WHERE import_mobile IS NOT NULL AND import_mobile != ''
+            </when>
+            <when test="tableName == 'we_corp_account'">
+                SELECT 
+                    'we_corp_account' as table_name,
+                    COUNT(*) as total_records,
+                    SUM(CASE WHEN (corp_secret IS NOT NULL AND corp_secret != '' AND corp_secret_encrypt IS NOT NULL AND corp_secret_encrypt != '')
+                             OR (contact_secret IS NOT NULL AND contact_secret != '' AND contact_secret_encrypt IS NOT NULL AND contact_secret_encrypt != '')
+                             OR (agent_secret IS NOT NULL AND agent_secret != '' AND agent_secret_encrypt IS NOT NULL AND agent_secret_encrypt != '')
+                             OR (provider_secret IS NOT NULL AND provider_secret != '' AND provider_secret_encrypt IS NOT NULL AND provider_secret_encrypt != '')
+                             OR (chat_secret IS NOT NULL AND chat_secret != '' AND chat_secret_encrypt IS NOT NULL AND chat_secret_encrypt != '')
+                             OR (encoding_aes_key IS NOT NULL AND encoding_aes_key != '' AND encoding_aes_key_encrypt IS NOT NULL AND encoding_aes_key_encrypt != '')
+                        THEN 1 ELSE 0 END) as migrated_records
+                FROM we_corp_account
+                WHERE (corp_secret IS NOT NULL AND corp_secret != '') OR (contact_secret IS NOT NULL AND contact_secret != '')
+                   OR (agent_secret IS NOT NULL AND agent_secret != '') OR (provider_secret IS NOT NULL AND provider_secret != '')
+                   OR (chat_secret IS NOT NULL AND chat_secret != '') OR (encoding_aes_key IS NOT NULL AND encoding_aes_key != '')
+            </when>
+            <when test="tableName == 'we_map_config'">
+                SELECT 
+                    'we_map_config' as table_name,
+                    COUNT(*) as total_records,
+                    SUM(CASE WHEN (api_key IS NOT NULL AND api_key != '' AND api_key_encrypt IS NOT NULL AND api_key_encrypt != '')
+                             OR (iframe_api_key IS NOT NULL AND iframe_api_key != '' AND iframe_api_key_encrypt IS NOT NULL AND iframe_api_key_encrypt != '')
+                        THEN 1 ELSE 0 END) as migrated_records
+                FROM we_map_config
+                WHERE (api_key IS NOT NULL AND api_key != '') OR (iframe_api_key IS NOT NULL AND iframe_api_key != '')
+            </when>
+            <when test="tableName == 'we_open_config'">
+                SELECT 
+                    'we_open_config' as table_name,
+                    COUNT(*) as total_records,
+                    SUM(CASE WHEN official_account_app_secret IS NOT NULL AND official_account_app_secret != '' AND official_account_app_secret_encrypt IS NOT NULL AND official_account_app_secret_encrypt != ''
+                        THEN 1 ELSE 0 END) as migrated_records
+                FROM we_open_config
+                WHERE official_account_app_secret IS NOT NULL AND official_account_app_secret != ''
+            </when>
+            <otherwise>
+                SELECT 'unknown' as table_name, 0 as total_records, 0 as migrated_records
+            </otherwise>
+        </choose>
+    </select>
+    <select id="selectWeUserAddressByPage" resultType="com.easyink.common.core.domain.wecom.WeUser">
+        SELECT corp_id, user_id, address
+        FROM we_user
+        WHERE address IS NOT NULL AND address != ''
+        ORDER BY user_id
+        LIMIT #{offset}, #{limit}
+    </select>
+    <select id="selectWeFlowerCustomerRelAddressByPage"
+            resultType="com.easyink.wecom.domain.WeFlowerCustomerRel">
+        SELECT id, address
+        FROM we_flower_customer_rel
+        WHERE id > #{lastId}
+        AND address IS NOT NULL AND address != ''
+        ORDER BY id
+            LIMIT #{limit}
+    </select>
+    <select id="selectWeCustomerExtendPropertyRelAddressByPage"
+            resultType="com.easyink.wecom.domain.entity.customer.WeCustomerExtendPropertyRel">
+        SELECT wcept.corp_id, wcept.user_id, wcept.external_userid, wcept.extend_property_id, wcept.property_value, wcept.detail_address
+        FROM we_customer_extend_property_rel wcept
+                 left join we_customer_extend_property wcep ON wcep.id = wcept.extend_property_id
+        WHERE wcep.type = ${@com.easyink.common.enums.CustomerExtendPropertyEnum@LOCATION.type}
+        AND wcept.detail_address IS NOT NULL AND wcept.detail_address != ''
+        ORDER BY wcept.corp_id, wcept.user_id, wcept.external_userid, wcept.extend_property_id, wcept.property_value
+            LIMIT #{offset}, #{limit}
+    </select>
+
+</mapper>

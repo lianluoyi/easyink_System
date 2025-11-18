@@ -1,5 +1,6 @@
 package com.easyink.wecom.domain;
 
+import com.easyink.common.annotation.EncryptField;
 import com.easyink.common.core.domain.wecom.BaseExtendPropertyRel;
 import com.easyink.common.utils.bean.BeanUtils;
 import com.easyink.wecom.domain.vo.customer.WeCustomerVO;
@@ -41,7 +42,9 @@ public class WeCustomerPortrait {
     private String remark;
 
     @ApiModelProperty(value = "备注客户手机号")
+    @EncryptField(EncryptField.FieldType.MOBILE)
     private String remarkMobiles;
+    private String remarkMobilesEncrypt;
 
     @ApiModelProperty(value = "客户生日")
     @JsonFormat(pattern = "yyyy-MM-dd")
@@ -58,7 +61,9 @@ public class WeCustomerPortrait {
     private String email;
 
     @ApiModelProperty(value = "地址")
+    @EncryptField(EncryptField.FieldType.ADDRESS)
     private String address;
+    private String addressEncrypt;
     /**
      * qq
      */

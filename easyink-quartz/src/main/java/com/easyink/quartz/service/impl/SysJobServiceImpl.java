@@ -6,11 +6,15 @@ import com.easyink.quartz.domain.SysJob;
 import com.easyink.quartz.mapper.SysJobMapper;
 import com.easyink.quartz.service.ISysJobService;
 import com.easyink.quartz.util.CronUtils;
+import com.easyink.quartz.util.JobInvokeUtil;
 import com.easyink.quartz.util.ScheduleUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.quartz.JobDataMap;
 import org.quartz.JobKey;
 import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,7 +28,9 @@ import java.util.List;
  * @author admin
  */
 @Service
+@Slf4j
 public class SysJobServiceImpl implements ISysJobService {
+
     @Autowired
     private Scheduler scheduler;
 
@@ -162,6 +168,17 @@ public class SysJobServiceImpl implements ISysJobService {
         Long jobId = job.getJobId();
         String jobGroup = job.getJobGroup();
         SysJob properties = selectJobById(job.getJobId());
+        
+        // 安全检查：验证任务是否安全
+        if (properties != null && properties.getInvokeTarget() != null) {
+            try {
+                // 预先检查任务是否安全
+                JobInvokeUtil.validateTaskSecurity(properties.getInvokeTarget());
+            } catch (SecurityException e) {
+                throw new SchedulerException("任务安全检查失败: " + e.getMessage(), e);
+            }
+        }
+        
         // 参数
         JobDataMap dataMap = new JobDataMap();
         dataMap.put(ScheduleConstants.TASK_PROPERTIES, properties);
@@ -193,6 +210,12 @@ public class SysJobServiceImpl implements ISysJobService {
     @Transactional
     public int updateJob(SysJob job) throws SchedulerException, TaskException {
         SysJob properties = selectJobById(job.getJobId());
+        
+        // 安全保护：更新任务时，保持原始invokeTarget不变
+        if (properties != null) {
+            job.setInvokeTarget(properties.getInvokeTarget());
+        }
+        
         int rows = jobMapper.updateJob(job);
         if (rows > 0) {
             updateSchedulerJob(job, properties.getJobGroup());
@@ -227,4 +250,6 @@ public class SysJobServiceImpl implements ISysJobService {
     public boolean checkCronExpressionIsValid(String cronExpression) {
         return CronUtils.isValid(cronExpression);
     }
+    
+
 }

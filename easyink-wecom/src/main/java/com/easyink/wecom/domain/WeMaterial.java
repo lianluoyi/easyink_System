@@ -46,13 +46,13 @@ public class WeMaterial extends BaseEntity {
 
     @ApiModelProperty(value = "图片名称", required = true)
     @TableField("material_name")
-    @Size(max = 32, message = "名称长度已超出限制")
+    @Size(max = 128, message = "名称长度已超出限制")
     @NotBlank(message = "materialName不能为空")
     private String materialName;
 
     @ApiModelProperty(value = "摘要")
     @TableField("digest")
-    @Size(max = 64, message = "摘要长度已超出限制")
+    @Size(max = 512, message = "摘要长度已超出限制")
     private String digest;
 
     @ApiModelProperty(value = "小程序账号原始id，小程序专用")

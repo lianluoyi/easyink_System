@@ -6,13 +6,13 @@ import com.alibaba.excel.annotation.format.DateTimeFormat;
 import com.alibaba.excel.annotation.write.style.ColumnWidth;
 import com.alibaba.excel.annotation.write.style.ContentRowHeight;
 import com.alibaba.excel.annotation.write.style.HeadRowHeight;
-import com.alibaba.excel.annotation.write.style.HeadStyle;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.easyink.common.annotation.Excel;
 import com.easyink.common.utils.StringUtils;
 import com.easyink.common.utils.bean.BeanUtils;
 import com.easyink.wecom.domain.WeCustomer;
 import com.easyink.wecom.domain.WeFlowerCustomerTagRel;
+import com.easyink.wecom.domain.model.customer.CustomerExtendTypeValueModel;
 import com.easyink.wecom.domain.vo.customer.WeCustomerVO;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.annotations.ApiModel;
@@ -105,7 +105,7 @@ public class WeCustomerExportVO extends WeCustomer {
      * 扩展属性与值的映射,K:扩展属性名字,V该客户对应的值
      */
     @ExcelProperty
-    private Map<String, String> extendPropMapper;
+    private Map<String, CustomerExtendTypeValueModel> extendPropMapper;
 
     public WeCustomerExportVO(WeCustomerVO weCustomer) {
         BeanUtils.copyProperties(weCustomer, this);

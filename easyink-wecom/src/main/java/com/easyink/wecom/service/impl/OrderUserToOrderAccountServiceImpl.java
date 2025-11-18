@@ -97,8 +97,8 @@ public class OrderUserToOrderAccountServiceImpl extends ServiceImpl<OrderUserToO
     @Override
     public BindOrderTotalVO getBindTotal(String corpId) {
         BindOrderTotalVO bindOrderTotalVO = new BindOrderTotalVO();
-        bindOrderTotalVO.setBindNum(this.count(new LambdaQueryWrapper<OrderUserToOrderAccountEntity>().eq(OrderUserToOrderAccountEntity::getCorpId, corpId)));
-        bindOrderTotalVO.setUserNum(weUserService.count(new LambdaQueryWrapper<WeUser>()
+        bindOrderTotalVO.setBindNum((int)this.count(new LambdaQueryWrapper<OrderUserToOrderAccountEntity>().eq(OrderUserToOrderAccountEntity::getCorpId, corpId)));
+        bindOrderTotalVO.setUserNum((int)weUserService.count(new LambdaQueryWrapper<WeUser>()
                 .eq(WeUser::getCorpId, corpId)
                 .eq(WeUser::getIsActivate, StaffActivateEnum.ACTIVE.getCode())));
         return bindOrderTotalVO;

@@ -22,61 +22,72 @@
     <!--活码统计-数据总览-->
     <select id="listEmpleTotal" resultType="com.easyink.wecom.domain.vo.statistics.emplecode.EmpleCodeBaseVO">
         SELECT
-        SUM(CASE WHEN `statistics_time` = #{endDate} THEN accumulate_customer_cnt ELSE 0 END) AS accumulateCustomerCnt,
-        SUM(CASE WHEN `statistics_time` = #{endDate} THEN retain_customer_cnt ELSE 0 END) AS retainCustomerCnt,
-        SUM( new_customer_cnt ) AS newCustomerCnt,
-        SUM( loss_customer_cnt ) AS lossCustomerCnt
+        SUM(CASE WHEN wecs.`statistics_time` = #{endDate} THEN wecs.accumulate_customer_cnt ELSE 0 END) AS accumulateCustomerCnt,
+        SUM(CASE WHEN wecs.`statistics_time` = #{endDate} THEN wecs.retain_customer_cnt ELSE 0 END) AS retainCustomerCnt,
+        SUM( wecs.new_customer_cnt ) AS newCustomerCnt,
+        SUM( wecs.loss_customer_cnt ) AS lossCustomerCnt
         FROM
-        we_emple_code_statistic
-        WHERE corp_id = #{corpId}
+        we_emple_code_statistic wecs
+        LEFT JOIN we_user wu ON wu.user_id = wecs.user_id and wecs.corp_id = wu.corp_id
+        WHERE wecs.corp_id = #{corpId}
         <if test="empleCodeIdList != null and empleCodeIdList.size() > 0">
-            AND emple_code_id IN
+            AND wecs.emple_code_id IN
             <foreach collection="empleCodeIdList" item="empleCodeId" open="(" separator="," close=")">
                  #{empleCodeId}
             </foreach>
         </if>
         <if test="userIds != null and userIds.size() > 0">
-            AND user_id IN
+            AND wecs.user_id IN
             <foreach collection="userIds" item="userId" open="(" separator="," close=")">
                 #{userId}
             </foreach>
         </if>
+        <if test="position != null and position != ''">
+            <bind name="likePosition" value="'%' + position + '%'"/>
+            AND wu.position LIKE #{likePosition}
+        </if>
         <if test="beginDate != null and beginDate != ''">
-            AND `statistics_time` &gt;= #{beginDate}
+            AND wecs.`statistics_time` &gt;= #{beginDate}
         </if><if test="endDate != null and endDate != ''">
-            AND `statistics_time` &lt;= #{endDate}
+            AND wecs.`statistics_time` &lt;= #{endDate}
         </if>
     </select>
     <!--活码统计-员工维度-获取截止当前时间下，员工新增客户数-->
     <select id="listUserCustomerRel"
             resultType="com.easyink.wecom.domain.vo.statistics.emplecode.EmpleCodeUserVO">
-        SELECT user_id, COUNT(external_userid) currentNewCustomerCnt
+        SELECT wfcr.user_id, COUNT(wfcr.external_userid) currentNewCustomerCnt
         FROM
-        we_flower_customer_rel
+        we_flower_customer_rel wfcr
+        LEFT JOIN we_user wu ON wfcr.corp_id = wu.corp_id AND wfcr.user_id = wu.user_id
         WHERE
-        corp_id = #{corpId}
-        AND `status` NOT IN ('${@com.easyink.common.enums.CustomerStatusEnum@DRAIN.code}', '${@com.easyink.common.enums.CustomerStatusEnum@DELETE.code}')
+        wfcr.corp_id = #{corpId}
+        AND wfcr.`status` NOT IN ('${@com.easyink.common.enums.CustomerStatusEnum@DRAIN.code}', '${@com.easyink.common.enums.CustomerStatusEnum@DELETE.code}')
         <if test="externalUserIdList != null and externalUserIdList.size() > 0">
-            AND external_userid IN
+            AND wfcr.external_userid IN
             <foreach collection="externalUserIdList" item="externalUserId" open="(" separator="," close=")">
                 #{externalUserId}
             </foreach>
         </if>
         <if test="userIds != null and userIds.size() > 0">
-            AND user_id IN
+            AND wfcr.user_id IN
             <foreach collection="userIds" item="userId" open="(" separator="," close=")">
                 #{userId}
             </foreach>
         </if>
-        AND create_time >= #{beginTime}
-        AND create_time &lt;= #{time}
-        GROUP BY user_id
+        <if test="position != null and position != ''">
+            <bind name="likePosition" value="'%' + position + '%'"/>
+            AND wu.position LIKE #{likePosition}
+        </if>
+        AND wfcr.create_time >= #{beginTime}
+        AND wfcr.create_time &lt;= #{time}
+        GROUP BY wfcr.user_id
     </select>
     <!--活码统计-员工维度-获取基础数据-->
     <select id="listEmpleUser" resultType="com.easyink.wecom.domain.vo.statistics.emplecode.EmpleCodeUserVO">
         SELECT
         wecs.user_id AS userId,
         wu.user_name AS userName,
+        wu.position,
         wd.name AS departmentName,
         wu.head_image_url AS userHeadImage,
         SUM( CASE WHEN `statistics_time` = #{endDate} THEN wecs.accumulate_customer_cnt ELSE 0 END ) AS accumulateCustomerCnt,
@@ -100,6 +111,10 @@
                 #{userId}
             </foreach>
         </if>
+        <if test="position != null and position != ''">
+            <bind name="likePosition" value="'%' + position + '%'"/>
+            AND wu.position LIKE #{likePosition}
+        </if>
         <if test="beginDate != null and beginDate != ''">
             AND wecs.`statistics_time` &gt;= #{beginDate}
         </if>
@@ -120,6 +135,7 @@
         FROM
         we_emple_code_statistic wecs
         LEFT JOIN we_emple_code wec ON wecs.corp_id = wec.corp_id AND wecs.emple_code_id = wec.id
+        LEFT JOIN we_user wu ON wecs.corp_id = wu.corp_id AND wecs.user_id = wu.user_id
         WHERE wecs.corp_id = #{corpId}
         <if test="empleCodeIdList != null and empleCodeIdList.size() > 0">
             AND wecs.emple_code_id IN
@@ -139,115 +155,170 @@
         <if test="endDate != null and endDate != ''">
             AND wecs.`statistics_time` &lt;= #{endDate}
         </if>
+        <if test="position != null and position != ''">
+            <bind name="likePosition" value="'%' + position + '%'"/>
+            AND wu.position LIKE #{likePosition}
+        </if>
         GROUP BY wecs.emple_code_id
         ORDER BY wec.create_time DESC
     </select>
     <!--活码统计-活码维度-获取截止当前时间下，员工新增客户数-->
     <select id="listStateUserCustomerRel"
             resultType="com.easyink.wecom.domain.vo.statistics.emplecode.EmpleCodeVO">
-        SELECT `state` AS empleCodeId, COUNT(external_userid) currentNewCustomerCnt
+        SELECT wfcr.`state` AS empleCodeId, COUNT(wfcr.external_userid) currentNewCustomerCnt
         FROM
-        we_flower_customer_rel
+        we_flower_customer_rel wfcr
+        left join we_user wu on wfcr.corp_id = wu.corp_id and wfcr.user_id = wu.user_id
         WHERE
-        corp_id = #{corpId}
-        AND `status` NOT IN ('${@com.easyink.common.enums.CustomerStatusEnum@DRAIN.code}', '${@com.easyink.common.enums.CustomerStatusEnum@DELETE.code}')
+        wfcr.corp_id = #{corpId}
+        AND wfcr.`status` NOT IN ('${@com.easyink.common.enums.CustomerStatusEnum@DRAIN.code}', '${@com.easyink.common.enums.CustomerStatusEnum@DELETE.code}')
         <if test="empleCodeIdList != null and empleCodeIdList.size() > 0">
-            AND state IN
+            AND wfcr.state IN
             <foreach collection="empleCodeIdList" item="empleCodeId" open="(" separator="," close=")">
                 #{empleCodeId}
             </foreach>
         </if>
         <if test="userIds != null and userIds.size() > 0">
-            AND user_id IN
+            AND wfcr.user_id IN
             <foreach collection="userIds" item="userId" open="(" separator="," close=")">
                 #{userId}
             </foreach>
         </if>
-        AND create_time >= #{beginTime}
-        AND create_time &lt;= #{time}
-        GROUP BY `state`
+        <if test="position != null and position != ''">
+            <bind name="likePosition" value="'%' + position + '%'"/>
+            AND wu.position LIKE #{likePosition}
+        </if>
+        AND wfcr.create_time >= #{beginTime}
+        AND wfcr.create_time &lt;= #{time}
+        GROUP BY wfcr.`state`
     </select>
     <!--活码统计-日期维度-获取基础数据-->
     <select id="listEmpleDate" resultType="com.easyink.wecom.domain.vo.statistics.emplecode.EmpleCodeDateVO">
         SELECT
-        `statistics_time` as `time`,
-        SUM( new_customer_cnt ) AS newCustomerCnt,
-        SUM( loss_customer_cnt ) AS lossCustomerCnt
+        wecs.`statistics_time` as `time`,
+        SUM( wecs.new_customer_cnt ) AS newCustomerCnt,
+        SUM( wecs.loss_customer_cnt ) AS lossCustomerCnt
         FROM
-        we_emple_code_statistic
-        WHERE corp_id = #{corpId}
+        we_emple_code_statistic wecs
+        left JOIN we_user wu ON wecs.corp_id = wu.corp_id AND wecs.user_id = wu.user_id
+        WHERE wecs.corp_id = #{corpId}
         <if test="empleCodeIdList != null and empleCodeIdList.size() > 0">
-            AND emple_code_id IN
+            AND wecs.emple_code_id IN
             <foreach collection="empleCodeIdList" item="empleCodeId" open="(" separator="," close=")">
                 #{empleCodeId}
             </foreach>
         </if>
         <if test="userIds != null and userIds.size() > 0">
-            AND user_id IN
+            AND wecs.user_id IN
             <foreach collection="userIds" item="userId" open="(" separator="," close=")">
                 #{userId}
             </foreach>
         </if>
+        <if test="position != null and position != ''">
+            <bind name="likePosition" value="'%' + position + '%'"/>
+            AND wu.position LIKE #{likePosition}
+        </if>
         <if test="beginDate != null and beginDate != ''">
-            AND `statistics_time` &gt;= #{beginDate}
+            AND wecs.`statistics_time` &gt;= #{beginDate}
         </if>
         <if test="endDate != null and endDate != ''">
-            AND `statistics_time` &lt;= #{endDate}
+            AND wecs.`statistics_time` &lt;= #{endDate}
         </if>
-        GROUP BY `statistics_time`
+        GROUP BY wecs.`statistics_time`
     </select>
     <!--活码统计-日期维度-获取截止当前时间下，员工新增客户数-->
     <select id="listEmpleDateUserCustomerRel"
             resultType="com.easyink.wecom.domain.vo.statistics.emplecode.EmpleCodeDateVO">
-        SELECT DATE_FORMAT(create_time, '%Y-%m-%d') AS `time`, COUNT(external_userid) currentNewCustomerCnt
+        SELECT DATE_FORMAT(wfcr.create_time, '%Y-%m-%d') AS `time`, COUNT(wfcr.external_userid) currentNewCustomerCnt
         FROM
-        we_flower_customer_rel
+        we_flower_customer_rel wfcr
+        left JOIN we_user wu ON wfcr.corp_id = wu.corp_id AND wfcr.user_id = wu.user_id
         WHERE
-        corp_id = #{corpId}
-        AND `status` NOT IN ('${@com.easyink.common.enums.CustomerStatusEnum@DRAIN.code}', '${@com.easyink.common.enums.CustomerStatusEnum@DELETE.code}')
+        wfcr.corp_id = #{corpId}
+        AND wfcr.`status` NOT IN ('${@com.easyink.common.enums.CustomerStatusEnum@DRAIN.code}', '${@com.easyink.common.enums.CustomerStatusEnum@DELETE.code}')
         <if test="externalUserIdList != null and externalUserIdList.size() > 0">
-            AND external_userid IN
+            AND wfcr.external_userid IN
             <foreach collection="externalUserIdList" item="externalUserId" open="(" separator="," close=")">
                 #{externalUserId}
             </foreach>
         </if>
         <if test="userIds != null and userIds.size() > 0">
-            AND user_id IN
+            AND wfcr.user_id IN
             <foreach collection="userIds" item="userId" open="(" separator="," close=")">
                 #{userId}
             </foreach>
         </if>
-        AND create_time &lt;= #{time}
-        GROUP BY DATE_FORMAT(create_time, '%Y-%m-%d')
+        <if test="position != null and position != ''">
+            <bind name="likePosition" value="'%' + position + '%'"/>
+            AND wu.position LIKE #{likePosition}
+        </if>
+        AND wfcr.create_time &lt;= #{time}
+        GROUP BY DATE_FORMAT(wfcr.create_time, '%Y-%m-%d')
     </select>
     <!--活码统计-日期维度-获取每个日期下的留存客户数和累计客户数-->
     <select id="listDateAccumulateRetainCnt"
             resultType="com.easyink.wecom.domain.vo.statistics.emplecode.EmpleCodeDateVO">
         SELECT
-        `statistics_time` as `time`,
-        SUM(accumulate_customer_cnt)  AS accumulateCustomerCnt,
-        SUM(retain_customer_cnt) AS retainCustomerCnt
+        wecs.`statistics_time` as `time`,
+        SUM(wecs.accumulate_customer_cnt)  AS accumulateCustomerCnt,
+        SUM(wecs.retain_customer_cnt) AS retainCustomerCnt
         FROM
-        we_emple_code_statistic
-        WHERE corp_id = #{corpId}
+        we_emple_code_statistic wecs
+        left JOIN we_user wu ON wecs.corp_id = wu.corp_id AND wecs.user_id = wu.user_id
+        WHERE wecs.corp_id = #{corpId}
         <if test="empleCodeIdList != null and empleCodeIdList.size() > 0">
-            AND emple_code_id IN
+            AND wecs.emple_code_id IN
             <foreach collection="empleCodeIdList" item="empleCodeId" open="(" separator="," close=")">
                 #{empleCodeId}
             </foreach>
         </if>
         <if test="userIds != null and userIds.size() > 0">
-            AND user_id IN
+            AND wecs.user_id IN
             <foreach collection="userIds" item="userId" open="(" separator="," close=")">
                 #{userId}
             </foreach>
         </if>
+        <if test="position != null and position != ''">
+            <bind name="likePosition" value="'%' + position + '%'"/>
+            AND wu.position LIKE #{likePosition}
+        </if>
         <if test="beginDate != null and beginDate != ''">
-            AND `statistics_time` &gt;= #{beginDate}
+            AND wecs.`statistics_time` &gt;= #{beginDate}
         </if>
         <if test="endDate != null and endDate != ''">
-            AND `statistics_time` &lt;= #{endDate}
+            AND wecs.`statistics_time` &lt;= #{endDate}
         </if>
-        GROUP BY `statistics_time`
+        GROUP BY wecs.`statistics_time`
+    </select>
+    <select id="listUserCustomerRelTotal" resultType="java.lang.Integer">
+        SELECT COUNT(wfcr.external_userid)
+        FROM
+        we_flower_customer_rel wfcr
+        left JOIN we_user wu ON wfcr.corp_id = wu.corp_id AND wfcr.user_id = wu.user_id
+        WHERE
+        wfcr.corp_id = #{corpId}
+        AND wfcr.`status` NOT IN ('${@com.easyink.common.enums.CustomerStatusEnum@DRAIN.code}', '${@com.easyink.common.enums.CustomerStatusEnum@DELETE.code}')
+        <if test="stateList != null and stateList.size() > 0">
+            AND wfcr.state IN
+            <foreach collection="stateList" item="state" open="(" separator="," close=")">
+                #{state}
+            </foreach>
+        </if>
+        <if test="userIds != null and userIds.size() > 0">
+            AND wfcr.user_id IN
+            <foreach collection="userIds" item="userId" open="(" separator="," close=")">
+                #{userId}
+            </foreach>
+        </if>
+        <if test="position != null and position != ''">
+            <bind name="likePosition" value="'%' + position + '%'"/>
+            AND wu.position LIKE #{likePosition}
+        </if>
+        AND wfcr.create_time <![CDATA[
+            >=
+        ]]> #{beginTime}
+        AND wfcr.create_time <![CDATA[
+            <=
+        ]]> #{endTime}
     </select>
 </mapper>

@@ -8,6 +8,7 @@ import com.easyink.wecom.domain.vo.OrganizationVO;
 import com.easyink.wecom.domain.vo.sop.DepartmentVO;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 企业微信组织架构相关Service接口
@@ -146,4 +147,15 @@ public interface WeDepartmentService extends IService<WeDepartment> {
      * @return 员工id列表
      */
     List<String> listUserIdByMainDepartmentIds(List<String> departmentIdList, String corpId);
+
+    /**
+     * 构建上级部门名称
+     * @param userId 员工id
+     * @param departmentMap 部门map
+     * @param corpId 企业id
+     * @param splitStr 分隔符
+     * @param ignoreCurrentDepart 是否忽略当前部门
+     * @return
+     */
+    String buildParentDepartmentNames(String userId, Map<Long, WeDepartment> departmentMap, String corpId, String splitStr, boolean ignoreCurrentDepart);
 }

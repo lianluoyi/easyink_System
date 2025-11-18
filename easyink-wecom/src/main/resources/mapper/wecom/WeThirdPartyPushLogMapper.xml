@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.easyink.wecom.mapper.WeThirdPartyPushLogMapper">
+
+    <resultMap type="WeThirdPartyPushLog" id="WeThirdPartyPushLogResult">
+        <result property="id"               column="id"               />
+        <result property="corpId"           column="corp_id"          />
+        <result property="recordId"         column="record_id"        />
+        <result property="pushType"         column="push_type"        />
+        <result property="pushUrl"          column="push_url"         />
+        <result property="pushData"         column="push_data"        />
+        <result property="pushResult"       column="push_result"      />
+        <result property="httpCode"         column="http_code"        />
+        <result property="pushStatus"       column="push_status"      />
+        <result property="errorMsg"         column="error_msg"        />
+        <result property="pushTime"         column="push_time"        />
+        <result property="responseTime"     column="response_time"    />
+        <result property="costTime"         column="cost_time"        />
+        <result property="remark"           column="remark"           />
+        <result property="createBy"         column="create_by"        />
+        <result property="createTime"       column="create_time"      />
+        <result property="updateBy"         column="update_by"        />
+        <result property="updateTime"       column="update_time"      />
+    </resultMap>
+
+    <sql id="selectWeThirdPartyPushLogVo">
+        select id, corp_id, record_id, push_type, push_url, push_data, push_result, 
+               http_code, push_status, retry_count, error_msg, push_time, response_time, 
+               cost_time, remark, create_by, create_time, update_by, update_time
+        from we_third_party_push_log
+    </sql>
+
+</mapper>

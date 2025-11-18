@@ -103,6 +103,11 @@ public class SysJob extends BaseEntity implements Serializable {
         return invokeTarget;
     }
 
+    /**
+     * 设置调用目标字符串
+     * 注意：此方法仅用于内部使用，外部接口不允许修改此字段
+     * 如需修改，请直接操作数据库
+     */
     public void setInvokeTarget(String invokeTarget) {
         this.invokeTarget = invokeTarget;
     }

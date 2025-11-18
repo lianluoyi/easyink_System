@@ -7,6 +7,7 @@ import com.easyink.common.constant.GenConstants;
 import com.easyink.wecom.client.WeUpdateIDClient;
 import com.easyink.wecom.domain.dto.CorpIdToOpenCorpIdResp;
 import com.easyink.wecom.domain.entity.WeExternalUseridMapping;
+import com.easyink.wecom.domain.model.externaluser.OpenExternalUserIdAndExternalUserIdModel;
 import com.easyink.wecom.mapper.WeExternalUseridMappingMapper;
 import com.easyink.wecom.service.idmapping.WeExternalUserIdMappingService;
 import lombok.RequiredArgsConstructor;
@@ -173,6 +174,14 @@ public class WeExternalUserIdMappingServiceImpl extends ServiceImpl<WeExternalUs
             return;
         }
         this.weExternalUseridMappingMapper.batchInsertOrUpdateThirdService(mappingList);
+    }
+
+    @Override
+    public List<OpenExternalUserIdAndExternalUserIdModel> getOpenExternalUserIdByExternalUserIdBatch(List<String> batchQueryList, String corpId) {
+        if(CollectionUtils.isEmpty(batchQueryList) || StringUtils.isBlank(corpId)){
+            return new ArrayList<>();
+        }
+        return weExternalUseridMappingMapper.selectOriginMappingByOpenExternalUserIdBatch(batchQueryList, corpId);
     }
 
 

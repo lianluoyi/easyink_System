@@ -1,13 +1,14 @@
 package com.easyink.wecom.domain.vo.form;
 
 import com.easyink.common.utils.bean.BeanUtils;
-import com.easyink.wecom.domain.entity.form.WeForm;
 import com.easyink.wecom.domain.entity.form.WeFormAdvanceSetting;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+
+import java.util.List;
 
 /**
  * 表单VO
@@ -29,9 +30,14 @@ public class WeFormSettingVO extends WeFormAdvanceSetting {
      * 标签设置
      */
     private CustomerLabelSettingDetailVO labelSetting;
+    /**
+     * 客户自定义属性详情VO列表
+     */
+    private List<CustomerPropertySettingVO> customerPropertyIdVOList;
 
-    public WeFormSettingVO(WeFormAdvanceSetting formSetting, CustomerLabelSettingDetailVO labelSetting) {
+    public WeFormSettingVO(WeFormAdvanceSetting formSetting, CustomerLabelSettingDetailVO labelSetting, List<CustomerPropertySettingVO> customerPropertyIdList) {
         BeanUtils.copyBeanProp(this, formSetting);
         this.labelSetting = labelSetting;
+        this.customerPropertyIdVOList = customerPropertyIdList;
     }
 }

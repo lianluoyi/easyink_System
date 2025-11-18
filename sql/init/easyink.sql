@@ -271,13 +271,13 @@ INSERT INTO `sys_job`
 VALUES (6, '定时消息群发', 'SYSTEM', 'ryTask.messageTask', '0 */2 * * * ?', '1', '1', '0', 'admin', '2021-02-10 10:07:22',
         'admin', '2021-07-27 09:09:55', '');
 INSERT INTO `sys_job`
-VALUES (7, '联系客户统计数据拉取', 'SYSTEM', 'UserBehaviorDataTak.getUserBehaviorData()', '0 30 6 * * ?', '1', '1', '0', 'admin',
+VALUES (7, '联系客户统计数据拉取', 'SYSTEM', 'UserBehaviorDataTak.getUserBehaviorData()', '0 30 5 * * ?', '1', '1', '0', 'admin',
         '2021-02-25 16:47:59', 'admin', '2021-02-25 23:45:03', '');
 INSERT INTO `sys_job`
-VALUES (8, '群聊数据统计数据拉取', 'SYSTEM', 'GroupChatStatisticTask.getGroupChatData()', '0 0 7 * * ?', '1', '1', '0', 'admin',
+VALUES (8, '群聊数据统计数据拉取', 'SYSTEM', 'GroupChatStatisticTask.getGroupChatData()', '0 0 6 * * ? ', '1', '1', '0', 'admin',
         '2021-02-25 16:49:44', '', '2021-02-25 23:45:05', '');
 INSERT INTO `sys_job`
-VALUES (9, '首页数据统计', 'SYSTEM', 'PageHomeDataTask.getPageHomeDataData()', '0 30 7 * * ?', '1', '1', '0', 'admin',
+VALUES (9, '首页数据统计', 'SYSTEM', 'PageHomeDataTask.getPageHomeDataData()', '0 30 6 * * ?', '1', '1', '0', 'admin',
         '2021-02-25 16:52:23', '', '2021-02-25 23:45:07', '');
 INSERT INTO `sys_job`
 VALUES (10, '删除过期素材', 'SYSTEM', 'RemoveMaterialTask.removeExpireMaterial()', '0 0 4 * * ? ', '1', '1', '0', 'admin',
@@ -316,7 +316,7 @@ INSERT INTO `sys_job`
 VALUES (20, '定期查询客户分配情况任务', 'SYSTEM', 'transferResultTask.execute', '0 */5 * * * ?', '2', '1', '0', 'admin',
         '2021-12-01 18:25:03', 'admin', '2021-12-01 18:25:51', '');
 INSERT INTO `sys_job`
-VALUES (21, '数据统计定时任务', 'SYSTEM', 'DataStatisticsTask.getDataStatistics()', '0 0 8 * * ?', '2', '1', '0', 'admin',
+VALUES (21, '数据统计定时任务', 'SYSTEM', 'DataStatisticsTask.getDataStatistics()', '0 30 7 * * ?', '2', '1', '0', 'admin',
         '2023-02-13 16:34:13', '', NULL, '');
 -- 2023--6-8 silver_chariot 增加定时任务  Tower 任务: 执行批量打标签导致系统无法使用 ( https://tower.im/teams/636204/todos/69816 )
 INSERT INTO `sys_job` (`job_id`, `job_name`, `job_group`, `invoke_target`, `cron_expression`, `misfire_policy`,
@@ -333,11 +333,36 @@ INSERT INTO `sys_job`(`job_id`, `job_name`, `job_group`, `invoke_target`, `cron_
                       `concurrent`, `status`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`)
 VALUES ('24', '每日活码统计数据定时任务(传参日期格式:YYYY-MM-DD)', 'SYSTEM', 'EmpleStatisticTask.getEmpleStatisticDateData('''')', '0 0 3 * * ?', '2', '1',
         '0', 'admin', '2023-07-07 19:50:41', '', '2023-07-07 19:50:46', '');
+
+INSERT INTO `sys_job`
+VALUES ('25', '联系客户统计数据拉取', 'SYSTEM', 'UserBehaviorDataTak.getUserBehaviorData()', '0 0 12 * * ?', '1', '1', '0', 'admin',
+        '2023-07-11 10:15:59', 'admin', '2023-07-11 10:16:37', '');
+INSERT INTO `sys_job`
+VALUES ('26', '群聊数据统计数据拉取', 'SYSTEM', 'GroupChatStatisticTask.getGroupChatData()', '0 30 12 * * ? ', '1', '1', '0', 'admin',
+        '2023-07-11 10:16:44', '', '2023-07-11 10:16:16', '');
+INSERT INTO `sys_job`
+VALUES ('27', '数据统计定时任务', 'SYSTEM', 'DataStatisticsTask.getDataStatistics()', '0 30 13 * * ?', '2', '1', '0', 'admin',
+        '2023-07-11 10:17:13', '', NULL, '');
+
 -- 2023-08-28 lcy 添加更新获客链接消耗情况定时任务 Tower 任务: 回调处理，应用通知、角色权限 ( https://tower.im/teams/636204/todos/73968 )
 INSERT INTO `sys_job`(`job_id`, `job_name`, `job_group`, `invoke_target`, `cron_expression`, `misfire_policy`,
                       `concurrent`, `status`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`)
-VALUES ('25', '更新获客链接消耗情况定时任务', 'SYSTEM', 'customerAssistantSituationTask.getCustomerAssistantSituationData()', '0 0 0 * * ?', '2', '1',
+VALUES ('28', '更新获客链接消耗情况定时任务', 'SYSTEM', 'customerAssistantSituationTask.getCustomerAssistantSituationData()', '0 0 0 * * ?', '2', '1',
         '0', 'admin', '2023-08-28 11:09:36', '', '2023-08-28 11:09:48', '');
+
+
+INSERT INTO `sys_job`(`job_id`, `job_name`, `job_group`, `invoke_target`, `cron_expression`, `misfire_policy`,
+                      `concurrent`, `status`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`)
+VALUES ('29', '清除过期专属活码定时任务', 'SYSTEM', 'customerTempEmpleCodeExpireTask.deleteExpireCustomerTempEmpleCode()', '0 0 * * * ?', '2', '1',
+        '0', 'admin', '2025-01-15 11:09:36', '', '2025-01-15 11:09:48', '');
+
+INSERT INTO `sys_job` (`job_id`, `job_name`, `job_group`, `invoke_target`, `cron_expression`, `misfire_policy`,
+                       `concurrent`, `status`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`)
+VALUES ("30", '满意度表单超时检查定时任务(每5分钟)', 'SYSTEM', 'FormSubmitTimeoutTask.checkTimeoutForms()',
+        '0 */5 * * * ?', '2', '1', '0', 'admin', '2023-02-13 16:34:13', '', NULL, '');
+INSERT INTO `sys_job`
+VALUES (31, '首页数据统计第二次', 'SYSTEM', 'PageHomeDataTask.getPageHomeDataData()', '0 0 13 * * ?', '1', '1', '0', 'admin',
+        '2025-11-11 16:52:23', '', '2025-11-11 23:45:07', '');
 
 -- ----------------------------
 -- Table structure for sys_menu
@@ -1044,6 +1069,13 @@ INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`
 INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`, `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES (2337, '新增获客链接', 2052, 14, 'customerAssistantAdd', 'drainageCode/customerAssistant/add', 1, 'P', '1', '0', '', '#', 'admin', '2023-08-18 14:58:11', 'admin', '2023-08-27 21:55:33', '');
 -- 2023-08-30 lcy 前端新增路由 Tower 任务: 回调处理，应用通知、角色权限 ( https://tower.im/teams/636204/todos/73968 )
 INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`, `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES (2338, '编辑获客链接', 2052, 15, 'customerAssistantEdit', 'drainageCode/customerAssistant/add', 1, 'P', '1', '0', '', '#', 'admin', '2023-08-30 09:19:32', 'admin', '2023-08-30 09:20:07', '');
+
+-- tigger 2025-08-04 添加权限 Tower 任务: 用户信息安全保护及脱敏 ( https://tower.im/teams/636204/todos/113147 )
+INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`, `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES (2339, '安全设置', 2305, 13, 'securityConfig', 'configCenter/securityConfig', 1, 'C', '0', '1', '', '#', 'tigger', '2023-03-20 10:35:14', 'tigger', '2023-03-20 10:39:07', '');
+INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`, `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES (2340, '查看完整手机号', 2339, 1, '', NULL, 1, 'F', '0', '0', 'securityConfig:view:phone', '#', 'admin', '2025-08-04 17:43:33', '', NULL, '');
+INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`, `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES (2341, '查看完整地址', 2339, 2, '', NULL, 1, 'F', '0', '0', 'securityConfig:view:address', '#', 'admin', '2025-08-04 17:43:33', '', NULL, '');
+-- tigger 2024-08-28 推送设置权限 Tower 任务: 满意度评价结果推送 ( https://tower.im/teams/636204/todos/115322 )
+INSERT INTO `sys_menu` (`menu_id`, `menu_name`, `parent_id`, `order_num`, `path`, `component`, `is_frame`, `menu_type`, `visible`, `status`, `perms`, `icon`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`) VALUES (2342, '编辑推送设置', 2304, 3, '', NULL, 1, 'F', '0', '0', 'intelligentForm:manage:push', '#', 'admin', '2025-08-28 17:43:33', '', NULL, '');
 -- ----------------------------
 -- Table structure for sys_role
 -- ----------------------------
@@ -1331,12 +1363,17 @@ CREATE TABLE `we_corp_account`
         COMMENT '三方应用企业ID',
     `crop_account`                 varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '企业管理员账号',
     `corp_secret`                  varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '应用的密钥凭证',
+    `corp_secret_encrypt`                  varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '应用的密钥凭证加密',
     `contact_secret`               varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '外部联系人密钥',
+    `contact_secret_encrypt`               varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '外部联系人密钥加密',
     `wx_qr_login_redirect_uri`     varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '企业微信扫码登陆系统回调地址',
     `provider_secret`              varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '服务商密钥',
+    `provider_secret_encrypt`              varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '服务商密钥加密',
     `chat_secret`                  varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '会话存档密钥',
+    `chat_secret_encrypt`                  varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '会话存档密钥加密',
     `agent_id`                     varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '应用id',
     `agent_secret`                 varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '应用密钥',
+    `agent_secret_encrypt`                 varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '应用密钥加密',
     `status`                       char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci      NOT NULL DEFAULT '0' COMMENT '帐号状态（0正常 1停用 2已授权未启用)',
     `del_flag`                     char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci      NOT NULL DEFAULT '0' COMMENT '0 未删除 1 已删除',
     `create_by`                    varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '创建人',
@@ -1347,6 +1384,7 @@ CREATE TABLE `we_corp_account`
     `customer_loss_tag_switch`     char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci      NOT NULL DEFAULT '0' COMMENT '客户流失标签开关 0:关闭 1:开启',
     `corp_account`                 varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '企业管理员账号',
     `encoding_aes_key`             varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '应用回调aesKey',
+    `encoding_aes_key_encrypt`             varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '应用回调aesKey加密',
     `h5_do_main_name`              varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT 'H5域名链接',
     `token`                        varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '应用回调token',
     `cert_file_path`               varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '侧边栏证书',
@@ -1524,7 +1562,7 @@ CREATE TABLE `we_customer_seedmessage`
     `pic_url`              varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '图片消息：图片的链接，仅可使用<a href=\"https://work.weixin.qq.com/api/doc/90000/90135/90256\">上传图片接口</a>得到的链接',
     `file_name`            varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '文件名称',
     `file_url`             varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '文件url',
-    `link_title`           varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci   NOT NULL DEFAULT '' COMMENT '链接消息：图文消息标题',
+    `link_title`           varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci   NOT NULL DEFAULT '' COMMENT '链接消息：图文消息标题',
     `link_picurl`          varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '链接消息：图文消息封面的url',
     `lin_desc`             varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '链接消息：图文消息的描述，最多512个字节',
     `is_defined`           TINYINT(1) NOT NULL
@@ -1561,6 +1599,7 @@ CREATE TABLE `we_customer_trajectory`
     `end_time`        time(0)                                                       NOT NULL DEFAULT '00:00:00' COMMENT '处理结束时间',
     `status`          CHAR(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci      NOT NULL DEFAULT '0' COMMENT '0:正常;1:已通知未完成;2:删除;3:已完成',
     `detail`          VARCHAR(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '操作细节（如果是文件图片则是url,如果多个选项则,隔开)',
+    `detail_encrypt`          VARCHAR(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '操作细节（如果是文件图片则是url,如果多个选项则,隔开)加密',
     `sub_type`        VARCHAR(64)  CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '子类型（修改备注：edit_remark;修改标签：edit_tag;编辑多选框：edit_multi;编辑单选：edit_choice;编辑图片：edit_pic;编辑文件：edit_file;加入群聊:join_group;退出群聊：quit_group;加好友：add_user；删除好友：del_user',
     PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = INNODB CHARACTER
@@ -1617,6 +1656,8 @@ CREATE TABLE `we_emple_code`
     `code_repeat_material_sort`  varchar(255)  CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '客户再次触发，若活动开启参与限制，发送该附件',
     `code_repeat_msg`            varchar(2000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '客户再次触发，若活动开启参与限制，发送该欢迎语',
     `app_link`                   varchar(128)  CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '活码小程序链接',
+    `customer_link` VARCHAR ( 128 ) NOT NULL DEFAULT '' COMMENT '客户专属活码链接',
+    `tag_group_valid` tinyint(1) NOT NULL DEFAULT '0' COMMENT '标签组校验规则 0:全部标签 1:任一标签 ',
     PRIMARY KEY (`id`) USING BTREE,
     KEY                          `normal_effecttime_open` (`effect_time_open`) USING BTREE COMMENT '普通索引effect_time_open',
     KEY                          `normal_effecttime_close` (`effect_time_close`) USING BTREE COMMENT '普通索引effect_time_close',
@@ -1666,21 +1707,23 @@ CREATE TABLE `we_flower_customer_rel`
     `remark`           varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '该成员对此外部联系人的备注',
     `description`      varchar(258) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '该成员对此外部联系人的描述',
     `create_time`      datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '该成员添加此外部联系人的时间',
-    `remark_corp_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '该成员对此客户备注的企业名称\r\n',
-    `remark_mobiles`   varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '该成员对此客户备注的手机号码',
-    `qq`               varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '客户QQ',
-    `address`          varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '客户地址',
-    `email`            varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '邮件',
-    `add_way`          varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '该成员添加此客户的来源，',
-    `state`            varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '企业自定义的state参数，用于区分客户具体是通过哪个「联系我」添加，由企业通过创建「联系我」方式指定',
-    `status`           char(2) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci      NOT NULL DEFAULT '0' COMMENT '状态（0正常 1删除流失 2员工删除用户 3待继承 4转接中）',
-    `delete_time`      datetime                                                      NOT NULL DEFAULT '0000-00-00 00:00:00' COMMENT '客户删除员工时间',
-    `del_by_user_time` datetime                                                      NOT NULL DEFAULT '0000-00-00 00:00:00' COMMENT '员工删除客户时间（如果没有收到删除回调，通过手动同步客户得出的主动删除客户，该字段为默认值）',
-    `wechat_channel`   varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '该成员添加此客户的来源add_way为10时，对应的视频号信息',
+    `remark_corp_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '该成员对此客户备注的企业名称\r\n',
+    `remark_mobiles`   varchar(1024) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '该成员对此客户备注的手机号码',
+    `remark_mobiles_encrypt`   varchar(1024) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '该成员对此客户备注的手机号码加密',
+    `qq`               varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci   NOT NULL DEFAULT '' COMMENT '客户QQ',
+    `address`          varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '客户地址',
+    `address_encrypt`          varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '客户地址加密',
+    `email`            varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '邮件',
+    `add_way`          varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci   NOT NULL DEFAULT '' COMMENT '该成员添加此客户的来源，',
+    `state`            varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci   NOT NULL DEFAULT '' COMMENT '企业自定义的state参数，用于区分客户具体是通过哪个「联系我」添加，由企业通过创建「联系我」方式指定',
+    `status`           char(2) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci       NOT NULL DEFAULT '0' COMMENT '状态（0正常 1删除流失 2员工删除用户 3待继承 4转接中）',
+    `delete_time`      datetime                                                       NOT NULL DEFAULT '0000-00-00 00:00:00' COMMENT '客户删除员工时间',
+    `del_by_user_time` datetime                                                       NOT NULL DEFAULT '0000-00-00 00:00:00' COMMENT '员工删除客户时间（如果没有收到删除回调，通过手动同步客户得出的主动删除客户，该字段为默认值）',
+    `wechat_channel`   varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci   NOT NULL DEFAULT '' COMMENT '该成员添加此客户的来源add_way为10时，对应的视频号信息',
     PRIMARY KEY (`id`) USING BTREE,
     UNIQUE INDEX `un_user_external_userid_corpid` (`external_userid`, `user_id`, `corp_id`) USING BTREE,
-    KEY `idx_corp_user_id_status` (`corp_id`,`status`,`user_id`,`create_time`) USING BTREE COMMENT '企业id-员工id-客户状态普通索引',
-    KEY `idx_corp_status` (`corp_id`,`status`,`create_time`) USING BTREE,
+    KEY                `idx_corp_user_id_status` (`corp_id`,`status`,`user_id`,`create_time`) USING BTREE COMMENT '企业id-员工id-客户状态普通索引',
+    KEY                `idx_corp_status` (`corp_id`,`status`,`create_time`) USING BTREE,
     KEY `idx_corp_create_time` (`corp_id`, `create_time`) USING BTREE COMMENT '企业ID-添加时间普通索引',
     KEY `index_groupBy_external_userid` (`external_userid`,`create_time`,`user_id`,`corp_id`,`status`) COMMENT '客户去重列表索引覆盖',
     KEY `index_corpId_remark_externalUserId`(`corp_id`, `external_userid`, `remark`) COMMENT '客户备注查询索引'
@@ -1837,8 +1880,8 @@ CREATE TABLE `we_material`
     `category_id`          bigint(100) NOT NULL DEFAULT 0 COMMENT '分类id',
     `material_url`         varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '本地资源文件地址',
     `content`              text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '文本内容、图片文案',
-    `material_name`        varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '图片名称',
-    `digest`               varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '摘要',
+    `material_name`        varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '图片名称',
+    `digest`               varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '摘要',
     `account_original_id`  varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '小程序账号原始id，小程序专用',
     `appid`                varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '小程序appId，小程序专用',
     `create_by`            varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '创建人',
@@ -2131,6 +2174,7 @@ CREATE TABLE `we_user`
     `alias`             varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '用户昵称',
     `gender`            tinyint(1) NOT NULL DEFAULT 1 COMMENT '性别。1表示男性，2表示女性',
     `mobile`            varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '手机号',
+    `mobile_encrypt`            varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '手机号加密',
     `email`             varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '邮箱',
     `wx_account`        varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '个人微信号',
     `main_department`   bigint(20) NOT NULL DEFAULT '0' COMMENT '主部门ID',
@@ -2143,6 +2187,7 @@ CREATE TABLE `we_user`
     `qq_account`        varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT 'QQ号',
     `telephone`         varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '座机',
     `address`           varchar(300) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '地址',
+    `address_encrypt`           varchar(300) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '地址加密',
     `birthday`          date                                                          NOT NULL DEFAULT '0000-00-00' COMMENT '生日',
     `remark`            varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '备注',
     `customer_tags`     varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '客户标签,字符串使用逗号隔开',
@@ -2169,6 +2214,10 @@ CREATE TABLE `we_user_behavior_data` (
                                          `id` bigint(20) NOT NULL AUTO_INCREMENT,
                                          `corp_id` varchar(64)  CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '企业ID',
                                          `user_id` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '员工id',
+                                         `current_department_id` varchar(64) NOT NULL DEFAULT '' COMMENT '员工当前部门ID（快照，记录统计时员工所属的当前部门）',
+                                         `current_department_name` varchar(255) NOT NULL DEFAULT '' COMMENT '员工当前部门名称（快照，记录统计时的部门名称）',
+                                         `parent_department_id` varchar(512) NOT NULL DEFAULT '' COMMENT '完整上级部门路径ID（快照，如：1,2,3 表示从根部门到当前部门的完整路径）',
+                                         `parent_department_name` varchar(1024) NOT NULL DEFAULT '' COMMENT '完整上级部门路径名称（快照，如：总公司/销售部/华南区 表示完整部门路径）',
                                          `stat_time` datetime NOT NULL DEFAULT '0000-00-00 00:00:00' COMMENT '数据日期，为当日0点的时间戳',
                                          `new_apply_cnt` int(10) NOT NULL DEFAULT '0' COMMENT '发起申请数',
                                          `new_contact_cnt` int(10) NOT NULL DEFAULT '0' COMMENT '新增客户数，成员新添加的客户数量',
@@ -2188,7 +2237,8 @@ CREATE TABLE `we_user_behavior_data` (
                                          `user_active_chat_cnt` int(11) NOT NULL DEFAULT '0' COMMENT '当天员工主动发起的会话数量（DataStatisticsTask定时任务统计）',
                                          PRIMARY KEY (`id`) USING BTREE,
                                          UNIQUE KEY `uni_corp_user_id_stat_time_idx` (`corp_id`,`user_id`,`stat_time`) USING BTREE COMMENT '企业ID-员工ID-时间唯一索引',
-                                         KEY `stat_time_index` (`stat_time`,`user_id`) USING BTREE
+                                         KEY `stat_time_index` (`stat_time`,`user_id`) USING BTREE,
+                                         KEY `idx_corp_current_dept_stat_time` (`corp_id`,`current_department_id`,`stat_time`)
 ) ENGINE=InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT='联系客户统计数据 ';
 
 
@@ -2838,11 +2888,13 @@ CREATE TABLE `we_customer_extend_property`
     `name`          varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '扩展字段名称',
     `type`          int(11) NOT NULL DEFAULT '2' COMMENT '字段类型（1系统默认字段,2单行文本，3多行文本，4单选框，5多选框，6下拉框，7日期，8图片，9文件）',
     `required`      tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否必填（1必填0非必填）',
+    `live_code_required` tinyint(1) NOT NULL DEFAULT '0' COMMENT '专属活码是否必填（1必填0非必填）',
     `property_sort` int(11) NOT NULL DEFAULT '20' COMMENT '字段排序',
     `status`        tinyint(1) NOT NULL DEFAULT '1' COMMENT '状态（0停用1启用）',
     `create_time`   datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `create_by`     varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '创建人',
     `update_time`   datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `extra` varchar(255) NOT NULL DEFAULT '' COMMENT '额外扩展字段, 根据type来存储json的格式',
     PRIMARY KEY (`id`),
     UNIQUE KEY `un_corp_id_name` (`corp_id`, `name`) USING BTREE
 ) ENGINE = InnoDB
@@ -2872,6 +2924,12 @@ CREATE TABLE `we_customer_extend_property_rel`
     `external_userid`    varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '成员客户关系ID',
     `extend_property_id` int(20) NOT NULL DEFAULT '0' COMMENT '扩展属性id',
     `property_value`     varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '自定义属性的值',
+    `province`           varchar(32)                                                   NOT NULL DEFAULT '' COMMENT '第一级行政区, 省',
+    `city`               varchar(32)                                                   NOT NULL DEFAULT '' COMMENT '第二级行政区, 市',
+    `area`               varchar(32)                                                   NOT NULL DEFAULT '' COMMENT '第三级行政区, 区/县',
+    `town`               varchar(32)                                                   NOT NULL DEFAULT '' COMMENT '第四级行政区, 街道/镇',
+    `detail_address`     varchar(128)                                                  NOT NULL DEFAULT '' COMMENT '位置的详细地址',
+    `detail_address_encrypt`     varchar(255)                                                  NOT NULL DEFAULT '' COMMENT '位置的详细地址加密',
     PRIMARY KEY (`corp_id`, `user_id`, `external_userid`, `extend_property_id`, `property_value`)
 ) ENGINE = InnoDB
   CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT ='客户-自定义属性关系表';
@@ -3436,7 +3494,7 @@ CREATE TABLE `we_radar`
     `url`                    varchar(3000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '雷达原始路径url',
     `cover_url`              varchar(1200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '雷达链接封面图',
     `title`                  varchar(255)  CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '链接标题',
-    `content`                varchar(255)  CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '雷达链接摘要',
+    `content`                varchar(512)  CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '雷达链接摘要',
     `enable_click_notice`    tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否开启行为通知（1[true]是0[false]否）',
     `enable_behavior_record` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否允许轨迹记录（1[true]是 0[false]否) ',
     `enable_customer_tag`    tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否允许打上客户标签（ 1[true]是 0[false]否) ',
@@ -3525,6 +3583,7 @@ CREATE TABLE `we_open_config`
     `corp_id`                     varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '企业id',
     `official_account_app_id`     varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '公众号appid',
     `official_account_app_secret` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '公众号secret,待开发应用为空',
+    `official_account_app_secret_encrypt` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '公众号secret,待开发应用为空加密',
     `official_account_domain`     varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '公众号域名,待开发应用为空',
     `service_type_info`           tinyint(1) NOT NULL DEFAULT '-1' COMMENT '授权方公众号类型,(0代表订阅号，1代表由历史老帐号升级后的订阅号，2代表服务号),自建应用为空',
     `nick_name`                   varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL DEFAULT '' COMMENT '授权方昵称',
@@ -3619,6 +3678,9 @@ CREATE TABLE `we_form_advance_setting` (
                                            `tract_record_flag` tinyint(1) NOT NULL DEFAULT '0' COMMENT '轨迹记录开关(false:关闭 true:开启)',
                                            `customer_label_flag` tinyint(1) NOT NULL DEFAULT '0' COMMENT '客户标签开关(false:关闭 true:开启)',
                                            `label_setting_json` varchar(1024) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '客户标签开关设置详情json 格式: {"clickLabelIdList":[""],"submitLabelIdList":[""]}',
+                                           `push_content_flag` tinyint(1) NOT NULL DEFAULT '0' COMMENT '推送表单提交内容开关(false:关闭 true:开启)',
+                                           `customer_property_id_json` varchar(1024) NOT NULL DEFAULT '' COMMENT '客户字段idjson',
+                                           `timeout_hours` int(11) NOT NULL DEFAULT '0' COMMENT '超时推送时间配置,单位小时, 0则不推送',
                                            UNIQUE KEY `form_id_unique` (`form_id`) USING BTREE COMMENT '表单id唯一索引'
 ) ENGINE=InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT='表单设置表';
 -- tigger 2023-01-16 17:56  客户评价 Tower 任务: 智能表单 ( https://tower.im/teams/636204/todos/61364 )
@@ -3677,7 +3739,7 @@ CREATE TABLE `we_user_customer_message_statistics` (
                                                        `user_active_dialogue` tinyint(1) NOT NULL DEFAULT '0' COMMENT '对话是否由员工主动发起，1：是，0：否 ES中查询并统计',
                                                        PRIMARY KEY (`id`),
                                                        KEY `idx_corp_id_send_add_time` (`corp_id`,`send_time`,`add_time`) USING BTREE COMMENT '企业id和发送和添加时间索引',
-                                                       KEY `idx_corp_id_user_id` (`corp_id`,`user_id`) USING BTREE COMMENT '员工id索引',
+                                                       KEY `idx_corp_id_user_id` (`corp_id`,`user_id`, `send_time`) USING BTREE COMMENT '员工id索引',
                                                        KEY `idx_corp_external_id_send_time` (`corp_id`,`external_userid`,`user_id`,`send_time`) USING BTREE COMMENT '企业ID、客户ID、发送时间普通索引'
 ) ENGINE=InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT='员工客户发送消息统计数据（每天统计一次，会话存档ES中统计）';
 
@@ -3741,6 +3803,7 @@ CREATE TABLE `we_batch_tag_task_detail` (
                                             `import_external_userid` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '导入的表格中的外部联系人id',
                                             `import_union_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '导入的表格中的unionId,外部联系人在微信开放平台的唯一身份标识,通过此字段企业可将外部联系人与公众号/小程序用户关联起来。',
                                             `import_mobile` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '导入的手机号',
+                                            `import_mobile_encrypt` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '导入的手机号加密',
                                             `status` tinyint(1) NOT NULL DEFAULT '0' COMMENT '打标签状态（0 待执行， 1 成功 ， 2 失败）',
                                             `tag_user_id` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '实际打标签的user_id',
                                             `tag_external_userid` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '实际打标签的客户id',
@@ -3881,4 +3944,127 @@ CREATE TABLE `third_user_id_mapping` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='第三方服务商员工userId明密文映射表';
 
 
+-- tigger Tower 任务: 专属活码 ( https://tower.im/teams/636204/todos/99351 )
+CREATE TABLE `we_customer_temp_emple_code_setting` (
+                                                       `id` bigint(20) NOT NULL,
+                                                       `corp_id` varchar(64) NOT NULL DEFAULT '' COMMENT '授权企业ID',
+                                                       `origin_emple_code_id` bigint(20) NOT NULL DEFAULT '0' COMMENT '原员工活码id',
+                                                       `remark_open` tinyint(2) NOT NULL DEFAULT '0' COMMENT '是否打备注开关',
+                                                       `remark_type` tinyint(2) NOT NULL DEFAULT '0' COMMENT '备注类型：0：不备注，1：在昵称前，2：在昵称后',
+                                                       `remark_name` varchar(32) NOT NULL DEFAULT '' COMMENT '备注名',
+                                                       `tag_ids` varchar(4096) NOT NULL DEFAULT '' COMMENT '标签id列表',
+                                                       `customer_extend_info` varchar(4096) NOT NULL DEFAULT '' COMMENT '客户扩展信息',
+                                                       `state` varchar(30) NOT NULL DEFAULT '' COMMENT '好友回调自定义参数state',
+                                                       `config_id` varchar(50) NOT NULL DEFAULT '' COMMENT '新增联系方式的配置id',
+                                                       `qr_code` varchar(100) NOT NULL DEFAULT '' COMMENT '二维码链接',
+                                                       `expire_time` datetime NOT NULL DEFAULT '0000-00-00 00:00:00' COMMENT '过期时间',
+                                                       `del_flag` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否逻辑删除 0:未删除1:删除',
+                                                       `create_by` varchar(64) NOT NULL DEFAULT '' COMMENT '创建人(后续员工专属活码存储员工id)',
+                                                       `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                                                       PRIMARY KEY (`id`) USING BTREE,
+                                                       KEY `idx_corpId_state` (`corp_id`,`state`),
+                                                       KEY `idx_emple_code_id` (`origin_emple_code_id`),
+                                                       KEY `idx_config_id` (`config_id`),
+                                                       KEY `idx_expire_time` (`corp_id`,`expire_time`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ROW_FORMAT=DYNAMIC COMMENT='客户专属员工活码配置表';
 
+-- tigger 2025-04-29 Tower 任务: 专属活码支持设置位置 ( https://tower.im/teams/636204/todos/107420 )
+CREATE TABLE `we_map_config` (
+                                 `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+                                 `corp_id` varchar(64) NOT NULL DEFAULT '' COMMENT '企业ID，空字符串表示系统默认配置',
+                                 `api_key` varchar(255) NOT NULL DEFAULT '' COMMENT 'API密钥',
+                                 `api_key_encrypt` varchar(255) NOT NULL DEFAULT '' COMMENT 'API密钥加密',
+                                 `iframe_api_key` varchar(255) NOT NULL DEFAULT '' COMMENT '前端iframe用的apiKey',
+                                 `iframe_api_key_encrypt` varchar(255) NOT NULL DEFAULT '' COMMENT '前端iframe用的apiKey加密',
+                                 `map_type` tinyint(4) NOT NULL DEFAULT '1' COMMENT '地图类型：1-腾讯地图, 2-高德地图, 3-百度地图',
+                                 `daily_limit` varchar(255) NOT NULL DEFAULT '[]' COMMENT '每日调用限制次数，小于0 ,则表示无限制',
+                                 `status` tinyint(4) NOT NULL DEFAULT '1' COMMENT '状态 0：停用 1：启用',
+                                 `create_by` varchar(64) NOT NULL DEFAULT '' COMMENT '创建人',
+                                 `create_time` datetime NOT NULL COMMENT '创建时间',
+                                 `update_by` varchar(64) NOT NULL DEFAULT '' COMMENT '更新人',
+                                 `update_time` datetime NOT NULL COMMENT '更新时间',
+                                 PRIMARY KEY (`id`),
+                                 UNIQUE KEY `idx_unique` (`corp_id`,`map_type`) COMMENT '唯一键',
+                                 KEY `idx_corp_id` (`corp_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='地图API配置表';
+
+
+-- tigger Tower 任务: 后端 ( https://tower.im/teams/636204/todos/108946 )
+CREATE TABLE `we_customer_temp_emple_code_select_tag_scope` (
+                                                                `id` bigint(20) NOT NULL AUTO_INCREMENT,
+                                                                `corp_id` varchar(64) NOT NULL DEFAULT '' COMMENT '授权企业ID',
+                                                                `origin_emple_code_id` bigint(20) NOT NULL DEFAULT '0' COMMENT '原员工活码id',
+                                                                `type` tinyint(2) NOT NULL DEFAULT '0' COMMENT '选择标签详情json',
+                                                                `value` varchar(255) NOT NULL DEFAULT '',
+                                                                `create_by` varchar(64) NOT NULL DEFAULT '' COMMENT '创建人(后续员工专属活码存储员工id)',
+                                                                `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                                                                PRIMARY KEY (`id`) USING BTREE,
+                                                                KEY `idx_corpId_state` (`corp_id`),
+                                                                KEY `idx_emple_code_id` (`origin_emple_code_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ROW_FORMAT=DYNAMIC COMMENT='客户专属员工活码选择标签范围表';
+
+-- tigger 2024-08-28 客户满意度评价结果 Tower 任务: 满意度评价结果推送 ( https://tower.im/teams/636204/todos/115322 )
+CREATE TABLE `we_form_send_record` (
+                                       `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+                                       `corp_id` varchar(64) NOT NULL DEFAULT '' COMMENT '企业ID',
+                                       `external_userid` varchar(64) NOT NULL DEFAULT '' COMMENT '客户外部联系人ID',
+                                       `user_id` varchar(64) NOT NULL DEFAULT '' COMMENT '员工用户ID',
+                                       `form_id` bigint(20) NOT NULL DEFAULT '0' COMMENT '表单ID',
+                                       `source` tinyint(1) NOT NULL DEFAULT '0' COMMENT '发送渠道 1:欢迎语 2:侧边栏',
+                                       `sent_time` datetime NOT NULL DEFAULT '0000-00-00 00:00:00' COMMENT '发送时间',
+                                       `submit_time` datetime NOT NULL DEFAULT '0000-00-00 00:00:00' COMMENT '提交时间',
+                                       `submit_status` tinyint(1) NOT NULL DEFAULT '0' COMMENT '提交状态(0:未提交 1:已提交)',
+                                       `form_result_data` varchar(4096) NOT NULL DEFAULT '' COMMENT '表单提交内容',
+                                       `push_status` tinyint(1) NOT NULL DEFAULT '0' COMMENT '推送状态(0:未推送 1:已推送 2:推送失败)',
+                                       `push_time` datetime NOT NULL DEFAULT '0000-00-00 00:00:00' COMMENT '推送时间',
+                                       `timeout_push_status` tinyint(1) NOT NULL DEFAULT '0' COMMENT '超时推送状态(0:未推送 1:已推送 2:推送失败)',
+                                       `timeout_push_time` datetime NOT NULL DEFAULT '0000-00-00 00:00:00' COMMENT '超时推送时间',
+                                       `state` varchar(64) NOT NULL DEFAULT '' COMMENT '添加好友state',
+                                       `create_by` varchar(64) NOT NULL DEFAULT '' COMMENT '创建者',
+                                       `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                                       `update_by` varchar(64) NOT NULL DEFAULT '' COMMENT '更新者',
+                                       `update_time` datetime NOT NULL DEFAULT '0000-00-00 00:00:00' ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+                                       PRIMARY KEY (`id`),
+                                       KEY `uk_customer_form` (`corp_id`,`user_id`,`external_userid`,`form_id`),
+                                       KEY `idx_corp_id_submit_status` (`corp_id`,`submit_status`),
+                                       KEY `idx_external_userid` (`external_userid`),
+                                       KEY `idx_user_id` (`user_id`),
+                                       KEY `idx_sent_time` (`sent_time`),
+                                       KEY `idx_timeout_push` (`corp_id`,`submit_status`,`sent_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='表单发送记录表';
+
+CREATE TABLE `we_third_party_push_log` (
+                                           `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+                                           `corp_id` varchar(64) NOT NULL DEFAULT '' COMMENT '企业ID',
+                                           `record_id` bigint(20) NOT NULL COMMENT '关联表单发送记录ID',
+                                           `push_type` tinyint(1) NOT NULL DEFAULT '0' COMMENT '推送类型(1:表单提交推送 2:超时未提交推送)',
+                                           `push_url` varchar(500) NOT NULL DEFAULT '' COMMENT '推送URL',
+                                           `push_data` varchar(1024) NOT NULL DEFAULT '' COMMENT '推送数据(JSON格式)',
+                                           `push_result` varchar(1024) NOT NULL DEFAULT '' COMMENT '推送结果',
+                                           `http_code` int(11) NOT NULL DEFAULT '-1' COMMENT 'HTTP响应码',
+                                           `push_status` tinyint(1) NOT NULL DEFAULT '0' COMMENT '推送状态(0:推送中 1:成功 2:失败)',
+                                           `error_msg` varchar(1000) NOT NULL DEFAULT '' COMMENT '错误信息',
+                                           `push_time` datetime NOT NULL DEFAULT '0000-00-00 00:00:00' COMMENT '推送时间',
+                                           `response_time` datetime NOT NULL DEFAULT '0000-00-00 00:00:00' COMMENT '响应时间',
+                                           `cost_time` bigint(20) NOT NULL DEFAULT '0' COMMENT '耗时(毫秒)',
+                                           `create_by` varchar(64) NOT NULL DEFAULT '' COMMENT '创建者',
+                                           `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                                           `update_by` varchar(64) NOT NULL DEFAULT '' COMMENT '更新者',
+                                           `update_time` datetime NOT NULL DEFAULT '0000-00-00 00:00:00' ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+                                           PRIMARY KEY (`id`),
+                                           KEY `idx_corp_id_push_status` (`corp_id`,`push_status`),
+                                           KEY `idx_record_id_push_type` (`record_id`,`push_type`),
+                                           KEY `idx_push_time` (`push_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='第三方推送日志表';
+-- 第三方推送表
+CREATE TABLE `we_corp_third_party_config` (
+                                              `corp_id` varchar(64) NOT NULL COMMENT '企业ID',
+                                              `push_url` varchar(500) NOT NULL DEFAULT '' COMMENT '第三方推送URL',
+                                              `status` tinyint(1) NOT NULL DEFAULT '1' COMMENT '状态(0:停用 1:启用)',
+                                              `create_by` varchar(64) NOT NULL DEFAULT '' COMMENT '创建者',
+                                              `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                                              `update_by` varchar(64) NOT NULL DEFAULT '' COMMENT '更新者',
+                                              `update_time` datetime NOT NULL DEFAULT '0000-00-00 00:00:00' ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+                                              PRIMARY KEY (`corp_id`),
+                                              KEY `idx_corp_id_status` (`corp_id`,`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='企业第三方服务推送配置表';

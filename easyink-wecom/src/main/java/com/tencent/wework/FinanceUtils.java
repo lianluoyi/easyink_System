@@ -18,6 +18,7 @@ import com.easyink.common.exception.CustomException;
 import com.easyink.common.utils.DateUtils;
 import com.easyink.common.utils.StringUtils;
 import com.easyink.common.utils.file.FileUploadUtils;
+import com.easyink.common.utils.file.FileUtils;
 import com.easyink.common.utils.spring.SpringUtils;
 import com.easyink.common.utils.uuid.IdUtils;
 import com.easyink.common.utils.wecom.RsaUtil;
@@ -32,6 +33,7 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.security.PrivateKey;
 import java.util.ArrayList;
@@ -499,8 +501,25 @@ public class FinanceUtils {
             CosConfig cosConfig = ruoyiConfig.getFile().getCos();
             String suffix = fileName.substring(fileName.lastIndexOf(".") + 1);
             StringBuilder cosUrl = new StringBuilder(cosConfig.getCosImgUrlPrefix());
-            String cosFilePath = FileUploadUtils.upload2Cos(Files.newInputStream(new File(filePath, fileName).toPath()), fileName, suffix, cosConfig);
-            cosUrl.append(cosFilePath);
+            // 使用 try-with-resources 确保 InputStream 被关闭，上传后删除本地文件
+            File localFile = new File(filePath, fileName);
+            try (InputStream in = Files.newInputStream(localFile.toPath())) {
+                String cosFilePath = FileUploadUtils.upload2Cos(in, fileName, suffix, cosConfig);
+                cosUrl.append(cosFilePath);
+            } catch (Exception ex) {
+                log.error("上传到 COS 失败:{}", ExceptionUtils.getStackTrace(ex));
+                throw ex;
+            } finally {
+                // 删除本地文件
+                ;
+                try {
+                    if (!FileUtils.deleteQuietly(localFile)) {
+                        log.warn("本地文件删除失败, path: {}", localFile.getAbsolutePath());
+                    }
+                } catch (Exception e) {
+                    log.error("删除本地文件异常:{}", ExceptionUtils.getStackTrace(e));
+                }
+            }
             data.setAttachment(cosUrl.toString());
         } catch (Exception e) {
             log.error("getPath Exception ex:【{}】", ExceptionUtils.getStackTrace(e));

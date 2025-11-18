@@ -2,7 +2,7 @@ package com.easyink.quartz.task;
 
 import com.easyink.common.core.domain.entity.WeCorpAccount;
 import com.easyink.common.utils.DateUtils;
-import com.easyink.wecom.domain.dto.message.AsyncResultDTO;
+import com.easyink.wecom.domain.dto.message.MessageIdDTO;
 import com.easyink.wecom.mapper.WeCustomerMessgaeResultMapper;
 import com.easyink.wecom.service.WeCorpAccountService;
 import com.easyink.wecom.service.WeCustomerMessageOriginalService;
@@ -10,14 +10,13 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
@@ -59,18 +58,17 @@ public class MessageResultTask {
                 continue;
             }
             Date endTime = new Date();
+            long endTimestamp = endTime.getTime();
             Date startTime = DateUtils.dateSubDay(endTime, SUB_DAY);
-            List<AsyncResultDTO> resultDtoList = weCustomerMessgaeResultMapper.listOfNotSend(corpId, startTime, endTime);
-            for (AsyncResultDTO asyncResultDTO : resultDtoList) {
+            long startTimestamp = startTime.getTime();
+            List<MessageIdDTO> resultDtoList = weCustomerMessgaeResultMapper.listOfNotSend(corpId, startTime, endTime, startTimestamp, endTimestamp);
+            for (MessageIdDTO messageIdDTO : resultDtoList) {
                 String finalCorpId = corpId;
-                messageResultTaskExecutor.execute(() -> {
-                    try {
-                        asyncResultDTO.setMsgids(Arrays.asList(asyncResultDTO.getMsgArray()));
-                        weCustomerMessageOriginalService.asyncResult(asyncResultDTO, finalCorpId);
-                    } catch (JsonProcessingException e) {
-                        log.error("MessageResultTask定时任务异常 ex:{}，messageId:{}", ExceptionUtils.getStackTrace(e), asyncResultDTO.getMessageId());
-                    }
-                });
+                try {
+                    weCustomerMessageOriginalService.asyncResult(Collections.singletonList(messageIdDTO), finalCorpId);
+                } catch (JsonProcessingException e) {
+                    log.error("MessageResultTask定时任务异常 ex:{}，messageIdDTO:{}", ExceptionUtils.getStackTrace(e), messageIdDTO);
+                }
             }
         }
     }

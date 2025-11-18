@@ -4,8 +4,11 @@ package com.easyink.web.controller.wecom.form;
 import com.easyink.common.core.controller.BaseController;
 import com.easyink.common.core.domain.AjaxResult;
 import com.easyink.common.core.page.TableDataInfo;
+import com.easyink.wecom.domain.enums.form.SendSourceTypeEnum;
+import com.easyink.wecom.domain.model.customer.CustomerId;
 import com.easyink.wecom.domain.vo.form.FormSimpleInfoVO;
 import com.easyink.wecom.login.util.LoginTokenService;
+import com.easyink.wecom.service.WeFormSendRecordService;
 import com.easyink.wecom.service.form.WeFormUseRecordService;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -14,6 +17,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Collections;
 
 /**
  * 表单使用记录表(WeFormUseRecord)表控制层
@@ -26,10 +31,12 @@ import org.springframework.web.bind.annotation.RestController;
 public class WeFormUseRecordController extends BaseController {
 
     private final WeFormUseRecordService weFormUseRecordService;
+    private final WeFormSendRecordService weFormSendRecordService;
 
     @Lazy
-    public WeFormUseRecordController(WeFormUseRecordService weFormUseRecordService) {
+    public WeFormUseRecordController(WeFormUseRecordService weFormUseRecordService, WeFormSendRecordService weFormSendRecordService) {
         this.weFormUseRecordService = weFormUseRecordService;
+        this.weFormSendRecordService = weFormSendRecordService;
     }
 
     @ApiOperation("表单使用记录分页")
@@ -46,6 +53,17 @@ public class WeFormUseRecordController extends BaseController {
             @ApiParam("客户id") @RequestParam(value = "externalUserId") String externalUserId,
             @ApiParam("企业id") @RequestParam(value = "corpId") String corpId) {
         weFormUseRecordService.saveRecord(formId, userId, externalUserId, corpId);
+        return AjaxResult.success();
+    }
+
+    @ApiOperation("新增侧边栏发送表单记录")
+    @GetMapping("/add/sendFormRecord")
+    public AjaxResult addSendFormRecord(
+            @ApiParam("表单id") @RequestParam(value = "formId") Long formId,
+            @ApiParam("员工id") @RequestParam(value = "userId") String userId,
+            @ApiParam("客户id") @RequestParam(value = "externalUserId") String externalUserId,
+            @ApiParam("企业id") @RequestParam(value = "corpId") String corpId) {
+        weFormSendRecordService.batchSaveFormRecord(CustomerId.valueOf(userId, externalUserId, corpId), Collections.singletonList(formId), SendSourceTypeEnum.SIDEBAR);
         return AjaxResult.success();
     }
 }

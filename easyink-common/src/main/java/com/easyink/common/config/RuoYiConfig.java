@@ -1,5 +1,6 @@
 package com.easyink.common.config;
 
+import com.easyink.common.constant.emple.EmployCodeConstants;
 import com.easyink.common.utils.OsUtils;
 import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
@@ -69,6 +70,10 @@ public class RuoYiConfig {
     private WeProvider provider;
 
     private WeCrypt selfBuild;
+    /**
+     * 客户专属活码过期时间, 单位小时
+     */
+    private Integer customerEmpleCodeExpireTime = EmployCodeConstants.CUSTOMER_EMPLOY_EXPIRE_HOURS;
 
     /**
      * 匿名访问的URL

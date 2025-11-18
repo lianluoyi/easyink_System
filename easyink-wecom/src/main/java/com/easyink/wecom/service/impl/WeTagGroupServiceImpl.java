@@ -15,12 +15,15 @@ import com.easyink.common.exception.CustomException;
 import com.easyink.common.exception.wecom.WeComException;
 import com.easyink.common.utils.StringUtils;
 import com.easyink.wecom.client.WeCropTagClient;
+import com.easyink.wecom.domain.WeEmpleCodeTag;
 import com.easyink.wecom.domain.WeFlowerCustomerTagRel;
 import com.easyink.wecom.domain.WeTag;
 import com.easyink.wecom.domain.WeTagGroup;
 import com.easyink.wecom.domain.dto.WeResultDTO;
 import com.easyink.wecom.domain.dto.tag.*;
+import com.easyink.wecom.domain.enums.SelectTagScopeTypeEnum;
 import com.easyink.wecom.domain.vo.statistics.WeTagGroupListVO;
+import com.easyink.wecom.entity.WeCustomerTempEmpleCodeSelectTagScope;
 import com.easyink.wecom.mapper.WeTagGroupMapper;
 import com.easyink.wecom.service.*;
 import lombok.extern.slf4j.Slf4j;
@@ -56,11 +59,14 @@ public class WeTagGroupServiceImpl extends ServiceImpl<WeTagGroupMapper, WeTagGr
     private final WeFlowerCustomerTagRelService weFlowerCustomerTagRelService;
     private final WeFlowerCustomerRelService weFlowerCustomerRelService;
     private final WeUserService weUserService;
+    private final WeEmpleCodeTagService weEmpleCodeTagService;
 
-    public WeTagGroupServiceImpl(WeFlowerCustomerTagRelService weFlowerCustomerTagRelService, WeFlowerCustomerRelService weFlowerCustomerRelService, WeUserService weUserService) {
+    public WeTagGroupServiceImpl(WeFlowerCustomerTagRelService weFlowerCustomerTagRelService, WeFlowerCustomerRelService weFlowerCustomerRelService,
+                                 WeUserService weUserService, WeEmpleCodeTagService weEmpleCodeTagService) {
         this.weFlowerCustomerTagRelService = weFlowerCustomerTagRelService;
         this.weFlowerCustomerRelService = weFlowerCustomerRelService;
         this.weUserService = weUserService;
+        this.weEmpleCodeTagService = weEmpleCodeTagService;
     }
 
     /**
@@ -572,6 +578,26 @@ public class WeTagGroupServiceImpl extends ServiceImpl<WeTagGroupMapper, WeTagGr
     @Override
     public List<WeTagGroup> findCustomerTagByFlowerCustomerRelId(String flowerCustomerRelId) {
         return this.baseMapper.findCustomerTagByFlowerCustomerRelId(flowerCustomerRelId);
+    }
+
+    @Override
+    public List<WeTagGroup> selectTagByCustomerLinkTag(List<WeCustomerTempEmpleCodeSelectTagScope> scopeLit, WeTagGroup weTagGroup, String originEmpleId) {
+        // 如果有设置专属活码的可用标签, 则需要判断下员工活码是否设置了标签, 有的话, 则需要组合起来
+        // 查询员工活码设置的标签列表
+        List<String> empleCodeTagList = weEmpleCodeTagService.selectWeEmpleCodeTagListByIds(Collections.singletonList(Long.valueOf(originEmpleId)))
+                                .stream().map(WeEmpleCodeTag::getTagId).collect(Collectors.toList());
+
+        List<String> selectTagIdList = new ArrayList<>(empleCodeTagList);
+        List<String> tagIdList = scopeLit.stream().filter(it -> it.getType().equals(SelectTagScopeTypeEnum.TAG.getCode())).map(WeCustomerTempEmpleCodeSelectTagScope::getValue).collect(Collectors.toList());
+        selectTagIdList.addAll(tagIdList);
+        List<String> selectGroupIdList = scopeLit.stream().filter(it -> it.getType().equals(SelectTagScopeTypeEnum.TAG_GROUP.getCode())).map(WeCustomerTempEmpleCodeSelectTagScope::getValue).collect(Collectors.toList());
+        List<WeTagGroup> weTagGroups = weTagGroupMapper.selectTagByCustomerLinkTag(selectTagIdList, selectGroupIdList, weTagGroup.getCorpId());
+        for (WeTagGroup tagGroup : weTagGroups) {
+            //根据自增SeqId排序
+            List<WeTag> list = tagGroup.getWeTags().stream().sorted(Comparator.comparing(WeTag::getSeqId)).collect(Collectors.toList());
+            tagGroup.setWeTags(list);
+        }
+        return weTagGroups;
     }
 
 

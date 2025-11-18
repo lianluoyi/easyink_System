@@ -12,6 +12,7 @@ import com.easyink.wecom.domain.vo.statistics.CustomerOverviewVO;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -25,14 +26,6 @@ import java.util.Map;
 public interface WeFlowerCustomerRelMapper extends BaseMapper<WeFlowerCustomerRel> {
 
     /**
-     * 新增具有外部联系人功能企业员工也客户的关系
-     *
-     * @param weFlowerCustomerRel 具有外部联系人功能企业员工也客户的关系
-     * @return 结果
-     */
-    int insertWeFlowerCustomerRel(WeFlowerCustomerRel weFlowerCustomerRel);
-
-    /**
      * 批量删除具有外部联系人功能企业员工也客户的关系
      *
      * @param ids 需要删除的数据ID
@@ -40,13 +33,6 @@ public interface WeFlowerCustomerRelMapper extends BaseMapper<WeFlowerCustomerRe
      */
     int deleteWeFlowerCustomerRelByIds(Long[] ids);
 
-
-
-    /**
-     * 批量添加或修改客户关系
-     * @param weFlowerCustomerRels
-     */
-    int myBatchUpdateOrInsert(List<WeFlowerCustomerRel> weFlowerCustomerRels);
 
     /**
      * 成员添加客户统计
@@ -297,4 +283,13 @@ public interface WeFlowerCustomerRelMapper extends BaseMapper<WeFlowerCustomerRe
      * @param momentTaskId 朋友圈任务id
      */
     void insertUserCustomerRel(@Param("userIdList") List<String> userIdList, @Param("tagIdList") List<String> tagIdList, @Param("corpId") String corpId, @Param("momentTaskId") Long momentTaskId);
+
+    /**
+     * 查询补偿的客户关系数据
+     * @param corpId 企业id
+     * @param beginTime 数据丢失的开始时间
+     * @param endTime 数据丢失的结束时间
+     * @return
+     */
+    List<WeFlowerCustomerRel> selectCompensationData(@Param("corpId") String corpId, @Param("beginTime") Date beginTime, @Param("endTime") Date endTime);
 }
