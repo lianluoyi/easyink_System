@@ -1,5 +1,6 @@
 package com.easyink.web.controller.pro;
 
+import com.easyink.common.annotation.Encrypt;
 import com.easyink.common.core.controller.BaseController;
 import com.easyink.common.core.domain.AjaxResult;
 import com.easyink.wecom.domain.dto.pro.EditCustomerFromPlusDTO;
@@ -38,6 +39,7 @@ public class WecomPlusController extends BaseController {
 
     @GetMapping("/queryCustomer")
     @ApiOperation("根据成员id和客户头像查询客户详情")
+    @Encrypt
     public AjaxResult<QueryCustomerFromPlusVO> queryCustomer(@Validated QueryCustomerFromPlusDTO dto) {
         return AjaxResult.success(weCustomerService.getDetailByUserIdAndCustomerAvatar(
                 dto.getCorpId(), dto.getUserId(), dto.getAvatar()

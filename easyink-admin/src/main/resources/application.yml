@@ -84,6 +84,7 @@ ruoyi:
     # 约定的解码EncodingAesKey
     encodingAesKey: ${SELF_BUILD_ENCODING_AES_KEY:}
     #匿名访问的URL
+  customerEmpleCodeExpireTime: ${CUSTOMER_EMPLE_CODE_EXPIRE_TIME:24}
   anonUrl:
       - /wecom/radar/clickRadar
       - /wecom/lockSideBar/get
@@ -122,6 +123,7 @@ ruoyi:
       - /wecom/groupCode/getActualCode/**
       - /weixin/auth/**
       - /common/findFile
+      - /common/uploadFile2Cos
       - /wecom/chat/side/getCorpInfo
       - /qrCodeLogin
       - /qrCodeLogin3rd
@@ -147,7 +149,11 @@ ruoyi:
       - /actuator/**
       - /open_api/**
       - /transfer/**
-
+      - /h5/**
+      - /wecom/code/genCustomerEmployQrCode
+      - /wecom/code/customerEmployQrCodeExpireTime
+      - /wecom/map/req/**
+      - /wecom/compensation/**
 
 # 开发环境配置
 server:
@@ -254,27 +260,16 @@ spring:
     restart:
       # 热部署开关
       enabled: true
-  # redis 配置
-  redis:
-    # 地址
-    host: ${REDIS_SERVICE_HOST:wecomredis}
-    # 端口，默认为6379
-    port: ${REDIS_SERVICE_PORT:6379}
-    # 密码
-    password: ${REDIS_SERVICE_PASSWORD:wecomscrm}
-    # 连接超时时间
-    timeout: ${REDIS_SERVICE_TIMEOUT:10s}
-    database: ${REDIS_SERVICE_DATABASE:10}
-    lettuce:
-      pool:
-        # 连接池中的最小空闲连接
-        min-idle: ${REDIS_POOL_MIN_IDLE:0}
-        # 连接池中的最大空闲连接
-        max-idle: ${REDIS_POOL_MAX_IDLE:8}
-        # 连接池的最大数据库连接数
-        max-active: ${REDIS_POOL_MAX_ACTIVE:8}
-        # #连接池最大阻塞等待时间（使用负值表示没有限制）
-        max-wait: ${REDIS_POOL_MAX_WAIT:-1ms}
+  profiles:
+    include: redis
+
+
+remote:
+  crypto:
+    enabled: ${REMOTE_CRYPTO_ENABLED:false}             #启用配置加密组件
+    sm4-key-env-name: SM4_KEY
+    sm4-key-source: ENV       #密钥使用环境变量的方式读取
+    default-algorithm: SM4
 
 # token配置
 token:
@@ -357,7 +352,9 @@ knife4j:
     # basic密码
     password: 123321
 
-
+system:
+  # 跨越查询月份限制, 默认一个月
+  selectMonthLimit: ${SYSTEM_SELECT_MONTH_LIMIT:1}
 
 # 防止XSS攻击
 xss:
@@ -416,6 +413,7 @@ forest:
   #    type: com.dtflys.forest.converter.json.ForestGsonConverter
 
 wecome:
+  https-open: ${WE_COM_HTTPS_OPEN:false}
   chatKey: ${WE_COM_CHAT_KEY:chatdata}
   serverUrl: ${WE_COM_SERVER_URL:https://qyapi.weixin.qq.com/}
   weComePrefix: ${WE_COM_WE_COME_PREFIX:cgi-bin}
@@ -573,6 +571,35 @@ thread-pool-prop:
     corePoolSize: ${THREAD_POOL_MOMENT_REF_TASK_CORE_SIZE:50}
     maxPoolSize: ${THREAD_POOL_MOMENT_REF_TASK_MAX_SIZE:100}
     queueCapacity: ${THREAD_POOL_MOMENT_REF_TASK_QUEUE_SIZE:100}
+  welcomeMsg:
+    corePoolSize: ${THREAD_POOL_WELCOME_MSG_CORE_SIZE:50}
+    maxPoolSize: ${THREAD_POOL_WELCOME_MSG_MAX_SIZE:100}
+    queueCapacity: ${THREAD_POOL_WELCOME_MSG_QUEUE_SIZE:100}
+
+
+# 密码配置
+password:
+  # 密码过期配置
+  expire:
+    # 密码过期天数，默认90天
+    days: ${PASSWORD_EXPIRE_DAYS:90}
+    # 是否开启密码过期校验，默认false
+    check:
+      enabled: ${PASSWORD_EXPIRE_CHECK_ENABLED:false}
+  # 密码强度配置
+  strength:
+    # 最小长度，默认8位
+    min-length: ${PASSWORD_STRENGTH_MIN_LENGTH:8}
+    # 是否要求包含大写字母，默认false
+    require-uppercase: ${PASSWORD_STRENGTH_REQUIRE_UPPERCASE:true}
+    # 是否要求包含小写字母，默认false
+    require-lowercase: ${PASSWORD_STRENGTH_REQUIRE_LOWERCASE:true}
+    # 是否要求包含数字，默认false
+    require-digit: ${PASSWORD_STRENGTH_REQUIRE_DIGIT:true}
+    # 是否要求包含特殊字符，默认false
+    require-special-char: ${PASSWORD_STRENGTH_REQUIRE_SPECIAL_CHAR:true}
+    # 是否检查弱密码，默认false
+    check-weak-password: ${PASSWORD_STRENGTH_CHECK_WEAK_PASSWORD:true}
 
 # prometheus配置
 management:
@@ -590,3 +617,44 @@ management:
           base-url: #[*]
           push-rate: 15s
           job: ${spring.application.name}
+
+app:
+  encrypt:
+    # 是否开启加密处理
+    enabled: ${APP_ENCRYPT_ENABLED:true}
+    # 加密算法
+    algorithm: ${APP_ENCRYPT_ALGORITHM:AES}
+    # 加密算法密钥
+    key: ${APP_ENCRYPT_KEY:}
+
+
+# 第三方推送
+third-push:
+  # 字段映射
+  field-mapping:
+    # 交互模式 - 固定值
+    interactive-mode: ${THIRD_PUSH_INTERACTIVE_MODE_FIELD:InteractiveMode}
+    interactive-mode-value: ${THIRD_PUSH_INTERACTIVE_MODE_FIELD_VALUE:OB}
+    # 项目名称 - 固定值
+    project: ${THIRD_PUSH_PROJECT_FIELD:Project}
+    project-value: ${THIRD_PUSH_PROJECT_FIELD_VALUE:超高清升级项目企微用户满意度}
+    # 时间戳唯一值
+    fid: ${THIRD_PUSH_FID_FIELD:FID}
+    # Fields 字段
+    fields: ${THIRD_PUSH_FIELDS_FIELD:Fields}
+    # 手机号字段映射
+    phone: ${THIRD_PUSH_PHONE_FIELD:Device1}
+    # 客户昵称字段映射
+    nick-name: ${THIRD_PUSH_NICK_NAME_FIELD:CustomerField2}
+    # 安装地址字段映射
+    install-address: ${THIRD_PUSH_INSTALL_ADDRESS_FIELD:CustomerField3}
+    # 所属外包单位字段映射
+    outsourcing-unit: ${THIRD_PUSH_OUTSOURCING_UNIT_FIELD:CustomerField4}
+    # 上门员工号字段映射
+    employee-id: ${THIRD_PUSH_EMPLOYEE_ID_FIELD:CustomerField5}
+    # 是否满意字段映射 （1：非常满意；2：满意；3：不满意）
+    satisfaction: ${THIRD_PUSH_SATISFACTION_FIELD:CustomerField6}
+    # 服务不满意内容字段映射
+    dissatisfaction-content: ${THIRD_PUSH_DISSATISFACTION_CONTENT_FIELD:CustomerField7}
+    # 服务建议内容字段映射
+    service-suggestion: ${THIRD_PUSH_SERVICE_SUGGESTION_FIELD:CustomerField8}

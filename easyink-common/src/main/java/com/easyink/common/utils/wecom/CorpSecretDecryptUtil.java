@@ -30,6 +30,7 @@ public class CorpSecretDecryptUtil {
     @Getter
     private String unionIdKey;
     private static final String RSA = "RSA";
+    private static final String RSA_TRANSFORMATION = "RSA/ECB/OAEPPadding";
 
     /**
      * 解密unionId
@@ -51,8 +52,8 @@ public class CorpSecretDecryptUtil {
     public static String privateKeyDecrypt(String ciphertext, String privateKeyBase64) {
         try {
             // 密文base64解码字节数组
-            byte[] bytes = Base64Utils.decode(ciphertext.getBytes("UTF-8"));
-            Cipher cipher = Cipher.getInstance(RSA);
+            byte[] bytes = Base64Utils.decode(ciphertext.getBytes(StandardCharsets.UTF_8));
+            Cipher cipher = Cipher.getInstance(RSA_TRANSFORMATION);
             PrivateKey privateKey = getPrivateKey(privateKeyBase64);
             cipher.init(Cipher.DECRYPT_MODE, privateKey);
             int keyBit = getKeySize(privateKey);

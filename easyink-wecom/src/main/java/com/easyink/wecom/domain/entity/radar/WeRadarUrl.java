@@ -30,12 +30,12 @@ public class WeRadarUrl {
 
     @ApiModelProperty(value = "链接标题")
     @Valid
-    @Size(max = 16, message = "链接标题长度超过限制,最长16个字符")
+    @Size(max = 128, message = "链接标题长度超过限制,最长16个字符")
     private String title;
 
     @ApiModelProperty(value = "雷达链接摘要")
     @Valid
-    @Size(max = 64, message = "摘要长度超过限制,最长64字符")
+    @Size(max = 512, message = "摘要长度超过限制,最长64字符")
     private String content;
 
     @ApiModelProperty(value = "链接时使用：0 默认，1 自定义")

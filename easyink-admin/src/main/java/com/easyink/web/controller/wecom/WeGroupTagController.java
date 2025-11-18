@@ -132,7 +132,7 @@ public class WeGroupTagController extends BaseController {
     @GetMapping("/totalTagCnt")
     @ApiOperation("企业未删除标签总数")
     public AjaxResult totalTagCnt(){
-        int total = weGroupTagMapper.selectCount(new LambdaQueryWrapper<WeGroupTag>().eq(WeGroupTag::getCorpId,LoginTokenService.getLoginUser().getCorpId()));
+        int total = weGroupTagMapper.selectCount(new LambdaQueryWrapper<WeGroupTag>().eq(WeGroupTag::getCorpId,LoginTokenService.getLoginUser().getCorpId())).intValue();
         return AjaxResult.success(total);
     }
 }

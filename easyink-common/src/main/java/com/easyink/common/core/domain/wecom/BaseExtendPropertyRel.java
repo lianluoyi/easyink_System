@@ -1,6 +1,7 @@
 package com.easyink.common.core.domain.wecom;
 
 import com.baomidou.mybatisplus.annotation.TableField;
+import com.easyink.common.annotation.EncryptField;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
@@ -43,4 +44,38 @@ public class BaseExtendPropertyRel {
     @TableField(exist = false)
     @ApiModelProperty(value = "自定义属性的类型")
     private Integer propertyType;
+
+
+    /**
+     * 第一级行政区, 省
+     */
+    @TableField("province")
+    private String province;
+    /**
+     * 第二级行政区, 市
+     */
+    @TableField("city")
+    private String city;
+    /**
+     * 第三级行政区, 区/县
+     */
+    @TableField("area")
+    private String area;
+    /**
+     * 第四级行政区, 街道/镇
+     */
+    @TableField("town")
+    private String town;
+    /**
+     * 位置的详细地址
+     */
+    @TableField("detail_address")
+    @EncryptField(EncryptField.FieldType.ADDRESS)
+    private String detailAddress;
+    private String detailAddressEncrypt;
+    /**
+     * 属性名
+     */
+    @TableField(exist = false)
+    private String propertyName;
 }

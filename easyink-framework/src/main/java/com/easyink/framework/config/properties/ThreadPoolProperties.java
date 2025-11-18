@@ -44,6 +44,11 @@ public class ThreadPoolProperties {
     private BaseThreadProperty momentRefTask;
 
     /**
+     * 发送欢迎语线程池
+     */
+    private BaseThreadProperty welcomeMsg;
+
+    /**
      * 基础线程池 参数
      */
     @Data

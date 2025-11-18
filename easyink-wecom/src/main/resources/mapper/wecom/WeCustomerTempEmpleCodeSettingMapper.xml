@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.easyink.wecom.mapper.WeCustomerTempEmpleCodeSettingMapper">
+
+    <resultMap type="com.easyink.wecom.entity.WeCustomerTempEmpleCodeSetting" id="WeCustomerTempEmpleCodeSettingMap">
+        <result property="id" column="id" jdbcType="INTEGER"/>
+        <result property="corpId" column="corp_id" jdbcType="VARCHAR"/>
+        <result property="originEmpleCodeId" column="origin_emple_code_id" jdbcType="INTEGER"/>
+        <result property="remarkOpen" column="remark_open" jdbcType="INTEGER"/>
+        <result property="remarkType" column="remark_type" jdbcType="INTEGER"/>
+        <result property="remarkName" column="remark_name" jdbcType="VARCHAR"/>
+        <result property="tagIds" column="tag_ids" jdbcType="VARCHAR"/>
+        <result property="customerExtendInfo" column="customer_extend_info" jdbcType="VARCHAR"/>
+        <result property="configId" column="config_id" jdbcType="VARCHAR"/>
+        <result property="qrCode" column="qr_code" jdbcType="VARCHAR"/>
+        <result property="expireTime" column="expire_time" jdbcType="TIMESTAMP"/>
+        <result property="createBy" column="create_by" jdbcType="VARCHAR"/>
+        <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+        <result property="delFlag" column="del_flag" jdbcType="INTEGER"/>
+    </resultMap>
+    <select id="selectExpireByTime" resultType="com.easyink.wecom.entity.WeCustomerTempEmpleCodeSetting">
+        Select * from we_customer_temp_emple_code_setting WHERE corp_id = #{corpId} AND expire_time <![CDATA[ <= ]]> #{expireTime} AND del_flag = ${@com.easyink.common.enums.DelFlag@UN_DEL.code}
+    </select>
+    <select id="selectByState" resultType="com.easyink.wecom.entity.WeCustomerTempEmpleCodeSetting">
+        SELECT *
+        FROM we_customer_temp_emple_code_setting
+        WHERE state = #{state} AND corp_id = #{corpId} AND del_flag = ${@com.easyink.common.enums.DelFlag@UN_DEL.code}
+    </select>
+    <select id="selectOriginalEmpleCodeIdByCustomerEmployCodeIdIncludeDeleteFlag" resultType="java.lang.Long">
+        SELECT origin_emple_code_id
+        FROM we_customer_temp_emple_code_setting
+        WHERE id = #{customerEmployCodeId}
+    </select>
+    <select id="selectStateByCustomerEmployCodeIdList" resultType="java.lang.String">
+        SELECT state
+        FROM we_customer_temp_emple_code_setting
+        WHERE origin_emple_code_id IN
+        <foreach collection="empleCodeIdList" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+</mapper>
+

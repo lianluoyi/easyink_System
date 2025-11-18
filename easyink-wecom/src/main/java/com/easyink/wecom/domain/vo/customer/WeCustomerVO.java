@@ -1,6 +1,8 @@
 package com.easyink.wecom.domain.vo.customer;
 
 import com.baomidou.mybatisplus.annotation.TableField;
+import com.easyink.common.annotation.EncryptField;
+import com.easyink.common.annotation.EncryptFields;
 import com.easyink.common.core.domain.wecom.BaseExtendPropertyRel;
 import com.easyink.wecom.domain.WeFlowerCustomerTagRel;
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -20,6 +22,7 @@ import java.util.List;
  */
 @Data
 @NoArgsConstructor
+@EncryptFields
 public class WeCustomerVO {
     // 客户信息
 
@@ -63,11 +66,15 @@ public class WeCustomerVO {
     @ApiModelProperty(value = "跟进人对客户的备注公司名称")
     private String remarkCorpName;
     @ApiModelProperty(value = "跟进人对客户的备注电话")
+    @EncryptField(EncryptField.FieldType.MOBILE)
     private String remarkMobiles;
+    private String remarkMobilesEncrypt;
     @ApiModelProperty(value = "跟进人对客户备注的qq")
     private String qq;
     @ApiModelProperty(value = "跟进人对客户备注的地址")
+    @EncryptField(EncryptField.FieldType.ADDRESS)
     private String address;
+    private String addressEncrypt;
     @ApiModelProperty(value = "跟进人对客户备注的email")
     private String email;
     @ApiModelProperty(value = "该成员添加此客户的来源")

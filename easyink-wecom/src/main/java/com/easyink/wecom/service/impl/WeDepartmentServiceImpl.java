@@ -355,6 +355,73 @@ public class WeDepartmentServiceImpl extends ServiceImpl<WeDepartmentMapper, WeD
         return baseMapper.selectUserIdByMaindepartmentIds(departmentIdList, corpId);
     }
 
+    @Override
+    public String buildParentDepartmentNames(String userId, Map<Long, WeDepartment> departmentMap, String corpId, String splitStr, boolean ignoreCurrentDepart) {
+        if(StringUtils.isBlank(splitStr)){
+            splitStr = "/";
+        }
+        WeUser weUser = weUserService.selectWeUserById(corpId, userId);
+        if (weUser.getDepartment() == null || weUser.getDepartment().length <= 0) {
+            return StringUtils.EMPTY;
+        }
+        // 取员工部门数组的最后一个部门ID作为当前部门
+        String currentDepartmentId = weUser.getDepartment()[weUser.getDepartment().length - 1];
+        Long currentDeptId = Long.valueOf(currentDepartmentId);
+        // 获取当前部门信息
+        WeDepartment currentDepartment = this.getOne(
+                new LambdaQueryWrapper<WeDepartment>()
+                        .eq(WeDepartment::getCorpId, corpId)
+                        .eq(WeDepartment::getId, currentDeptId)
+        );
+        String currentDepartmentName = currentDepartment.getName();
+        // 构建完整的部门路径（从根部门到当前部门）
+        List<Long> departmentPath = buildDepartmentPath(currentDeptId, departmentMap);
+        List<String> departmentNamePath = buildDepartmentNamePath(departmentPath, departmentMap);
+        if(ignoreCurrentDepart){
+            departmentNamePath.remove(currentDepartmentName);
+        }
+        return String.join(splitStr, departmentNamePath);
+    }
+
+    /**
+     * 构建部门名称路径列表（从根部门到当前部门）
+     *
+     * @param departmentPath 部门ID路径
+     * @param departmentMap  部门信息映射
+     * @return 部门名称路径列表
+     */
+    private List<String> buildDepartmentNamePath(List<Long> departmentPath, Map<Long, WeDepartment> departmentMap) {
+        return departmentPath.stream()
+                .map(deptId -> {
+                    WeDepartment dept = departmentMap.get(deptId);
+                    return dept != null ? dept.getName() : String.valueOf(deptId);
+                })
+                .collect(Collectors.toList());
+    }
+    /**
+     * 构建部门路径ID列表（从根部门到当前部门）
+     *
+     * @param currentDeptId 当前部门ID
+     * @param departmentMap 部门信息映射
+     * @return 部门路径ID列表
+     */
+    private List<Long> buildDepartmentPath(Long currentDeptId, Map<Long, WeDepartment> departmentMap) {
+        List<Long> path = new ArrayList<>();
+        Long deptId = currentDeptId;
+
+        // 向上追溯到根部门
+        while (deptId != null) {
+            WeDepartment dept = departmentMap.get(deptId);
+            if (dept == null) {
+                break;
+            }
+            path.add(0, deptId); // 添加到列表开头，保证顺序是从根到当前
+            deptId = dept.getParentId();
+        }
+
+        return path;
+    }
+
     /**
      * 判断是否存在根部们
      *

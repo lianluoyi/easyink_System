@@ -93,7 +93,7 @@ public class WeEventSubscribeImpl implements WeCallBackEventFactory {
      */
     private void refreshDkLoginToken(String corpId) {
         //获取所有企业token
-        Collection<String> keys = redisCache.keys(Constants.LOGIN_TOKEN_KEY + "*");
+        Collection<String> keys = redisCache.scans(Constants.LOGIN_TOKEN_KEY + "*");
         WeCorpAccount validWeCorpAccount = weCorpAccountService.findValidWeCorpAccount(corpId);
         for (String key : keys) {
             LoginUser loginUser = redisCache.getCacheObject(key);

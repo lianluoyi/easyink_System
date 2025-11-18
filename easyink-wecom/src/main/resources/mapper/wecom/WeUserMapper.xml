@@ -12,6 +12,7 @@
         <result property="userId" column="user_id"/>
         <result property="gender" column="gender"/>
         <result property="mobile" column="mobile"/>
+        <result property="mobileEncrypt" column="mobile_encrypt"/>
         <result property="email" column="email"/>
         <result property="wxAccount" column="wx_account"/>
         <result property="department" column="department"
@@ -24,6 +25,7 @@
         <result property="qqAccount" column="qq_account"/>
         <result property="telephone" column="telephone"/>
         <result property="address" column="address"/>
+        <result property="addressEncrypt" column="address_encrypt"/>
         <result property="birthday" column="birthday"/>
         <result property="remark" column="remark"/>
 
@@ -37,6 +39,7 @@
         wu.user_id,
         wu.gender,
         wu.mobile,
+        wu.mobile_encrypt,
         wu.email,
         wu.wx_account,
         wu.department,
@@ -48,6 +51,7 @@
         wu.qq_account,
         wu.telephone,
         wu.address,
+        wu.address_encrypt,
         wu.birthday,
         wu.is_allocate,
         wu.remark,
@@ -65,6 +69,7 @@
         wu.user_id,
         wu.gender,
         wu.mobile,
+        wu.mobile_encrypt,
         wu.email,
         wu.department,
         wu.position,
@@ -73,6 +78,7 @@
         wu.id_card,
         wu.qq_account,
         wu.address,
+        wu.address_encrypt,
         wu.birthday,
         wu.main_department,
         wu.is_allocate,
@@ -114,6 +120,7 @@
         wu.user_id,
         wu.gender,
         wu.mobile,
+        wu.mobile_encrypt,
         wu.email,
         wu.department,
         wu.position,
@@ -122,6 +129,7 @@
         wu.id_card,
         wu.qq_account,
         wu.address,
+        wu.address_encrypt,
         wu.birthday,
         wu.main_department,
         wu.is_allocate,
@@ -199,6 +207,7 @@
             <if test="alias != null">alias,</if>
             <if test="gender != null">gender,</if>
             <if test="mobile != null and mobile != ''">mobile,</if>
+            <if test="mobileEncrypt != null and mobileEncrypt != ''">mobile_encrypt,</if>
             <if test="email != null">email,</if>
             <if test="wxAccount != null">wx_account,</if>
             <if test="department != null">department,</if>
@@ -210,6 +219,7 @@
             <if test="qqAccount != null">qq_account,</if>
             <if test="telephone != null">telephone,</if>
             <if test="address != null">address,</if>
+            <if test="addressEncrypt != null and addressEncrypt != ''">address_encrypt,</if>
             <if test="birthday != null">birthday,</if>
             <if test="remark != null">remark,</if>
             <if test="isActivate != null">is_activate,</if>
@@ -224,6 +234,7 @@
             <if test="alias != null">#{alias},</if>
             <if test="gender != null">#{gender},</if>
             <if test="mobile != null and mobile != ''">#{mobile},</if>
+            <if test="mobileEncrypt != null and mobileEncrypt != ''">#{mobileEncrypt},</if>
             <if test="email != null">#{email},</if>
             <if test="wxAccount != null">#{wxAccount},</if>
             <if test="department != null">
@@ -239,6 +250,7 @@
             <if test="qqAccount != null">#{qqAccount},</if>
             <if test="telephone != null">#{telephone},</if>
             <if test="address != null">#{address},</if>
+            <if test="addressEncrypt != null and addressEncrypt != ''">#{addressEncrypt},</if>
             <if test="birthday != null">#{birthday},</if>
             <if test="remark != null">#{remark},</if>
             <if test="isActivate != null">#{isActivate},</if>
@@ -319,19 +331,6 @@
         </foreach>
     </update>
 
-    <!--    批量插入更新员工状态和离职时间-->
-    <insert id="batchInsertUpdateUserStatus">
-        INSERT INTO we_user
-        (corp_id,user_id,is_activate,dimission_time)
-        VALUES
-        <foreach collection="list" item="item" separator=",">
-            (
-            #{item.corpId},#{item.userId},#{item.isActivate},ifnull(#{item.dimissionTime},'0000-00-00 00:00:00')
-            )
-        </foreach>
-        ON DUPLICATE KEY UPDATE
-        is_activate = VALUES(is_activate) , dimission_time = VALUES(dimission_time)
-    </insert>
 
     <select id="findWeUserByCutomerId" resultType="com.easyink.wecom.domain.WeCustomerAddUser">
         SELECT wu.user_name,
@@ -351,6 +350,7 @@
         a.user_id,
         gender,
         mobile,
+        mobile_encrypt,
         email,
         wx_account,
         department,
@@ -362,6 +362,7 @@
         qq_account,
         telephone,
         address,
+        address_encrypt,
         birthday,
         is_allocate,
         remark,
@@ -396,6 +397,7 @@
         wu.user_id,
         wu.gender,
         wu.mobile,
+        wu.mobile_encrypt,
         wu.email,
         wu.department,
         wu.position,
@@ -404,6 +406,7 @@
         wu.id_card,
         wu.qq_account,
         wu.address,
+        wu.address_encrypt,
         wu.birthday,
         wu.corp_id,
         wu.is_allocate,
@@ -441,6 +444,7 @@
         wu.user_id,
         wu.gender,
         wu.mobile,
+        wu.mobile_encrypt,
         wu.email,
         wu.department,
         wu.main_department,
@@ -449,7 +453,7 @@
         wu.enable,
         wu.id_card,
         wu.qq_account,
-        wu.address,
+        wu.address_encrypt,
         wu.birthday,
         wu.corp_id,
         wu.is_allocate,
@@ -552,8 +556,10 @@
         user_id,
         head_image_url,
         mobile,
+        mobile_encrypt,
         email ,
-        address
+        address,
+        address_encrypt
         )
         VALUES
         <foreach collection="list" item="item" separator="," >
@@ -562,16 +568,74 @@
             #{item.userId},
             #{item.avatarMediaid},
             #{item.mobile},
+            #{item.mobileEncrypt},
             #{item.email},
-            #{item.address}
+            #{item.address},
+            #{item.addressEncrypt}
             )
         </foreach>
         ON DUPLICATE KEY UPDATE
         head_image_url = VALUES(head_image_url),
         mobile = VALUES(mobile) ,
+        mobile_encrypt = VALUES(mobile_encrypt) ,
         email = VALUES(email),
-        address = VALUES(address)
+        address_encrypt = VALUES(address_encrypt)
     </insert>
+
+    <!-- =====================================================
+         数据迁移相关SQL
+         ===================================================== -->
+
+    <!-- 分批查询需要迁移的用户数据 -->
+    <select id="selectUsersForMigration" resultMap="WeUserResult">
+        SELECT user_id, corp_id, mobile, mobile_encrypt, address, address_encrypt
+        FROM we_user 
+        WHERE (mobile IS NOT NULL AND mobile != '' AND mobile_encrypt IS NULL)
+           OR (address IS NOT NULL AND address != '' AND address_encrypt IS NULL)
+        ORDER BY user_id
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <!-- 批量更新用户的加密字段 -->
+    <update id="batchUpdateEncryptFields">
+        <foreach collection="users" item="user" separator=";">
+            UPDATE we_user 
+            SET 
+            <trim suffixOverrides=",">
+                <if test="user.mobileEncrypt != null and user.mobileEncrypt != ''">
+                    mobile_encrypt = #{user.mobileEncrypt},
+                </if>
+                <if test="user.addressEncrypt != null and user.addressEncrypt != ''">
+                    address_encrypt = #{user.addressEncrypt},
+                </if>
+            </trim>
+            update_time = NOW()
+            WHERE user_id = #{user.userId} AND corp_id = #{user.corpId}
+        </foreach>
+    </update>
+
+    <!-- 获取迁移统计信息 -->
+    <select id="getMigrationStatistics" resultType="com.easyink.wecom.service.impl.WeUserDataMigrationService$MigrationStatistics">
+        SELECT 
+            COUNT(*) as totalUsers,
+            COUNT(CASE WHEN mobile IS NOT NULL AND mobile != '' THEN 1 END) as usersWithMobile,
+            COUNT(CASE WHEN mobile_encrypt IS NOT NULL AND mobile_encrypt != '' THEN 1 END) as usersWithMobileEncrypt,
+            COUNT(CASE WHEN address IS NOT NULL AND address != '' THEN 1 END) as usersWithAddress,
+            COUNT(CASE WHEN address_encrypt IS NOT NULL AND address_encrypt != '' THEN 1 END) as usersWithAddressEncrypt,
+            COUNT(CASE WHEN mobile IS NOT NULL AND mobile != '' AND mobile_encrypt IS NULL THEN 1 END) as mobileMissingEncrypt,
+            COUNT(CASE WHEN address IS NOT NULL AND address != '' AND address_encrypt IS NULL THEN 1 END) as addressMissingEncrypt
+        FROM we_user
+    </select>
+
+    <!-- 查询遗漏加密的记录 -->
+    <select id="selectMissedEncryptionRecords" resultMap="WeUserResult">
+        SELECT user_id, corp_id, user_name, mobile, address
+        FROM we_user 
+        WHERE (mobile IS NOT NULL AND mobile != '' AND mobile_encrypt IS NULL)
+           OR (address IS NOT NULL AND address != '' AND address_encrypt IS NULL)
+        ORDER BY user_id
+        LIMIT 100
+    </select>
 
 
 </mapper>

@@ -1,6 +1,8 @@
 package com.easyink.web.controller.openapi;
 
 
+import com.easyink.common.annotation.Log;
+import com.easyink.common.enums.BusinessType;
 import com.easyink.wecom.domain.WeCustomer;
 import com.easyink.wecom.openapi.aop.ValidateSign;
 import com.easyink.wecom.openapi.domain.resp.BaseOpenApiResp;
@@ -31,6 +33,7 @@ public class OpenApiController {
     private final AppIdInfoService appIdInfoService;
     private final WeCustomerService weChatCustomerService;
     private final LockSelfBuildService lockSelfBuildService;
+    private final WeCustomerService weCustomerService;
 
 
     @GetMapping("/getTicket")
@@ -61,6 +64,16 @@ public class OpenApiController {
     @ApiOperation("设置指定企业的自建应用配置信息")
     public BaseOpenApiResp<GetWeCustomerByUnionIdVO> configSelfBuildByCorp(@Validated @RequestBody ConfigCorpSelfBuildDTO selfBuildDTO) {
         lockSelfBuildService.config(selfBuildDTO);
+        return BaseOpenApiResp.success();
+    }
+
+    /**
+     * 内部用的同步客户接口
+     */
+    @GetMapping("/synchWeCustomer")
+    @ApiOperation("手动同步客户接口")
+    public BaseOpenApiResp<String> manualSyncWeCustomer(@RequestParam String corpId) {
+        weCustomerService.syncWeCustomerV2(corpId);
         return BaseOpenApiResp.success();
     }
 

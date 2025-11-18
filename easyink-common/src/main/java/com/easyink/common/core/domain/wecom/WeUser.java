@@ -3,6 +3,8 @@ package com.easyink.common.core.domain.wecom;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.easyink.common.annotation.EncryptField;
+import com.easyink.common.annotation.EncryptFields;
 import com.easyink.common.config.jackson.StringArrayDeserialize;
 import com.easyink.common.core.domain.BaseEntity;
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -35,6 +37,7 @@ import java.util.Objects;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@EncryptFields
 public class WeUser extends BaseEntity {
     private static final long serialVersionUID = 1L;
 
@@ -68,8 +71,10 @@ public class WeUser extends BaseEntity {
     @ApiModelProperty(value = "手机号")
     @TableField("mobile")
     @Size(max = 20, message = "员工手机长度已超出限制")
-    @Pattern(regexp = "\\d{0,20}", message = "手机号只能是数字")
+    @EncryptField(EncryptField.FieldType.MOBILE)
     private String mobile;
+    @TableField("mobile_encrypt")
+    private String mobileEncrypt;
 
     @ApiModelProperty(value = "邮箱")
     @TableField("email")
@@ -121,7 +126,10 @@ public class WeUser extends BaseEntity {
     @ApiModelProperty(value = "地址")
     @TableField("address")
     @Size(max = 128, message = "员工地址长度已超出限制")
+    @EncryptField(EncryptField.FieldType.ADDRESS)
     private String address;
+    @TableField("address_encrypt")
+    private String addressEncrypt;
 
     @ApiModelProperty(value = "生日")
     @TableField("birthday")

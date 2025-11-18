@@ -310,7 +310,7 @@ public class UpdateIDSecurityServiceImpl extends ServiceImpl<UpdateIDSecurityMap
     @Override
     public void removeCorpRedisCache(String corpId) {
         //获取登录token
-        Collection<String> keys = redisCache.keys(Constants.LOGIN_TOKEN_KEY + "*");
+        Collection<String> keys = redisCache.scans(Constants.LOGIN_TOKEN_KEY + "*");
         for (String key : keys) {
             if (StringUtils.isBlank(key)) {
                 continue;

@@ -12,6 +12,7 @@ import com.easyink.common.constant.wechatopen.WechatOpenConstants;
 import com.easyink.common.core.domain.entity.WeCorpAccount;
 import com.easyink.common.core.domain.model.LoginUser;
 import com.easyink.common.core.redis.RedisCache;
+import com.easyink.common.encrypt.SensitiveFieldProcessor;
 import com.easyink.common.enums.ResultTip;
 import com.easyink.common.enums.wecom.ServerTypeEnum;
 import com.easyink.common.exception.CustomException;
@@ -363,6 +364,7 @@ public class WechatOpenServiceImpl extends ServiceImpl<WeOpenConfigMapper, WeOpe
                 weOpenConfigMapper.delete(new LambdaQueryWrapper<WeOpenConfig>().eq(WeOpenConfig::getCorpId, config.getCorpId()));
             }
         }
+        SensitiveFieldProcessor.processForSave(config);
         this.baseMapper.insertOrUpdate(config);
         // 异步同步客户
         weCustomerService.syncWeCustomerV2(config.getCorpId());

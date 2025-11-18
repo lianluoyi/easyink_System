@@ -20,6 +20,8 @@ public class QueryCustomerExtendPropertyDTO {
     private Boolean status;
     @ApiModelProperty(value = "是否必填1必填0非必填")
     private Boolean required;
+    @ApiModelProperty(value = "专属活码是否必填1必填0非必填")
+    private Boolean liveCodeRequired;
     /**
      * 企业ID
      */

@@ -1,5 +1,6 @@
 package com.easyink.web.controller.wecom.autotag;
 
+import com.easyink.common.annotation.Encrypt;
 import com.easyink.common.core.controller.BaseController;
 import com.easyink.common.core.domain.AjaxResult;
 import com.easyink.common.core.page.TableDataInfo;
@@ -66,6 +67,7 @@ public class WeBatchTagTaskController extends BaseController {
     @PreAuthorize("@ss.hasPermi('wecom:batchtag:list')")
     @ApiOperation("查询批量打标签任务详情")
     @GetMapping("/detail")
+    @Encrypt
     public TableDataInfo<BatchTagTaskDetailVO> detail(BatchTagTaskDetailDTO dto){
         startPage();
         dto.setCorpId(LoginTokenService.getLoginUser().getCorpId());

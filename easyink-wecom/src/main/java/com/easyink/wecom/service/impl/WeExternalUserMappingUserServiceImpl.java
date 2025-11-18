@@ -182,7 +182,7 @@ public class WeExternalUserMappingUserServiceImpl extends ServiceImpl<WeExternal
         queryWrapper.eq(WeExternalUserMappingUser::getCorpId, corpId);
         queryWrapper.in(WeExternalUserMappingUser::getUserId, userIdList);
 
-        int count = this.count(queryWrapper);
+        int count = (int)this.count(queryWrapper);
         return count != userIdList.size();
     }
 

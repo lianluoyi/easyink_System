@@ -8,6 +8,7 @@ import com.easyink.wecom.domain.dto.transfer.TransferResignedUserListDTO;
 import com.easyink.wecom.domain.vo.WeEmpleCodeVO;
 import com.easyink.wecom.domain.vo.WeUserVO;
 import com.easyink.wecom.domain.vo.transfer.TransferResignedUserVO;
+import com.easyink.wecom.service.impl.WeUserDataMigrationService;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 
@@ -161,13 +162,6 @@ public interface WeUserMapper extends BaseMapper<WeUser> {
     List<TransferResignedUserVO> leaveUserListV3(TransferResignedUserListDTO dto);
 
     /**
-     * 批量插入 更新员工状态和离职时间
-     *
-     * @param updateUserList {@link List<WeUser>}
-     */
-    Integer batchInsertUpdateUserStatus(@Param("list") List<WeUser> updateUserList);
-
-    /**
      * 批量更新员工的隐私信息
      *
      * @param list 待更新列表
@@ -200,4 +194,41 @@ public interface WeUserMapper extends BaseMapper<WeUser> {
      * @return 员工id列表
      */
     List<String> selectByCorpId(@Param("corpId") String corpId);
+
+    // =====================================================
+    // 数据迁移相关方法
+    // =====================================================
+
+    /**
+     * 分批查询需要迁移的用户数据
+     * 查询有明文敏感字段但缺少对应加密字段的用户
+     *
+     * @param offset 偏移量
+     * @param limit  限制数量
+     * @return 需要迁移的用户列表
+     */
+    List<WeUser> selectUsersForMigration(@Param("offset") int offset, @Param("limit") int limit);
+
+    /**
+     * 批量更新用户的加密字段
+     *
+     * @param users 用户列表
+     * @return 更新的记录数
+     */
+    int batchUpdateEncryptFields(@Param("users") List<WeUser> users);
+
+    /**
+     * 获取迁移统计信息
+     *
+     * @return 迁移统计信息
+     */
+    WeUserDataMigrationService.MigrationStatistics getMigrationStatistics();
+
+    /**
+     * 查询遗漏加密的记录
+     * 有明文数据但缺少加密数据的记录
+     *
+     * @return 遗漏的记录列表
+     */
+    List<WeUser> selectMissedEncryptionRecords();
 }

@@ -121,7 +121,7 @@ public class WeMaterialTagServiceImpl implements WeMaterialTagService {
         //重名校验
         Integer nameCount = weMaterialTagMapper.selectCount(new LambdaQueryWrapper<WeMaterialTagEntity>()
                 .eq(WeMaterialTagEntity::getTagName, weMaterialTagEntity.getTagName())
-                .eq(WeMaterialTagEntity::getCorpId, weMaterialTagEntity.getCorpId()));
+                .eq(WeMaterialTagEntity::getCorpId, weMaterialTagEntity.getCorpId())).intValue();
         if (nameCount > 0) {
             throw new CustomException(ResultTip.TIP_MATERIAL_COVER);
         }

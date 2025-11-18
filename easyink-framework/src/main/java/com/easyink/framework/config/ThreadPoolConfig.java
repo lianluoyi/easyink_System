@@ -134,6 +134,16 @@ public class ThreadPoolConfig {
         ThreadPoolProperties.BaseThreadProperty prop = threadPoolProperties.getMomentRefTask();
         return init(prop.getCorePoolSize(), prop.getMaxPoolSize(), null, prop.getKeepAliveSeconds(), "messageResultTask");
     }
+    /**
+     * 新增员工与客户群发关系表线程池
+     *
+     * @return
+     */
+    @Bean("welcomeMsgTaskExecutor")
+    public ThreadPoolTaskExecutor welcomeMsgTaskExecutor() {
+        ThreadPoolProperties.BaseThreadProperty prop = threadPoolProperties.getWelcomeMsg();
+        return init(prop.getCorePoolSize(), prop.getMaxPoolSize(), null, prop.getKeepAliveSeconds(), "welcomeMsg");
+    }
 
     /**
      * 构建线程池

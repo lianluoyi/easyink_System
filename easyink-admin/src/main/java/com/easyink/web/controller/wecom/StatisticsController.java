@@ -17,6 +17,7 @@ import com.github.pagehelper.PageInfo;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -34,6 +35,7 @@ import java.util.List;
 @Api(value = "StatisticsController", tags = "数据统计接口")
 @RequestMapping("/wecom/statistics")
 @RequiredArgsConstructor
+@Slf4j
 public class StatisticsController extends BaseController {
 
     private final WeUserCustomerMessageStatisticsService weUserCustomerMessageStatisticsService;
@@ -72,6 +74,13 @@ public class StatisticsController extends BaseController {
     public TableDataInfo<CustomerOverviewVO> getCustomerOverViewOfUser(@RequestBody @Validated CustomerOverviewDTO dto) {
         dto.setCorpId(LoginTokenService.getLoginUser().getCorpId());
         return PageInfoUtil.getDataTable(weUserCustomerMessageStatisticsService.getCustomerOverViewOfUser(dto), dto.getPageNum(), dto.getPageSize());
+    }
+
+    @PostMapping("/getCustomerOverViewOfDepartment")
+    @ApiOperation("获取客户概况-数据总览-部门维度")
+    public TableDataInfo<CustomerOverviewDepartmentVO> getCustomerOverViewOfDepartment(@RequestBody @Validated CustomerOverviewDTO dto) {
+        dto.setCorpId(LoginTokenService.getLoginUser().getCorpId());
+        return PageInfoUtil.getDataTable(weUserCustomerMessageStatisticsService.getCustomerOverViewOfDepartment(dto), dto.getPageNum(), dto.getPageSize());
     }
 
     @PostMapping("/getCustomerTagTableView")
@@ -117,6 +126,14 @@ public class StatisticsController extends BaseController {
     public AjaxResult<CustomerOverviewVO> exportCustomerOverViewOfUser(@RequestBody @Validated CustomerOverviewDTO dto) {
         dto.setCorpId(LoginTokenService.getLoginUser().getCorpId());
         return AjaxResult.success(weUserCustomerMessageStatisticsService.exportCustomerOverViewOfUser(dto));
+    }
+
+    @PreAuthorize("@ss.hasPermi('statistic:customerContact:export')")
+    @PostMapping("/exportCustomerOverViewOfDepartment")
+    @ApiOperation("导出客户概况-数据总览-部门维度")
+    public AjaxResult<CustomerOverviewDepartmentVO> exportCustomerOverViewOfDepartment(@RequestBody @Validated CustomerOverviewDTO dto) {
+        dto.setCorpId(LoginTokenService.getLoginUser().getCorpId());
+        return AjaxResult.success(weUserCustomerMessageStatisticsService.exportCustomerOverViewOfDepartment(dto));
     }
 
     @PostMapping("/getCustomerActivityOfDateTrend")

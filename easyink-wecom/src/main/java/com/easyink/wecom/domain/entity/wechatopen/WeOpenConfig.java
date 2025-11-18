@@ -1,6 +1,7 @@
 package com.easyink.wecom.domain.entity.wechatopen;
 
 import com.baomidou.mybatisplus.annotation.TableField;
+import com.easyink.common.annotation.EncryptField;
 import com.easyink.common.core.domain.BaseEntity;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -31,7 +32,10 @@ public class WeOpenConfig extends BaseEntity {
 
     @TableField("official_account_app_secret")
     @ApiModelProperty(value = "公众号secret ")
+    @EncryptField(EncryptField.FieldType.COMMON)
     private String officialAccountAppSecret;
+    @ApiModelProperty(value = "公众号secret 加密")
+    private String officialAccountAppSecretEncrypt;
 
     @TableField("official_account_domain")
     @ApiModelProperty(value = "公众号域名 ")

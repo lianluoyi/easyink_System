@@ -2,6 +2,7 @@ package com.easyink.wecom.service.idmapping;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.easyink.wecom.domain.entity.WeExternalUseridMapping;
+import com.easyink.wecom.domain.model.externaluser.OpenExternalUserIdAndExternalUserIdModel;
 
 import java.util.List;
 import java.util.Set;
@@ -59,4 +60,12 @@ public interface WeExternalUserIdMappingService extends IService<WeExternalUseri
      * @param externalUseridMappingList 映射列表
      */
     void batchInsertOrUpdateThirdService(List<WeExternalUseridMapping> externalUseridMappingList);
+
+    /**
+     * 批量获取外部联系人映射
+     * @param batchQueryList 查询的列表
+     * @param corpId 企业id
+     * @return 映射model OpenExternalUserIdAndExternalUserIdModel
+     */
+    List<OpenExternalUserIdAndExternalUserIdModel> getOpenExternalUserIdByExternalUserIdBatch(List<String> batchQueryList, String corpId);
 }

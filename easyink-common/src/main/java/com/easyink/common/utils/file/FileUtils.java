@@ -188,6 +188,47 @@ public class FileUtils extends org.apache.commons.io.FileUtils {
         return filename.replaceAll("[\\s\\\\/:\\*\\?\\\"<>\\|]","_");
     }
 
+    /**
+     * 安全清理文件名，防止HTTP响应拆分攻击
+     * 过滤CR(\r)和LF(\n)字符以及其他可能导致HTTP头注入的字符
+     *
+     * @param filename 原始文件名
+     * @return 清理后的安全文件名
+     */
+    public static String sanitizeFileName(String filename) {
+        if (filename == null) {
+            return "";
+        }
+        
+        // 过滤所有可能导致HTTP头注入的控制字符
+        // 包括: CR(\r), LF(\n), TAB(\t), 垂直制表符(\v), 换页符(\f), 
+        // 回退字符(\b), 空字符(\0), 以及其他ASCII控制字符(0x00-0x1F, 0x7F)
+        String sanitized = filename.replaceAll("[\\x00-\\x1F\\x7F]", "_");
+        
+        // 额外过滤一些在HTTP头中有特殊意义的字符
+        sanitized = sanitized.replaceAll("[\\\\/:*?\"<>|]", "_");
+        
+        // 移除文件名开头和结尾的空格和点号，防止路径遍历攻击
+        sanitized = sanitized.trim().replaceAll("^[.\\s]+|[.\\s]+$", "");
+        
+        // 如果清理后文件名为空，返回默认名称
+        if (sanitized.isEmpty()) {
+            sanitized = "file_" + System.currentTimeMillis();
+        }
+        
+        // 限制文件名长度，防止过长的文件名
+        if (sanitized.length() > 255) {
+            String extension = "";
+            int lastDot = sanitized.lastIndexOf('.');
+            if (lastDot > 0) {
+                extension = sanitized.substring(lastDot);
+                sanitized = sanitized.substring(0, lastDot);
+            }
+            sanitized = sanitized.substring(0, 255 - extension.length()) + extension;
+        }
+        
+        return sanitized;
+    }
 
     /**
      * 下载文件名重新编码
@@ -198,8 +239,11 @@ public class FileUtils extends org.apache.commons.io.FileUtils {
      */
     public static String setFileDownloadHeader(HttpServletRequest request, String fileName)
             throws UnsupportedEncodingException {
+        // 首先进行安全清理，防止HTTP响应拆分攻击
+        String safeFileName = sanitizeFileName(fileName);
+        
         final String agent = request.getHeader("USER-AGENT");
-        String filename = fileName;
+        String filename = safeFileName;
         String utf8 = "utf-8";
         String firefox = "Firefox";
         String chrome = "Chrome";
@@ -211,7 +255,7 @@ public class FileUtils extends org.apache.commons.io.FileUtils {
             filename = filename.replace("+", " ");
         } else if (agent.contains(firefox)) {
             // 火狐浏览器
-            filename = new String(fileName.getBytes(), charsetName);
+            filename = new String(safeFileName.getBytes(), charsetName);
         } else if (agent.contains(chrome)) {
             // google浏览器
             filename = URLEncoder.encode(filename, utf8);

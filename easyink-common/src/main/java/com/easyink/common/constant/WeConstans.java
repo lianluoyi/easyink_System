@@ -99,6 +99,16 @@ public class WeConstans {
     public static final Integer MAX_SEND_CNT = 10000;
 
     /**
+     * 群发客户分批数量（每批最多10000个客户）
+     */
+    public static final Integer BATCH_CUSTOMER_SIZE = 10000;
+
+    /**
+     * 群发客户群分批数量（每批最多2000个群）
+     */
+    public static final Integer BATCH_GROUP_SIZE = 2000;
+
+    /**
      * 侧边栏判断是否全选：0 全选 1 非全选
      */
     public static final String CHECK_ALL = "0";
@@ -180,6 +190,10 @@ public class WeConstans {
      * 企业微信接口返回成功code
      */
     public static final Integer WE_SUCCESS_CODE = 0;
+    /**
+     * key错误码
+     */
+    public static final Integer KEY_ERROR = 311;
 
     /**
      * 编辑标签不存在错误码

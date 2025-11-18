@@ -15,6 +15,7 @@ import com.easyink.wecom.domain.WeEmpleCodeAnalyse;
 import com.easyink.wecom.domain.WeEmpleCodeStatistic;
 import com.easyink.wecom.domain.WeEmpleCodeUseScop;
 import com.easyink.wecom.domain.dto.emplecode.FindWeEmpleCodeAnalyseDTO;
+import com.easyink.wecom.domain.model.emplecode.State;
 import com.easyink.wecom.domain.vo.WeEmplyCodeAnalyseCountVO;
 import com.easyink.wecom.domain.vo.WeEmplyCodeAnalyseVO;
 import com.easyink.wecom.mapper.*;
@@ -49,6 +50,8 @@ public class WeEmpleCodeAnalyseServiceImpl extends ServiceImpl<WeEmpleCodeAnalys
     private final WeEmpleCodeUseScopMapper weEmpleCodeUseScopMapper;
 
     private final WeEmpleCodeAnalyseMapper weEmpleCodeAnalyseMapper;
+
+
 
     @Override
     public WeEmplyCodeAnalyseVO getTimeRangeAnalyseCount(FindWeEmpleCodeAnalyseDTO analyseDTO) {
@@ -138,7 +141,7 @@ public class WeEmpleCodeAnalyseServiceImpl extends ServiceImpl<WeEmpleCodeAnalys
         LambdaQueryWrapper<WeEmpleCodeAnalyse> queryWrapper = new LambdaQueryWrapper();
         queryWrapper.eq(WeEmpleCodeAnalyse::getEmpleCodeId, state)
                 .eq(WeEmpleCodeAnalyse::getType, WeEmpleCodeAnalyseTypeEnum.ADD.getType());
-        return baseMapper.selectCount(queryWrapper);
+        return baseMapper.selectCount(queryWrapper).intValue();
     }
 
     /**
@@ -341,15 +344,15 @@ public class WeEmpleCodeAnalyseServiceImpl extends ServiceImpl<WeEmpleCodeAnalys
      * 保存员工活码数据统计
      */
     @Override
-    public boolean saveWeEmpleCodeAnalyse(String corpId, String userId, String externalUserId, String state, Boolean addFlag) {
+    public boolean saveWeEmpleCodeAnalyse(String corpId, String userId, String externalUserId, String originEmplyId, Boolean addFlag) {
         try {
-            if (StringUtils.isBlank(corpId) || StringUtils.isBlank(userId) || StringUtils.isBlank(externalUserId) || StringUtils.isBlank(state) || addFlag == null) {
+            if (StringUtils.isBlank(corpId) || StringUtils.isBlank(userId) || StringUtils.isBlank(externalUserId) || StringUtils.isBlank(originEmplyId) || addFlag == null) {
                 throw new CustomException(ResultTip.TIP_GENERAL_BAD_REQUEST);
             }
 
             WeEmpleCodeAnalyse weEmpleCodeAnalyse = new WeEmpleCodeAnalyse();
             weEmpleCodeAnalyse.setCorpId(corpId);
-            weEmpleCodeAnalyse.setEmpleCodeId(Long.parseLong(state));
+            weEmpleCodeAnalyse.setEmpleCodeId(Long.valueOf(originEmplyId));
             weEmpleCodeAnalyse.setChannelId(0L);
             weEmpleCodeAnalyse.setUserId(userId);
             weEmpleCodeAnalyse.setExternalUserId(externalUserId);
@@ -359,7 +362,7 @@ public class WeEmpleCodeAnalyseServiceImpl extends ServiceImpl<WeEmpleCodeAnalys
             baseMapper.insert(weEmpleCodeAnalyse);
             return true;
         } catch (Exception e) {
-            log.error("saveWeEmpleCodeAnalyse error!! e={}", ExceptionUtils.getStackTrace(e));
+            log.error("saveWeEmpleCodeAnalyse error!! e={}, state: {}", ExceptionUtils.getStackTrace(e), originEmplyId);
             return false;
         }
     }

@@ -2,13 +2,19 @@ package com.easyink.web.controller.wecom;
 
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.TimeInterval;
+import com.alibaba.fastjson.JSON;
+import com.easyink.common.annotation.Encrypt;
 import com.easyink.common.annotation.Log;
 import com.easyink.common.constant.WeConstans;
 import com.easyink.common.core.controller.BaseController;
 import com.easyink.common.core.domain.AjaxResult;
 import com.easyink.common.core.domain.model.LoginUser;
+import com.easyink.common.core.domain.wecom.BaseExtendPropertyRel;
 import com.easyink.common.core.page.TableDataInfo;
+import com.easyink.common.encrypt.SensitiveFieldProcessor;
 import com.easyink.common.enums.BusinessType;
+import com.easyink.common.enums.CustomerExtendPropertyEnum;
+import com.easyink.common.service.ISysMenuService;
 import com.easyink.common.utils.PageInfoUtil;
 import com.easyink.common.utils.StringUtils;
 import com.easyink.wecom.domain.WeCustomer;
@@ -16,6 +22,8 @@ import com.easyink.wecom.domain.dto.WeCustomerSearchDTO;
 import com.easyink.wecom.domain.dto.customer.EditCustomerDTO;
 import com.easyink.wecom.domain.dto.tag.RemoveWeCustomerTagDTO;
 import com.easyink.wecom.domain.entity.WeCustomerExportDTO;
+import com.easyink.wecom.domain.model.customer.AddressModel;
+import com.easyink.wecom.domain.model.customer.PhoneAndAddressPermissionModel;
 import com.easyink.wecom.domain.vo.WeMakeCustomerTagVO;
 import com.easyink.wecom.domain.vo.customer.*;
 import com.easyink.wecom.login.util.LoginTokenService;
@@ -35,6 +43,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -58,6 +67,8 @@ public class WeCustomerController extends BaseController {
     @Autowired
     @Lazy
     private WeCustomerService weCustomerService;
+    @Autowired
+    private ISysMenuService menuService;
 
     @Resource(name = "threadPoolTaskExecutor")
     private ThreadPoolTaskExecutor threadPoolTaskExecutor;
@@ -76,6 +87,7 @@ public class WeCustomerController extends BaseController {
      * @since V1.7
      */
     @PostMapping("/listV2")
+    @Encrypt
     @ApiOperation("查询企业微信客户列表第二版")
     public TableDataInfo<WeCustomerVO> listV2(@RequestBody WeCustomerSearchDTO weCustomerSearchDTO) {
         Integer pageNum = weCustomerSearchDTO.getPageNum();
@@ -88,6 +100,19 @@ public class WeCustomerController extends BaseController {
         WeCustomer weCustomer = weCustomerService.changeWecustomer(weCustomerSearchDTO);
         TimeInterval timer = DateUtil.timer();
         TableDataInfo<WeCustomerVO> tableDataInfo = weCustomerService.selectWeCustomerListV3(weCustomer);
+        tableDataInfo.getRows().forEach(customer -> {
+            // 获取客户权限
+            List<BaseExtendPropertyRel> extendProperties = customer.getExtendProperties();
+            for (BaseExtendPropertyRel extendProperty : extendProperties) {
+                if (CustomerExtendPropertyEnum.LOCATION.getType().equals(extendProperty.getPropertyType())) {
+                    AddressModel addressModel = JSON.parseObject(extendProperty.getPropertyValue(), AddressModel.class);
+                    SensitiveFieldProcessor.processForSave(addressModel);
+                    extendProperty.setPropertyValue(JSON.toJSONString(addressModel));
+                }
+
+            }
+
+        });
         log.info("客户列表总耗时: {}ms", timer.interval());
         return tableDataInfo;
     }
@@ -129,6 +154,7 @@ public class WeCustomerController extends BaseController {
     @PreAuthorize("@ss.hasPermi('customerManage:lossRemind:view') || @ss.hasPermi('customerManage:customer:view')")
     @GetMapping("/getCustomersByUserIdV2/{externalUserid}/{userId}")
     @ApiOperation("根据客户ID和员工ID获取客户详情V2")
+    @Encrypt
     public AjaxResult<List<WeCustomerVO>> getCustomersByUserIdV2(@PathVariable String externalUserid, @PathVariable String userId) {
         return AjaxResult.success(weCustomerService.getCustomersByUserIdV2(externalUserid, userId, LoginTokenService.getLoginUser().getCorpId()));
     }
@@ -144,18 +170,22 @@ public class WeCustomerController extends BaseController {
     @ApiOperation("导出企业微信客户列表")
     public AjaxResult<ExportOprVO> exportV2(@RequestBody WeCustomerExportDTO dto) {
         LoginUser loginUser = LoginTokenService.getLoginUser();
+
+        Set<String> menuSet = menuService.selectMenuPermsByWeUserId(loginUser.getCorpId(), loginUser.getUserId());
+        PhoneAndAddressPermissionModel phoneAndAddressPermissionModel = new PhoneAndAddressPermissionModel(menuSet, loginUser.isSuperAdmin());
+        log.info("导出权限: {}", JSON.toJSONString(phoneAndAddressPermissionModel));
         dto.setCorpId(loginUser.getCorpId());
         dto.setAdmin(loginUser.isSuperAdmin());
         String oprId = OprIdGenerator.EXPORT.get();
         String fileName = UUID.randomUUID() + "_" + "customer" + ".xlsx";
         ExportOprVO result = ExportOprVO.builder().oprId(oprId).fileName(fileName).hasFinished(false).build();
-        if(dto.getSelectedProperties() == null || dto.getSelectedProperties().size() == 0) {
-            dto.setSelectedProperties(            Lists.newArrayList("客户","添加时间","所属员工","标签"));
+        if (dto.getSelectedProperties() == null || dto.getSelectedProperties().isEmpty()) {
+            dto.setSelectedProperties(Lists.newArrayList("客户", "添加时间", "所属员工", "标签"));
         }
         WeCustomerExportDTO customer = weCustomerService.transferData(dto);
         CompletableFuture future = CompletableFuture.runAsync(() -> {
             // 执行异步处理任务
-            weCustomerService.genExportData(customer, oprId, fileName);
+            weCustomerService.genExportData(customer, oprId, fileName, phoneAndAddressPermissionModel);
         }, threadPoolTaskExecutor);
         try {
             // 在3秒内等待异步处理任务完成

@@ -346,5 +346,31 @@
         #{addTime}
         );
     </insert>
+    <insert id="insertBatch" parameterType="com.easyink.wecom.domain.WeEmpleCodeAnalyse">
+        INSERT IGNORE INTO `we_emple_code_analyse`
+        (
+        `corp_id`,
+        `emple_code_id`,
+        `channel_id`,
+        `user_id`,
+        `external_userid`,
+        `add_code_time`,
+        `type`,
+        `add_time`
+        )
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+            #{item.corpId},
+            #{item.empleCodeId},
+            #{item.channelId},
+            #{item.userId},
+            #{item.externalUserId},
+            #{item.time},
+            #{item.type},
+            #{item.addTime}
+            )
+        </foreach>
+    </insert>
 
 </mapper>

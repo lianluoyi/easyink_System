@@ -12,6 +12,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.Date;
+import java.util.List;
 
 /**
  * 表单详情视图VO
@@ -112,13 +113,38 @@ public class FormDetailViewVO {
      * 客户标签开关(false:关闭 true:开启)
      */
     private Boolean customerLabelFlag;
+    /**
+     * 推送内容开关
+     */
+    private Boolean pushContentFlag;
+
+    /**
+     * 客户自定义属性id列表json
+     */
+    @JsonIgnore
+    private String customerPropertyIdJson;
+
+    /**
+     * 超时配置
+     */
+    private Integer timeoutHours;
+
 
     /**
      * 客户标签开关设置详情VO
      */
     @JsonIgnore
     private String labelSettingJson;
+    /**
+     * 标签设置VO
+     */
     private CustomerLabelSettingDetailVO labelSetting;
+    /**
+     * 客户自定义属性VO列表
+     */
+    private List<CustomerPropertySettingVO> customerPropertyIdVOList;
+
+
 
 
     /**

@@ -1,5 +1,6 @@
 package com.easyink.web.controller.wechatopen;
 
+import com.easyink.common.annotation.Encrypt;
 import com.easyink.common.core.controller.BaseController;
 import com.easyink.common.core.domain.AjaxResult;
 import com.easyink.common.core.domain.model.LoginUser;
@@ -58,6 +59,7 @@ public class WechatOpenController extends BaseController {
 
     @GetMapping("/config")
     @ApiOperation("获取企业的公众号配置")
+    @Encrypt
     public AjaxResult getConfig() {
         LoginUser user = LoginTokenService.getLoginUser();
         return AjaxResult.success(wechatOpenService.getConfigs(user.getCorpId()));

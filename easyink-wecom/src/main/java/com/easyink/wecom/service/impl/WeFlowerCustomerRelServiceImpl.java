@@ -9,6 +9,7 @@ import com.easyink.common.constant.GenConstants;
 import com.easyink.common.constant.WeConstans;
 import com.easyink.common.core.domain.entity.WeCorpAccount;
 import com.easyink.common.core.domain.wecom.WeUser;
+import com.easyink.common.encrypt.SensitiveFieldProcessor;
 import com.easyink.common.enums.AddWayEnum;
 import com.easyink.common.enums.CustomerStatusEnum;
 import com.easyink.common.enums.ResultTip;
@@ -165,10 +166,7 @@ public class WeFlowerCustomerRelServiceImpl extends ServiceImpl<WeFlowerCustomer
         return resultMap;
     }
 
-    @Override
-    public int batchUpdateOrInsert(List<WeFlowerCustomerRel> weFlowerCustomerRels) {
-        return this.baseMapper.myBatchUpdateOrInsert(weFlowerCustomerRels);
-    }
+
 
     /**
      * 获取客户关系
@@ -237,7 +235,7 @@ public class WeFlowerCustomerRelServiceImpl extends ServiceImpl<WeFlowerCustomer
             WeFlowerCustomerRel localFlowerCustomerRel = localMap.get(remoteFlowerCustomerRel.getExternalUserid());
             // 若该客户与本地记录的添加时间不一样，表示此客户是流失后重新添加员工的客户，将该客户存入列表等待更新状态
             if (localFlowerCustomerRel != null) {
-                if (remoteFlowerCustomerRel.getCreateTime().compareTo(localFlowerCustomerRel.getCreateTime()) != 0) {
+                if (localFlowerCustomerRel.getCreateTime() == null || remoteFlowerCustomerRel.getCreateTime().compareTo(localFlowerCustomerRel.getCreateTime()) != 0) {
                     remoteFlowerCustomerRel.setStatus(Constants.NORMAL_CODE);
                     updateRelList.add(remoteFlowerCustomerRel);
                 }
@@ -292,6 +290,7 @@ public class WeFlowerCustomerRelServiceImpl extends ServiceImpl<WeFlowerCustomer
 
     @Override
     public boolean saveOrUpdate(WeFlowerCustomerRel entity) {
+        SensitiveFieldProcessor.processForSave(entity);
         return SqlHelper.retBool(weFlowerCustomerRelMapper.saveOrUpdate(entity));
     }
 
@@ -304,6 +303,12 @@ public class WeFlowerCustomerRelServiceImpl extends ServiceImpl<WeFlowerCustomer
 
     @Override
     public void batchInsert(List<WeFlowerCustomerRel> list) {
+        SensitiveFieldProcessor.processForSave(list);
+        for (WeFlowerCustomerRel weFlowerCustomerRel : list) {
+            if(weFlowerCustomerRel.getRemarkMobilesEncrypt() == null){
+                weFlowerCustomerRel.setRemarkMobilesEncrypt(StringUtils.EMPTY);
+            }
+        }
         weFlowerCustomerRelMapper.batchInsert(list);
     }
 
@@ -317,7 +322,7 @@ public class WeFlowerCustomerRelServiceImpl extends ServiceImpl<WeFlowerCustomer
         // 1. 获取继承配置
         WeCustomerTransferConfig config = weCustomerTransferConfigService.getById(corpId);
         if (config == null || config.getEnableTransferInfo() == null) {
-            log.info("[客户员工关系迁移]企业继承配置获取失败,corpId:{},userId:{},externalUserId:{}", corpId);
+            log.info("[客户员工关系迁移]企业继承配置获取失败,corpId:{}, userId:{}, externalUserId:{}", corpId, handoverUserId, externalUserId);
             return;
         }
         // 2. 获取原跟进人信息
@@ -348,6 +353,7 @@ public class WeFlowerCustomerRelServiceImpl extends ServiceImpl<WeFlowerCustomer
                     .addWay(String.valueOf(AddWayEnum.TRANSFER.getCode()))
                     .operUserid(handoverRel.getOperUserid())
                     .build();
+            SensitiveFieldProcessor.processForSave(takeoverRel);
             this.save(takeoverRel);
         }
         // 4. 根据继承设置 选择是否接替客户资料(跟进人信息,扩展字段,客户标签关系)
@@ -424,7 +430,7 @@ public class WeFlowerCustomerRelServiceImpl extends ServiceImpl<WeFlowerCustomer
         if (org.apache.commons.collections4.CollectionUtils.isNotEmpty(userIds)) {
             queryWrapper.in(WeFlowerCustomerRel::getUserId, userIds);
         }
-        return this.count(queryWrapper);
+        return (int)this.count(queryWrapper);
     }
 
     /**

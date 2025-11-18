@@ -97,16 +97,16 @@ public interface WeEmpleCodeMapper extends BaseMapper<WeEmpleCode> {
      * @param corpId 企业Id
      * @return {@link WeEmpleCodeDTO}
      */
-    SelectWeEmplyCodeWelcomeMsgVO selectWelcomeMsgByState(@Param("state") String state, @Param("corpId") String corpId);
+    EmplyCodeWelcomeMsgInfo selectWelcomeMsgByState(@Param("state") String state, @Param("corpId") String corpId);
 
     /**
      * 通过id定位员工活码/获客链接
      *
      * @param id     员工活码ID/获客链接ID
      * @param corpId 企业ID
-     * @return {@link SelectWeEmplyCodeWelcomeMsgVO}
+     * @return {@link EmplyCodeWelcomeMsgInfo}
      */
-    SelectWeEmplyCodeWelcomeMsgVO selectWelcomeMsgById(@Param("id") String id, @Param("corpId") String corpId);
+    EmplyCodeWelcomeMsgInfo selectWelcomeMsgById(@Param("id") String id, @Param("corpId") String corpId);
 
     /**
      * 根据HHmm查询时间段通过好友的员工活码数据
@@ -183,4 +183,11 @@ public interface WeEmpleCodeMapper extends BaseMapper<WeEmpleCode> {
     List<Long> selectDepartTypeEmpleCodeIdList();
 
 
+    /**
+     * 查询包含逻辑删除的活码
+     * @param empleCodeId 活码id
+     * @param corpId 企业id
+     * @return
+     */
+    WeEmpleCode selectIgnoreDelFlag(@Param("empleCodeId") Long empleCodeId, @Param("corpId") String corpId);
 }

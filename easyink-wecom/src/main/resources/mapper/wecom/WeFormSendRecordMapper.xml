@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.easyink.wecom.mapper.WeFormSendRecordMapper">
+
+    <resultMap type="WeFormSendRecord" id="WeSatisfactionFormRecordResult">
+        <result property="id"                   column="id"                   />
+        <result property="corpId"               column="corp_id"              />
+        <result property="externalUserid"       column="external_userid"      />
+        <result property="userId"               column="user_id"              />
+        <result property="formId"               column="form_id"              />
+        <result property="sentTime"             column="sent_time"            />
+        <result property="submitTime"           column="submit_time"          />
+        <result property="submitStatus"         column="submit_status"        />
+        <result property="pushStatus"           column="push_status"          />
+        <result property="pushTime"             column="push_time"            />
+        <result property="timeoutPushStatus"    column="timeout_push_status"  />
+        <result property="timeoutPushTime"      column="timeout_push_time"    />
+        <result property="formResultData"       column="form_result_data"     />
+        <result property="createBy"             column="create_by"            />
+        <result property="createTime"           column="create_time"          />
+        <result property="updateBy"             column="update_by"            />
+        <result property="updateTime"           column="update_time"          />
+    </resultMap>
+
+    <sql id="selectWeSatisfactionFormRecordVo">
+        select id, corp_id, external_userid, user_id, form_id,source, sent_time,
+               submit_time, submit_status,form_result_data,  push_status, push_time, timeout_push_status,
+               timeout_push_time,
+               create_by, create_time, update_by, update_time
+        from we_form_send_record
+    </sql>
+
+    <select id="selectByCustomerAndForm" resultMap="WeSatisfactionFormRecordResult">
+        <include refid="selectWeSatisfactionFormRecordVo"/>
+        where corp_id = #{corpId}
+        AND user_id = #{userId}
+        AND external_userid = #{externalUserid}
+              AND form_id = #{formId}
+        ORDER BY sent_time DESC limit 1
+    </select>
+
+    <select id="selectTimeoutUnsubmitted" resultMap="WeSatisfactionFormRecordResult">
+        <include refid="selectWeSatisfactionFormRecordVo"/>
+        where corp_id = #{corpId} 
+              and submit_status = 0 
+              and timeout_push_status = 0
+              and sent_time &lt;= DATE_SUB(NOW(), INTERVAL #{timeoutHour} HOUR)
+    </select>
+
+    <select id="selectNeedPush" resultMap="WeSatisfactionFormRecordResult">
+        <include refid="selectWeSatisfactionFormRecordVo"/>
+        where corp_id = #{corpId} 
+              and submit_status = 1 
+              and push_status = 0
+              and del_flag = 0
+    </select>
+
+    <update id="batchUpdatePushStatus">
+        update we_form_send_record
+        set push_status = #{pushStatus}, push_time = #{pushTime}
+        where id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <select id="selectTimeoutRecords" resultMap="WeSatisfactionFormRecordResult">
+        <include refid="selectWeSatisfactionFormRecordVo"/>
+        where corp_id = #{corpId} 
+          and submit_status = 0
+          and timeout_push_status = 0
+          and sent_time &lt;= #{timeoutDate}
+          UNION ALL
+        <include refid="selectWeSatisfactionFormRecordVo"/>
+        WHERE corp_id = #{corpId}
+          and submit_status = 1
+          and push_status = 2
+          and timeout_push_status = 0
+          and sent_time &lt;= #{timeoutDate}
+        order by sent_time asc
+    </select>
+    <select id="selectStateByFormId" resultType="java.lang.String">
+        SELECT state
+        FROM we_form_send_record
+        WHERE corp_id = #{corpId}
+        AND user_id = #{userId}
+          AND external_userid = #{externalUserid}
+          AND form_id = #{formId}
+          AND submit_status = 0
+          AND timeout_push_status = 0
+            AND source = ${@com.easyink.wecom.domain.enums.form.SendSourceTypeEnum@WELCOME_MSG.code}
+        ORDER BY sent_time DESC
+        limit 1
+    </select>
+
+    <update id="batchUpdateTimeoutPushStatus">
+        update we_form_send_record
+        set timeout_push_status = #{timeoutPushStatus}, 
+            timeout_push_time = #{timeoutPushTime}, 
+            update_time = sysdate()
+        where id in
+        <foreach item="id" collection="ids" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+</mapper>

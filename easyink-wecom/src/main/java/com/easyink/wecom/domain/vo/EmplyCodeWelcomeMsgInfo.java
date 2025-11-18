@@ -16,7 +16,7 @@ import java.util.List;
  * @date 2021-11-05 09:50
  */
 @Data
-public class SelectWeEmplyCodeWelcomeMsgVO {
+public class EmplyCodeWelcomeMsgInfo {
 
     /**
      * 员工活码ID

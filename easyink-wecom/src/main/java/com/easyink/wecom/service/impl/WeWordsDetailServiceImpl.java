@@ -31,7 +31,7 @@ import java.util.List;
 @Slf4j
 public class WeWordsDetailServiceImpl extends ServiceImpl<WeWordsDetailMapper, WeWordsDetailEntity> implements WeWordsDetailService {
 
-    private static final int LINK_TITLE_SIZE = 64;
+    private static final int LINK_TITLE_SIZE = 128;
     private static final int ATTACHMENT_TITLE_SIZE = 32;
 
     private WeWordsDetailMapper weWordsDetailMapper;
@@ -181,7 +181,9 @@ public class WeWordsDetailServiceImpl extends ServiceImpl<WeWordsDetailMapper, W
             if (StringUtils.isBlank(weWordsDetailEntity.getTitle())) {
                 throw new CustomException(ResultTip.TIP_MISS_WORDS_ATTACHMENT_CONTENT);
             }
-            if (WeCategoryMediaTypeEnum.LINK.getMediaType().equals(weWordsDetailEntity.getMediaType())) {
+            if (WeCategoryMediaTypeEnum.LINK.getMediaType().equals(weWordsDetailEntity.getMediaType())
+                    ||
+                    WeCategoryMediaTypeEnum.RADAR.getMediaType().equals(weWordsDetailEntity.getMediaType())) {
                 if (StringUtils.isNotBlank(weWordsDetailEntity.getTitle()) && weWordsDetailEntity.getTitle().length() > LINK_TITLE_SIZE) {
                     throw new CustomException(ResultTip.TIP_WORDS_OVER_TITLE);
                 }
@@ -189,13 +191,6 @@ public class WeWordsDetailServiceImpl extends ServiceImpl<WeWordsDetailMapper, W
                 throw new CustomException(ResultTip.TIP_WORDS_OVER_TITLE);
             }
 
-            if (WeCategoryMediaTypeEnum.RADAR.getMediaType().equals(weWordsDetailEntity.getMediaType())) {
-                if (StringUtils.isNotBlank(weWordsDetailEntity.getTitle()) && weWordsDetailEntity.getTitle().length() > LINK_TITLE_SIZE) {
-                    throw new CustomException(ResultTip.TIP_WORDS_OVER_TITLE);
-                }
-            } else if (weWordsDetailEntity.getTitle().length() > ATTACHMENT_TITLE_SIZE) {
-                throw new CustomException(ResultTip.TIP_WORDS_OVER_TITLE);
-            }
 
         }
     }

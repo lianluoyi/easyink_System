@@ -2,6 +2,7 @@ package com.easyink.wecom.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.easyink.wecom.domain.entity.WeExternalUseridMapping;
+import com.easyink.wecom.domain.model.externaluser.OpenExternalUserIdAndExternalUserIdModel;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -36,5 +37,13 @@ public interface WeExternalUseridMappingMapper extends BaseMapper<WeExternalUser
      * @param mappingList 映射关系列表
      */
     void batchInsertOrUpdateThirdService(@Param("list") List<WeExternalUseridMapping> mappingList);
+
+    /**
+     * 批量根据密文外部联系人id查询明文外部联系人id
+     * @param batchQueryList 查询的密文外部联系人id列表
+     * @param corpId 企业id
+     * @return 映射实体列表
+     */
+    List<OpenExternalUserIdAndExternalUserIdModel> selectOriginMappingByOpenExternalUserIdBatch(@Param("batchQueryList") List<String> batchQueryList, @Param("corpId") String corpId);
 }
 

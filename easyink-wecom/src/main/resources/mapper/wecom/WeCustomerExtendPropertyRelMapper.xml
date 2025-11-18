@@ -8,15 +8,24 @@
     <insert id="batchInsert">
         INSERT INTO we_customer_extend_property_rel
         (
-        corp_id, user_id,external_userid, extend_property_id, property_value
+        corp_id, user_id,external_userid, extend_property_id, property_value, province, city, area, town,
+         detail_address, detail_address_encrypt
         ) VALUES
         <foreach collection="list" item="item" separator=",">
             (
-            #{item.corpId},#{item.userId},#{item.externalUserid},#{item.extendPropertyId},#{item.propertyValue}
+            #{item.corpId},#{item.userId},#{item.externalUserid},#{item.extendPropertyId},#{item.propertyValue},
+             if(#{item.province} is null, '', #{item.province}),
+            if(#{item.city} is null, '', #{item.city}),
+            if(#{item.area} is null, '', #{item.area}),
+            if(#{item.town} is null, '', #{item.town}),
+            if(#{item.detailAddress} is null, '', #{item.detailAddress}),
+            if(#{item.detailAddressEncrypt} is null, '', #{item.detailAddressEncrypt})
             )
         </foreach>
         ON DUPLICATE KEY UPDATE
-        property_value = VALUES(property_value)
+        property_value = VALUES(property_value),
+        detail_address = VALUES(detail_address),
+        detail_address_encrypt = VALUES(detail_address_encrypt)
     </insert>
     <!--    自定义字段接替-->
     <update id="transferProp">

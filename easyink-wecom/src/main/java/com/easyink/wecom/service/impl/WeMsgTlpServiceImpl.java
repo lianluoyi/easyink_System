@@ -385,7 +385,7 @@ public class WeMsgTlpServiceImpl extends ServiceImpl<WeMsgTlpMapper, WeMsgTlp> i
         Integer count = weMsgTlpMapper.selectCount(new LambdaQueryWrapper<WeMsgTlp>()
                 .eq(WeMsgTlp::getCorpId, corpId)
                 .eq(WeMsgTlp::getWelcomeMsgTplType, tplTypeEnum.getType())
-                .in(WeMsgTlp::getId, ids));
+                .in(WeMsgTlp::getId, ids)).intValue();
         if (!count.equals(ids.size())) {
             log.error("所传欢迎语ids集合中存在类型与接口不相符");
             throw new CustomException(ResultTip.TIP_GENERAL_BAD_REQUEST);

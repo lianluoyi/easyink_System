@@ -10,6 +10,7 @@ import com.easyink.common.core.domain.entity.SysUser;
 import com.easyink.common.core.domain.model.LoginUser;
 import com.easyink.common.core.domain.wecom.WeUser;
 import com.easyink.common.core.page.TableDataInfo;
+import com.easyink.common.encrypt.SensitiveFieldProcessor;
 import com.easyink.common.enums.BusinessType;
 import com.easyink.common.mapper.SysUserMapper;
 import com.easyink.common.service.ISysRoleService;
@@ -19,7 +20,6 @@ import com.easyink.common.utils.SecurityUtils;
 import com.easyink.common.utils.ServletUtils;
 import com.easyink.common.utils.StringUtils;
 import com.easyink.common.utils.poi.ExcelUtil;
-import com.easyink.common.utils.sign.Md5Utils;
 import com.easyink.wecom.login.util.LoginTokenService;
 import com.easyink.wecom.mapper.WeUserMapper;
 import com.easyink.wecom.service.WeUserService;
@@ -251,6 +251,7 @@ public class SysUserController extends BaseController {
             if (org.apache.commons.lang3.StringUtils.isNotBlank(weUser.getName()) && weUser.getName().startsWith(USER_ID_PREFIX)) {
                 weUser.setName(null);
             }
+            SensitiveFieldProcessor.processForSave(weUser);
             weUserMapper.updateWeUser(weUser);
         }
         // 刷新缓存

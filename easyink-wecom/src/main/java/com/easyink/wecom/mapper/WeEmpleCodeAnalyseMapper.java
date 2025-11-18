@@ -55,6 +55,13 @@ public interface WeEmpleCodeAnalyseMapper extends BaseMapper<WeEmpleCodeAnalyse>
     int insert(WeEmpleCodeAnalyse weEmpleCodeAnalyse);
 
     /**
+     * 批量插入
+     * @param weEmpleCodeAnalyses weEmpleCodeAnalyses
+     * @return
+     */
+    int insertBatch(@Param("list") List<WeEmpleCodeAnalyse> weEmpleCodeAnalyses);
+
+    /**
      * 获取企业下所有活码-员工对应的累计客户数
      *
      * @param corpId 企业ID

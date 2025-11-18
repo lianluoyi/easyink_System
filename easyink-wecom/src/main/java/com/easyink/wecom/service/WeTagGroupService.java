@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.easyink.wecom.domain.WeTagGroup;
 import com.easyink.wecom.domain.dto.tag.WeCropGroupTagDTO;
 import com.easyink.wecom.domain.vo.statistics.WeTagGroupListVO;
+import com.easyink.wecom.entity.WeCustomerTempEmpleCodeSelectTagScope;
 
 import java.util.List;
 
@@ -109,4 +110,14 @@ public interface WeTagGroupService extends IService<WeTagGroup> {
      * @return 标签组列表
      */
     List<WeTagGroup> findCustomerTagByFlowerCustomerRelId(String flowerCustomerRelId);
+
+    /**
+     * 查询客户专属配置的标签列表
+     *
+     * @param scopeLit      标签范围列表
+     * @param weTagGroup    查询条件
+     * @param originEmpleId
+     * @return
+     */
+    List<WeTagGroup> selectTagByCustomerLinkTag(List<WeCustomerTempEmpleCodeSelectTagScope> scopeLit, WeTagGroup weTagGroup, String originEmpleId);
 }

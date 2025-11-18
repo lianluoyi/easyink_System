@@ -13,6 +13,7 @@ import com.easyink.common.core.domain.entity.WeCorpAccount;
 import com.easyink.common.core.domain.model.LoginUser;
 import com.easyink.common.core.domain.wecom.WeDepartment;
 import com.easyink.common.core.redis.RedisCache;
+import com.easyink.common.encrypt.SensitiveFieldProcessor;
 import com.easyink.common.enums.ResultTip;
 import com.easyink.common.exception.CustomException;
 import com.easyink.common.exception.wecom.WeComException;
@@ -90,6 +91,8 @@ public class WeCorpAccountServiceImpl extends ServiceImpl<WeCorpAccountMapper, W
                 wxCorpAccount.setCorpId(wxCorpAccount.getCorpId().trim());
             }
             setTokenAesKey(wxCorpAccount);
+            // 处理敏感字段加密
+            SensitiveFieldProcessor.processForSave(wxCorpAccount);
             updateSuccess = this.updateById(wxCorpAccount);
             // 对新的corpId进行初始化,如果之前不存在对应的配置
             initIfNotExist(wxCorpAccount.getCorpId());
@@ -115,6 +118,8 @@ public class WeCorpAccountServiceImpl extends ServiceImpl<WeCorpAccountMapper, W
                 validWeCorpAccount.setCustomerLossTagSwitch(wxCorpAccount.getCustomerLossTagSwitch());
                 wxCorpAccount = validWeCorpAccount;
             }
+            // 处理敏感字段加密
+            SensitiveFieldProcessor.processForSave(wxCorpAccount);
             updateSuccess = this.update(wxCorpAccount, updateWrapper);
         }
         //修改配置成功需要清除缓存的token
@@ -336,6 +341,8 @@ public class WeCorpAccountServiceImpl extends ServiceImpl<WeCorpAccountMapper, W
             }
             setTokenAesKey(weCorpAccount);
             //admin帐号且admin的corpId为空则直接插入
+            // 处理敏感字段加密
+            SensitiveFieldProcessor.processForSave(weCorpAccount);
             if (loginUser.isSuperAdmin() && StringUtils.isBlank(loginUser.getCorpId())) {
                 this.saveOrUpdate(weCorpAccount);
             } else {
@@ -365,6 +372,8 @@ public class WeCorpAccountServiceImpl extends ServiceImpl<WeCorpAccountMapper, W
                 validWeCorpAccount.setChatSecret(weCorpAccount.getChatSecret());
                 weCorpAccount = validWeCorpAccount;
             }
+            // 处理敏感字段加密
+            SensitiveFieldProcessor.processForSave(weCorpAccount);
             this.saveOrUpdate(weCorpAccount, updateWrapper);
         }
     }
@@ -562,6 +571,7 @@ public class WeCorpAccountServiceImpl extends ServiceImpl<WeCorpAccountMapper, W
             String loginUrl = ruoYiConfig.getThirdDefaultDomain().getDashboard().replace("http://", "");
             weCorpAccount.setWxQrLoginRedirectUri(loginUrl);
         }
+        SensitiveFieldProcessor.processForSave(weCorpAccount);
         this.saveOrUpdate(weCorpAccount);
 
     }

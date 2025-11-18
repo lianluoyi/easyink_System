@@ -79,4 +79,14 @@ public interface WeTagGroupMapper extends BaseMapper<WeTagGroup> {
      * @return
      */
     Integer batchInsert(@Param("list") List<WeTagGroup> weGroups);
+
+    /**
+     * 查询专属活码设定的标签列表
+     * @param tagIdList 标签id列表
+     * @param groupIdList 标签分组id列表
+     * @param corpId 企业id
+     * @return
+     */
+    List<WeTagGroup> selectTagByCustomerLinkTag(@Param("tagIdList") List<String> tagIdList, @Param("groupIdList") List<String> groupIdList, @Param("corpId") String corpId);
+
 }

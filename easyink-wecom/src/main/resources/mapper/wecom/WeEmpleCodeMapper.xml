@@ -33,6 +33,7 @@
         <result property="welcomeMsgType" column="welcome_msg_type"/>
         <result property="codeActivityId" column="code_activity_id"/>
         <result property="appLink" column="app_link"/>
+        <result property="tagGroupValid" column="tag_group_valid"/>
         <result property="codeSuccessMsg" column="code_success_msg"/>
         <result property="codeFailMsg" column="code_fail_msg"/>
         <result property="codeRepeatMsg" column="code_repeat_msg"/>
@@ -58,7 +59,7 @@
     </resultMap>
 
 
-    <resultMap type="com.easyink.wecom.domain.vo.SelectWeEmplyCodeWelcomeMsgVO" id="SelectWelcomeMsgByStateResult">
+    <resultMap type="com.easyink.wecom.domain.vo.EmplyCodeWelcomeMsgInfo" id="SelectWelcomeMsgByStateResult">
         <result property="empleCodeId" column="id"/>
         <result property="scenario" column="scenario"/>
         <result property="welcomeMsg" column="welcome_msg"/>
@@ -149,6 +150,7 @@
                wecode.code_repeat_msg,
                wecode.code_repeat_material_sort,
                wecode.app_link,
+               wecode.tag_group_valid,
                wecusn.business_id,
                wecusn.business_name,
                wecusn.business_id_type,
@@ -559,6 +561,13 @@
             AND ec.del_flag = 0
               AND ec.source = ${@com.easyink.common.enums.EmployCodeSourceEnum@CODE_CREATE.source}
               AND ec.code_type = ${@com.easyink.common.enums.WeEmpleCodeType@MULTI.type}
+    </select>
+    <select id="selectIgnoreDelFlag" resultType="com.easyink.wecom.domain.WeEmpleCode">
+        SELECT *
+        FROM we_emple_code
+        WHERE id = #{empleCodeId}
+        AND corp_id = #{corpId}
+        AND del_flag = ${@com.easyink.common.enums.DelFlag@UN_DEL.code}
     </select>
 
 

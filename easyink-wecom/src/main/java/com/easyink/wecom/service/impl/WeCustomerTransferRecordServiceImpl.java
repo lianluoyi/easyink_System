@@ -8,6 +8,7 @@ import com.easyink.common.constant.GenConstants;
 import com.easyink.common.constant.WeConstans;
 import com.easyink.common.core.domain.wecom.WeUser;
 import com.easyink.common.core.page.TableDataInfo;
+import com.easyink.common.encrypt.SensitiveFieldProcessor;
 import com.easyink.common.enums.CustomerStatusEnum;
 import com.easyink.common.enums.CustomerTransferStatusEnum;
 import com.easyink.common.enums.ResultTip;
@@ -145,6 +146,7 @@ public class WeCustomerTransferRecordServiceImpl extends ServiceImpl<WeCustomerT
             // 更新客户状态
             WeFlowerCustomerRel entity = new WeFlowerCustomerRel();
             entity.setStatus(CustomerStatusEnum.TRANSFERRING.getCode().toString());
+            SensitiveFieldProcessor.processForSave(entity);
             weFlowerCustomerRelService.update(entity, new LambdaUpdateWrapper<WeFlowerCustomerRel>()
                     .eq(WeFlowerCustomerRel::getCorpId, corpId)
                     .eq(WeFlowerCustomerRel::getUserId, handoverUser.getUserId())

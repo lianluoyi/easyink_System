@@ -56,7 +56,7 @@ public class WeAuthCorpInfoServiceImpl extends ServiceImpl<WeAuthCorpInfoMapper,
 
         LambdaQueryWrapper<WeAuthCorpInfo> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(WeAuthCorpInfo::getCorpId, corpId).eq(WeAuthCorpInfo::getSuiteId, suiteId).eq(WeAuthCorpInfo::getCancelAuth, false).last(GenConstants.LIMIT_1);
-        int authCount = this.count(queryWrapper);
+        int authCount = (int)this.count(queryWrapper);
         return authCount > 0;
     }
 

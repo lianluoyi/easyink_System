@@ -13,6 +13,7 @@ import com.easyink.common.core.domain.AjaxResult;
 import com.easyink.common.core.domain.ConversationArchiveQuery;
 import com.easyink.common.core.domain.conversation.msgtype.MsgTypeEnum;
 import com.easyink.common.core.domain.entity.WeCorpAccount;
+import com.easyink.common.core.domain.wecom.WeDepartment;
 import com.easyink.common.core.domain.wecom.WeUser;
 import com.easyink.common.enums.ContactSpeakEnum;
 import com.easyink.common.enums.StaffActivateEnum;
@@ -89,6 +90,10 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
      * 导出客户概况报表-日期维度名称
      */
     protected static final String CUSTOMER_OVERVIEW_DATE_FORMS = "客户概况报表-日期维度";
+    /**
+     * 导出客户概况报表-部门维度名称
+     */
+    protected static final String CUSTOMER_OVERVIEW_DEPARTMENT_FORMS = "客户概况报表-部门维度";
 
     /**
      * 更新历史记录中员工主动发起的会话数
@@ -414,7 +419,112 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
         }
         // 对新客留存率进行排序
         sortNewContactRetainRate(resultList, dto.getNewContactRetentionRateSort());
+
         return resultList;
+    }
+
+    /**
+     * 获取客户概况-部门情况
+     *
+     * @param dto {@link CustomerOverviewDTO}
+     * @return {@link CustomerOverviewDepartmentVO}
+     */
+    @Override
+    @DataScope
+    public List<CustomerOverviewDepartmentVO> getCustomerOverViewOfDepartment(CustomerOverviewDTO dto) {
+        if (!isHaveDataScope(dto)) {
+            return new ArrayList<>();
+        }
+        if (dto.getEndTime() == null) {
+            dto.setEndTime(DateUtils.parseBeginDay(DateUtils.dateTime(DateUtils.getYesterday(new Date()))));
+        }
+        // 获取结果列表
+        List<CustomerOverviewDepartmentVO> resultList = weUserBehaviorDataMapper.getCustomerOverViewOfDepartment(dto);
+        if (CollectionUtils.isEmpty(resultList)) {
+            return new ArrayList<>();
+        }
+        
+        // 获取部门ID列表
+        List<String> departmentIds = resultList.stream().map(CustomerOverviewDepartmentVO::getDepartmentId).collect(Collectors.toList());
+        
+        // 获取根据开始，结束时间和部门ID，获取截止时间下的有效客户数
+        List<CustomerOverviewDepartmentVO> currNewCustomerCntByDepartment = getCurrNewCustomerCntByDepartment(dto.getCorpId(), dto.getBeginTime(), dto.getEndTime(), departmentIds);
+        
+        if (CollectionUtils.isNotEmpty(currNewCustomerCntByDepartment)) {
+            for (CustomerOverviewDepartmentVO resultModel : resultList) {
+                for (CustomerOverviewDepartmentVO overviewVO : currNewCustomerCntByDepartment) {
+                    if (resultModel.getDepartmentId().equals(overviewVO.getDepartmentId())) {
+                        // 为对应的部门设置截止当前时间的有效客户数
+                        resultModel.setCurrentNewCustomerCnt(overviewVO.getCurrentNewCustomerCnt());
+                        // 设置新客留存数（与有效客户数相同）
+                        resultModel.setNewCustomerRetentionCnt(overviewVO.getCurrentNewCustomerCnt());
+                    }
+                }
+            }
+        }
+        
+        return resultList;
+    }
+
+    /**
+     * 获取根据开始，结束时间和部门ID，获取截止时间下的有效客户数
+     *
+     * @param corpId        企业ID
+     * @param beginTime     开始时间
+     * @param endTime       结束时间
+     * @param departmentIds 部门ID列表
+     * @return 部门维度的有效客户数列表
+     */
+    private List<CustomerOverviewDepartmentVO> getCurrNewCustomerCntByDepartment(String corpId, String beginTime, String endTime, List<String> departmentIds) {
+        // 获取部门下的所有员工ID
+        List<String> userIds = weDepartmentService.getDataScopeUserIdList(departmentIds, null, corpId);
+        if (CollectionUtils.isEmpty(userIds)) {
+            return new ArrayList<>();
+        }
+        
+        // 获取员工维度的有效客户数
+        List<CustomerOverviewVO> userCustomerCnt = weFlowerCustomerRelMapper.getCurrNewCustomerCntByUser(corpId, beginTime, endTime, userIds);
+        if (CollectionUtils.isEmpty(userCustomerCnt)) {
+            return new ArrayList<>();
+        }
+        
+        // 按部门聚合统计
+        Map<String, Integer> departmentCustomerCntMap = new HashMap<>();
+        for (CustomerOverviewVO userVO : userCustomerCnt) {
+            // 获取员工所属部门
+            Long departmentId = weDepartmentService.selectDepartmentIdByUserId(userVO.getUserId(), corpId);
+            if (departmentId != null) {
+                String deptId = String.valueOf(departmentId);
+                departmentCustomerCntMap.put(deptId, 
+                    departmentCustomerCntMap.getOrDefault(deptId, 0) + userVO.getCurrentNewCustomerCnt());
+            }
+        }
+        
+        // 转换为VO列表
+        List<CustomerOverviewDepartmentVO> result = new ArrayList<>();
+        for (Map.Entry<String, Integer> entry : departmentCustomerCntMap.entrySet()) {
+            CustomerOverviewDepartmentVO vo = new CustomerOverviewDepartmentVO();
+            vo.setDepartmentId(entry.getKey());
+            vo.setCurrentNewCustomerCnt(entry.getValue());
+            result.add(vo);
+        }
+        
+        return result;
+    }
+
+    /**
+     * 导出客户概况-数据总览-部门维度
+     *
+     * @param dto   {@link CustomerOverviewDTO}
+     * @return 结果
+     */
+    @Override
+    public AjaxResult exportCustomerOverViewOfDepartment(CustomerOverviewDTO dto) {
+        List<CustomerOverviewDepartmentVO> list = getCustomerOverViewOfDepartment(dto);
+        // 绑定导出数据
+        list.forEach(CustomerOverviewDepartmentVO::bindExportData);
+        ExcelUtil<CustomerOverviewDepartmentVO> util = new ExcelUtil<>(CustomerOverviewDepartmentVO.class);
+        return util.exportExcel(list, CUSTOMER_OVERVIEW_DEPARTMENT_FORMS);
     }
 
     /**
@@ -926,12 +1036,28 @@ public class WeUserCustomerMessageStatisticsServiceImpl extends ServiceImpl<WeUs
         }
         GoodCommitDTO goodCommitDTO=new GoodCommitDTO(dto);
         List<UserServiceVO> userServiceVOS=weUserCustomerMessageStatisticsMapper.getUserServiceOfUser(dto);
+        fillParentDepartmentName(userServiceVOS, dto.getCorpId());
         List<UserGoodReviewDTO> userGoodReviews = weFormCustomerFeedbackMapper.selsectGoodReviewsForPerson(goodCommitDTO);
         //进行好评率处理
         if (!CollectionUtils.isEmpty(userServiceVOS)&&!CollectionUtils.isEmpty(userGoodReviews)){
             handleGoodReviews(userGoodReviews,userServiceVOS,dto);
         }
         return userServiceVOS;
+    }
+
+    /**
+     * 处理上级部门名称
+     * @param userServiceVOS
+     * @param corpId
+     */
+    private void fillParentDepartmentName(List<UserServiceVO> userServiceVOS, String corpId) {
+        // 构建完整的部门路径（需要查询所有相关部门）
+        Map<Long, WeDepartment> departmentMap = weDepartmentService.list(
+                new LambdaQueryWrapper<WeDepartment>().eq(WeDepartment::getCorpId, corpId)
+        ).stream().collect(Collectors.toMap(WeDepartment::getId, dept -> dept));
+        for (UserServiceVO userServiceVO : userServiceVOS) {
+            userServiceVO.setParentDepartmentName(weDepartmentService.buildParentDepartmentNames(userServiceVO.getUserId(), departmentMap, corpId, "/", true));
+        }
     }
 
     /**

@@ -1,6 +1,7 @@
 package com.easyink.web.controller.wecom;
 
 import com.easyink.common.annotation.Log;
+import com.easyink.common.config.RuoYiConfig;
 import com.easyink.common.constant.WeConstans;
 import com.easyink.common.core.controller.BaseController;
 import com.easyink.common.core.domain.AjaxResult;
@@ -13,11 +14,10 @@ import com.easyink.common.utils.StringUtils;
 import com.easyink.common.utils.file.FileUtils;
 import com.easyink.wecom.domain.WeEmpleCode;
 import com.easyink.wecom.domain.WeEmpleCodeUseScop;
-import com.easyink.wecom.domain.dto.emplecode.AddWeEmpleCodeDTO;
-import com.easyink.wecom.domain.dto.emplecode.FindWeEmpleCodeAnalyseDTO;
-import com.easyink.wecom.domain.dto.emplecode.FindWeEmpleCodeDTO;
+import com.easyink.wecom.domain.dto.emplecode.*;
 import com.easyink.wecom.domain.vo.WeEmpleCodeVO;
 import com.easyink.wecom.domain.vo.WeEmplyCodeScopeUserVO;
+import com.easyink.wecom.domain.vo.emplecode.SelectTagVO;
 import com.easyink.wecom.domain.vo.statistics.emplecode.EmpleCodeByNameVO;
 import com.easyink.wecom.login.util.LoginTokenService;
 import com.easyink.wecom.service.WeEmpleCodeAnalyseService;
@@ -26,10 +26,10 @@ import com.easyink.wecom.service.WeEmpleCodeUseScopService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -49,18 +49,15 @@ import java.util.stream.Collectors;
 @RequestMapping("/wecom/code")
 @Slf4j
 @Api(tags = "员工活码Controller")
+@AllArgsConstructor
 public class WeEmpleCodeController extends BaseController {
 
     private final WeEmpleCodeService weEmpleCodeService;
     private final WeEmpleCodeUseScopService weEmpleCodeUseScopService;
     private final WeEmpleCodeAnalyseService weEmpleCodeAnalyseService;
+    private final RuoYiConfig ruoYiConfig;
 
-    @Autowired
-    public WeEmpleCodeController(WeEmpleCodeService weEmpleCodeService, WeEmpleCodeUseScopService weEmpleCodeUseScopService, WeEmpleCodeAnalyseService weEmpleCodeAnalyseService) {
-        this.weEmpleCodeService = weEmpleCodeService;
-        this.weEmpleCodeUseScopService = weEmpleCodeUseScopService;
-        this.weEmpleCodeAnalyseService = weEmpleCodeAnalyseService;
-    }
+
 
 
     @PreAuthorize("@ss.hasPermi('wecom:code:add')")
@@ -170,12 +167,32 @@ public class WeEmpleCodeController extends BaseController {
         }
     }
 
+    @PutMapping("/tagGroupValid")
+    @ApiOperation("单独编辑员工活码标签组配置")
+    @Log(title = "员工活码标签组配置", businessType = BusinessType.UPDATE)
+    public AjaxResult updateTagGroupValid(@Validated @RequestBody UpdateTagGroupValidDTO updateDTO) {
+        boolean result = weEmpleCodeService.updateTagGroupValid(
+                updateDTO.getEmpleCodeId(),
+                updateDTO.getCorpId(),
+                updateDTO.getTagGroupValid()
+        );
+        return AjaxResult.success();
+    }
+
+    @GetMapping("/tagGroupValid/{empleCodeId}")
+    @ApiOperation("单独查询员工活码标签组配置")
+    public AjaxResult tagGroupValid(@PathVariable(name = "empleCodeId") Long empleCodeId) {
+        String corpId = LoginTokenService.getLoginUser().getCorpId();
+        WeEmpleCodeVO empleCode = weEmpleCodeService.selectWeEmpleCodeById(empleCodeId, corpId);
+        return AjaxResult.success(empleCode.getTagGroupValid());
+    }
+
     @Log(title = "员工活码下载", businessType = BusinessType.OTHER)
     @GetMapping("/download")
     @ApiOperation("员工活码下载")
     public void download(String id, HttpServletResponse response) {
         WeEmpleCode weEmpleCode = weEmpleCodeService.selectWeEmpleCodeById(Long.valueOf(id), LoginTokenService.getLoginUser().getCorpId());
-        if (StringUtils.isEmpty(weEmpleCode.getQrCode())) {
+        if (weEmpleCode == null || StringUtils.isEmpty(weEmpleCode.getQrCode())) {
             throw new CustomException("活码不存在");
         }
         try {
@@ -218,10 +235,43 @@ public class WeEmpleCodeController extends BaseController {
     public AjaxResult getCodeAppLink(@ApiParam("活码id")Long id ) {
         return AjaxResult.success("success",weEmpleCodeService.getCodeAppLink(id));
     }
+
+    @GetMapping("/customerLink")
+    @ApiOperation("获取客户专属活码短链")
+    public AjaxResult getCustomerLink(@ApiParam("活码id") Long id) {
+        return AjaxResult.success("success", weEmpleCodeService.getCustomerLink(id));
+    }
+
+    @PostMapping("/genCustomerEmployQrCode")
+    @ApiOperation("生成客户专属活码")
+    public AjaxResult genCustomerEmployCode(@Validated @RequestBody GenCustomerEmployQrcodeDTO genCustomerEmployQrcodeDTO) {
+        return AjaxResult.success("success", weEmpleCodeService.genCustomerEmployQrCode(genCustomerEmployQrcodeDTO));
+    }
+    @PostMapping("/editCustomerEmployCodeTagSelectScope")
+    @ApiOperation("更新专属活码可选标签范围")
+    public AjaxResult editCustomerEmployCodeTagSelectScope(@Validated @RequestBody TagSelectScopeDTO tagSelectScopeDTO) {
+
+        weEmpleCodeService.editCustomerEmployCodeTagSelectScope(tagSelectScopeDTO, LoginTokenService.getLoginUser());
+        return AjaxResult.success();
+    }
+    @GetMapping("/customerEmployCodeTagSelectScopeDetail")
+    @ApiOperation("专属活码可选标签范围详情")
+    public AjaxResult customerEmployCodeTagSelectScopeDetail(@Validated @RequestParam String empleCodeId) {
+
+        SelectTagVO result = weEmpleCodeService.customerEmployCodeTagSelectScopeDetail(empleCodeId, LoginTokenService.getLoginUser());
+        return AjaxResult.success(result);
+    }
+    @GetMapping("/customerEmployQrCodeExpireTime")
+    @ApiOperation("获取活码过期时间,单位小时")
+    public AjaxResult getCustomerTempEmpleCodeExpireTime() {
+        return AjaxResult.success("success", ruoYiConfig.getCustomerEmpleCodeExpireTime());
+    }
+
     @PostMapping("/refresh/code")
     @ApiOperation("刷新活码")
     public AjaxResult refreshCode(@RequestBody @ApiParam("活码id")List<Long> ids ) {
         weEmpleCodeService.refreshCode(ids);
         return AjaxResult.success("success");
     }
+
 }

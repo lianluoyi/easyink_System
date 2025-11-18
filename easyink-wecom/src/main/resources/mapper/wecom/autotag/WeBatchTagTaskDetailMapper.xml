@@ -3,13 +3,13 @@
 <mapper namespace="com.easyink.wecom.mapper.autotag.WeBatchTagTaskDetailMapper">
     <!--查询批量打标签任务详情列表-->
     <select id="selectBatchTaskDetailList" resultType="com.easyink.wecom.domain.vo.autotag.BatchTagTaskDetailVO">
-        SELECT id, import_external_userid, import_union_id, import_mobile, status, tag_user_id, tag_external_userid, remark
+        SELECT id, import_external_userid, import_union_id, import_mobile, import_mobile_encrypt, status, tag_user_id, tag_external_userid, remark
         FROM we_batch_tag_task_detail
         WHERE task_id = #{taskId}
         <if test="customerInfo != null and customerInfo != ''">
             AND (import_external_userid LIKE CONCAT("%",#{customerInfo},"%")
             OR import_union_id LIKE CONCAT("%",#{customerInfo},"%")
-            OR import_mobile LIKE CONCAT("%",#{customerInfo},"%"))
+            OR import_mobile_encrypt = #{customerInfoEncrypt})
         </if>
         <if test="status != null">
             AND status = #{status}
@@ -50,7 +50,8 @@
         task_id,
         import_external_userid,
         import_union_id ,
-        import_mobile
+        import_mobile,
+        import_mobile_encrypt
         )
         VALUES
         <foreach collection="list" item="item" separator=",">
@@ -59,12 +60,14 @@
             #{item.taskId},
             #{item.importExternalUserid},
             #{item.importUnionId},
-            #{item.importMobile}
+            #{item.importMobile},
+            #{item.importMobileEncrypt}
             )
         </foreach>
         ON DUPLICATE KEY UPDATE
         import_external_userid = VALUES(status) ,
         import_union_id = VALUES(tag_user_id) ,
-        import_mobile = VALUES(tag_external_userid)
+        import_mobile = VALUES(import_mobile),
+        import_mobile_encrypt = VALUES(import_mobile_encrypt)
     </insert>
 </mapper>

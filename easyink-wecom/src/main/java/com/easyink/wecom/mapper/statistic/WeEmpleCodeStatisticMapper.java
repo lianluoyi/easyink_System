@@ -47,9 +47,10 @@ public interface WeEmpleCodeStatisticMapper extends BaseMapper<WeEmpleCodeStatis
      * @param externalUserIdList 客户ID列表
      * @param userIds            员工ID列表
      * @param time               时间 格式为 YYYY-MM-DD HH:MM:SS
+     * @param position
      * @return {@link EmpleCodeUserVO}
      */
-    List<EmpleCodeUserVO> listUserCustomerRel(@Param("corpId") String corpId, @Param("externalUserIdList") List<String> externalUserIdList, @Param("userIds") List<String> userIds, @Param("time") String time, @Param("beginTime") String beginTime);
+    List<EmpleCodeUserVO> listUserCustomerRel(@Param("corpId") String corpId, @Param("externalUserIdList") List<String> externalUserIdList, @Param("userIds") List<String> userIds, @Param("time") String time, @Param("beginTime") String beginTime, @Param("position") String position);
 
     /**
      * 活码统计-活码维度-获取基础数据
@@ -66,9 +67,10 @@ public interface WeEmpleCodeStatisticMapper extends BaseMapper<WeEmpleCodeStatis
      * @param empleCodeIdList 活码ID列表
      * @param userIds         员工ID列表
      * @param time            时间 格式为 YYYY-MM-DD HH:MM:SS
+     * @param position
      * @return {@link EmpleCodeUserVO}
      */
-    List<EmpleCodeVO> listStateUserCustomerRel(@Param("corpId") String corpId, @Param("empleCodeIdList") List<String> empleCodeIdList, @Param("userIds") List<String> userIds, @Param("time") String time, @Param("beginTime") String beginTime);
+    List<EmpleCodeVO> listStateUserCustomerRel(@Param("corpId") String corpId, @Param("empleCodeIdList") List<String> empleCodeIdList, @Param("userIds") List<String> userIds, @Param("time") String time, @Param("beginTime") String beginTime, @Param("position") String position);
 
     /**
      * 活码统计-日期维度-获取基础数据
@@ -93,9 +95,10 @@ public interface WeEmpleCodeStatisticMapper extends BaseMapper<WeEmpleCodeStatis
      * @param externalUserIdList 客户id列表
      * @param userIds            员工ID列表
      * @param time               时间 格式为 YYYY-MM-DD HH:MM:SS
+     * @param position 职务过滤
      * @return {@link EmpleCodeUserVO}
      */
-    List<EmpleCodeDateVO> listEmpleDateUserCustomerRel(@Param("corpId") String corpId, @Param("externalUserIdList") List<String> externalUserIdList, @Param("userIds") List<String> userIds, @Param("time") String time);
+    List<EmpleCodeDateVO> listEmpleDateUserCustomerRel(@Param("corpId") String corpId, @Param("externalUserIdList") List<String> externalUserIdList, @Param("userIds") List<String> userIds, @Param("time") String time, @Param("position") String position);
 
     /**
      * 批量插入或更新统计数据
@@ -104,5 +107,17 @@ public interface WeEmpleCodeStatisticMapper extends BaseMapper<WeEmpleCodeStatis
      * @return 结果
      */
     Integer batchInsertOrUpdate(@Param("list") List<WeEmpleCodeStatistic> list);
+
+    /**
+     * 渠道统计列表客户关系统计数
+     * @param corpId 企业id
+     * @param beginTime 开始时间
+     * @param endTime 结束时间
+     * @param stateList state列表
+     * @param userIds 员工id
+     * @param position 职位过滤
+     * @return
+     */
+    int listUserCustomerRelTotal(@Param("corpId") String corpId, @Param("beginTime") String beginTime, @Param("endTime") String endTime, @Param("stateList") List<String> stateList, @Param("userIds") List<String> userIds, @Param("position") String position);
 }
 

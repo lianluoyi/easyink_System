@@ -8,6 +8,7 @@ import com.easyink.wecom.domain.WeCustomerPortrait;
 import com.easyink.wecom.domain.WeCustomerSocialConn;
 import com.easyink.wecom.domain.dto.WeCustomerPushMessageDTO;
 import com.easyink.wecom.domain.entity.WeCustomerExportDTO;
+import com.easyink.wecom.domain.model.customer.ExternalUseridRepeatModel;
 import com.easyink.wecom.domain.model.customer.UserIdAndExternalUserIdModel;
 import com.easyink.wecom.domain.model.moment.MomentCustomerQueryModel;
 import com.easyink.wecom.domain.query.customer.CustomerQueryContext;
@@ -22,6 +23,7 @@ import org.springframework.stereotype.Repository;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import java.util.List;
+import java.util.Set;
 
 /**
  * 企业微信客户Mapper接口
@@ -72,16 +74,6 @@ public interface WeCustomerMapper extends BaseMapper<WeCustomer> {
      * @return 结果
      */
     int updateWeCustomer(WeCustomer weCustomer);
-
-    /**
-     * 根据员工ID获取客户客户id列表
-     *
-     * @param externalUserid 客户id
-     * @param userId         员工id
-     * @param corpId         企业id
-     * @return 客户列表
-     */
-    List<WeCustomer> getCustomersByUserId(@Param("externalUserid") String externalUserid, @Param("userId") String userId, @Param("corpId") String corpId);
 
 
     /**
@@ -182,15 +174,6 @@ public interface WeCustomerMapper extends BaseMapper<WeCustomer> {
      */
     List<BaseExtendPropertyRel> selectTypeTime(List<BaseExtendPropertyRel> list);
 
-    /**
-     * 查询去重客户去重后企业微信客户列表
-     * @update V1.34.0版本之后弃用，该SQL会导致慢查询响应超时，请使用com.easyink.wecom.mapper.WeCustomerMapper.selectWeCustomerListDistinctV2()
-     *
-     * @param weCustomer
-     * @return
-     */
-    @Deprecated
-    List<WeCustomerVO> selectWeCustomerListDistinct(WeCustomer weCustomer);
 
     /**
      * 查询客户列表第二版（根据客户ID查询）
@@ -257,13 +240,6 @@ public interface WeCustomerMapper extends BaseMapper<WeCustomer> {
      */
     Integer ignoreDuplicateCustomerCnt(WeCustomer weCustomer);
 
-    /**
-     * 查询导出的客户
-     *
-     * @param weCustomer 查询条件
-     * @return 客户
-     */
-    List<WeCustomerVO> selectExportCustomer(WeCustomer weCustomer);
 
     /**
      * 查询客户总数
@@ -334,4 +310,10 @@ public interface WeCustomerMapper extends BaseMapper<WeCustomer> {
      */
     List<String> selectExternalUserIdByCorpId(@Param("corpId") String corpId);
 
+    /**
+     * 位置信息查询过滤
+     * @param locationType
+     * @return
+     */
+    Set<ExternalUseridRepeatModel > selectTypeLocation(List<BaseExtendPropertyRel> locationType);
 }

@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.easyink.wecom.domain.WeCustomerMessgaeResult;
 import com.easyink.wecom.domain.dto.WeCustomerMessagePushResultDTO;
 import com.easyink.wecom.domain.dto.message.AsyncResultDTO;
+import com.easyink.wecom.domain.dto.message.MessageIdDTO;
 import com.easyink.wecom.domain.vo.WeCustomerMessageResultVO;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
@@ -62,10 +63,12 @@ public interface WeCustomerMessgaeResultMapper extends BaseMapper<WeCustomerMess
     /**
      * 查询30天内未发送的消息
      *
-     * @param corpId 企业id
+     * @param corpId         企业id
+     * @param startTimestamp
+     * @param endTimestamp
      * @return {@link List<AsyncResultDTO>}
      */
-    List<AsyncResultDTO> listOfNotSend(@Param("corpId") String corpId, @Param("startTime") Date startTime, @Param("endTime") Date endTime);
+    List<MessageIdDTO> listOfNotSend(@Param("corpId") String corpId, @Param("startTime") Date startTime, @Param("endTime") Date endTime, @Param("startTimestamp") long startTimestamp, @Param("endTimestamp") long endTimestamp);
     /**
      * 检查是否已经同步群发结果
      *

@@ -1,5 +1,6 @@
 package com.easyink.web.controller.wecom;
 
+import com.easyink.common.annotation.Encrypt;
 import com.easyink.common.annotation.Log;
 import com.easyink.common.constant.WeConstans;
 import com.easyink.common.core.controller.BaseController;
@@ -7,17 +8,20 @@ import com.easyink.common.core.domain.AjaxResult;
 import com.easyink.common.core.domain.model.LoginUser;
 import com.easyink.common.core.domain.wecom.WeUser;
 import com.easyink.common.core.page.TableDataInfo;
+import com.easyink.common.encrypt.StrategyCryptoUtil;
 import com.easyink.common.enums.BusinessType;
 import com.easyink.common.token.TokenService;
 import com.easyink.common.utils.ServletUtils;
 import com.easyink.common.utils.spring.SpringUtils;
 import com.easyink.wecom.annotation.Convert2Cipher;
-import com.easyink.wecom.domain.vo.AllocateLeaveUserResp;
 import com.easyink.wecom.domain.WeUserRole;
 import com.easyink.wecom.domain.dto.BatchUpdateUserInfoDTO;
 import com.easyink.wecom.domain.dto.QueryUserDTO;
 import com.easyink.wecom.domain.dto.transfer.TransferResignedUserListDTO;
-import com.easyink.wecom.domain.vo.*;
+import com.easyink.wecom.domain.vo.BatchUpdateUserInfoVO;
+import com.easyink.wecom.domain.vo.WeUserBriefInfoVO;
+import com.easyink.wecom.domain.vo.WeUserInfoVO;
+import com.easyink.wecom.domain.vo.WeUserVO;
 import com.easyink.wecom.domain.vo.transfer.TransferResignedUserVO;
 import com.easyink.wecom.login.util.LoginTokenService;
 import com.easyink.wecom.service.WeDepartmentService;
@@ -26,6 +30,7 @@ import com.easyink.wecom.service.WeUserService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -33,7 +38,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
 import java.util.List;
 
 
@@ -69,6 +73,7 @@ public class WeUserController extends BaseController {
      */
     @GetMapping("/listOfUser")
     @ApiOperation("查询员工信息")
+    @Encrypt
     public TableDataInfo<WeUserVO> listOfUser(@Validated QueryUserDTO queryUserDTO) {
         startPage();
         queryUserDTO.setCorpId(LoginTokenService.getLoginUser().getCorpId());
@@ -78,6 +83,7 @@ public class WeUserController extends BaseController {
 
     @GetMapping("/getUser")
     @ApiOperation("查询单个员工信息")
+    @Encrypt
     public AjaxResult<WeUserVO> getUser(String userId) {
         return AjaxResult.success(weUserService.getUser(LoginTokenService.getLoginUser().getCorpId(), userId));
     }
@@ -90,6 +96,7 @@ public class WeUserController extends BaseController {
      */
     @GetMapping("/list")
     @ApiOperation("获取员工详细信息列表")
+    @Encrypt
     public TableDataInfo<WeUser> list(WeUser weUser) {
         startPage();
         weUser.setCorpId(LoginTokenService.getLoginUser().getCorpId());
@@ -119,6 +126,7 @@ public class WeUserController extends BaseController {
     @GetMapping(value = "/{userId}")
     @ApiOperation("获取通讯录相关客户详细信息")
     @Convert2Cipher
+    @Encrypt
     public AjaxResult getInfo(@PathVariable("userId") String userId) {
         LoginUser loginUser = LoginTokenService.getLoginUser();
         return AjaxResult.success(weUserService.selectWeUserById(loginUser.getCorpId(), userId));
@@ -153,6 +161,10 @@ public class WeUserController extends BaseController {
     @ApiOperation("修改员工信息")
     public AjaxResult edit(@Validated @RequestBody WeUser weUser) {
         weUser.setCorpId(LoginTokenService.getLoginUser().getCorpId());
+        // 解密员工手机号处理
+        if(StringUtils.isNotBlank(weUser.getMobileEncrypt())){
+            weUser.setMobile(StrategyCryptoUtil.decrypt(weUser.getMobileEncrypt()));
+        }
         weUserService.updateWeUser(weUser);
         if (weUser.getRoleId() != null){
             WeUserRole weUserRole = new WeUserRole();

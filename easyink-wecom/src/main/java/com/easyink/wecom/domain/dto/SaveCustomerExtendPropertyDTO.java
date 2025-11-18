@@ -5,6 +5,7 @@ import com.easyink.wecom.domain.entity.customer.ExtendPropertyMultipleOption;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
@@ -18,6 +19,7 @@ import java.util.List;
  * @author : silver_chariot
  * @date : 2021/11/10 17:45
  */
+@EqualsAndHashCode(callSuper = true)
 @Data
 @ApiModel("保存客户自定义属性参数")
 public class SaveCustomerExtendPropertyDTO extends BaseEntity {
@@ -31,12 +33,17 @@ public class SaveCustomerExtendPropertyDTO extends BaseEntity {
     private String name;
 
     @ApiModelProperty(value = "字段类型（1系统默认字段,2单行文本，3多行文本，4单选框，5多选框，6下拉框，7日期，8图片，9文件）", required = true)
-    @Max(value = 9, message = "字段类型错误")
+    @Max(value = 10, message = "字段类型错误")
     @Min(value = 2, message = "字段类型错误")
     private Integer type;
 
     @ApiModelProperty(value = "是否必填（1必填0非必填）")
     private Boolean required;
+    @ApiModelProperty(value = "专属活码是否必填（1必填0非必填）")
+    private Boolean liveCodeRequired;
+
+    @ApiModelProperty(value = "扩展配置")
+    private String extra;
 
     @ApiModelProperty(value = "字段排序")
     private Integer propertySort;

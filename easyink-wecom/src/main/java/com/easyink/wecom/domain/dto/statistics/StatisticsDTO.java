@@ -31,6 +31,9 @@ public class StatisticsDTO extends RootEntity {
     @ApiModelProperty("部门idList")
     private List<String> departmentIds;
 
+    @ApiModelProperty("职务")
+    private String position;
+
     @ApiModelProperty("员工idList")
     private List<String> userIds;
 

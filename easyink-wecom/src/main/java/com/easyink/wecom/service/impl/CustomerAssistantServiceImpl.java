@@ -27,7 +27,7 @@ import com.easyink.wecom.domain.*;
 import com.easyink.wecom.domain.dto.WeMessagePushDTO;
 import com.easyink.wecom.domain.dto.emplecode.*;
 import com.easyink.wecom.domain.dto.message.TextMessageDTO;
-import com.easyink.wecom.domain.vo.SelectWeEmplyCodeWelcomeMsgVO;
+import com.easyink.wecom.domain.vo.EmplyCodeWelcomeMsgInfo;
 import com.easyink.wecom.domain.vo.emple.*;
 import com.easyink.wecom.domain.vo.WeEmpleCodeVO;
 import com.easyink.wecom.login.util.LoginTokenService;
@@ -242,23 +242,23 @@ public class CustomerAssistantServiceImpl implements CustomerAssistantService {
             // 将"hk_"前缀截取掉，得到渠道id作为state信息
             state = state.replace(CustomerAssistantConstants.STATE_PREFIX, StringUtils.EMPTY);
             // 获取获客链接信息
-            SelectWeEmplyCodeWelcomeMsgVO assistantInfo = weEmpleCodeService.selectWelcomeMsgByState(state, corpId);
+            EmplyCodeWelcomeMsgInfo emplyCodeWelcomeMsgInfo = weEmpleCodeService.selectWelcomeMsgByState(state, corpId);
             // 若不存在，截取state获取渠道id，到获客链接渠道表查询获客链接id
-            if (assistantInfo == null) {
+            if (emplyCodeWelcomeMsgInfo == null) {
                 WeEmpleCodeChannel channel = weEmpleCodeChannelMapper.getChannelById(state);
                 // 若根据渠道id未查询到信息，则表示不是从获客链接添加的客户，停止处理
                 if (channel == null) {
                     log.info("[获客链接] 未查询到该state对应的获客链接信息，state:{},corpId:{},userId:{},externalUserId:{}", state, corpId, userId, externalUserId);
                     return;
                 }
-                assistantInfo = weEmpleCodeService.selectWelcomeMsgById(String.valueOf(channel.getEmpleCodeId()), corpId);
+                emplyCodeWelcomeMsgInfo = weEmpleCodeService.selectWelcomeMsgById(String.valueOf(channel.getEmpleCodeId()), corpId);
                 // 若渠道已被删除，则将新增的客户计入主渠道中,将state替换为主渠道id
                 if (channel.getDelFlag()) {
-                    state = weEmpleCodeChannelMapper.getDefaultChannelIdByUrl(assistantInfo.getQrCode());
+                    state = weEmpleCodeChannelMapper.getDefaultChannelIdByUrl(emplyCodeWelcomeMsgInfo.getQrCode());
                 }
             }
-            if (assistantInfo != null && StringUtils.isNotBlank(assistantInfo.getEmpleCodeId())) {
-                String assistantId = assistantInfo.getEmpleCodeId();
+            if (emplyCodeWelcomeMsgInfo != null && StringUtils.isNotBlank(emplyCodeWelcomeMsgInfo.getEmpleCodeId())) {
+                String assistantId = emplyCodeWelcomeMsgInfo.getEmpleCodeId();
                 // 根据客户id，获客链接id到分析表查询，是否已经存在数据，若已存在任意与员工、渠道的添加记录关系，则表示当前客户是重复添加，根据获客助手统计规则，只算一次添加。
                 List<WeEmpleCodeAnalyse> alreadyRecord = weEmpleCodeAnalyseService.list(new LambdaQueryWrapper<WeEmpleCodeAnalyse>()
                         .eq(WeEmpleCodeAnalyse::getEmpleCodeId, assistantId)
@@ -286,11 +286,11 @@ public class CustomerAssistantServiceImpl implements CustomerAssistantService {
                 // 查询外部联系人的信息
                 WeCustomer weCustomer = weCustomerService.getOne(new LambdaQueryWrapper<WeCustomer>().eq(WeCustomer::getExternalUserid, externalUserId));
                 //为外部联系人添加员工活码标签
-                setAssistantTag(weFlowerCustomerRel, assistantId, assistantInfo.getTagFlag());
+                setAssistantTag(weFlowerCustomerRel, assistantId, emplyCodeWelcomeMsgInfo.getTagFlag());
                 // 打标签后休眠1S , 避免出现打标签后又打备注提示接口调用频繁 Tower 任务: 客户扫活码加好友之后没有自动备注 ( https://tower.im/teams/636204/todos/69053 )
                 ThreadUtil.safeSleep(1000L);
                 // 判断是否需要设置备注
-                setAssistantRemark(state, userId, externalUserId, corpId, assistantInfo.getRemarkType(), assistantInfo.getRemarkName(), weCustomer.getName());
+                setAssistantRemark(state, userId, externalUserId, corpId, emplyCodeWelcomeMsgInfo.getRemarkType(), emplyCodeWelcomeMsgInfo.getRemarkName(), weCustomer.getName());
             }
         } catch (Exception e) {
             log.error("[获客链接] 处理获客链接回调出现异常，corpId:{}, state:{}, 异常原因：{}", corpId, state, ExceptionUtils.getStackTrace(e));
@@ -402,7 +402,7 @@ public class CustomerAssistantServiceImpl implements CustomerAssistantService {
         weCustomer.setExternalUserid(externalUserId);
         weCustomer.setRemark(newRemark);
         try {
-            weCustomerService.updateWeCustomerRemark(weCustomer);
+            weCustomerService.updateWeCustomerInfo(weCustomer);
         } catch (Exception e) {
             log.error("[setAssistantRemark] error!! corpId={},userId={},externalUserId={},", corpId, userId, externalUserId);
         }
@@ -457,7 +457,7 @@ public class CustomerAssistantServiceImpl implements CustomerAssistantService {
         WeEmpleCodeChannel channel = weEmpleCodeChannelMapper.getChannelById(channelId);
         if (channel != null) {
             // 根据获客链接id获取获客链接信息
-            SelectWeEmplyCodeWelcomeMsgVO messageMap = weEmpleCodeService.selectWelcomeMsgById(String.valueOf(channel.getEmpleCodeId()), corpId);
+            EmplyCodeWelcomeMsgInfo messageMap = weEmpleCodeService.selectWelcomeMsgById(String.valueOf(channel.getEmpleCodeId()), corpId);
             // 渠道已被删除
             if (channel.getDelFlag()) {
                 // 渠道被删除，将统计数据计入默认渠道

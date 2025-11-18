@@ -17,6 +17,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.logout.LogoutFilter;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.web.filter.CorsFilter;
 
 /**
@@ -91,10 +92,16 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(HttpSecurity httpSecurity) throws Exception {
 
-
         httpSecurity
-                // CSRF禁用，因为不使用session
-                .csrf().disable()
+                // 配置CSRF保护策略
+                .csrf()
+                    // 对以下接口忽略CSRF检查（这些接口主要使用JWT Header认证）
+                    .ignoringAntMatchers(
+                        "/**"
+                    )
+                    // 对需要CSRF保护的接口（主要是Web页面和管理后台）使用Cookie存储CSRF Token
+                    .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                .and()
                 // 认证失败处理类
                 .exceptionHandling().authenticationEntryPoint(unauthorizedHandler).and()
                 // 基于token，所以不需要session

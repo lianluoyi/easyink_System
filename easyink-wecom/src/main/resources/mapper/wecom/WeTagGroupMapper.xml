@@ -9,15 +9,29 @@
         <result property="createTime" column="create_time"/>
         <result property="createBy" column="create_by"/>
         <result property="groupId" column="group_id"/>
+        <result property="corpId" column="corp_id"/>
         <collection property="weTags" column="weTags.id" ofType="com.easyink.wecom.domain.WeTag">
+            <id property="tagId" column="tag_id"/>
+            <result property="seqId" column="seq_id"/>
+            <result property="groupId" column="tag_group_id"/>
+            <result property="name" column="name"/>
+            <result property="corpId" column="corpId"/>
+        </collection>
+    </resultMap>
+
+    <resultMap type="com.easyink.wecom.domain.WeTagGroup" id="WeTagGroupMap">
+        <result property="groupName" column="group_name"/>
+        <result property="createTime" column="create_time"/>
+        <result property="createBy" column="create_by"/>
+        <result property="groupId" column="group_id"/>
+        <collection property="weTags" column="group_id" ofType="com.easyink.wecom.domain.WeTag" select="listOfGroupId">
             <id property="tagId" column="tag_id"/>
             <result property="seqId" column="seq_id"/>
             <result property="groupId" column="tag_group_id"/>
             <result property="name" column="name"/>
         </collection>
     </resultMap>
-
-    <resultMap type="com.easyink.wecom.domain.WeTagGroup" id="WeTagGroupMap">
+    <resultMap type="com.easyink.wecom.domain.WeTagGroup" id="customerWeTagGroupMap">
         <result property="groupName" column="group_name"/>
         <result property="createTime" column="create_time"/>
         <result property="createBy" column="create_by"/>
@@ -167,6 +181,96 @@
         AND wtg.status= '${@com.easyink.common.constant.Constants@NORMAL_CODE}'
         AND wtg.group_id = #{groupId}
         ORDER BY wtg.create_time DESC
+    </select>
+    <select id="selectTagByCustomerLinkTag" resultMap="WeTagGroupResult">
+        <choose>
+            <when test="groupIdList != null and groupIdList.size() != 0 and tagIdList != null and tagIdList.size() != 0">
+                SELECT
+                wtg.*,
+                wtg.create_by,
+                wtg.group_id as tag_group_id,
+                wt.tag_id,
+                wt.group_id,
+                wt.name,
+                wt.seq_id,
+                wt.corp_id
+                FROM
+                we_tag_group wtg
+                LEFT JOIN we_tag wt on wtg.group_id = wt.group_id and wtg.corp_id = wt.corp_id
+                WHERE
+                wtg.corp_id = #{corpId} AND wtg.status=${@com.easyink.common.constant.Constants@NORMAL_CODE}
+                AND wt.status = ${@com.easyink.common.constant.Constants@NORMAL_CODE}
+                AND wtg.group_id IN
+                <foreach item="groupId" collection="groupIdList" separator="," open="(" close=")">
+                    #{groupId}
+                </foreach>
+                UNION
+                SELECT
+                wtg.*,
+                wtg.create_by,
+                wtg.group_id as tag_group_id,
+                wt.tag_id,
+                wt.group_id,
+                wt.name,
+                wt.seq_id,
+                wt.corp_id
+                FROM
+                we_tag_group wtg
+                LEFT JOIN we_tag wt on wtg.group_id = wt.group_id and wtg.corp_id = wt.corp_id
+                WHERE
+                wtg.corp_id = #{corpId} AND wtg.status=${@com.easyink.common.constant.Constants@NORMAL_CODE}
+                AND wt.status = ${@com.easyink.common.constant.Constants@NORMAL_CODE}
+                AND wt.tag_id  IN
+                <foreach item="tagId" collection="tagIdList" separator="," open="(" close=")">
+                    #{tagId}
+                </foreach>
+                ORDER BY create_time DESC
+            </when>
+            <when test="groupIdList != null and groupIdList.size() != 0 ">
+                SELECT
+                wtg.*,
+                wtg.create_by,
+                wtg.group_id as tag_group_id,
+                wt.tag_id,
+                wt.group_id,
+                wt.name,
+                wt.seq_id,
+                wt.corp_id
+                FROM
+                we_tag_group wtg
+                LEFT JOIN we_tag wt on wtg.group_id = wt.group_id and wtg.corp_id = wt.corp_id
+                WHERE
+                wtg.corp_id = #{corpId} AND wtg.status=${@com.easyink.common.constant.Constants@NORMAL_CODE}
+                AND wt.status = ${@com.easyink.common.constant.Constants@NORMAL_CODE}
+                AND wtg.group_id IN
+                <foreach item="groupId" collection="groupIdList" separator="," open="(" close=")">
+                    #{groupId}
+                </foreach>
+                ORDER BY create_time DESC
+            </when>
+            <otherwise>
+                SELECT
+                wtg.*,
+                wtg.create_by,
+                wtg.group_id as tag_group_id,
+                wt.tag_id,
+                wt.group_id,
+                wt.name,
+                wt.seq_id,
+                wt.corp_id
+                FROM
+                we_tag_group wtg
+                LEFT JOIN we_tag wt on wtg.group_id = wt.group_id and wtg.corp_id = wt.corp_id
+                WHERE
+                wtg.corp_id = #{corpId} AND wtg.status=${@com.easyink.common.constant.Constants@NORMAL_CODE}
+                AND wt.status = ${@com.easyink.common.constant.Constants@NORMAL_CODE}
+                AND wt.tag_id  IN
+                <foreach item="tagId" collection="tagIdList" separator="," open="(" close=")">
+                    #{tagId}
+                </foreach>
+                ORDER BY create_time DESC
+            </otherwise>
+        </choose>
     </select>
 
 </mapper>

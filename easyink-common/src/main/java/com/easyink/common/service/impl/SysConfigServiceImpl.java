@@ -35,10 +35,10 @@ public class SysConfigServiceImpl implements ISysConfigService {
      */
     @PostConstruct
     public void init() {
-        List<SysConfig> configsList = configMapper.selectConfigList(new SysConfig());
-        for (SysConfig config : configsList) {
-            redisCache.setCacheObject(getCacheKey(config.getConfigKey()), config.getConfigValue());
-        }
+//        List<SysConfig> configsList = configMapper.selectConfigList(new SysConfig());
+//        for (SysConfig config : configsList) {
+//            redisCache.setCacheObject(getCacheKey(config.getConfigKey()), config.getConfigValue());
+//        }
     }
 
     /**
@@ -128,7 +128,7 @@ public class SysConfigServiceImpl implements ISysConfigService {
     public int deleteConfigByIds(Long[] configIds) {
         int count = configMapper.deleteConfigByIds(configIds);
         if (count > 0) {
-            Collection<String> keys = redisCache.keys(Constants.SYS_CONFIG_KEY + "*");
+            Collection<String> keys = redisCache.scans(Constants.SYS_CONFIG_KEY + "*");
             redisCache.deleteObject(keys);
         }
         return count;
@@ -139,7 +139,7 @@ public class SysConfigServiceImpl implements ISysConfigService {
      */
     @Override
     public void clearCache() {
-        Collection<String> keys = redisCache.keys(Constants.SYS_CONFIG_KEY + "*");
+        Collection<String> keys = redisCache.scans(Constants.SYS_CONFIG_KEY + "*");
         redisCache.deleteObject(keys);
     }
 

@@ -7,6 +7,7 @@ import com.easyink.wecom.domain.dto.statistics.CustomerOverviewDTO;
 import com.easyink.wecom.domain.dto.statistics.StatisticsDTO;
 import com.easyink.wecom.domain.query.WePageStateQuery;
 import com.easyink.wecom.domain.vo.statistics.CustomerOverviewVO;
+import com.easyink.wecom.domain.vo.statistics.CustomerOverviewDepartmentVO;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 
@@ -87,6 +88,14 @@ public interface WeUserBehaviorDataMapper extends BaseMapper<WeUserBehaviorData>
      * @return
      */
     List<CustomerOverviewVO> getCustomerOverViewOfUser(CustomerOverviewDTO dto);
+
+    /**
+     * 获取客户概况-数据总览-部门维度
+     *
+     * @param dto   {@link CustomerOverviewDTO}
+     * @return
+     */
+    List<CustomerOverviewDepartmentVO> getCustomerOverViewOfDepartment(CustomerOverviewDTO dto);
 
     /**
      * 获取客户概况-数据总览-日期维度

@@ -51,6 +51,12 @@
         <include refid="selectWeEmpleCodeTagVo"/>
         where id = #{id}
     </select>
+    <select id="selectTagListByEmpleCodeId" resultType="com.easyink.wecom.domain.vo.h5.EmpleCodeTagVO">
+        SELECT tag_id, tag_name
+        FROM we_emple_code_tag
+        WHERE emple_code_id = #{originEmpleId}
+          AND del_flag = 0
+    </select>
 
     <insert id="insertWeEmpleCodeTag" parameterType="WeEmpleCodeTag">
         insert into we_emple_code_tag

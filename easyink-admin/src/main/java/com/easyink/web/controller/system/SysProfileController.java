@@ -8,6 +8,7 @@ import com.easyink.common.core.domain.AjaxResult;
 import com.easyink.common.core.domain.entity.SysUser;
 import com.easyink.common.core.domain.model.LoginUser;
 import com.easyink.common.core.domain.wecom.WeUser;
+import com.easyink.common.encrypt.StrategyCryptoUtil;
 import com.easyink.common.enums.BusinessType;
 import com.easyink.common.enums.MediaType;
 import com.easyink.common.exception.file.InvalidExtensionException;
@@ -23,8 +24,10 @@ import com.easyink.wecom.domain.dto.WeMediaDTO;
 import com.easyink.wecom.domain.dto.WeUserDTO;
 import com.easyink.wecom.login.util.LoginTokenService;
 import com.easyink.wecom.service.WeUserService;
+import com.easyink.wecom.utils.PasswordUtils;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -54,6 +57,8 @@ public class SysProfileController extends BaseController {
     private WeUserClient weUserClient;
     @Autowired
     private RuoYiConfig ruoYiConfig;
+    @Autowired
+    private PasswordUtils passwordUtils;
     /**
      * 个人信息
      */
@@ -105,6 +110,10 @@ public class SysProfileController extends BaseController {
         if (SecurityUtils.matchesPassword(decryptNewPassword, password)) {
             return AjaxResult.error("新密码不能与旧密码相同");
         }
+        String validationResult = passwordUtils.validatePasswordStrength(decryptNewPassword);
+        if (validationResult != null) {
+            AjaxResult.error(validationResult);
+        }
         if (userService.resetUserPwd(userName, SecurityUtils.encryptPassword(decryptNewPassword)) > 0) {
             // 更新缓存用户密码
             loginUser.getUser().setPassword(SecurityUtils.encryptPassword(decryptNewPassword));
@@ -142,6 +151,9 @@ public class SysProfileController extends BaseController {
                 WeMediaDTO weMediaDTO = weMediaClient.upload(file.getInputStream(), file.getName(), MediaType.IMAGE.getMediaType(), LoginTokenService.getLoginUser().getCorpId(), (int) file.getSize(), WeConstans.WE_UPLOAD_FORM_DATA_CONTENT_TYPE);
                 weUser.setAvatarMediaid(weMediaDTO.getMedia_id());
                 //用临时素材更新头像
+                if(StringUtils.isNotBlank(weUser.getMobileEncrypt())){
+                    weUser.setMobile(StrategyCryptoUtil.decrypt(weUser.getMobileEncrypt()));
+                }
                 weUserClient.updateUser(new WeUserDTO(weUser), loginUser.getCorpId());
                 //获取头像地址
                 WeUserDTO user = weUserClient.getUserByUserId(weUser.getUserId(), loginUser.getCorpId());

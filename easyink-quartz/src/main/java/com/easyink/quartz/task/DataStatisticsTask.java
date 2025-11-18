@@ -1,9 +1,9 @@
 package com.easyink.quartz.task;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.date.TimeInterval;
 import com.easyink.common.core.domain.entity.WeCorpAccount;
 import com.easyink.common.utils.DateUtils;
-import com.easyink.wecom.domain.entity.WeUserCustomerMessageStatistics;
 import com.easyink.wecom.service.WeCorpAccountService;
 import com.easyink.wecom.service.WeUserCustomerMessageStatisticsService;
 import lombok.RequiredArgsConstructor;
@@ -32,12 +32,16 @@ public class DataStatisticsTask {
 
     public void getDataStatistics() {
         log.info("数据统计定时任务开始执行------>");
+        TimeInterval timer = DateUtil.timer();
         List<WeCorpAccount> weCorpAccountList = weCorpAccountService.listOfAuthCorpInternalWeCorpAccount();
-        weCorpAccountList.parallelStream().forEach(weCorpAccount -> {
+        weCorpAccountList.forEach(weCorpAccount -> {
             try {
+                timer.start();
                 if (weCorpAccount != null && StringUtils.isNotBlank(weCorpAccount.getCorpId())) {
+                    log.info("[数据统计定时任务] {}开始执行", weCorpAccount.getCorpId());
                     // 开始统计
                     userCustomerMessageStatisticsService.getMessageStatistics(weCorpAccount.getCorpId(), DateUtils.dateTime(DateUtils.getYesterday(DateUtils.getNowDate())));
+                    log.info("[数据统计定时任务] {}耗时: {}ms", weCorpAccount.getCorpId(), timer.intervalMs());
                 }
             } catch (Exception e) {
                 log.error("[数据统计定时任务]统计任务异常,corpId:{},e:{}", weCorpAccount.getCorpId(), ExceptionUtils.getStackTrace(e));

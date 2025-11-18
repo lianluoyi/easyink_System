@@ -90,7 +90,7 @@ public class PageHomeServiceImpl implements PageHomeService {
         }
         Map<String, Object> totalMap = new HashMap<>(16);
         //企业成员总数
-        int userCount = weUserService.count(new LambdaQueryWrapper<WeUser>()
+        int userCount = (int)weUserService.count(new LambdaQueryWrapper<WeUser>()
                 .eq(WeUser::getCorpId, corpId)
                 .eq(WeUser::getIsActivate, WeConstans.WE_USER_IS_ACTIVATE));
         // 留存客户总人数
@@ -98,7 +98,7 @@ public class PageHomeServiceImpl implements PageHomeService {
         // 统计客户总数
         Integer totalAllContactCnt = weFlowerCustomerRelService.getTotalAllContactCnt(corpId, DateUtils.parseBeginDay(DateUtils.dateTime(new Date())), DateUtils.parseEndDay(DateUtils.dateTime(new Date())));
         //客户群总数( 1.21.0 改成读取官方统计接口里的数据 ，)
-        int groupCount = weGroupService.count(new LambdaQueryWrapper<WeGroup>().eq(WeGroup::getCorpId, corpId)
+        int groupCount = (int)weGroupService.count(new LambdaQueryWrapper<WeGroup>().eq(WeGroup::getCorpId, corpId)
                 .in(WeGroup :: getStatus , Lists.newArrayList(GroupConstants.NARMAL,GroupConstants.OWNER_LEAVE_EXTEND_SUCCESS)));
         //群成员总数
         int groupMemberCount = weGroupStatisticService.getGroupMemberCnt(corpId, DateUtil.yesterday());
@@ -116,7 +116,7 @@ public class PageHomeServiceImpl implements PageHomeService {
             return;
         }
         //企业成员总数
-        int userCount = weUserService.count(new LambdaQueryWrapper<WeUser>()
+        int userCount = (int)weUserService.count(new LambdaQueryWrapper<WeUser>()
                 .eq(WeUser::getCorpId, corpId)
                 .eq(WeUser::getIsActivate, WeConstans.WE_USER_IS_ACTIVATE));
         Map<String, Object> map = new HashMap<>(16);
@@ -142,9 +142,9 @@ public class PageHomeServiceImpl implements PageHomeService {
         }
         Map<String, Object> map = new HashMap<>(16);
         //客户群总数
-        int groupCount = weGroupService.count(new LambdaQueryWrapper<WeGroup>().eq(WeGroup::getCorpId, corpId));
+        int groupCount = (int)weGroupService.count(new LambdaQueryWrapper<WeGroup>().eq(WeGroup::getCorpId, corpId));
         //群成员总数
-        int groupMemberCount = weGroupMemberService.count(new LambdaQueryWrapper<WeGroupMember>().eq(WeGroupMember::getCorpId, corpId));
+        int groupMemberCount = (int)weGroupMemberService.count(new LambdaQueryWrapper<WeGroupMember>().eq(WeGroupMember::getCorpId, corpId));
         map.put("groupCount", groupCount);
         map.put("groupMemberCount", groupMemberCount);
         redisCache.setCacheMap(RedisKeyConstants.CORP_BASIC_DATA + corpId, map);
@@ -185,33 +185,33 @@ public class PageHomeServiceImpl implements PageHomeService {
         DateTime beginTime = DateUtil.beginOfDay(new Date());
         DateTime endTime = DateUtil.endOfDay(new Date());
         // 获取今日添加客户数量，所有状态的客户数
-        int newCustomerCount = weFlowerCustomerRelService.count(new LambdaQueryWrapper<WeFlowerCustomerRel>()
+        int newCustomerCount = (int)weFlowerCustomerRelService.count(new LambdaQueryWrapper<WeFlowerCustomerRel>()
                 .eq(WeFlowerCustomerRel::getCorpId, corpId)
                 .between(WeFlowerCustomerRel::getCreateTime, beginTime, endTime));
         //今日群新增人数
-        int groupMemberCount = weGroupMemberService.count(new LambdaQueryWrapper<WeGroupMember>()
+        int groupMemberCount = (int)weGroupMemberService.count(new LambdaQueryWrapper<WeGroupMember>()
                 .eq(WeGroupMember::getCorpId, corpId)
                 .between(WeGroupMember::getJoinTime, beginTime, endTime));
         today.setNewMemberCnt(groupMemberCount);
         //流失客户数
-        Integer lossCount = weFlowerCustomerRelService.count(new LambdaQueryWrapper<WeFlowerCustomerRel>()
+        Integer lossCount = (int)weFlowerCustomerRelService.count(new LambdaQueryWrapper<WeFlowerCustomerRel>()
                 .eq(WeFlowerCustomerRel::getCorpId, corpId)
                 .between(WeFlowerCustomerRel::getDeleteTime, beginTime, endTime)
                 .eq(WeFlowerCustomerRel::getStatus, CustomerStatusEnum.DRAIN.getCode()
                                                                             .toString()));
         // 今日流失数
-        Integer todayLossCnt = weFlowerCustomerRelService.count(new LambdaQueryWrapper<WeFlowerCustomerRel>()
+        Integer todayLossCnt = (int)weFlowerCustomerRelService.count(new LambdaQueryWrapper<WeFlowerCustomerRel>()
                 .eq(WeFlowerCustomerRel::getCorpId, corpId)
                 .between(WeFlowerCustomerRel::getDeleteTime, beginTime, endTime)
                 .between(WeFlowerCustomerRel::getCreateTime, beginTime, endTime)
                 .eq(WeFlowerCustomerRel::getStatus, CustomerStatusEnum.DRAIN.getCode()
                                                                             .toString()));
         // 群聊总数
-        Integer chatTotal = weGroupService.count(new LambdaQueryWrapper<WeGroup>()
+        Integer chatTotal = (int)weGroupService.count(new LambdaQueryWrapper<WeGroup>()
                 .eq(WeGroup::getCorpId, corpId)
                 .in(WeGroup::getStatus, Lists.newArrayList(GroupConstants.NARMAL, GroupConstants.OWNER_LEAVE_EXTEND, GroupConstants.OWNER_LEAVE_EXTEND_SUCCESS)));
         // 今日新增群聊数
-        Integer todayNewChatCnt = weGroupService.count(new LambdaQueryWrapper<WeGroup>()
+        Integer todayNewChatCnt = (int)weGroupService.count(new LambdaQueryWrapper<WeGroup>()
                 .eq(WeGroup::getCorpId, corpId)
                 .eq(WeGroup::getStatus, GroupConstants.NARMAL)
                 .between(WeGroup::getCreateTime, beginTime, endTime)
@@ -492,7 +492,7 @@ public class PageHomeServiceImpl implements PageHomeService {
         // 统计客户总数
         Integer totalAllContactCnt = weFlowerCustomerRelService.getTotalAllContactCnt(corpId, DateUtils.getDateTime(beginTime), DateUtils.getDateTime(endTime));
         // 今日流失数
-        Integer todayLossCnt = weFlowerCustomerRelService.count(new LambdaQueryWrapper<WeFlowerCustomerRel>()
+        Integer todayLossCnt = (int)weFlowerCustomerRelService.count(new LambdaQueryWrapper<WeFlowerCustomerRel>()
                 .eq(WeFlowerCustomerRel::getCorpId, corpId)
                 .between(WeFlowerCustomerRel::getDeleteTime, beginTime, endTime)
                 .between(WeFlowerCustomerRel::getCreateTime, beginTime, endTime)
@@ -506,6 +506,11 @@ public class PageHomeServiceImpl implements PageHomeService {
         userBehaviorData.setStatTime(beginTime);
         // 由于客户总数是统计整个公司的,所以没有user_id, 取值为与corpId一样
         userBehaviorData.setUserId(corpId);
+        // 公司统计数据不设置部门信息
+        userBehaviorData.setCurrentDepartmentId("");
+        userBehaviorData.setCurrentDepartmentName("全公司统计");
+        userBehaviorData.setParentDepartmentId("");
+        userBehaviorData.setParentDepartmentName("");
         // 先删除之前的数据
         weUserBehaviorDataService.remove(new LambdaQueryWrapper<WeUserBehaviorData>()
                 .eq(WeUserBehaviorData::getCorpId, corpId)

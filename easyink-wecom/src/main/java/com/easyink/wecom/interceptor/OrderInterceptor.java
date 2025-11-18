@@ -10,7 +10,6 @@ import com.dtflys.forest.http.NameValueRequestBody;
 import com.dtflys.forest.interceptor.Interceptor;
 import com.easyink.common.constant.GenConstants;
 import com.easyink.common.constant.WeConstans;
-import com.easyink.common.utils.sign.Md5Utils;
 import com.easyink.common.utils.spring.SpringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -27,6 +26,7 @@ import java.util.List;
  **/
 @Slf4j
 @Component
+@Deprecated
 public class OrderInterceptor implements Interceptor<Object> {
 
 
@@ -53,7 +53,7 @@ public class OrderInterceptor implements Interceptor<Object> {
 
         String accessTimestamp = String.valueOf(System.currentTimeMillis() / 1000);
         String accessNonce = RandomUtil.randomString(6);
-        String accessSign = Md5Utils.hash(accessKey + Md5Utils.hash(accessNonce + accessTimestamp));
+        String accessSign = accessKey ;
 
         request.addHeader("access-id", accessId);
         request.addHeader("access-nonce", accessNonce);

@@ -69,7 +69,8 @@
         <set>
             <if test="jobName != null and jobName != ''">job_name = #{jobName},</if>
             <if test="jobGroup != null and jobGroup != ''">job_group = #{jobGroup},</if>
-            <if test="invokeTarget != null and invokeTarget != ''">invoke_target = #{invokeTarget},</if>
+            <!-- 安全保护：不允许通过接口修改invoke_target字段 -->
+            <!-- <if test="invokeTarget != null and invokeTarget != ''">invoke_target = #{invokeTarget},</if> -->
             <if test="cronExpression != null and cronExpression != ''">cron_expression = #{cronExpression},</if>
             <if test="misfirePolicy != null and misfirePolicy != ''">misfire_policy = #{misfirePolicy},</if>
             <if test="concurrent != null and concurrent != ''">concurrent = #{concurrent},</if>
@@ -108,5 +109,7 @@
         sysdate()
         )
     </insert>
+
+
 
 </mapper> 

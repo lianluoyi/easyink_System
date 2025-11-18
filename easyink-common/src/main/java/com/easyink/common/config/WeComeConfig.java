@@ -14,6 +14,10 @@ import org.springframework.stereotype.Component;
 @Data
 public class WeComeConfig {
     /**
+     * 是否开启https
+     */
+    private Boolean httpsOpen;
+    /**
      * 企业微信后台地址
      */
     private String serverUrl;

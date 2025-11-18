@@ -64,6 +64,7 @@
         SELECT
             ucms.user_id,
             wu.`user_name`,
+            wu.`position`,
             wd.`name` departmentName,
             wu.`head_image_url` userHeadImage,
             IFNULL((SELECT COUNT(wucms.external_userid)
@@ -163,6 +164,10 @@
                     #{userId}
                 </foreach>
             </if>
+            <if test="position != null and position != ''">
+                <bind name="likePosition" value="'%' + position + '%'"/>
+                AND wu.position LIKE #{likePosition}
+            </if>
             <if test="exceptUserIds != null and exceptUserIds.size() > 0">
                 AND ucms.user_id NOT IN
                 <foreach collection="exceptUserIds" item="userId" open="(" separator="," close=")">
@@ -217,6 +222,10 @@
                 #{userId}
             </foreach>
         </if>
+        <if test="position != null and position != ''">
+            <bind name="likePosition" value="'%' + position + '%'"/>
+            AND wu.position LIKE #{likePosition}
+        </if>
         <if test="exceptUserIds != null and exceptUserIds.size() > 0">
             AND wucms.user_id NOT IN
             <foreach collection="exceptUserIds" item="userId" open="(" separator="," close=")">
@@ -242,6 +251,10 @@
             <foreach collection="userIds" item="userId" open="(" separator="," close=")">
                 #{userId}
             </foreach>
+        </if>
+        <if test="position != null and position != ''">
+            <bind name="likePosition" value="'%' + position + '%'"/>
+            AND wu.position LIKE #{likePosition}
         </if>
     </sql>
     <!--获取员工服务-数据总览-->
@@ -306,6 +319,10 @@
                 <foreach collection="userIds" item="userId" open="(" separator="," close=")">
                     #{userId}
                 </foreach>
+            </if>
+            <if test="position != null and position != ''">
+                <bind name="likePosition" value="'%' + position + '%'"/>
+                AND wu.position LIKE #{likePosition}
             </if>
     </select>
 

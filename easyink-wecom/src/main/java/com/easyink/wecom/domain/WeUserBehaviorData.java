@@ -46,6 +46,22 @@ public class WeUserBehaviorData implements Serializable {
     @Excel(name = "客户id")
     private String userId;
 
+    @ApiModelProperty(value = "员工当前部门ID（快照，记录统计时员工所属的当前部门）")
+    @TableField("current_department_id")
+    private String currentDepartmentId;
+
+    @ApiModelProperty(value = "员工当前部门名称（快照，记录统计时的部门名称）")
+    @TableField("current_department_name")
+    private String currentDepartmentName;
+
+    @ApiModelProperty(value = "完整上级部门路径ID（快照，如：1,2,3 表示从根部门到当前部门的完整路径）")
+    @TableField("parent_department_id")
+    private String parentDepartmentId;
+
+    @ApiModelProperty(value = "完整上级部门路径名称（快照，如：总公司/销售部/华南区 表示完整部门路径）")
+    @TableField("parent_department_name")
+    private String parentDepartmentName;
+
     @ApiModelProperty(value = "数据日期，为当日0点的时间戳")
     @TableField("stat_time")
     @Excel(name = "数据日期，为当日0点的时间戳", width = 30, dateFormat = "yyyy-MM-dd")

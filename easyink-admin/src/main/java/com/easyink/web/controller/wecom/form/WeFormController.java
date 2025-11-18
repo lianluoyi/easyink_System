@@ -1,9 +1,11 @@
 package com.easyink.web.controller.wecom.form;
 
 
+import com.easyink.common.annotation.Log;
 import com.easyink.common.core.controller.BaseController;
 import com.easyink.common.core.domain.AjaxResult;
 import com.easyink.common.core.page.TableDataInfo;
+import com.easyink.common.enums.BusinessType;
 import com.easyink.wecom.domain.dto.form.*;
 import com.easyink.wecom.domain.query.form.FormQuery;
 import com.easyink.wecom.domain.vo.form.*;
@@ -36,6 +38,7 @@ public class WeFormController extends BaseController {
 
     @ApiOperation("新增表单")
     @PostMapping("/add")
+    @Log(title = "智能表单", businessType = BusinessType.INSERT)
     public AjaxResult insert(@Validated @RequestBody FormAddRequestDTO addDTO) {
         this.weFormService.saveForm(addDTO, LoginTokenService.getLoginUser().getCorpId());
         return AjaxResult.success();
@@ -44,6 +47,7 @@ public class WeFormController extends BaseController {
 
     @ApiOperation("编辑表单")
     @PostMapping("/edit")
+    @Log(title = "智能表单", businessType = BusinessType.UPDATE)
     public AjaxResult update(@Validated @RequestBody FormUpdateRequestDTO updateDTO) {
         this.weFormService.updateForm(updateDTO, LoginTokenService.getLoginUser().getCorpId());
         return AjaxResult.success();
@@ -52,6 +56,7 @@ public class WeFormController extends BaseController {
 
     @ApiOperation("删除表单")
     @PostMapping("/remove")
+    @Log(title = "智能表单", businessType = BusinessType.DELETE)
     public AjaxResult delete(@Validated @RequestBody DeleteFormDTO deleteDTO) {
         this.weFormService.deleteForm(deleteDTO.getIdList(), LoginTokenService.getLoginUser().getCorpId());
         return AjaxResult.success();
@@ -83,6 +88,7 @@ public class WeFormController extends BaseController {
 
     @ApiOperation("批量修改分组")
     @PostMapping("/updateBatch/group")
+    @Log(title = "智能表单", businessType = BusinessType.UPDATE)
     public AjaxResult updateBatchGroup(@Validated @RequestBody BatchUpdateGroupDTO batchDTO) {
         weFormService.updateBatchGroup(batchDTO, LoginTokenService.getLoginUser().getCorpId());
         return AjaxResult.success();
@@ -97,6 +103,7 @@ public class WeFormController extends BaseController {
 
     @ApiOperation("启用禁用表单")
     @PostMapping("/enableForm")
+    @Log(title = "智能表单", businessType = BusinessType.UPDATE)
     public AjaxResult<PromotionalVO> enableForm(
             @ApiParam(value = "表单id") @RequestParam("id") Long id,
             @ApiParam(value = "启用禁用状态") @RequestParam("enableFlag") Boolean enableFlag
@@ -117,6 +124,7 @@ public class WeFormController extends BaseController {
 
     @ApiOperation("中间页提交表单结果")
     @PostMapping("/commit")
+    @Log(title = "智能表单", businessType = BusinessType.UPDATE)
     public AjaxResult commit(@RequestBody @Validated FormCommitDTO formCommitDTO) {
         weFormService.commit(formCommitDTO);
         return AjaxResult.success("success");

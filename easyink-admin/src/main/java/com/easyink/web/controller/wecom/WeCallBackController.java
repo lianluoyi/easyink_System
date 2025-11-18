@@ -5,18 +5,14 @@ import com.easyink.common.config.RuoYiConfig;
 import com.easyink.common.config.WeCrypt;
 import com.easyink.common.enums.ResultTip;
 import com.easyink.common.exception.CustomException;
-import com.easyink.common.utils.Threads;
 import com.easyink.common.utils.wecom.WxCryptUtil;
 import com.easyink.wecom.domain.vo.WxCpXmlMessageVO;
 import com.easyink.wecom.factory.WeCallBackEventFactory;
 import com.easyink.wecom.factory.WeEventHandle;
 import com.easyink.wecom.openapi.service.AppCallbackSettingService;
-import com.thoughtworks.xstream.XStream;
-import com.thoughtworks.xstream.security.AnyTypePermission;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
-import me.chanjar.weixin.common.util.xml.XStreamInitializer;
 import me.chanjar.weixin.cp.bean.WxCpTpXmlPackage;
 import me.chanjar.weixin.cp.bean.WxCpXmlMessage;
 import org.apache.commons.lang3.StringUtils;
@@ -27,6 +23,8 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 类名: 企业微信回调接口
@@ -184,18 +182,23 @@ public class WeCallBackController {
         }
     }
 
+    /**
+     * 安全的XML反序列化方法
+     * 使用严格的白名单机制控制反序列化范围，防止XXE攻击和反序列化攻击
+     *
+     * @param xmlStr XML字符串
+     * @return 反序列化后的WxCpXmlMessageVO对象
+     * @throws CustomException 当XML解析失败或包含非法内容时抛出
+     */
     private WxCpXmlMessageVO strXmlToBean(String xmlStr) {
-        XStream xstream = XStreamInitializer.getInstance();
-        xstream.addPermission(AnyTypePermission.ANY);
-        xstream.processAnnotations(WxCpXmlMessage.class);
-        xstream.processAnnotations(WxCpXmlMessageVO.class);
-        xstream.processAnnotations(WxCpXmlMessageVO.ScanCodeInfo.class);
-        xstream.processAnnotations(WxCpXmlMessageVO.SendPicsInfo.class);
-        xstream.processAnnotations(WxCpXmlMessageVO.SendPicsInfo.Item.class);
-        xstream.processAnnotations(WxCpXmlMessageVO.SendLocationInfo.class);
-        xstream.processAnnotations(WxCpXmlMessageVO.BatchJob.class);
-        return (WxCpXmlMessageVO) xstream.fromXML(xmlStr);
+        List<Class<?>> objects = new ArrayList<>();
+        objects.add(WxCpXmlMessage.class);
+        objects.add(WxCpXmlMessageVO.class);
+        objects.add(WxCpXmlMessageVO.ScanCodeInfo.class);
+        objects.add(WxCpXmlMessageVO.SendPicsInfo.class);
+        objects.add(WxCpXmlMessageVO.SendPicsInfo.Item.class);
+        objects.add(WxCpXmlMessageVO.SendLocationInfo.class);
+        objects.add(WxCpXmlMessageVO.BatchJob.class);
+        return com.xmlly.util.XmlUtil.strXmlToBean(xmlStr, objects, WxCpXmlMessageVO.class);
     }
-
-
 }

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.easyink.wecom.mapper.WeCorpThirdPartyConfigMapper">
+
+    <resultMap type="WeCorpThirdPartyConfig" id="WeCorpThirdPartyConfigResult">
+        <result property="corpId"         column="corp_id"          />
+        <result property="pushUrl"        column="push_url"         />
+        <result property="status"         column="status"           />
+        <result property="createBy"       column="create_by"        />
+        <result property="createTime"     column="create_time"      />
+        <result property="updateBy"       column="update_by"        />
+        <result property="updateTime"     column="update_time"      />
+    </resultMap>
+
+    <sql id="selectWeCorpThirdPartyConfigVo">
+        select corp_id, push_url, status, create_by, create_time, update_by, update_time
+        from we_corp_third_party_config
+    </sql>
+
+    <select id="selectByCorpId" parameterType="String" resultMap="WeCorpThirdPartyConfigResult">
+        <include refid="selectWeCorpThirdPartyConfigVo"/>
+        where corp_id = #{corpId} and status = 1
+    </select>
+
+    <update id="updateStatusByCorpId">
+        update we_corp_third_party_config
+        set status = #{status}, update_time = sysdate()
+        where corp_id = #{corpId}
+    </update>
+
+</mapper>

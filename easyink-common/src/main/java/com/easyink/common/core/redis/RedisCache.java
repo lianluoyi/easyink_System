@@ -1,16 +1,11 @@
 package com.easyink.common.core.redis;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.HashOperations;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.data.redis.core.*;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -31,10 +26,19 @@ public class RedisCache {
      * 增加计数
      *
      * @param key 缓存的键值
+     * @param value 自增的值
+     */
+    public <T> void increment(final String key, final long value) {
+        empleRedisTemplate.opsForValue().increment(key, value);
+    }
+    /**
+     * 增加计数
+     *
+     * @param key 缓存的键值
      * @param hashKey 缓存的hash键值
      * @param value 自增的值
      */
-    public <T> void increment(final String key, final T hashKey, final long value) {
+    public <T> void hIncrement(final String key, final T hashKey, final long value) {
         empleRedisTemplate.opsForHash().increment(key, hashKey, value);
     }
 
@@ -247,5 +251,21 @@ public class RedisCache {
      */
     public Collection<String> keys(final String pattern) {
         return redisTemplate.keys(pattern);
+    }
+    /**
+     * scan扫描key
+     *
+     * @param pattern 字符串前缀
+     * @return 对象列表
+     */
+    public Set<String> scans(final String pattern) {
+        Set<String> keys = new HashSet<>();
+        ScanOptions options = ScanOptions.scanOptions().match(pattern).count(1000).build();
+        Cursor<byte[]> cursor = (Cursor<byte[]>) redisTemplate.executeWithStickyConnection(
+                redisConnection -> redisConnection.scan(options));
+        while (cursor.hasNext()) {
+            keys.add(new String(cursor.next()));
+        }
+        return keys;
     }
 }

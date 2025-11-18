@@ -1,9 +1,9 @@
 package com.easyink.common.shorturl.enums;
 
+import com.easyink.common.shorturl.CustomerEmpleCodeShortUrlAppendInfo;
 import com.easyink.common.shorturl.model.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import org.apache.poi.ss.formula.functions.T;
 
 /**
  * 类名: 短链类型枚举
@@ -19,6 +19,7 @@ public enum ShortUrlTypeEnum {
     FORM(2, "智能表单", FormShortUrlAppendInfo.class),
     USER_CODE(3, "员工活码", EmpleCodeShortUrlAppendInfo.class),
     GROUP_CODE(4, "群活码", GroupCodeShortUrlAppendInfo.class),
+    CUSTOMER_USER_CODE(5, "客户专属活码", CustomerEmpleCodeShortUrlAppendInfo.class),
     ;
     /**
      * 类型码

@@ -157,7 +157,7 @@ public class We3rdAppServiceImpl implements We3rdAppService {
         ToOpenCorpIdResp openCorpIdResp = we3rdUserClient.toOpenCorpid(corpId);
         String openCorpId = openCorpIdResp.getOpenCorpId();
         //通过密文获取所有loginUser
-        Collection<String> keys = redisCache.keys(Constants.LOGIN_TOKEN_KEY + "*");
+        Collection<String> keys = redisCache.scans(Constants.LOGIN_TOKEN_KEY + "*");
         for (String key : keys) {
             LoginUser loginUser = redisCache.getCacheObject(key);
             if (openCorpId.equals(loginUser.getCorpId())) {

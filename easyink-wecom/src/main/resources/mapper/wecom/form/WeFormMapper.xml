@@ -158,6 +158,9 @@
                wfas.tract_record_flag,
                wfas.customer_label_flag,
                wfas.label_setting_json,
+               wfas.customer_property_id_json,
+               wfas.timeout_hours,
+               wfas.push_content_flag,
                woc.nick_name AS we_chat_public_platform_nick_name,
                woc.head_img AS we_chat_public_platform_head_img
         FROM we_form wf

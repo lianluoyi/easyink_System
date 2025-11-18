@@ -17,7 +17,6 @@ import com.easyink.wecom.domain.WeCustomerMessageOriginal;
 import com.easyink.wecom.domain.WeCustomerMessgaeResult;
 import com.easyink.wecom.domain.dto.WeCustomerMessageDTO;
 import com.easyink.wecom.domain.dto.message.*;
-import com.easyink.wecom.domain.model.message.GroupMessageCountModel;
 import com.easyink.wecom.domain.vo.CustomerMessagePushVO;
 import com.easyink.wecom.domain.vo.WeCustomerSeedMessageVO;
 import com.easyink.wecom.mapper.WeCustomerMessageMapper;
@@ -66,37 +65,45 @@ public class WeCustomerMessageOriginalServiceImpl extends ServiceImpl<WeCustomer
     @Override
     public List<CustomerMessagePushVO> customerMessagePushs(WeCustomerMessageDTO weCustomerMessageDTO) {
         List<CustomerMessagePushVO> customerMessagePushVOS = weCustomerMessageOriginalMapper.selectCustomerMessagePushs(weCustomerMessageDTO);
-        // 补充 expectSend(预计发送消息数), actualSend(实际发送消息数), seedMessageList
+        // 补充 seedMessageList（expectSend 和 actualSend 已在 SQL 中聚合）
         fillMessageInfo(customerMessagePushVOS);
         return customerMessagePushVOS;
     }
 
     /**
-     * 补充群发详情
+     * 补充群发详情（子消息列表）
      * @param customerMessagePushVOS
      */
     private void fillMessageInfo(List<CustomerMessagePushVO> customerMessagePushVOS) {
-        List<Long> messageIdList = customerMessagePushVOS.stream().map(CustomerMessagePushVO::getMessageId).collect(Collectors.toList());
+        if (CollectionUtils.isEmpty(customerMessagePushVOS)) {
+            return;
+        }
+        
+        // 收集所有 messageId（从 messageIdDTOList 中获取第一个批次的 messageId 即可，因为所有批次共享相同的附件）
+        List<Long> messageIdList = customerMessagePushVOS.stream()
+                .filter(vo -> CollectionUtils.isNotEmpty(vo.getMessageIdDTOList()))
+                .map(vo -> vo.getMessageIdDTOList().get(0).getMessageId())
+                .filter(StringUtils::isNotBlank)
+                .map(Long::valueOf)
+                .collect(Collectors.toList());
+        
         if (CollectionUtils.isEmpty(messageIdList)) {
             return;
         }
-        Map<Long, GroupMessageCountModel> messageSendCountResult = weCustomerMessageMapper.countGroupByMessageId(messageIdList)
-                .stream().collect(
-                        Collectors.toMap(GroupMessageCountModel::getMessageId, value -> value, (v1, v2) -> v1));
+        
+        // 查询子消息列表
         Map<Long, List<WeCustomerSeedMessageVO>> messageSeedResult = weCustomerMessageMapper.selectMessageListByMessageIdList(messageIdList)
                 .stream().collect(
                         Collectors.groupingBy(WeCustomerSeedMessageVO::getMessageId));
-        //
-
+        
+        // 补充子消息列表（所有批次共享相同的子消息，只需要查询一次）
         for (CustomerMessagePushVO customerMessagePushVO : customerMessagePushVOS) {
-
-            Long messageId = customerMessagePushVO.getMessageId();
-            // 1/发送数补充
-            GroupMessageCountModel groupMessageCountModel = messageSendCountResult.getOrDefault(messageId, new GroupMessageCountModel());
-            customerMessagePushVO.setExpectSend(groupMessageCountModel.getExpectSend());
-            customerMessagePushVO.setActualSend(groupMessageCountModel.getActualSend());
-            // 2.消息seed补充
-            customerMessagePushVO.setSeedMessageList(messageSeedResult.getOrDefault(messageId, new ArrayList<>()));
+            if (CollectionUtils.isEmpty(customerMessagePushVO.getMessageIdDTOList())) {
+                continue;
+            }
+            // 取第一个批次的 messageId 查询子消息
+            Long firstMessageId = Long.valueOf(customerMessagePushVO.getMessageIdDTOList().get(0).getMessageId());
+            customerMessagePushVO.setSeedMessageList(messageSeedResult.getOrDefault(firstMessageId, new ArrayList<>()));
         }
     }
 
@@ -111,8 +118,8 @@ public class WeCustomerMessageOriginalServiceImpl extends ServiceImpl<WeCustomer
     }
 
     @Override
-    public void asyncResult(AsyncResultDTO asyncResultDTO, String corpId) {
-        syncSendResult(asyncResultDTO.getMsgids(), asyncResultDTO.getMessageId(), corpId);
+    public void asyncResult(List<MessageIdDTO> messageIdDTOList, String corpId) {
+        syncSendResult(messageIdDTOList, corpId);
     }
 
     @Override
@@ -128,15 +135,15 @@ public class WeCustomerMessageOriginalServiceImpl extends ServiceImpl<WeCustomer
         return messageOriginalId;
     }
 
-    private void syncSendResult(List<String> msgIds, Long messageId, String corpId) {
+    private void syncSendResult(List<MessageIdDTO> msgDTOList, String corpId) {
         if (StringUtils.isBlank(corpId)) {
             throw new WeComException("corpId不能为空");
         }
-        AtomicInteger atomicInteger = new AtomicInteger();
-        if (CollectionUtils.isNotEmpty(msgIds)) {
-            msgIds.forEach(msgId -> {
+        if (CollectionUtils.isNotEmpty(msgDTOList)) {
+            msgDTOList.forEach(msgDTO -> {
+                AtomicInteger atomicInteger = new AtomicInteger();
                 QueryCustomerMessageStatusResultDataObjectDTO dataObjectDto = new QueryCustomerMessageStatusResultDataObjectDTO();
-                dataObjectDto.setMsgid(msgId);
+                dataObjectDto.setMsgid(msgDTO.getMsgId());
                 //拉取发送结果
                 QueryCustomerMessageStatusResultDTO queryCustomerMessageStatusResultDTO = weCustomerMessagePushClient.queryCustomerMessageStatus(dataObjectDto, corpId);
                 if (WeExceptionTip.WE_EXCEPTION_TIP_41063.getCode().equals(queryCustomerMessageStatusResultDTO.getErrcode())) {
@@ -150,15 +157,17 @@ public class WeCustomerMessageOriginalServiceImpl extends ServiceImpl<WeCustomer
                             remark = MessageStatusEnum.NOT_FRIEND.getName();
                         } else if (MessageStatusEnum.ALREADY_SEND.getType().equals(detail.getStatus())) {
                             remark = MessageStatusEnum.ALREADY_SEND.getName();
+                        }else if(MessageStatusEnum.SEND_SUCCEED.getType().equals(detail.getStatus())){
+                            atomicInteger.addAndGet(1);
                         }
-                        weCustomerMessgaeResultMapper.updateWeCustomerMessgaeResult(messageId, detail.getChat_id(), detail.getExternal_userid(), detail.getStatus(), detail.getSend_time(), detail.getUserid(), remark);
+                        weCustomerMessgaeResultMapper.updateWeCustomerMessgaeResult(Long.valueOf(msgDTO.getMessageId()), detail.getChat_id(), detail.getExternal_userid(), detail.getStatus(), detail.getSend_time(), detail.getUserid(), remark);
                         remark = StringUtils.EMPTY;
                     }
                     //把同个messageid 只发送其中几条，未发送的群修改状态
                     for (DetailMessageStatusResultDTO detailMessageStatusResultDTO : detailList) {
                         if (StringUtils.isNotBlank(detailMessageStatusResultDTO.getChat_id()) && MessageStatusEnum.SEND_SUCCEED.getType().equals(detailMessageStatusResultDTO.getStatus())) {
                             weCustomerMessgaeResultMapper.update(null, new LambdaUpdateWrapper<WeCustomerMessgaeResult>()
-                                    .eq(WeCustomerMessgaeResult::getMessageId, messageId)
+                                    .eq(WeCustomerMessgaeResult::getMessageId, msgDTO.getMessageId())
                                     .eq(WeCustomerMessgaeResult::getStatus, MessageStatusEnum.NOT_SEND.getType())
                                     .eq(WeCustomerMessgaeResult::getUserid, detailMessageStatusResultDTO.getUserid())
                                     .set(WeCustomerMessgaeResult::getStatus, MessageStatusEnum.NOT_SEND_GROUP.getType())
@@ -166,10 +175,11 @@ public class WeCustomerMessageOriginalServiceImpl extends ServiceImpl<WeCustomer
                         }
                     }
                 }
+                //更新微信实际发送条数
+                weCustomerMessageService.updateWeCustomerMessageActualSend(Long.valueOf(msgDTO.getMessageId()), atomicInteger.get());
             });
         }
-        //更新微信实际发送条数
-        weCustomerMessageService.updateWeCustomerMessageActualSend(messageId, atomicInteger.get());
+
     }
 
 }

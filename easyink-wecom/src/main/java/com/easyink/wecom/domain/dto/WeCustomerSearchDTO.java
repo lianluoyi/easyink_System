@@ -87,6 +87,31 @@ public class WeCustomerSearchDTO extends BaseEntity {
     private List<BaseExtendPropertyRel> extendProperties = new ArrayList<>();
 
     /**
+     * 省份
+     */
+    private String province;
+
+    /**
+     * 城市
+     */
+    private String city;
+
+    /**
+     * 区/县
+     */
+    private String area;
+
+    /**
+     * 街道/镇
+     */
+    private String town;
+
+    /**
+     * 详细地址
+     */
+    private String detailAddress;
+
+    /**
      * 筛选结果
      */
     @TableField(exist = false)

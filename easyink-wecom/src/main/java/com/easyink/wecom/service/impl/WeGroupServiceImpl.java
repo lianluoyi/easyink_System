@@ -222,7 +222,7 @@ public class WeGroupServiceImpl extends ServiceImpl<WeGroupMapper, WeGroup> impl
                 return;
             }
             //删除不存在的群组数据
-            int weGroupNotInCount = this.count(new LambdaQueryWrapper<WeGroup>()
+            int weGroupNotInCount = (int)this.count(new LambdaQueryWrapper<WeGroup>()
                     .notIn(WeGroup::getChatId, charIds)
                     .eq(WeGroup::getCorpId, corpId));
             if (weGroupNotInCount > 0) {
@@ -231,7 +231,7 @@ public class WeGroupServiceImpl extends ServiceImpl<WeGroupMapper, WeGroup> impl
                         .eq(WeGroup::getCorpId, corpId));
             }
             //删除所有群聊列表数据
-            int count = weGroupMemberService.count(new LambdaQueryWrapper<WeGroupMember>().eq(WeGroupMember::getCorpId, corpId));
+            int count = (int)weGroupMemberService.count(new LambdaQueryWrapper<WeGroupMember>().eq(WeGroupMember::getCorpId, corpId));
             if (count > 0) {
                 weGroupMemberService.remove(new LambdaQueryWrapper<WeGroupMember>()
                         .eq(WeGroupMember::getCorpId, corpId)
@@ -335,6 +335,11 @@ public class WeGroupServiceImpl extends ServiceImpl<WeGroupMapper, WeGroup> impl
             ownerFilter.setUserid_list(userIds);
             GroupChatListReq groupChatListReq = GroupChatListReq.builder().owner_filter(ownerFilter).build();
             GroupChatListResp groupChatWePageBaseResp = (GroupChatListResp) groupChatListReq.executeTillNoNextPage(corpId);
+            if (groupChatWePageBaseResp == null) {
+                log.info("[同步群聊] resp为null, corpId: {}, userIds: {}", corpId, userIds);
+                continue;
+            }
+
             List<GroupChatListResp.GroupChat> groupChats = groupChatWePageBaseResp.getTotalList();
             if (CollUtil.isNotEmpty(groupChats)) {
                 groupChatList.addAll(groupChats);
@@ -675,14 +680,14 @@ public class WeGroupServiceImpl extends ServiceImpl<WeGroupMapper, WeGroup> impl
         Long endTime = MyDateUtil.strToDate(-1, 1);
         wrapper.eq(WeGroupStatistic::getCorpId, corpId);
         wrapper.between(WeGroupStatistic::getStatTime, DateUtil.date(startTime * 1000), DateUtil.date(endTime * 1000));
-        int count = weGroupStatisticService.count(wrapper);
+        int count = (int)weGroupStatisticService.count(wrapper);
         //删除所有数据
         if (count > 0) {
             weGroupStatisticService.remove(wrapper);
         }
 
         //判断是否大于500，判断是否分批处理
-        int weGroupCount = this.count(
+        int weGroupCount = (int)this.count(
                 new LambdaQueryWrapper<WeGroup>()
                         .eq(WeGroup::getCorpId, corpId)
         );

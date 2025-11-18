@@ -15,11 +15,6 @@ import java.util.List;
 @Data
 @ApiModel("同步群发消息dto")
 public class AsyncResultDTO {
-    @ApiModelProperty("消息表id")
-    private Long messageId;
-    @ApiModelProperty("企微消息id列表")
-    private List<String> msgids;
-    @ApiModelProperty(value = "企微消息数组", hidden = true)
-    private String[] msgArray;
-
+    @ApiModelProperty("id实体列表")
+    private List<MessageIdDTO> messageIdDTOList;
 }

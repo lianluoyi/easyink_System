@@ -65,5 +65,20 @@ public class WeFormAdvanceSetting {
      */
     private String labelSettingJson;
 
+    /**
+     * 推送内容开关
+     */
+    private Boolean pushContentFlag;
+
+    /**
+     * 客户自定义属性id列表json
+     */
+    private String customerPropertyIdJson;
+
+    /**
+     * 超时配置
+     */
+    private Integer timeoutHours;
+
 }
 
